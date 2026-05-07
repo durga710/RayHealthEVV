@@ -1,0 +1,18 @@
+{
+  "name": "@rayhealth/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "tsc --composite false",
+    "lint": "eslint . --ext ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "vitest": "^1.4.0"
+  }
+}

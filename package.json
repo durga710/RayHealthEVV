@@ -1,0 +1,23 @@
+{
+  "name": "rayhealth-fresh",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@10.8.2",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "db:migrate": "npm run db:migrate --workspace=@rayhealth/core",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "tsx": "^4.7.0"
+  }
+}
