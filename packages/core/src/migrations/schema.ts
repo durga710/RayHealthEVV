@@ -213,6 +213,46 @@ export async function up(knex: Knex): Promise<void> {
     await knex.raw('create index if not exists audit_events_entity_idx on audit_events (entity_type, entity_id)');
     await knex.raw('create index if not exists audit_events_occurred_at_idx on audit_events (occurred_at)');
   }
+
+  // ── R4 hardening ──────────────────────────────────────────────────────────
+  // Convert every `timestamp without time zone` column in the public schema
+  // to `timestamptz`. Existing values are reinterpreted as UTC (application
+  // emits ISO 8601 via `new Date().toISOString()`, which is UTC). Idempotent:
+  // the loop only matches columns that are still timezone-naive.
+  await knex.raw(`
+    DO $$
+    DECLARE r record;
+    BEGIN
+      FOR r IN
+        SELECT table_name, column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND data_type = 'timestamp without time zone'
+      LOOP
+        EXECUTE format(
+          'ALTER TABLE %I ALTER COLUMN %I TYPE timestamptz USING %I AT TIME ZONE ''UTC''',
+          r.table_name, r.column_name, r.column_name
+        );
+      END LOOP;
+    END$$;
+  `);
+
+  // sessions.user_id → users.id with ON DELETE CASCADE so a user purge
+  // (HIPAA right-to-be-forgotten / staff offboarding) takes active session
+  // rows with it instead of leaving orphans that can never be cleaned up.
+  // Drop+add is the only portable way to add CASCADE to an existing FK in PG.
+  await knex.raw(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables
+                 WHERE table_schema='public' AND table_name='sessions') THEN
+        ALTER TABLE sessions DROP CONSTRAINT IF EXISTS sessions_user_id_foreign;
+        ALTER TABLE sessions
+          ADD CONSTRAINT sessions_user_id_foreign
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+      END IF;
+    END$$;
+  `);
 }
 
 export async function down(knex: Knex): Promise<void> {
