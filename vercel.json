@@ -2,16 +2,10 @@
   "installCommand": "npm install --omit=dev",
   "buildCommand": "echo 'pre-built artifacts committed; skipping build'",
   "outputDirectory": "packages/web/dist",
-  "functions": {
-    "api/index.mts": {
-      "runtime": "@vercel/node@5.0.0",
-      "maxDuration": 30
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.mts"
+      "destination": "/api/index.js"
     },
     {
       "source": "/(.*)",
