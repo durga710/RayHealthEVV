@@ -319,6 +319,78 @@ export async function up(knex: Knex): Promise<void> {
       END IF;
     END$$;
   `);
+
+  // ── R3a — caregiver_id foreign keys ───────────────────────────────────────
+  // Resolve the "would reference users/staff" comment. The intended target is
+  // `caregivers.id`. `users.caregiver_id` is the denormalized linkage from a
+  // login to its caregiver entity; `assignments.caregiver_id` and
+  // `evv_visits.caregiver_id` carry the same uuid. We FK all three.
+  //
+  // Constraints are added NOT VALID so the migration succeeds even if a few
+  // historical orphan rows exist (a Phase 2 maintenance task can VALIDATE
+  // CONSTRAINT later once orphans are cleaned up). NOT VALID still enforces
+  // the FK on every new INSERT / UPDATE.
+  //
+  // Delete policy:
+  //   * users.caregiver_id      → ON DELETE SET NULL  (login survives staff exit)
+  //   * assignments.caregiver_id → ON DELETE RESTRICT  (preserve assignment trail)
+  //   * evv_visits.caregiver_id  → ON DELETE RESTRICT  (visits are evidence)
+  const caregiverFks: Array<{
+    table: string;
+    column: string;
+    name: string;
+    onDelete: 'SET NULL' | 'RESTRICT';
+  }> = [
+    { table: 'users', column: 'caregiver_id', name: 'users_caregiver_id_foreign', onDelete: 'SET NULL' },
+    { table: 'assignments', column: 'caregiver_id', name: 'assignments_caregiver_id_foreign', onDelete: 'RESTRICT' },
+    { table: 'evv_visits', column: 'caregiver_id', name: 'evv_visits_caregiver_id_foreign', onDelete: 'RESTRICT' }
+  ];
+  for (const fk of caregiverFks) {
+    await knex.raw(`
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.tables
+                   WHERE table_schema='public' AND table_name='${fk.table}')
+           AND EXISTS (SELECT 1 FROM information_schema.tables
+                       WHERE table_schema='public' AND table_name='caregivers')
+           AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                           WHERE table_schema='public'
+                             AND table_name='${fk.table}'
+                             AND constraint_name='${fk.name}') THEN
+          ALTER TABLE ${fk.table}
+            ADD CONSTRAINT ${fk.name}
+            FOREIGN KEY (${fk.column}) REFERENCES caregivers(id)
+            ON DELETE ${fk.onDelete}
+            NOT VALID;
+        END IF;
+      END$$;
+    `);
+  }
+
+  // ── R3b — family ↔ client relationship table ─────────────────────────────
+  // The family role currently has agency-wide client.read because there is
+  // no model of which clients a given family member is related to. This
+  // table closes that gap: each row links a `users.id` (with role='family')
+  // to a `clients.id` they are authorized to view. Repository / route work
+  // uses this table to filter the client list when role === 'family'.
+  if (!(await knex.schema.hasTable('family_relationships'))) {
+    await knex.schema.createTable('family_relationships', (table) => {
+      table.uuid('id').primary();
+      table.uuid('family_user_id').references('id').inTable('users').notNullable().onDelete('CASCADE');
+      table.uuid('client_id').references('id').inTable('clients').notNullable().onDelete('CASCADE');
+      // Optional relationship label (parent, child, spouse, guardian, etc.)
+      // — recorded for compliance/disclosure purposes but not used in authz.
+      table.string('relationship_type');
+      // Verifying coordinator (who confirmed this relationship). NULL until
+      // verified, so admin UI can show "pending verification" pills.
+      table.uuid('verified_by_user_id').references('id').inTable('users');
+      table.timestamp('verified_at');
+      table.timestamps(true, true);
+      table.unique(['family_user_id', 'client_id']);
+      table.index(['family_user_id']);
+      table.index(['client_id']);
+    });
+  }
 }
 
 export async function down(knex: Knex): Promise<void> {

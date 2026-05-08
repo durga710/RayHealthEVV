@@ -19,9 +19,14 @@ router.get('/', requireCapability('client.read'), async (req, res) => {
   try {
     const db = req.app.get('db');
     const repo = new ClientRepository(db);
-    const clients = await repo.getClients(req.auth.agencyId);
+    // Family-role users can only see clients with an approved row in
+    // family_relationships. Admin / coordinator continue to see agency scope.
+    const clients =
+      req.auth.role === 'family'
+        ? await repo.getClientsForFamilyMember(req.auth.userId, req.auth.agencyId)
+        : await repo.getClients(req.auth.agencyId);
     res.json(clients);
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });

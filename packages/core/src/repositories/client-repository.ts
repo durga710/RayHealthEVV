@@ -22,6 +22,24 @@ export class ClientRepository {
     return rows.map(row => this.mapRowToClient(row));
   }
 
+  /**
+   * Clients reachable by a family-role user via the `family_relationships`
+   * link table. The family role's `client.read` capability used to surface
+   * every client in the agency; this scopes it to the explicit relationships
+   * a coordinator has approved.
+   *
+   * Also agency-scoped so a stale relationship row from before a client was
+   * reassigned cannot leak across tenants.
+   */
+  async getClientsForFamilyMember(userId: string, agencyId: string): Promise<Client[]> {
+    const rows = await this.db('clients as c')
+      .join('family_relationships as fr', 'fr.client_id', 'c.id')
+      .where('fr.family_user_id', userId)
+      .andWhere('c.agency_id', agencyId)
+      .select('c.*');
+    return rows.map((row) => this.mapRowToClient(row));
+  }
+
   async createAuthorization(authorization: Authorization): Promise<Authorization> {
     const [inserted] = await this.db('authorizations').insert({
       id: authorization.id ?? crypto.randomUUID(),
