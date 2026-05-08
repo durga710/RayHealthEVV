@@ -1,6 +1,6 @@
 {
-  "installCommand": "npm install --include=dev --workspaces --include-workspace-root && ls -la node_modules/.bin/tsc node_modules/.bin/turbo 2>&1 | head -5",
-  "buildCommand": "node_modules/.bin/turbo build --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
+  "installCommand": "npm install --omit=dev",
+  "buildCommand": "echo 'pre-built artifacts committed; skipping build'",
   "outputDirectory": "packages/web/dist",
   "functions": {
     "api/index.mts": {

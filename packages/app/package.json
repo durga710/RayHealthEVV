@@ -2,6 +2,14 @@
   "name": "@rayhealth/app",
   "private": true,
   "type": "module",
+  "main": "./dist/app.js",
+  "types": "./dist/app.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/app.d.ts",
+      "import": "./dist/app.js"
+    }
+  },
   "scripts": {
     "build": "tsc --composite false",
     "dev": "tsx watch src/server.ts",

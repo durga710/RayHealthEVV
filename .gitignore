@@ -5,6 +5,10 @@ node_modules/
 # Build artifacts
 dist/
 **/dist/
+# But DO commit the per-package dist/ — Vercel deploys are pre-built.
+!packages/core/dist/
+!packages/app/dist/
+!packages/web/dist/
 .turbo/
 **/.turbo/
 *.tsbuildinfo
