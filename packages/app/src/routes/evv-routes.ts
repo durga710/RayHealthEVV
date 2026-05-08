@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { requireCapability } from '../middleware/require-capability.js';
-import { EvvRepository } from '@rayhealth/core';
+import { EvvRepository, paServiceCodes, type PaServiceCode } from '@rayhealth/core';
+
+const SERVICE_CODES = new Set<string>(paServiceCodes);
 
 const router = Router();
 
@@ -24,17 +26,38 @@ router.get('/visits', requireCapability('schedule.read'), async (req, res) => {
 router.post('/clock-in', requireCapability('schedule.write'), async (req, res) => {
   try {
     if (!req.auth.caregiverId) return res.status(403).json({ message: 'User is not authorized as a caregiver' });
+    const { assignmentId, location, serviceCode } = req.body ?? {};
+    if (!assignmentId || !location) {
+      return res.status(400).json({ message: 'assignmentId and location are required' });
+    }
+    if (!serviceCode || !SERVICE_CODES.has(serviceCode)) {
+      // Cures-Act #1 — service code is mandatory at clock-in. Refuse rather
+      // than silently NULLing it; downstream aggregator submission will reject
+      // a visit row without a service code anyway.
+      return res.status(400).json({ message: 'serviceCode (HCPCS) is required at clock-in' });
+    }
     const db = req.app.get('db');
     const repo = new EvvRepository(db);
+    // Resolve client_id (Cures-Act #2 — beneficiary) from the assignment's
+    // visit_template. Snapshotting it onto the visit row keeps the row
+    // self-contained for aggregator submission and audit.
+    const templateRow = await db('assignments as a')
+      .join('visit_templates as t', 't.id', 'a.visit_template_id')
+      .where('a.id', assignmentId)
+      .select('t.client_id as clientId')
+      .first();
+    const clientId = templateRow?.clientId as string | undefined;
     const visit = await repo.createVisit({
-      assignmentId: req.body.assignmentId,
+      assignmentId,
       caregiverId: req.auth.caregiverId,
+      clientId,
+      serviceCode: serviceCode as PaServiceCode,
       clockInTime: new Date().toISOString(),
-      clockInLocation: req.body.location,
+      clockInLocation: location,
       status: 'pending'
     });
     res.status(201).json(visit);
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });

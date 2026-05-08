@@ -61,6 +61,12 @@ export async function up(knex: Knex): Promise<void> {
       table.uuid('id').primary();
       table.uuid('assignment_id').references('id').inTable('assignments').notNullable();
       table.uuid('caregiver_id').notNullable();
+      // Cures-Act #1 (service-type) and #2 (beneficiary). Snapshotted onto
+      // the visit row at clock-in so the visit stands alone for aggregator
+      // submission and claim defense (does not depend on later joins through
+      // assignment → visit_template → client / authorization).
+      table.string('service_code');
+      table.uuid('client_id');
       table.timestamp('clock_in_time').notNullable();
       table.timestamp('clock_out_time');
       table.jsonb('clock_in_location').notNullable();
@@ -68,6 +74,18 @@ export async function up(knex: Knex): Promise<void> {
       table.string('status').notNullable().defaultTo('pending');
       table.timestamps(true, true);
     });
+  } else {
+    // Backfill the new Cures-Act columns onto an existing evv_visits table.
+    if (!(await knex.schema.hasColumn('evv_visits', 'service_code'))) {
+      await knex.schema.alterTable('evv_visits', (table) => {
+        table.string('service_code');
+      });
+    }
+    if (!(await knex.schema.hasColumn('evv_visits', 'client_id'))) {
+      await knex.schema.alterTable('evv_visits', (table) => {
+        table.uuid('client_id');
+      });
+    }
   }
   if (!(await knex.schema.hasTable('users'))) {
     await knex.schema.createTable('users', (table) => {
@@ -366,6 +384,80 @@ export async function up(knex: Knex): Promise<void> {
       END$$;
     `);
   }
+
+  // ── R4a — Cures-Act fields on evv_visits ─────────────────────────────────
+  // FK client_id → clients.id (NOT VALID for upgrade safety).
+  await knex.raw(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables
+                 WHERE table_schema='public' AND table_name='evv_visits')
+         AND EXISTS (SELECT 1 FROM information_schema.columns
+                     WHERE table_schema='public' AND table_name='evv_visits' AND column_name='client_id')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                         WHERE table_schema='public'
+                           AND table_name='evv_visits'
+                           AND constraint_name='evv_visits_client_id_foreign') THEN
+        ALTER TABLE evv_visits
+          ADD CONSTRAINT evv_visits_client_id_foreign
+          FOREIGN KEY (client_id) REFERENCES clients(id)
+          ON DELETE RESTRICT
+          NOT VALID;
+      END IF;
+    END$$;
+  `);
+  // CHECK on service_code — only PA-supported HCPCS codes.
+  await knex.raw(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables
+                 WHERE table_schema='public' AND table_name='evv_visits')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                         WHERE table_schema='public'
+                           AND table_name='evv_visits'
+                           AND constraint_name='evv_visits_service_code_check') THEN
+        ALTER TABLE evv_visits
+          ADD CONSTRAINT evv_visits_service_code_check
+          CHECK (service_code IS NULL OR service_code IN ('T1019','S5125','T1004','T1021'));
+      END IF;
+    END$$;
+  `);
+
+  // ── R4b — evv_visits immutability ────────────────────────────────────────
+  // Visits are EVV evidence. Once a visit is created, only the clock-out
+  // transition (status, clock_out_time, clock_out_location) may mutate the
+  // row. Any other change must go through visit_maintenance with its
+  // approval workflow. A BEFORE UPDATE trigger enforces this at the DB
+  // level so a rogue SQL session can't tamper with submitted billing.
+  await knex.raw(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables
+                 WHERE table_schema='public' AND table_name='evv_visits') THEN
+        CREATE OR REPLACE FUNCTION evv_visits_enforce_immutability() RETURNS trigger AS $f$
+        BEGIN
+          IF NEW.id <> OLD.id
+             OR NEW.assignment_id <> OLD.assignment_id
+             OR NEW.caregiver_id <> OLD.caregiver_id
+             OR NEW.client_id IS DISTINCT FROM OLD.client_id
+             OR NEW.service_code IS DISTINCT FROM OLD.service_code
+             OR NEW.clock_in_time <> OLD.clock_in_time
+             OR NEW.clock_in_location::text <> OLD.clock_in_location::text
+          THEN
+            RAISE EXCEPTION 'evv_visits is immutable; corrections must go through visit_maintenance';
+          END IF;
+          RETURN NEW;
+        END;
+        $f$ LANGUAGE plpgsql;
+
+        DROP TRIGGER IF EXISTS evv_visits_enforce_immutability_trg ON evv_visits;
+        CREATE TRIGGER evv_visits_enforce_immutability_trg
+          BEFORE UPDATE ON evv_visits
+          FOR EACH ROW
+          EXECUTE FUNCTION evv_visits_enforce_immutability();
+      END IF;
+    END$$;
+  `);
 
   // ── R3b — family ↔ client relationship table ─────────────────────────────
   // The family role currently has agency-wide client.read because there is

@@ -18,6 +18,12 @@ export class EvvRepository {
         id: visit.id ?? crypto.randomUUID(),
         assignment_id: visit.assignmentId,
         caregiver_id: visit.caregiverId,
+        // Cures-Act #1 / #2 — service code and beneficiary snapshotted at
+        // clock-in. Both are nullable in the column but the Cures-Act
+        // submission to PA aggregators requires both, so the route layer
+        // supplies them on creation.
+        service_code: visit.serviceCode ?? null,
+        client_id: visit.clientId ?? null,
         clock_in_time: visit.clockInTime,
         clock_in_location: JSON.stringify(visit.clockInLocation),
         status: visit.status
@@ -83,6 +89,8 @@ export class EvvRepository {
       id: row.id as string,
       assignmentId: row.assignment_id as string,
       caregiverId: row.caregiver_id as string,
+      clientId: (row.client_id as string | null | undefined) ?? undefined,
+      serviceCode: (row.service_code as EvvVisit['serviceCode']) ?? undefined,
       clockInTime:
         clockIn instanceof Date ? clockIn.toISOString() : (clockIn as string),
       clockOutTime:
