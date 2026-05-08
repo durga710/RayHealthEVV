@@ -4,30 +4,20 @@
 
 React Compiler enabled
 Starting Metro Bundler
-iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (993/993)
-Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (989/989)
-iOS Bundled 3377ms node_modules/expo-router/entry.js (993 modules)
-Android Bundled 4599ms node_modules/expo-router/entry.js (989 modules)
+Android Bundled 1991ms node_modules/expo-router/entry.js (981 modules)
+iOS Bundled 2871ms node_modules/expo-router/entry.js (993 modules)
 Static rendering is enabled. Learn more: https://docs.expo.dev/router/reference/static-rendering/
-Web node_modules/expo-router/entry.js ▓▓▓▓░░░░░░░░░░░░ 29.3% ( 41/156)
-λ node_modules/expo-router/node/render.js ▓▓▓▓░░░░░░░░░░░░ 29.1% (164/304)
-Web node_modules/expo-router/entry.js ▓▓▓▓▓░░░░░░░░░░░ 34.1% (181/310)
-λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓░░░░░░░░ 51.3% (331/462)
-Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 55.7% (377/505)
-λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 75.4% (482/555)
-Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 81.8% (652/721)
-λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90.3% (709/746)
-λ Bundled 16687ms node_modules/expo-router/node/render.js (858 modules)
-Web Bundled 16875ms node_modules/expo-router/entry.js (752 modules)
-
-› ios bundles (1):
-_expo/static/js/ios/entry-a907b6c17f3da189fc6aef71f2d96ada.hbc (2.63 MB)
+Web Bundled 362ms node_modules/expo-router/entry.js (428 modules)
+λ Bundled 370ms node_modules/expo-router/node/render.js (752 modules)
 
 › android bundles (1):
-_expo/static/js/android/entry-36a62573f86e51ce96e12b095180a87d.hbc (2.62 MB)
+_expo/static/js/android/entry-7bc32cff146970c61c4d456e5046f959.hbc (2.62 MB)
+
+› ios bundles (1):
+_expo/static/js/ios/entry-105793030d9995e2437b924d0ce0f072.hbc (2.63 MB)
 
 › web bundles (1):
-_expo/static/js/web/entry-d206c46bf337ebac07095586ecd88e6b.js (1.09 MB)
+_expo/static/js/web/entry-a3cbb6d3125566cd369fe17a72c6f114.js (1.09 MB)
 
 › Static routes (9):
 / (index) (17.2 kB)
