@@ -8,6 +8,8 @@ export interface AuthContext {
   authMethod: 'session' | 'bearer';
   sessionId?: string;
   csrfTokenHash?: string;
+  // Bearer-only: the JWT's `jti` claim, looked up against mobile_sessions.
+  tokenJti?: string;
 }
 
 declare global {

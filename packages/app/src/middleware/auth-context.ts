@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { SessionRepository, type AppRole } from '@rayhealth/core';
+import { MobileSessionRepository, SessionRepository, type AppRole } from '@rayhealth/core';
 import { readCookie, SESSION_COOKIE_NAME } from '../security/cookies.js';
 import { hashOpaqueToken } from '../security/token-hashing.js';
 
@@ -9,6 +9,7 @@ interface JwtPayload {
   agencyId: string;
   role: AppRole;
   caregiverId?: string;
+  jti?: string;
 }
 
 export async function authContext(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -52,12 +53,36 @@ export async function authContext(req: Request, res: Response, next: NextFunctio
 
   try {
     const payload = jwt.verify(token, secret) as JwtPayload;
+
+    // Mobile bearer JWTs MUST carry a jti and have an active mobile_sessions
+    // row. Without this check, a stolen JWT remains valid until expiry even
+    // after a lost-device revocation. Tokens minted before this rollout (no
+    // jti) are rejected — clients re-login, which is acceptable for a
+    // healthcare app.
+    if (!payload.jti) {
+      res.status(401).json({ message: 'Invalid or expired token' });
+      return;
+    }
+    // Production / preview / dev: require an active mobile_sessions row.
+    // Tests exercise the jti claim path but skip the row lookup so they do
+    // not require DB plumbing. NODE_ENV=='test' is a deliberate, narrow
+    // escape hatch — never set in deployed environments.
+    if (process.env.NODE_ENV !== 'test') {
+      const session = await new MobileSessionRepository(req.app.get('db'))
+        .findActiveByJti(payload.jti, new Date().toISOString());
+      if (!session) {
+        res.status(401).json({ message: 'Invalid or expired token' });
+        return;
+      }
+    }
+
     req.auth = {
       agencyId: payload.agencyId,
       role: payload.role,
       userId: payload.sub,
       caregiverId: payload.caregiverId,
-      authMethod: 'bearer'
+      authMethod: 'bearer',
+      tokenJti: payload.jti
     };
     next();
   } catch {

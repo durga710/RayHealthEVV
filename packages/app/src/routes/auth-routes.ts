@@ -1,8 +1,14 @@
 import { Router } from 'express';
-import { timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { AuditEventRepository, SessionRepository, UserRepository, type NewAuditEvent } from '@rayhealth/core';
+import {
+  AuditEventRepository,
+  MobileSessionRepository,
+  SessionRepository,
+  UserRepository,
+  type NewAuditEvent
+} from '@rayhealth/core';
 import { authContext } from '../middleware/auth-context.js';
 import { requireCsrf } from '../middleware/csrf.js';
 import { clearSessionCookieOptions, SESSION_COOKIE_NAME, sessionCookieOptions } from '../security/cookies.js';
@@ -98,10 +104,22 @@ router.post('/mobile/login', async (req, res) => {
       return;
     }
 
+    // Mint a unique jti and persist a mobile_sessions row so the token can
+    // be revoked individually on a lost-device event. Without this row the
+    // bearer auth path will reject the JWT — see auth-context middleware.
+    const jti = randomUUID();
+    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+    await new MobileSessionRepository(db).create({
+      userId: user.id,
+      tokenJti: jti,
+      deviceLabel: typeof req.body?.deviceLabel === 'string' ? req.body.deviceLabel : undefined,
+      expiresAt
+    });
+
     const token = jwt.sign(
       { sub: user.id, agencyId: user.agencyId, role: user.role, caregiverId: user.caregiverId },
       jwtSecret(),
-      { expiresIn: '8h' }
+      { expiresIn: '8h', jwtid: jti }
     );
 
     await recordAuditEvent(db, {
@@ -112,7 +130,7 @@ router.post('/mobile/login', async (req, res) => {
       entityType: 'user',
       entityId: user.id,
       outcome: 'success',
-      payload: { authMethod: 'bearer' },
+      payload: { authMethod: 'bearer', jti },
       occurredAt: new Date().toISOString()
     });
 
@@ -120,6 +138,34 @@ router.post('/mobile/login', async (req, res) => {
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
   }
+});
+
+// Mobile logout — revoke the active mobile_sessions row by jti.
+//
+// Authenticated via authContext (bearer JWT). Revocation is idempotent so a
+// re-tried logout from a flaky device just succeeds. After revocation the
+// JWT itself remains technically valid until expiry, but auth-context will
+// reject it because findActiveByJti returns nothing.
+router.post('/mobile/logout', authContext, async (req, res) => {
+  if (req.auth.authMethod !== 'bearer' || !req.auth.tokenJti) {
+    res.status(400).json({ message: 'No mobile session to revoke' });
+    return;
+  }
+  const db = req.app.get('db');
+  const now = new Date().toISOString();
+  await new MobileSessionRepository(db).revokeByJti(req.auth.tokenJti, now);
+  await recordAuditEvent(db, {
+    agencyId: req.auth.agencyId,
+    actorId: req.auth.userId,
+    actorType: 'user',
+    eventType: 'session.revoked',
+    entityType: 'mobile_session',
+    entityId: req.auth.userId,
+    outcome: 'success',
+    payload: { authMethod: 'bearer', jti: req.auth.tokenJti },
+    occurredAt: now
+  });
+  res.status(204).send();
 });
 
 // One-time admin bootstrap — serialized via advisory lock so concurrent requests cannot both succeed.

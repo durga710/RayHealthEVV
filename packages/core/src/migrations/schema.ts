@@ -476,6 +476,30 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
+  // ── R6 — mobile_sessions for revocable JWT auth ──────────────────────────
+  // Mobile auth has been stateless JWT (8 h validity). On a lost-device
+  // event the only mitigation was rotating JWT_SECRET, which logs out
+  // every user. mobile_sessions adds a server-side row keyed by the JWT's
+  // jti claim; auth-context rejects bearer tokens whose jti is absent or
+  // revoked. /auth/mobile/logout revokes by jti.
+  if (!(await knex.schema.hasTable('mobile_sessions'))) {
+    await knex.schema.createTable('mobile_sessions', (table) => {
+      table.uuid('id').primary();
+      table.uuid('user_id').references('id').inTable('users').notNullable().onDelete('CASCADE');
+      // The JWT's `jti` claim. Unique per session row.
+      table.uuid('token_jti').notNullable().unique();
+      // Optional device fingerprint supplied by the mobile client (model,
+      // OS, app version). Helps support staff identify which device to
+      // revoke on a lost-phone report.
+      table.string('device_label');
+      table.timestamp('expires_at').notNullable();
+      table.timestamp('revoked_at');
+      table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
+      table.index(['user_id']);
+      table.index(['expires_at']);
+    });
+  }
+
   // ── R3b — family ↔ client relationship table ─────────────────────────────
   // The family role currently has agency-wide client.read because there is
   // no model of which clients a given family member is related to. This
