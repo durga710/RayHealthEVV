@@ -3,10 +3,34 @@ import { Link } from 'react-router-dom';
 import { HeroGraphic } from './HeroGraphic.js';
 
 const stats = [
+  { value: '30s', label: 'Haptic clock-in confirm' },
+  { value: '3-in-1', label: 'Audit · Billing · Payroll' },
+  { value: '<5m', label: 'Geofence accuracy' },
   { value: '100%', label: 'PA DHS aligned' },
-  { value: '6/6', label: 'Federal EVV elements' },
-  { value: '<60s', label: 'Caregiver clock-in' },
-  { value: '21CC', label: 'Cures Act ready' },
+];
+
+const keyFeatures = [
+  {
+    eyebrow: 'Caregiver app',
+    title: '30-second haptic clock-in',
+    body:
+      'The caregiver phone vibrates the moment clock-in is verified at the door — no staring at the screen, no “did it submit?”, no double-taps. Same vibration confirms clock-out. Works one-handed, gloves on.',
+    proof: 'Confirmed in <30 seconds, every time',
+  },
+  {
+    eyebrow: 'One platform',
+    title: 'Audit, billing, and payroll — included',
+    body:
+      'Stop paying three vendors. RayHealth bundles the audit trail, claim-ready billing exports, and caregiver payroll runs into the same workflow that already verified the visit. Every dollar reconciles to a row in audit_events.',
+    proof: 'One contract instead of three',
+  },
+  {
+    eyebrow: 'GPS verification',
+    title: 'Best-in-class geofencing',
+    body:
+      'High-accuracy GPS with multi-sample averaging, bias correction, and offline retry. Verifies the caregiver is actually at the client’s door — not a parking lot two blocks away — to within a few meters. Captures all six federal EVV data points on every clock-in.',
+    proof: '<5 m typical accuracy · 6/6 federal elements',
+  },
 ];
 
 const steps = [
@@ -125,6 +149,7 @@ export function LandingPage() {
           RayHealth <span style={{ backgroundColor: 'var(--color-accent)', color: 'white', padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', letterSpacing: '2px', fontWeight: 800 }}>EVV</span>
         </div>
         <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+          <a href="#features" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Features</a>
           <a href="#how" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>How it works</a>
           <a href="#roles" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Who it's for</a>
           <a href="#compliance" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Compliance</a>
@@ -142,8 +167,8 @@ export function LandingPage() {
           <h1 style={{ fontSize: '3.75rem', lineHeight: 1.05, color: 'var(--color-primary-dark)', margin: 0 }}>
             Care You Can Trust.<br /> <span style={{ color: 'var(--color-primary-light)' }}>Verified & Delivered.</span>
           </h1>
-          <p style={{ fontSize: '1.25rem', color: 'var(--color-text-muted)', maxWidth: '640px', lineHeight: 1.6, margin: 0 }}>
-            Electronic Visit Verification, scheduling, credentialing, and a real-time audit trail — built specifically for Pennsylvania personal assistance and home health agencies.
+          <p style={{ fontSize: '1.25rem', color: 'var(--color-text-muted)', maxWidth: '720px', lineHeight: 1.6, margin: 0 }}>
+            Electronic Visit Verification for Pennsylvania home care. <strong>30-second haptic clock-in</strong>, <strong>best-in-class geofencing</strong>, and <strong>audit, billing, and payroll bundled</strong> — so you stop paying three vendors for one workflow.
           </p>
 
           <HeroGraphic />
@@ -168,6 +193,29 @@ export function LandingPage() {
               <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 600 }}>{s.label}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Key Features */}
+      <section id="features" style={{ padding: '6rem 2rem 4rem' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <p style={sectionEyebrow}>Why RayHealth</p>
+            <h2 style={sectionHeading}>Three things every other EVV vendor forgets.</h2>
+            <p style={sectionLead}>
+              Caregivers don't want to stare at a phone. Agencies don't want three vendors. Auditors don't want fuzzy GPS. We fixed all three.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+            {keyFeatures.map((f) => (
+              <div key={f.title} style={{ ...cardBase, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--color-accent)' }}>{f.eyebrow}</div>
+                <h3 style={{ color: 'var(--color-primary-dark)', margin: 0, fontSize: '1.4rem', lineHeight: 1.2 }}>{f.title}</h3>
+                <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.55, margin: 0, fontSize: '0.98rem' }}>{f.body}</p>
+                <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid #eef2f7', color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.875rem' }}>{f.proof}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
