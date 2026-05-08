@@ -23,6 +23,23 @@ async function recordAuditEvent(db, event) {
         safeError('Failed to persist auth audit event', error);
     }
 }
+// Audit a failed login attempt. Emits `auth.login.failure` with the user
+// row when known. Unknown-email attempts cannot resolve to an agency_id
+// (NOT NULL) so they are deliberately not persisted at the audit layer
+// (agency-scoped table); they remain observable via the rate-limit logs.
+async function recordLoginFailure(db, user, authMethod, ipAddress) {
+    await recordAuditEvent(db, {
+        agencyId: user.agencyId,
+        actorId: user.id,
+        actorType: 'user',
+        eventType: 'auth.login.failure',
+        entityType: 'user',
+        entityId: user.id,
+        outcome: 'failure',
+        payload: { authMethod, ipAddress: ipAddress ?? undefined },
+        occurredAt: new Date().toISOString()
+    });
+}
 router.post('/login', async (req, res) => {
     const { email, password } = req.body ?? {};
     if (!email || !password) {
@@ -39,6 +56,7 @@ router.post('/login', async (req, res) => {
         }
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) {
+            await recordLoginFailure(db, user, 'session', req.ip);
             res.status(401).json({ message: 'Invalid credentials' });
             return;
         }
@@ -83,7 +101,12 @@ router.post('/mobile/login', async (req, res) => {
     try {
         const db = req.app.get('db');
         const user = await new UserRepository(db).findByEmail(email);
-        if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+        if (!user) {
+            res.status(401).json({ message: 'Invalid credentials' });
+            return;
+        }
+        if (!(await bcrypt.compare(password, user.passwordHash))) {
+            await recordLoginFailure(db, user, 'bearer', req.ip);
             res.status(401).json({ message: 'Invalid credentials' });
             return;
         }
