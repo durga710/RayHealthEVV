@@ -1,7 +1,13 @@
 {
-  "installCommand": "npm install --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
-  "buildCommand": "npm run build -- --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
   "outputDirectory": "packages/web/dist",
+  "functions": {
+    "api/index.mts": {
+      "runtime": "@vercel/node@5.0.0",
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
