@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { HeroGraphic } from './HeroGraphic.js';
+import { SupportChat } from '../support/SupportChat.js';
 
 const stats = [
   { value: '30s', label: 'Haptic clock-in confirm' },
@@ -378,10 +379,13 @@ export function LandingPage() {
       {/* Footer */}
       <footer style={{ padding: '2.5rem 2rem', backgroundColor: 'var(--color-primary-dark)', color: '#9bb0c8', fontSize: '0.875rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <span>&copy; {new Date().getFullYear()} RayHealth EVV™. All rights reserved.</span>
-          <span>Pennsylvania-only • HIPAA-aware • 21st Century Cures Act compliant</span>
+          <span>&copy; {new Date().getFullYear()} RayHealthEVV™. All rights reserved.</span>
+          <span>Pennsylvania-built • HIPAA-aware • 21st Century Cures Act ready by design</span>
         </div>
       </footer>
+
+      {/* Floating support chat — visible site-wide. */}
+      <SupportChat />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { SupportChat } from '../support/SupportChat.js';
 
 /**
  * Shared header / hero / footer chrome for marketing routes
@@ -113,6 +114,9 @@ export function MarketingShell({
           <Link to="/contact" style={{ color: 'var(--color-text-muted)' }}>Contact</Link>
         </div>
       </footer>
+
+      {/* Floating support chat — visible on every marketing page. */}
+      <SupportChat />
     </div>
   );
 }

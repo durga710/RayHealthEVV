@@ -11,6 +11,7 @@ import { createDb } from '@rayhealth/core';
 
 import authRoutes from './routes/auth-routes.js';
 import marketingRoutes from './routes/marketing-routes.js';
+import supportRoutes from './routes/support-routes.js';
 import exportRoutes from './routes/export-routes.js';
 import inviteRoutes from './routes/invite-routes.js';
 import agencyRoutes from './routes/agency-routes.js';
@@ -27,6 +28,9 @@ const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeade
 // Marketing /contact accepts anonymous POSTs — be more generous than auth
 // (legitimate users may type slowly + retry once on a 5xx) but still cap.
 const marketingLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
+// Support /chat is more chatty by nature — allow a real conversation
+// (~30 turns/hr) per IP. Spam-control without throttling real visitors.
+const supportLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
 
 export function createApp() {
   if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET env var must be set before starting');
@@ -70,6 +74,7 @@ export function createApp() {
   app.use('/auth', authRoutes);
   // Marketing routes are public — mount BEFORE authContext.
   app.use('/marketing', marketingLimiter, marketingRoutes);
+  app.use('/support', supportLimiter, supportRoutes);
   app.use(authContext);
   app.use(requireCsrf);
   app.use(auditLog);

@@ -476,6 +476,25 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
+  // ── Support agent — support_conversations ───────────────────────────────
+  // Public unauthenticated POST /api/support/chat lands here, two rows per
+  // turn (user message then assistant reply). NOT agency-scoped — anonymous
+  // marketing-site chat. The system prompt forbids the model from accepting
+  // PHI; this table has no FK relationship to PHI tables either.
+  if (!(await knex.schema.hasTable('support_conversations'))) {
+    await knex.schema.createTable('support_conversations', (table) => {
+      table.uuid('id').primary();
+      table.uuid('session_id').notNullable();
+      table.string('role', 16).notNullable();
+      table.text('content').notNullable();
+      table.string('model', 100);
+      table.string('ip_address', 64);
+      table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
+      table.index(['session_id', 'created_at']);
+      table.index(['created_at']);
+    });
+  }
+
   // ── Marketing — contact_submissions ─────────────────────────────────────
   // Public unauthenticated POST /api/marketing/contact lands here. NOT
   // agency-scoped (no PHI; just lead capture). Indexed on created_at for
