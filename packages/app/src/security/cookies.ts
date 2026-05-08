@@ -7,7 +7,10 @@ export function sessionCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    // 'strict' blocks the cookie on cross-site navigations. Web client is
+    // same-origin via Vercel rewrites — this is defense-in-depth on top of
+    // the explicit CSRF token check.
+    sameSite: 'strict',
     path: '/',
     maxAge: EIGHT_HOURS_MS
   };
@@ -17,7 +20,7 @@ export function clearSessionCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/'
   };
 }

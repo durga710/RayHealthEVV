@@ -1,29 +1,90 @@
+import { randomUUID } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';
 import { AuditEventRepository } from '@rayhealth/core';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+const PATH_DENY = [/^\/?health$/i, /^\/?favicon\.ico$/i];
+
+// PHI-bearing GET endpoints. Anything not in SAFE_METHODS is always logged.
+const PHI_GET_PATHS = [
+  /\/clients(?:\/|$)/,
+  /\/evv(?:\/|$)/,
+  /\/assignments(?:\/|$)/,
+  /\/authorizations(?:\/|$)/,
+  /\/templates(?:\/|$)/,
+  /\/staff(?:\/|$)/,
+  /\/maintenance(?:\/|$)/
+];
+
+function looksLikeUuid(segment: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment);
+}
+
+function extractResource(path: string): { entityType: string; entityId?: string } {
+  const segments = path.split('?')[0].split('/').filter(Boolean);
+  if (segments.length === 0) return { entityType: 'request' };
+  const entityType = segments[0];
+  const idSegment = segments.slice(1).find(looksLikeUuid);
+  return { entityType, entityId: idSegment };
+}
+
+// Server-generated correlation id. Caller-provided x-request-id is IGNORED —
+// trusting the client lets a malicious caller forge or collide audit ids.
+function correlationFor(req: Request, res: Response): string {
+  const cached = (req as unknown as { _serverCorrelationId?: string })._serverCorrelationId;
+  if (cached) return cached;
+  const id = randomUUID();
+  (req as unknown as { _serverCorrelationId: string })._serverCorrelationId = id;
+  res.setHeader('x-correlation-id', id);
+  return id;
+}
+
 export function auditLog(req: Request, res: Response, next: NextFunction): void {
+  // Eagerly attach correlation id so even pre-auth failure paths are correlatable.
+  correlationFor(req, res);
+
   res.on('finish', async () => {
     const path = req.originalUrl || req.path;
-    if (SAFE_METHODS.has(req.method) && !path.includes('/clients')) return;
+    if (PATH_DENY.some((re) => re.test(path))) return;
+
+    // CRITICAL: req.auth is undefined whenever auth fails (401, malformed token,
+    // bootstrap deny, etc.). Dereferencing was crashing the finish handler.
+    const auth = req.auth;
+    if (!auth) {
+      // Without an agency_id we can't satisfy NOT NULL on audit_events.agency_id.
+      // /auth/* paths are rate-limited and observable from access logs.
+      return;
+    }
+
+    const isPhiGet = req.method === 'GET' && PHI_GET_PATHS.some((re) => re.test(path));
+    const shouldLog = !SAFE_METHODS.has(req.method) || isPhiGet;
+    if (!shouldLog) return;
 
     try {
-      const entityType = path.split('/').filter(Boolean)[0] ?? 'request';
+      const { entityType, entityId } = extractResource(path);
+      const failed = res.statusCode >= 400;
       await new AuditEventRepository(req.app.get('db')).create({
-        agencyId: req.auth.agencyId,
-        actorId: req.auth.userId,
+        agencyId: auth.agencyId,
+        actorId: auth.userId,
         actorType: 'user',
-        eventType: res.statusCode >= 400 ? 'permission.denied' : req.method === 'GET' ? 'phi.read' : 'request.write',
+        eventType: failed
+          ? 'permission.denied'
+          : req.method === 'GET'
+            ? 'phi.read'
+            : 'request.write',
         entityType,
-        entityId: req.auth.userId,
-        outcome: res.statusCode >= 400 ? 'denied' : 'success',
-        correlationId: req.header('x-request-id') ?? undefined,
+        // Resource id when present; fall back to actor only if the path has no
+        // resource UUID (e.g. POST /clients creating a record). HIPAA 164.312(b)
+        // requires identifying WHAT was touched.
+        entityId: entityId ?? auth.userId,
+        outcome: failed ? 'denied' : 'success',
+        correlationId: correlationFor(req, res),
         payload: {
           method: req.method,
           path,
           statusCode: res.statusCode,
-          authMethod: req.auth.authMethod
+          authMethod: auth.authMethod
         },
         occurredAt: new Date().toISOString()
       });

@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import './types.js';
 import { authContext } from './middleware/auth-context.js';
@@ -31,8 +32,22 @@ export function createApp() {
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') ?? ['http://localhost:5173'];
 
   app.set('db', db);
+  app.disable('x-powered-by');
+  // helmet must come BEFORE routes so its security headers attach to every response,
+  // including 4xx/5xx error paths from rate-limit / cors / parse failures.
+  app.use(
+    helmet({
+      // API is JSON only; no inline scripts / styles to whitelist.
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      // HSTS is meaningful only when served over HTTPS; Vercel terminates TLS,
+      // so the prod proxy will always be https.
+      hsts: { maxAge: 15552000, includeSubDomains: true, preload: false },
+      referrerPolicy: { policy: 'no-referrer' }
+    })
+  );
   app.use(cors({ origin: allowedOrigins, credentials: true }));
-  app.use(express.json());
+  app.use(express.json({ limit: '256kb' }));
   app.use('/auth/login', authLimiter);
   app.use('/auth/mobile/login', authLimiter);
   app.use('/auth/bootstrap', authLimiter);
