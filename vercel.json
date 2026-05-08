@@ -1,7 +1,7 @@
 {
+  "installCommand": "npm install --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
   "buildCommand": "npm run build -- --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
   "outputDirectory": "packages/web/dist",
-  "installCommand": "npm install --workspaces-update=false --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
   "rewrites": [
     {
       "source": "/api/(.*)",
