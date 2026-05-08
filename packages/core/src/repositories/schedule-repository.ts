@@ -60,4 +60,25 @@ export class ScheduleRepository {
       visitTemplateId: row.visit_template_id
     }));
   }
+
+  async getAssignmentsByCaregiver(caregiverId: string): Promise<any[]> {
+    const rows = await this.db('assignments')
+      .join('visit_templates', 'assignments.visit_template_id', 'visit_templates.id')
+      .join('clients', 'visit_templates.client_id', 'clients.id')
+      .where('assignments.caregiver_id', caregiverId)
+      .select(
+        'assignments.id', 
+        'assignments.caregiver_id',
+        'assignments.visit_template_id',
+        'clients.first_name',
+        'clients.last_name'
+      );
+      
+    return rows.map(row => ({
+      id: row.id,
+      caregiverId: row.caregiver_id,
+      visitTemplateId: row.visit_template_id,
+      clientName: `${row.first_name} ${row.last_name}`
+    }));
+  }
 }

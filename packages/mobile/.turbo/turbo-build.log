@@ -4,20 +4,20 @@
 
 React Compiler enabled
 Starting Metro Bundler
-Android Bundled 1991ms node_modules/expo-router/entry.js (981 modules)
-iOS Bundled 2871ms node_modules/expo-router/entry.js (993 modules)
+iOS Bundled 1632ms node_modules/expo-router/entry.js (921 modules)
+Android Bundled 2487ms node_modules/expo-router/entry.js (989 modules)
 Static rendering is enabled. Learn more: https://docs.expo.dev/router/reference/static-rendering/
-Web Bundled 362ms node_modules/expo-router/entry.js (428 modules)
-λ Bundled 370ms node_modules/expo-router/node/render.js (752 modules)
-
-› android bundles (1):
-_expo/static/js/android/entry-7bc32cff146970c61c4d456e5046f959.hbc (2.62 MB)
+Web Bundled 410ms node_modules/expo-router/entry.js (376 modules)
+λ Bundled 418ms node_modules/expo-router/node/render.js (855 modules)
 
 › ios bundles (1):
-_expo/static/js/ios/entry-105793030d9995e2437b924d0ce0f072.hbc (2.63 MB)
+_expo/static/js/ios/entry-fb6d682b018bd3d95322543d4f0dd706.hbc (2.63 MB)
+
+› android bundles (1):
+_expo/static/js/android/entry-deeccc6424ef82d3156f12d641152c99.hbc (2.62 MB)
 
 › web bundles (1):
-_expo/static/js/web/entry-a3cbb6d3125566cd369fe17a72c6f114.js (1.09 MB)
+_expo/static/js/web/entry-c1b11a1edc03677ee93c8d0b4fc7f163.js (1.09 MB)
 
 › Static routes (9):
 / (index) (17.2 kB)

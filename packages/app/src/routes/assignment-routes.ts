@@ -4,6 +4,21 @@ import { ScheduleRepository } from '@rayhealth/core';
 
 const router = Router();
 
+router.get('/caregiver', requireCapability('schedule.read'), async (req, res) => {
+  try {
+    if (!req.auth.caregiverId) {
+      return res.status(403).json({ message: 'User is not authorized as a caregiver' });
+    }
+    const db = req.app.get('db');
+    const repo = new ScheduleRepository(db);
+    const assignments = await repo.getAssignmentsByCaregiver(req.auth.caregiverId);
+    res.json(assignments);
+  } catch (error) {
+    console.error('Failed to get caregiver assignments:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 router.post('/', requireCapability('schedule.write'), async (req, res) => {
   try {
     const db = req.app.get('db');

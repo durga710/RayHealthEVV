@@ -1,21 +1,39 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../lib/AuthContext';
 import { useRouter } from 'expo-router';
+import apiClient from '../../lib/api-client';
 
-const mockAssignments = [
-  { id: '1', client: 'John D.', time: '9:00 AM - 11:00 AM' },
-  { id: '2', client: 'Jane S.', time: '1:00 PM - 3:00 PM' },
-];
+interface Assignment {
+  id: string;
+  clientName: string;
+  time?: string; // Placeholder for now
+}
 
 export default function DashboardScreen() {
   const { logout } = useAuth();
   const router = useRouter();
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const renderItem = ({ item }: { item: typeof mockAssignments[0] }) => (
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      try {
+        const { data } = await apiClient.get('/api/assignments/caregiver');
+        setAssignments(data || []);
+      } catch (error) {
+        console.error('Failed to fetch assignments', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAssignments();
+  }, []);
+
+  const renderItem = ({ item }: { item: Assignment }) => (
     <View style={styles.item}>
-      <Text style={styles.itemText}>{item.client}</Text>
-      <Text>{item.time}</Text>
+      <Text style={styles.itemText}>{item.clientName}</Text>
+      <Text>{item.time || 'Time not specified'}</Text>
     </View>
   );
   
@@ -25,11 +43,16 @@ export default function DashboardScreen() {
         <Text style={styles.title}>Today's Visits</Text>
         <Text style={{color: '#1a5fa8'}} onPress={() => { logout(); router.replace('/login'); }}>Logout</Text>
       </View>
-      <FlatList
-        data={mockAssignments}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color="#1a5fa8" />
+      ) : (
+        <FlatList
+          data={assignments}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          ListEmptyComponent={<Text style={{textAlign: 'center', marginTop: 20}}>No visits scheduled for today.</Text>}
+        />
+      )}
     </SafeAreaView>
   );
 }
