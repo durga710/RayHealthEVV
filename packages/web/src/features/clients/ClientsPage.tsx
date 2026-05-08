@@ -9,38 +9,51 @@ interface Client {
   medicaidNumber?: string;
 }
 
+type Banner = { kind: 'success' | 'error'; text: string } | null;
+
 export function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [medicaidNumber, setMedicaidNumber] = useState('');
-  const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [banner, setBanner] = useState<Banner>(null);
 
   useEffect(() => {
+    setLoading(true);
     getJson<Client[]>('/api/clients')
-      .then(data => setClients(data || []))
-      .catch(console.error);
+      .then((data) => {
+        setClients(data || []);
+        setLoadError(null);
+      })
+      .catch((err: Error) => setLoadError(err.message || 'Failed to load clients'))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage('');
+    setBanner(null);
+    setSubmitting(true);
     try {
-      const newClient = await postJson<Client>('/api/clients', { 
-        firstName, 
-        lastName, 
-        dateOfBirth, 
-        medicaidNumber 
+      const newClient = await postJson<Client>('/api/clients', {
+        firstName,
+        lastName,
+        dateOfBirth,
+        medicaidNumber: medicaidNumber || undefined
       });
-      setClients(prev => [...prev, newClient]);
+      setClients((prev) => [...prev, newClient]);
       setFirstName('');
       setLastName('');
       setDateOfBirth('');
       setMedicaidNumber('');
-      setMessage('Client added successfully');
+      setBanner({ kind: 'success', text: `Added ${newClient.firstName} ${newClient.lastName}.` });
     } catch (err) {
-      setMessage('Failed to add client');
+      setBanner({ kind: 'error', text: (err as Error).message || 'Failed to add client.' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -74,16 +87,40 @@ export function ClientsPage() {
               <input id="medicaid" value={medicaidNumber} onChange={e => setMedicaidNumber(e.target.value)} />
             </div>
             
-            <button type="submit">Add Client</button>
+            <button type="submit" disabled={submitting} style={submitting ? { opacity: 0.6, cursor: 'wait' } : undefined}>
+              {submitting ? 'Adding…' : 'Add Client'}
+            </button>
           </form>
-          {message && <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#ecfdf5', color: '#065f46', borderRadius: '8px' }}>{message}</div>}
+          {banner && (
+            <div
+              role={banner.kind === 'error' ? 'alert' : 'status'}
+              style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                backgroundColor: banner.kind === 'success' ? '#ecfdf5' : '#fef2f2',
+                color: banner.kind === 'success' ? '#065f46' : '#991b1b',
+                borderRadius: '8px',
+                fontWeight: 600
+              }}
+            >
+              {banner.text}
+            </div>
+          )}
         </div>
 
         <div>
           <h3>Client Roster</h3>
-          {clients.length === 0 ? (
+          {loading ? (
             <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b', marginTop: '1rem' }}>
-              No clients found. Add one to get started.
+              Loading…
+            </div>
+          ) : loadError ? (
+            <div role="alert" style={{ padding: '1rem', backgroundColor: '#fef2f2', color: '#991b1b', borderRadius: '8px', marginTop: '1rem', fontWeight: 600 }}>
+              {loadError}
+            </div>
+          ) : clients.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b', marginTop: '1rem' }}>
+              No clients yet. Add one to get started.
             </div>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
