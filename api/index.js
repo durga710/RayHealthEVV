@@ -33,5 +33,12 @@ export default function handler(req, res) {
     );
     return;
   }
+  // Strip the /api prefix Vercel preserves so Express routes
+  // (mounted at /auth, /clients, /evv, etc.) match.
+  if (req.url && req.url.startsWith('/api/')) {
+    req.url = req.url.slice(4) || '/';
+  } else if (req.url === '/api') {
+    req.url = '/';
+  }
   return app(req, res);
 }
