@@ -5,11 +5,11 @@
 
  RUN  v1.6.1 /Users/durgaghimeray/Desktop/rayhealthevv-fresh/rayhealth-fresh/packages/web
 
- ✓ src/App.test.tsx  (1 test) 32ms
- ✓ src/features/scheduling/AssignmentsPage.test.tsx  (1 test) 257ms
+ ✓ src/App.test.tsx  (1 test) 24ms
+ ✓ src/features/scheduling/AssignmentsPage.test.tsx  (1 test) 78ms
 
  Test Files  2 passed (2)
       Tests  2 passed (2)
-   Start at  18:09:26
-   Duration  970ms (transform 102ms, setup 1ms, collect 351ms, tests 289ms, environment 764ms, prepare 106ms)
+   Start at  18:14:56
+   Duration  535ms (transform 64ms, setup 0ms, collect 165ms, tests 102ms, environment 514ms, prepare 86ms)
 
