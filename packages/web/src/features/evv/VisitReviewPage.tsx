@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getJson, postJson } from '../../lib/api-client';
+import { getJson, postJson } from '../../lib/api-client.js';
 
 interface EvvVisit {
   id: string;

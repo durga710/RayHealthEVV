@@ -47,8 +47,9 @@ describe('auth session routes', () => {
       agencyId: '00000000-0000-4000-8000-000000000012'
     });
     expect(response.body.csrfToken).toEqual(expect.any(String));
-    expect(response.headers['set-cookie'].join(';')).toContain('rayhealth_session=');
-    expect(response.headers['set-cookie'].join(';')).toContain('HttpOnly');
+    const setCookie = response.headers['set-cookie'] as unknown as string[];
+    expect(setCookie.join(';')).toContain('rayhealth_session=');
+    expect(setCookie.join(';')).toContain('HttpOnly');
   });
 
   it('continues to accept bearer JWTs for mobile and tests', async () => {

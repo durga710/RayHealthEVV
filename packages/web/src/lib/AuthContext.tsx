@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getCsrfToken, setCsrfToken } from './session-state.js';
 
-const API_BASE = (import.meta as { env: Record<string, string> }).env.VITE_API_URL ?? '/api';
+const API_BASE = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? '/api';
 
 interface AuthUser {
   userId: string;
