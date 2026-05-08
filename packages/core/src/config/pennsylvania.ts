@@ -1,4 +1,7 @@
 export const pennsylvaniaOperatingTracks = ['personal-assistance', 'home-health'] as const;
+export const paCredentialTypes = ['tb-screening', 'background-check', 'license', 'training'] as const;
+export const paCredentialStatuses = ['active', 'expired', 'pending'] as const;
+export const paAssignmentStatuses = ['scheduled', 'completed', 'cancelled'] as const;
 
 export type AppRole = 'admin' | 'coordinator' | 'caregiver' | 'family';
 

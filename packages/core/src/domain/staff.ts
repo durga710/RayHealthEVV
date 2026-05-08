@@ -1,9 +1,10 @@
 import { z } from 'zod';
+import { paCredentialTypes, paCredentialStatuses } from '../config/pennsylvania.js';
 
 export const caregiverCredentialSchema = z.object({
   caregiverId: z.string().uuid().or(z.string().min(1)),
-  credentialType: z.enum(['tb-screening', 'background-check', 'license', 'training']),
-  status: z.enum(['active', 'expired', 'pending']),
+  credentialType: z.enum(paCredentialTypes),
+  status: z.enum(paCredentialStatuses),
   expiresAt: z.string().date()
 });
 
