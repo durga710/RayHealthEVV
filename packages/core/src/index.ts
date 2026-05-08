@@ -19,6 +19,7 @@ export * from './repositories/session-repository.js';
 export * from './repositories/schedule-repository.js';
 export * from './repositories/evv-repository.js';
 export * from './repositories/evv-exception-repository.js';
+export * from './repositories/audit-event-repository.js';
 export * from './repositories/audit-repository.js';
 export * from './repositories/visit-maintenance-repository.js';
 export * from './services/credential-policy-service.js';

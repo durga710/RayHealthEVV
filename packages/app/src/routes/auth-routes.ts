@@ -1,18 +1,29 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { SessionRepository, UserRepository } from '@rayhealth/core';
+import { AuditEventRepository, SessionRepository, UserRepository, type NewAuditEvent } from '@rayhealth/core';
 import { authContext } from '../middleware/auth-context.js';
 import { requireCsrf } from '../middleware/csrf.js';
 import { clearSessionCookieOptions, SESSION_COOKIE_NAME, sessionCookieOptions } from '../security/cookies.js';
 import { createOpaqueToken, hashOpaqueToken } from '../security/token-hashing.js';
 
 const router = Router();
+type AuditEventDb = ConstructorParameters<typeof AuditEventRepository>[0];
 
 function jwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error('JWT_SECRET env var is not set');
   return secret;
+}
+
+async function recordAuditEvent(db: AuditEventDb, event: NewAuditEvent): Promise<void> {
+  try {
+    await new AuditEventRepository(db).create(event);
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('Failed to persist auth audit event', error);
+    }
+  }
 }
 
 router.post('/login', async (req, res) => {
@@ -41,7 +52,7 @@ router.post('/login', async (req, res) => {
     const csrfToken = createOpaqueToken();
     const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
 
-    await new SessionRepository(db).create({
+    const session = await new SessionRepository(db).create({
       agencyId: user.agencyId,
       userId: user.id,
       role: user.role,
@@ -51,6 +62,18 @@ router.post('/login', async (req, res) => {
       userAgent: req.header('user-agent'),
       ipAddress: req.ip,
       expiresAt
+    });
+
+    await recordAuditEvent(db, {
+      agencyId: user.agencyId,
+      actorId: user.id,
+      actorType: 'user',
+      eventType: 'auth.login.success',
+      entityType: 'session',
+      entityId: session.id,
+      outcome: 'success',
+      payload: { authMethod: 'session' },
+      occurredAt: new Date().toISOString()
     });
 
     res.cookie(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
@@ -80,6 +103,18 @@ router.post('/mobile/login', async (req, res) => {
       jwtSecret(),
       { expiresIn: '8h' }
     );
+
+    await recordAuditEvent(db, {
+      agencyId: user.agencyId,
+      actorId: user.id,
+      actorType: 'user',
+      eventType: 'auth.login.success',
+      entityType: 'user',
+      entityId: user.id,
+      outcome: 'success',
+      payload: { authMethod: 'bearer' },
+      occurredAt: new Date().toISOString()
+    });
 
     res.json({ token, role: user.role, agencyId: user.agencyId });
   } catch {
@@ -137,6 +172,17 @@ router.post('/logout', authContext, requireCsrf, async (req, res) => {
   try {
     if (req.auth.authMethod === 'session' && req.auth.sessionId) {
       await new SessionRepository(req.app.get('db')).revokeById(req.auth.sessionId, new Date().toISOString());
+      await recordAuditEvent(req.app.get('db'), {
+        agencyId: req.auth.agencyId,
+        actorId: req.auth.userId,
+        actorType: 'user',
+        eventType: 'session.revoked',
+        entityType: 'session',
+        entityId: req.auth.sessionId,
+        outcome: 'success',
+        payload: { authMethod: req.auth.authMethod },
+        occurredAt: new Date().toISOString()
+      });
     }
     res.clearCookie(SESSION_COOKIE_NAME, clearSessionCookieOptions());
     res.status(204).send();

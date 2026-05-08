@@ -30,9 +30,11 @@ describe('auth session routes', () => {
       csrfTokenHash: 'b'.repeat(64),
       expiresAt: '2026-05-08T20:00:00.000Z'
     });
+    const createAuditEvent = vi.fn().mockResolvedValue({});
 
     vi.spyOn(core, 'UserRepository').mockImplementation(() => ({ findByEmail }) as unknown as core.UserRepository);
     vi.spyOn(core, 'SessionRepository').mockImplementation(() => ({ create: createSession }) as unknown as core.SessionRepository);
+    vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create: createAuditEvent }) as unknown as core.AuditEventRepository);
 
     const response = await request(createApp())
       .post('/auth/login')

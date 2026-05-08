@@ -173,12 +173,45 @@ export async function up(knex: Knex): Promise<void> {
       table.uuid('id').primary();
       table.uuid('agency_id').references('id').inTable('agencies').notNullable();
       table.uuid('actor_id').notNullable();
+      table.string('actor_type').notNullable().defaultTo('user');
       table.string('event_type').notNullable();
       table.string('entity_type').notNullable();
       table.uuid('entity_id').notNullable();
+      table.string('outcome').notNullable().defaultTo('success');
+      table.string('correlation_id');
       table.jsonb('payload').notNullable().defaultTo('{}');
+      table.timestamp('occurred_at').notNullable().defaultTo(knex.fn.now());
       table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
+      table.index(['agency_id', 'event_type']);
+      table.index(['entity_type', 'entity_id']);
+      table.index(['occurred_at']);
     });
+  }
+
+  if (await knex.schema.hasTable('audit_events')) {
+    if (!(await knex.schema.hasColumn('audit_events', 'actor_type'))) {
+      await knex.schema.alterTable('audit_events', (table) => {
+        table.string('actor_type').notNullable().defaultTo('user');
+      });
+    }
+    if (!(await knex.schema.hasColumn('audit_events', 'outcome'))) {
+      await knex.schema.alterTable('audit_events', (table) => {
+        table.string('outcome').notNullable().defaultTo('success');
+      });
+    }
+    if (!(await knex.schema.hasColumn('audit_events', 'correlation_id'))) {
+      await knex.schema.alterTable('audit_events', (table) => {
+        table.string('correlation_id');
+      });
+    }
+    if (!(await knex.schema.hasColumn('audit_events', 'occurred_at'))) {
+      await knex.schema.alterTable('audit_events', (table) => {
+        table.timestamp('occurred_at').notNullable().defaultTo(knex.fn.now());
+      });
+    }
+    await knex.raw('create index if not exists audit_events_agency_event_idx on audit_events (agency_id, event_type)');
+    await knex.raw('create index if not exists audit_events_entity_idx on audit_events (entity_type, entity_id)');
+    await knex.raw('create index if not exists audit_events_occurred_at_idx on audit_events (occurred_at)');
   }
 }
 
