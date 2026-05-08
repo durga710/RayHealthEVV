@@ -69,6 +69,18 @@ export async function up(knex: Knex): Promise<void> {
       table.timestamps(true, true);
     });
   }
+  if (!(await knex.schema.hasTable('users'))) {
+    await knex.schema.createTable('users', (table) => {
+      table.uuid('id').primary();
+      table.uuid('agency_id').references('id').inTable('agencies').notNullable();
+      table.string('email').notNullable().unique();
+      table.string('password_hash').notNullable();
+      table.string('role').notNullable();
+      table.uuid('caregiver_id');
+      table.timestamps(true, true);
+    });
+  }
+
   if (!(await knex.schema.hasTable('visit_maintenance'))) {
     await knex.schema.createTable('visit_maintenance', (table) => {
       table.uuid('id').primary();
@@ -86,6 +98,7 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTableIfExists('users');
   await knex.schema.dropTableIfExists('visit_maintenance');
   await knex.schema.dropTableIfExists('evv_visits');
   await knex.schema.dropTableIfExists('assignments');

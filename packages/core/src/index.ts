@@ -1,6 +1,7 @@
 export * from './config/pennsylvania.js';
 export * from './config/pa-tasks.js';
 export * from './domain/agency.js';
+export * from './domain/user.js';
 export * from './domain/staff.js';
 export * from './domain/client.js';
 export * from './domain/scheduling.js';
@@ -10,6 +11,7 @@ export * from './db/knex.js';
 export * from './repositories/agency-repository.js';
 export * from './repositories/client-repository.js';
 export * from './repositories/staff-repository.js';
+export * from './repositories/user-repository.js';
 export * from './repositories/schedule-repository.js';
 export * from './repositories/evv-repository.js';
 export * from './repositories/visit-maintenance-repository.js';

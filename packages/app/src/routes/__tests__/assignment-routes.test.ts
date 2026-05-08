@@ -1,11 +1,13 @@
 import request from 'supertest';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import * as core from '@rayhealth/core';
+import { makeToken, setTestJwtSecret } from './test-helpers.js';
+
+beforeAll(() => setTestJwtSecret());
 
 describe('assignment routes', () => {
   it('creates an assignment when the authorization and caregiver are valid', async () => {
-    // Mock ScheduleRepository
     const mockCreateAssignment = vi.fn().mockResolvedValue({
       id: '123',
       caregiverId: 'caregiver-1',
@@ -17,8 +19,7 @@ describe('assignment routes', () => {
 
     const response = await request(createApp())
       .post('/assignments')
-      .set('x-agency-id', 'agency-1')
-      .set('x-user-role', 'coordinator')
+      .set('Authorization', `Bearer ${makeToken('coordinator')}`)
       .send({
         clientId: 'client-1',
         caregiverId: 'caregiver-1',
