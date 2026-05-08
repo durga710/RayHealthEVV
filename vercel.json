@@ -1,6 +1,6 @@
 {
-  "installCommand": "npm install",
-  "buildCommand": "npm run build",
+  "installCommand": "npm install --include=dev",
+  "buildCommand": "npm run build -- --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
   "outputDirectory": "packages/web/dist",
   "functions": {
     "api/index.mts": {
