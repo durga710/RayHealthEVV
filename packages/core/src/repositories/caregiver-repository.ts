@@ -1,5 +1,6 @@
 import type { Knex } from 'knex';
 import type { Caregiver, CaregiverCredential, StaffInvite } from '../domain/caregiver.js';
+import { decryptCell, encryptCell } from '../security/cell-cipher.js';
 
 export class CaregiverRepository {
   constructor(private readonly db: Knex) {}
@@ -12,7 +13,9 @@ export class CaregiverRepository {
       last_name: data.lastName,
       email: data.email,
       phone: data.phone ?? null,
-      npi: data.npi ?? null,
+      // Encrypt NPI at write. Column was varchar(10) — widened to text in
+      // the R5 schema migration so ciphertext (~76+ chars) fits.
+      npi: encryptCell(data.npi),
       hire_date: data.hireDate ?? null,
       status: data.status ?? 'active',
     }).returning('*');
@@ -81,7 +84,7 @@ export class CaregiverRepository {
       lastName: row.last_name as string,
       email: row.email as string,
       phone: row.phone as string | undefined,
-      npi: row.npi as string | undefined,
+      npi: (decryptCell(row.npi as string | null | undefined) ?? undefined) as string | undefined,
       hireDate: row.hire_date instanceof Date
         ? row.hire_date.toISOString().split('T')[0]
         : row.hire_date as string | undefined,

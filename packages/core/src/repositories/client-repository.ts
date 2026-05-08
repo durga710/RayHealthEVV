@@ -1,5 +1,6 @@
 import type { Knex } from 'knex';
 import type { Client, Authorization } from '../domain/client.js';
+import { decryptCell, encryptCell } from '../security/cell-cipher.js';
 
 export class ClientRepository {
   constructor(private readonly db: Knex) {}
@@ -11,7 +12,9 @@ export class ClientRepository {
       first_name: client.firstName,
       last_name: client.lastName,
       date_of_birth: client.dateOfBirth,
-      medicaid_number: client.medicaidNumber
+      // Encrypt PHI Medicaid ID at write. Output is `v1:<base64>` ciphertext;
+      // mapRowToClient decrypts on the way out.
+      medicaid_number: encryptCell(client.medicaidNumber)
     }).returning('*');
 
     return this.mapRowToClient(inserted);
@@ -68,7 +71,9 @@ export class ClientRepository {
       firstName: row.first_name,
       lastName: row.last_name,
       dateOfBirth: row.date_of_birth instanceof Date ? row.date_of_birth.toISOString().split('T')[0] : row.date_of_birth,
-      medicaidNumber: row.medicaid_number
+      // Decrypt at read. Legacy plaintext values round-trip; v1: ciphertext
+      // returns the original Medicaid ID. Throws if ENCRYPTION_KEY is missing.
+      medicaidNumber: decryptCell(row.medicaid_number) ?? undefined
     };
   }
 

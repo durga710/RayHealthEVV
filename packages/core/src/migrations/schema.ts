@@ -459,6 +459,23 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
+  // ── R5 — widen PHI columns to fit AES-GCM ciphertext ─────────────────────
+  // caregivers.npi was varchar(10) (a 10-digit NPI). After R5 column-encryption
+  // it stores a `v1:<base64>` envelope (~76+ chars). Widen to text so encrypted
+  // writes succeed. Idempotent: only ALTERs if the column is still varchar(10).
+  await knex.raw(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema='public' AND table_name='caregivers'
+                   AND column_name='npi'
+                   AND data_type='character varying'
+                   AND character_maximum_length IS NOT NULL) THEN
+        ALTER TABLE caregivers ALTER COLUMN npi TYPE text;
+      END IF;
+    END$$;
+  `);
+
   // ── R3b — family ↔ client relationship table ─────────────────────────────
   // The family role currently has agency-wide client.read because there is
   // no model of which clients a given family member is related to. This
