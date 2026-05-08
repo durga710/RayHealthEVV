@@ -9,6 +9,10 @@ import { AssignmentsPage } from './features/scheduling/AssignmentsPage.js';
 import { LoginPage } from './features/auth/LoginPage.js';
 import { LandingPage } from './features/landing/LandingPage.js';
 import { VisitReviewPage } from './features/evv/VisitReviewPage.js';
+import { PricingPage } from './features/marketing/PricingPage.js';
+import { ContactPage } from './features/marketing/ContactPage.js';
+import { DemoPage } from './features/marketing/DemoPage.js';
+import { LaunchPage } from './features/marketing/LaunchPage.js';
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth();
@@ -58,6 +62,10 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/demo" element={<DemoPage />} />
+      <Route path="/launch" element={<LaunchPage />} />
       <Route path="/login" element={<LoginPage />} />
       
       <Route path="/admin" element={<ProtectedRoute />}>

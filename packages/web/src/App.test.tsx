@@ -22,6 +22,7 @@ describe('admin app shell', () => {
       </AuthProvider>
     );
 
-    expect(await screen.findByText(/Pennsylvania Home Care Platform/i)).toBeInTheDocument();
+    // Hero h1 — unique to LandingPage (the launch banner uses different copy).
+    expect(await screen.findByText(/Care, finally on the/i)).toBeInTheDocument();
   });
 });

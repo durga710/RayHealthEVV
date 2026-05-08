@@ -476,6 +476,25 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
+  // ── Marketing — contact_submissions ─────────────────────────────────────
+  // Public unauthenticated POST /api/marketing/contact lands here. NOT
+  // agency-scoped (no PHI; just lead capture). Indexed on created_at for
+  // chronological review and on email for deduplication / blocklist work.
+  if (!(await knex.schema.hasTable('contact_submissions'))) {
+    await knex.schema.createTable('contact_submissions', (table) => {
+      table.uuid('id').primary();
+      table.string('name', 200).notNullable();
+      table.string('email', 200).notNullable();
+      table.string('agency', 200).notNullable();
+      table.text('message').notNullable();
+      table.string('ip_address', 64);
+      table.string('user_agent', 500);
+      table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
+      table.index(['created_at']);
+      table.index(['email']);
+    });
+  }
+
   // ── R6 — mobile_sessions for revocable JWT auth ──────────────────────────
   // Mobile auth has been stateless JWT (8 h validity). On a lost-device
   // event the only mitigation was rotating JWT_SECRET, which logs out

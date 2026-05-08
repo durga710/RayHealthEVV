@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { AuditEventRepository } from '@rayhealth/core';
 import { safeError } from '../security/safe-log.js';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-const PATH_DENY = [/^\/?health$/i, /^\/?favicon\.ico$/i];
+const PATH_DENY = [
+    /^\/?health$/i,
+    /^\/?favicon\.ico$/i,
+    /^\/?marketing(\/|$)/i // public lead capture; not agency-scoped, no req.auth
+];
 // PHI-bearing GET endpoints. Anything not in SAFE_METHODS is always logged.
 const PHI_GET_PATHS = [
     /\/clients(?:\/|$)/,

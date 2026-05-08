@@ -4,33 +4,45 @@ import { HeroGraphic } from './HeroGraphic.js';
 
 const stats = [
   { value: '30s', label: 'Haptic clock-in confirm' },
-  { value: '3-in-1', label: 'Audit · Billing · Payroll' },
   { value: '<5m', label: 'Geofence accuracy' },
+  { value: '6/6', label: 'Federal Cures-Act elements' },
   { value: '100%', label: 'PA DHS aligned' },
 ];
 
+// "What's at launch" tiles. `comingSoon` items render with a roadmap tag
+// to keep the launch narrative whole without overclaiming. Aligned with the
+// launch playbook §1d but tagged honestly per brand-voice guardrails.
 const keyFeatures = [
   {
-    eyebrow: 'Caregiver app',
-    title: '30-second haptic clock-in',
-    body:
-      'The caregiver phone vibrates the moment clock-in is verified at the door — no staring at the screen, no “did it submit?”, no double-taps. Same vibration confirms clock-out. Works one-handed, gloves on.',
-    proof: 'Confirmed in <30 seconds, every time',
+    title: 'Scheduling, simplified',
+    body: 'Drag visits onto the week. Conflicts and credentials checked as you move.',
+    comingSoon: false
   },
   {
-    eyebrow: 'One platform',
-    title: 'Audit, billing, and payroll — included',
-    body:
-      'Stop paying three vendors. RayHealth bundles the audit trail, claim-ready billing exports, and caregiver payroll runs into the same workflow that already verified the visit. Every dollar reconciles to a row in audit_events.',
-    proof: 'One contract instead of three',
+    title: 'EVV by default',
+    body: 'GPS-verified clock-in, clock-out, and exception review — built in. 30-second haptic confirm, accurate to a few meters.',
+    comingSoon: false
   },
   {
-    eyebrow: 'GPS verification',
-    title: 'Best-in-class geofencing',
-    body:
-      'High-accuracy GPS with multi-sample averaging, bias correction, and offline retry. Verifies the caregiver is actually at the client’s door — not a parking lot two blocks away — to within a few meters. Captures all six federal EVV data points on every clock-in.',
-    proof: '<5 m typical accuracy · 6/6 federal elements',
+    title: 'Care plans & tasks',
+    body: 'Goals, instructions, and tasks the caregiver will actually read. PA task catalog included.',
+    comingSoon: false
   },
+  {
+    title: 'Billing readiness',
+    body: 'Spot claim blockers before they hit the payer.',
+    comingSoon: true
+  },
+  {
+    title: 'Payroll readiness',
+    body: 'Approve, lock, and export pay periods for authorized payroll-provider handoff.',
+    comingSoon: true
+  },
+  {
+    title: 'RayHealthEVV™ Academy',
+    body: 'Lessons, quizzes, and certificate renewals — official, not afterthought.',
+    comingSoon: true
+  }
 ];
 
 const steps = [
@@ -143,17 +155,33 @@ const cardBase: React.CSSProperties = {
 export function LandingPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-bg)' }}>
+      {/* Launch banner — non-dismissible at launch week, simple to remove later. */}
+      <div
+        style={{
+          backgroundColor: 'var(--color-primary-dark)',
+          color: 'white',
+          padding: '0.75rem 1rem',
+          textAlign: 'center',
+          fontSize: '0.95rem',
+          fontWeight: 600
+        }}
+      >
+        🩵 <strong>RayHealthEVV™ is live</strong> — the operations-grade home care platform.{' '}
+        <Link to="/launch" style={{ color: 'white', textDecoration: 'underline' }}>
+          See what's new →
+        </Link>
+      </div>
+
       {/* Header */}
       <header style={{ padding: '1.5rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          RayHealth <span style={{ backgroundColor: 'var(--color-accent)', color: 'white', padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', letterSpacing: '2px', fontWeight: 800 }}>EVV</span>
+        <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+          RayHealthEVV<span style={{ fontSize: '0.7rem', verticalAlign: 'super', color: 'var(--color-accent)' }}>™</span>
         </div>
         <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
           <a href="#features" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Features</a>
-          <a href="#how" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>How it works</a>
-          <a href="#roles" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Who it's for</a>
-          <a href="#compliance" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Compliance</a>
-          <a href="#faq" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>FAQ</a>
+          <Link to="/pricing" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Pricing</Link>
+          <Link to="/demo" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Demo</Link>
+          <Link to="/contact" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Contact</Link>
           <Link to="/login" style={{ backgroundColor: 'var(--color-primary-light)', color: 'white', textDecoration: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', fontWeight: 700 }}>Log In</Link>
         </nav>
       </header>
@@ -162,23 +190,23 @@ export function LandingPage() {
       <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '5rem 2rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '820px', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' }}>
           <div style={{ color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', fontSize: '0.875rem' }}>
-            Pennsylvania Home Care Platform
+            Operations-grade home care platform
           </div>
           <h1 style={{ fontSize: '3.75rem', lineHeight: 1.05, color: 'var(--color-primary-dark)', margin: 0 }}>
-            Care You Can Trust.<br /> <span style={{ color: 'var(--color-primary-light)' }}>Verified & Delivered.</span>
+            Care, finally on the<br /> <span style={{ color: 'var(--color-primary-light)' }}>same page.</span>
           </h1>
           <p style={{ fontSize: '1.25rem', color: 'var(--color-text-muted)', maxWidth: '720px', lineHeight: 1.6, margin: 0 }}>
-            Electronic Visit Verification for Pennsylvania home care. <strong>30-second haptic clock-in</strong>, <strong>best-in-class geofencing</strong>, and <strong>audit, billing, and payroll bundled</strong> — so you stop paying three vendors for one workflow.
+            RayHealthEVV™ brings scheduling, EVV, billing readiness, payroll, training, and family visibility into one calm workspace — built for the people doing the work.
           </p>
 
           <HeroGraphic />
 
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Link to="/login" style={{ backgroundColor: 'var(--color-accent)', color: 'white', textDecoration: 'none', padding: '1rem 2rem', borderRadius: '8px', fontWeight: 700, fontSize: '1.1rem', boxShadow: '0 4px 14px rgba(249, 115, 22, 0.3)' }}>
-              Access Admin Portal
+            <Link to="/contact" style={{ backgroundColor: 'var(--color-accent)', color: 'white', textDecoration: 'none', padding: '1rem 2rem', borderRadius: '8px', fontWeight: 700, fontSize: '1.1rem', boxShadow: '0 4px 14px rgba(249, 115, 22, 0.3)' }}>
+              Book an agency demo
             </Link>
-            <a href="#how" style={{ backgroundColor: 'white', color: 'var(--color-primary-dark)', border: '2px solid #c9d8e8', textDecoration: 'none', padding: '1rem 2rem', borderRadius: '8px', fontWeight: 700, fontSize: '1.1rem' }}>
-              See how it works
+            <a href="#features" style={{ backgroundColor: 'white', color: 'var(--color-primary-dark)', border: '2px solid #c9d8e8', textDecoration: 'none', padding: '1rem 2rem', borderRadius: '8px', fontWeight: 700, fontSize: '1.1rem' }}>
+              See the product
             </a>
           </div>
         </div>
@@ -196,23 +224,42 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Key Features */}
+      {/* What's at launch */}
       <section id="features" style={{ padding: '6rem 2rem 4rem' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <p style={sectionEyebrow}>Why RayHealth</p>
-            <h2 style={sectionHeading}>Three things every other EVV vendor forgets.</h2>
+            <p style={sectionEyebrow}>What's at launch</p>
+            <h2 style={sectionHeading}>One operations-grade workspace.</h2>
             <p style={sectionLead}>
-              Caregivers don't want to stare at a phone. Agencies don't want three vendors. Auditors don't want fuzzy GPS. We fixed all three.
+              Calm, dense, useful. For coordinators, caregivers, and the families they serve. Roadmap items are tagged honestly.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
             {keyFeatures.map((f) => (
-              <div key={f.title} style={{ ...cardBase, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--color-accent)' }}>{f.eyebrow}</div>
-                <h3 style={{ color: 'var(--color-primary-dark)', margin: 0, fontSize: '1.4rem', lineHeight: 1.2 }}>{f.title}</h3>
-                <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.55, margin: 0, fontSize: '0.98rem' }}>{f.body}</p>
-                <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid #eef2f7', color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.875rem' }}>{f.proof}</div>
+              <div key={f.title} style={{ ...cardBase, display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative' }}>
+                {f.comingSoon && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '1.25rem',
+                      right: '1.25rem',
+                      backgroundColor: '#eef2f7',
+                      color: 'var(--color-primary-dark)',
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: '999px',
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      letterSpacing: '1px',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    Roadmap
+                  </span>
+                )}
+                <h3 style={{ color: 'var(--color-primary-dark)', margin: 0, fontSize: '1.25rem', lineHeight: 1.2, paddingRight: f.comingSoon ? '5rem' : 0 }}>
+                  {f.title}
+                </h3>
+                <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.55, margin: 0, fontSize: '0.95rem' }}>{f.body}</p>
               </div>
             ))}
           </div>
