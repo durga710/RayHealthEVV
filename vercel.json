@@ -2,6 +2,13 @@
   "installCommand": "npm install --omit=dev",
   "buildCommand": "echo 'pre-built artifacts committed; skipping build'",
   "outputDirectory": "packages/web/dist",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "@vercel/node@5.0.0",
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
