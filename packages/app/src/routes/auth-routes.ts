@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import {
   AuditEventRepository,
+  CaregiverRepository,
   MobileSessionRepository,
   SessionRepository,
   UserRepository,
@@ -180,7 +181,32 @@ router.post('/mobile/login', async (req, res) => {
       occurredAt: new Date().toISOString()
     });
 
-    res.json({ token, role: user.role, agencyId: user.agencyId });
+    // Pull display name from the caregivers row (when this user IS a
+    // caregiver). The mobile app needs first_name/last_name to greet the
+    // user without falling back to their email handle. We do this read
+    // AFTER the audit write so a missing/renamed caregiver row degrades
+    // gracefully — the login still succeeds with no display name.
+    let firstName: string | undefined;
+    let lastName: string | undefined;
+    if (user.caregiverId) {
+      try {
+        const caregiver = await new CaregiverRepository(db).findById(user.caregiverId);
+        if (caregiver) {
+          firstName = caregiver.firstName;
+          lastName = caregiver.lastName;
+        }
+      } catch {
+        // Non-fatal: keep login response shape stable even if lookup fails.
+      }
+    }
+
+    res.json({
+      token,
+      role: user.role,
+      agencyId: user.agencyId,
+      ...(firstName !== undefined ? { firstName } : {}),
+      ...(lastName !== undefined ? { lastName } : {})
+    });
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
   }
