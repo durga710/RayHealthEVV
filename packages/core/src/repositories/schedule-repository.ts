@@ -182,12 +182,31 @@ export class ScheduleRepository {
       .innerJoin('caregivers as cg', 'cg.id', 'a.caregiver_id')
       .innerJoin('visit_templates as vt', 'vt.id', 'a.visit_template_id')
       .innerJoin('clients as c', 'c.id', 'vt.client_id')
-      // LEFT JOIN evv_visits by assignment id only — Knex's typed
-      // JoinClause doesn't expose raw-predicate methods. We narrow to
-      // "today's visit row" via CASE expressions in the SELECT below
-      // so an assignment with only a non-today visit still surfaces
-      // (with currentVisitId = null) instead of being filtered out.
-      .leftJoin('evv_visits as v', 'v.assignment_id', 'a.id')
+      // LEFT JOIN evv_visits via a DISTINCT-ON subquery so an
+      // assignment with multiple visits today (e.g. a completed and a
+      // re-started one) collapses to ONE row in the result. Without
+      // the subquery the plain `leftJoin('evv_visits as v', ...)`
+      // multiplied rows by the visit count, so the mobile schedule
+      // tab showed the same client twice. The subquery also handles
+      // the "today only" narrowing inline, replacing the CASE-WHEN
+      // gymnastics in the SELECT.
+      .leftJoin(
+        this.db.raw(
+          `(
+            SELECT DISTINCT ON (assignment_id)
+              assignment_id,
+              id,
+              status,
+              clock_in_time,
+              clock_out_time
+            FROM evv_visits
+            WHERE clock_in_time::date = (current_date AT TIME ZONE 'UTC')
+            ORDER BY assignment_id, clock_in_time DESC
+          ) as v`
+        ),
+        'v.assignment_id',
+        'a.id'
+      )
       .where('a.caregiver_id', caregiverId)
       .andWhere('cg.agency_id', agencyId)
       .andWhereRaw(
@@ -209,21 +228,13 @@ export class ScheduleRepository {
         'c.geofence_radius_m as geofence_radius_m',
         'vt.id as template_id',
         'vt.name as template_name',
-        // CASE-WHEN narrows the LEFT-JOINed visit row to "today only" —
-        // see comment on the leftJoin above for why this is in the SELECT
-        // rather than the JOIN predicate.
-        this.db.raw(
-          "CASE WHEN v.clock_in_time::date = (current_date AT TIME ZONE 'UTC') THEN v.id END AS current_visit_id"
-        ),
-        this.db.raw(
-          "CASE WHEN v.clock_in_time::date = (current_date AT TIME ZONE 'UTC') THEN v.status END AS current_visit_status"
-        ),
-        this.db.raw(
-          "CASE WHEN v.clock_in_time::date = (current_date AT TIME ZONE 'UTC') THEN v.clock_in_time END AS current_clock_in_time"
-        ),
-        this.db.raw(
-          "CASE WHEN v.clock_in_time::date = (current_date AT TIME ZONE 'UTC') THEN v.clock_out_time END AS current_clock_out_time"
-        )
+        // The DISTINCT-ON subquery above has already narrowed v.* to
+        // today's latest visit per assignment, so we can read columns
+        // directly. NULL when no visit exists today.
+        'v.id as current_visit_id',
+        'v.status as current_visit_status',
+        'v.clock_in_time as current_clock_in_time',
+        'v.clock_out_time as current_clock_out_time'
       );
 
     return rows.map((row): TodayScheduleRow => ({
