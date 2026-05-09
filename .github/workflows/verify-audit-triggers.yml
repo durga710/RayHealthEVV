@@ -1,0 +1,57 @@
+name: verify-audit-triggers
+
+# Nightly HIPAA control. SECURITY_POLICY.md §5.6 requires verification of
+# the append-only audit triggers and EVV immutability triggers as part of
+# the annual evaluation; running it nightly catches regressions same-day
+# instead of waiting for the yearly review window.
+#
+# A non-zero exit here is a SEV-1 per INCIDENT_RESPONSE.md §5.3:
+# either audit_events_block_mutation_trg or evv_visits_enforce_immutability_trg
+# has been removed or weakened, which is exactly the failure mode the
+# trigger is supposed to prevent. GitHub will email the repo owner on
+# any failed run.
+#
+# Setup required (one-time, by repo owner):
+#   GitHub → Settings → Secrets and variables → Actions →
+#   New repository secret: DATABASE_URL = <Neon production conn string>
+#
+# Use a read-write conn string — the script issues mutations inside a
+# rolled-back transaction. Read-only roles will refuse the BEGIN/UPDATE
+# and the script will report a false-positive failure.
+
+on:
+  schedule:
+    # 03:17 UTC daily — randomized off the top of the hour so we don't
+    # collide with peak Vercel/Neon load. ~10:17 PM Eastern.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    # Allows on-demand runs from the Actions tab — useful during incident
+    # response when the policy directs you to re-verify the trigger after
+    # any suspected tampering.
+
+concurrency:
+  group: verify-audit-triggers
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: catalog presence + live tamper rejection
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install pg (only — script has no other prod deps)
+        run: npm ci --include=prod --ignore-scripts
+
+      - name: Run verifier
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: node scripts/verify-audit-triggers.mjs
