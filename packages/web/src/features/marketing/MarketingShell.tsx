@@ -108,10 +108,11 @@ export function MarketingShell({
         }}
       >
         <div>© {new Date().getFullYear()} RayHealthEVV™. Pennsylvania-built EVV.</div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
           <Link to="/launch" style={{ color: 'var(--color-text-muted)' }}>What's new</Link>
           <Link to="/status" style={{ color: 'var(--color-text-muted)' }}>Status</Link>
           <Link to="/contact" style={{ color: 'var(--color-text-muted)' }}>Contact</Link>
+          <Link to="/privacy" style={{ color: 'var(--color-text-muted)' }}>Privacy</Link>
         </div>
       </footer>
 
