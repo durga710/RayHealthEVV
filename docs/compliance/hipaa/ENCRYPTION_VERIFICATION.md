@@ -41,7 +41,7 @@ should be described as complete.
 | Cloudflare edge TLS | TLS 1.2+ termination at Cloudflare, re-encrypted to Vercel origin | Cloudflare Universal SSL on `rayhealthevv.com`; `cf-ray` header present in responses | **Vendor-asserted** |
 | Firebase data at rest | Google-managed encryption | Google platform behavior | **Vendor-asserted** |
 | Resend stored message content | Vendor-managed encryption | Resend platform behavior | **Vendor-asserted** |
-| Mobile auth token storage (Capacitor app at `~/Documents/rayhealth-evv-mobile`) | `@capacitor/preferences` — backed by **iOS UserDefaults** / **Android SharedPreferences** | `src/services/mobile-storage.ts:2` imports from `@capacitor/preferences`. **NOT encrypted at rest by default.** | **Gap / needs implementation** — see §3.3 |
+| Mobile auth token storage (Capacitor app at `~/Documents/rayhealth-evv-mobile`) | `@aparajita/capacitor-secure-storage` — backed by **iOS Keychain** (`kSecClassGenericPassword`) / **Android Keystore-backed EncryptedSharedPreferences** | `src/services/mobile-storage.ts` imports `SecureStorage` from `@aparajita/capacitor-secure-storage`; configured `sync=false` (no iCloud Keychain mirror across the user's other devices) and `accessOnLocked=false` (post-first-unlock access only — token isn't readable while the device is locked at rest). | **Verified in code** (closed the prior `@capacitor/preferences` gap on 2026-05-09 — see §3.3) |
 | Mobile offline visit cache | Caching strategy for offline EVV | The Capacitor app does **not** currently cache visit data offline; every read fetches from `/evv/visits` on-demand (`src/services/dataService.ts`) | **N/A** — control not required because feature does not exist yet |
 | `packages/mobile` Expo project (internal-only, not the customer app) | Expo SecureStore for tokens via `packages/mobile/src/lib/AuthContext.tsx` | iOS Keychain / Android Keystore-backed | **Verified in code** (but this project is not the customer-facing build — see §3.4) |
 
@@ -81,29 +81,28 @@ This means a database snapshot exfiltration would expose ciphertext
 only for these columns. The other PHI columns rely on Neon-managed
 storage encryption (vendor-asserted, not application-encrypted).
 
-### 3.3 Mobile Token Storage Is the Weakest Verified Link
+### 3.3 Mobile Token Storage — Now Keychain-Backed (Closed 2026-05-09)
 
-The Capacitor app at `~/Documents/rayhealth-evv-mobile` stores the JWT
-via `@capacitor/preferences`, which writes to:
+The Capacitor app at `~/Documents/rayhealth-evv-mobile` previously
+stored the JWT via `@capacitor/preferences`, which wrote to plaintext
+iOS `UserDefaults` and Android `SharedPreferences`. That gap was
+closed on 2026-05-09 by swapping to
+`@aparajita/capacitor-secure-storage`:
 
-- **iOS:** `UserDefaults` — plaintext on disk, included in iCloud
-  Backup unless the app opts out
-- **Android:** `SharedPreferences` — plaintext XML in the app sandbox,
-  readable by the app and any process running as the app's UID
+- **iOS:** Keychain (`kSecClassGenericPassword`) with
+  `accessOnLocked=false` (post-first-unlock access only) and
+  `sync=false` (no iCloud Keychain mirror across the user's other
+  devices)
+- **Android:** Keystore-backed EncryptedSharedPreferences (the
+  plugin handles the platform abstraction over the AndroidX
+  Security library)
 
-This is **acceptable for short-lived bearer JWTs (8-hour expiry)** but
-should be upgraded before any sensitive long-lived secret is stored on
-the device. Two clean upgrade paths:
-
-1. Switch to `@capacitor-community/secure-storage-plugin` (Keychain /
-   Keystore-backed)
-2. Add `capacitor-secure-storage-plugin` and gate token writes through
-   it
-
-The `packages/mobile` Expo project does use SecureStore (Keychain /
-Keystore), but **that project is not the customer-facing build today**
-— `~/Documents/rayhealth-evv-mobile` is. Treat the SecureStore-backed
-storage as a reference implementation we should port over.
+Public API in `src/services/mobile-storage.ts` is unchanged
+(`readStoredString`, `writeStoredString`, `removeStoredString`,
+plus the JSON wrappers), so no other mobile module needed updating.
+The internal-reference `packages/mobile` Expo project (which used
+Expo SecureStore) is no longer special — both projects now have
+keychain-backed credential storage.
 
 ### 3.4 Two Mobile Projects Exist — Don't Confuse Them
 
@@ -191,3 +190,4 @@ Until the gaps above are closed, use this language honestly:
 |---|---|---|
 | 2026-05-07 | Founder (predecessor repo) | Initial document authored |
 | 2026-05-08 | Founder + assistant | Ported into `rayhealth-evv-clean`; promoted field-level encryption from "Gap" to "Verified" (cell-cipher.ts AES-256-GCM is shipped); reclassified mobile token storage as Gap (Capacitor Preferences ≠ Keychain); added clarification distinguishing the customer Capacitor app from the internal Expo project; pinned current Bedrock model and BAA status |
+| 2026-05-09 | Founder + assistant | **Mobile token storage gap closed.** Swapped `@capacitor/preferences` → `@aparajita/capacitor-secure-storage` (iOS Keychain / Android Keystore-backed EncryptedSharedPreferences). Promoted §2 row from Gap → Verified. Also rolled into this entry: backend EVV geofence enforcement landed on /evv/clock-in + clock-out (Haversine distance check vs `clients.latitude/longitude` within `geofence_radius_m`, default 150m, fail-open for clients without registered coords; out-of-bounds attempts written as `permission.denied` audit rows). New `GET /mobile/caregiver/today` returns scheduled assignments + client GPS so the mobile dashboard can render real patient names + countdowns. Mobile signature 30-second pre-warning live (`@capacitor/haptics` Heavy impact + `@capacitor/local-notifications` scheduled at `scheduled_*_time - 30s`). Mobile AI assistant rerouted from non-BAA Gemini fallback → BAA-covered Bedrock via `/api/admin-assistant/chat`. |
