@@ -51,26 +51,30 @@ router.post('/', requireCapability('staff.write'), async (req, res) => {
             invitedBy: req.auth.userId,
             expiresAt,
         });
+        // staffInviteSchema marks id as `.optional()` for the insert shape;
+        // the row returned from createInvite always has the DB-assigned UUID,
+        // so we narrow here.
+        const inviteId = invite.id ?? '';
         await audit(db, {
             agencyId: req.auth.agencyId,
             actorId: req.auth.userId,
             actorType: 'user',
             eventType: 'invite.created',
             entityType: 'invite',
-            entityId: invite.id,
+            entityId: inviteId,
             outcome: 'success',
             payload: { email, role, expiresAt },
             occurredAt: new Date().toISOString(),
         });
         res.status(201).json({
-            id: invite.id,
+            id: inviteId,
             email: invite.email,
             role: invite.role,
             status: invite.status,
             expiresAt: invite.expiresAt,
             // Surface the path the inviter should share. Front-ends compose
             // the absolute URL by joining with their origin.
-            acceptPath: `/accept-invite?token=${encodeURIComponent(invite.id)}`,
+            acceptPath: `/accept-invite?token=${encodeURIComponent(inviteId)}`,
         });
     }
     catch (err) {

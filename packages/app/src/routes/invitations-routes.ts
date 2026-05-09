@@ -154,9 +154,12 @@ router.post('/accept', async (req, res) => {
         ...(caregiverId ? { caregiverId } : {})
       });
 
-      await inviteRepo.markInviteAccepted(invite.id, user.id, acceptedAt);
+      // staffInviteSchema marks id as optional for the insert shape;
+      // a row resolved by findInviteById always has it.
+      const inviteId: string = invite.id ?? token;
+      await inviteRepo.markInviteAccepted(inviteId, user.id, acceptedAt);
 
-      return { invite, user, caregiverId };
+      return { invite, user, caregiverId, inviteId };
     });
 
     await audit(db, {
@@ -165,7 +168,7 @@ router.post('/accept', async (req, res) => {
       actorType: 'user',
       eventType: 'invite.accepted',
       entityType: 'invite',
-      entityId: result.invite.id,
+      entityId: result.inviteId,
       outcome: 'success',
       payload: {
         userId: result.user.id,
