@@ -12,6 +12,7 @@ import { createDb } from '@rayhealth/core';
 import authRoutes from './routes/auth-routes.js';
 import marketingRoutes from './routes/marketing-routes.js';
 import supportRoutes from './routes/support-routes.js';
+import adminAssistantRoutes from './routes/admin-assistant-routes.js';
 import exportRoutes from './routes/export-routes.js';
 import inviteRoutes from './routes/invite-routes.js';
 import agencyRoutes from './routes/agency-routes.js';
@@ -90,6 +91,8 @@ export function createApp() {
   app.use('/maintenance', maintenanceRoutes);
   app.use('/tasks', taskRoutes);
   app.use('/exports', exportRoutes);
+  // Admin assistant — authenticated users only; mounted after authContext.
+  app.use('/admin-assistant', adminAssistantRoutes);
 
   // Protected route for testing (keep for now or remove if redundant)
   app.get('/agencies/current-test', requireCapability('agency.read'), (req, res) => {

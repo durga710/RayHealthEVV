@@ -14,6 +14,7 @@ import { ContactPage } from './features/marketing/ContactPage.js';
 import { DemoPage } from './features/marketing/DemoPage.js';
 import { LaunchPage } from './features/marketing/LaunchPage.js';
 import { StatusPage } from './features/marketing/StatusPage.js';
+import { AdminAssistant } from './features/support/AdminAssistant.js';
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth();
@@ -55,6 +56,8 @@ function AdminLayout() {
           <Outlet />
         </div>
       </main>
+      {/* Floating admin assistant — only inside /admin/*, authenticated. */}
+      <AdminAssistant />
     </div>
   );
 }
