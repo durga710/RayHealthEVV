@@ -1,5 +1,15 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
+import {
+  BedrockRuntimeClient,
+  ConverseCommand,
+  type ContentBlock,
+  type Message,
+  type Tool
+} from '@aws-sdk/client-bedrock-runtime';
+
+// Bedrock's TS type for message.role is the string literal "user" | "assistant".
+type ConversationRole = 'user' | 'assistant';
 import { safeError } from '../security/safe-log.js';
 
 const router = Router();
@@ -7,7 +17,30 @@ const router = Router();
 const MAX_USER_LEN = 4000;
 const MAX_HISTORY = 20;
 const MAX_TOOL_LOOPS = 4;
-const MODEL = process.env.ADMIN_ASSISTANT_MODEL || process.env.SUPPORT_MODEL || 'gpt-4o-mini';
+
+// Bedrock under the AWS BAA covers PHI workloads. Default to Claude 3.5
+// Haiku (cheap, fast). The `us.` prefix is a cross-region inference profile
+// — falls back across us-east-1 / us-east-2 / us-west-2 automatically.
+const MODEL_ID =
+  process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-3-5-haiku-20241022-v1:0';
+const REGION = process.env.AWS_REGION || 'us-east-1';
+
+let cachedClient: BedrockRuntimeClient | null = null;
+function bedrockClient(): BedrockRuntimeClient {
+  if (!cachedClient) cachedClient = new BedrockRuntimeClient({ region: REGION });
+  return cachedClient;
+}
+
+function bedrockConfigured(): boolean {
+  // SDK default credential chain covers env vars, IAM, etc. We treat the
+  // assistant as "online" if EITHER explicit credentials are present OR
+  // AWS_BEARER_TOKEN_BEDROCK is set (Bedrock-only short-lived token).
+  return Boolean(
+    process.env.AWS_ACCESS_KEY_ID ||
+      process.env.AWS_BEARER_TOKEN_BEDROCK ||
+      process.env.AWS_PROFILE
+  );
+}
 
 const SYSTEM_PROMPT = `You are RayHealthOps, the in-app assistant for RayHealthEVV. The user is a coordinator or admin signed into their agency's account. You can answer operational questions about THIS agency by calling the provided tools. NEVER:
 - mention specific patient/client names or full PHI fields unless the user explicitly asked for a single record
@@ -16,48 +49,54 @@ const SYSTEM_PROMPT = `You are RayHealthOps, the in-app assistant for RayHealthE
 
 When unsure, call a tool. Keep replies concise (3-5 sentences). End feature-related answers with one soft suggestion.`;
 
-const TOOLS = [
+// Bedrock Converse uses a slightly different tool schema than OpenAI's
+// function-calling: each tool is a `{toolSpec: {name, description, inputSchema:
+// {json}}}` object, and `inputSchema.json` IS the JSON Schema directly.
+const TOOLS: Tool[] = [
   {
-    type: 'function',
-    function: {
+    toolSpec: {
       name: 'count_visits',
       description: "Count this agency's EVV visits in a date range. Returns just a count, no PHI.",
-      parameters: {
-        type: 'object',
-        properties: {
-          from: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' },
-          to: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' }
+      inputSchema: {
+        json: {
+          type: 'object',
+          properties: {
+            from: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' },
+            to: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' }
+          }
         }
       }
     }
   },
   {
-    type: 'function',
-    function: {
+    toolSpec: {
       name: 'list_open_exceptions',
-      description: 'Counts of evv_exceptions for this agency grouped by type. No names, no patient data.',
-      parameters: { type: 'object', properties: {} }
+      description:
+        'Counts of evv_exceptions for this agency grouped by type. No names, no patient data.',
+      inputSchema: { json: { type: 'object', properties: {} } }
     }
   },
   {
-    type: 'function',
-    function: {
+    toolSpec: {
       name: 'count_expiring_credentials',
-      description: 'Counts caregiver_credentials that expire within `withinDays` days, grouped by credential_type.',
-      parameters: {
-        type: 'object',
-        properties: {
-          withinDays: { type: 'integer', description: 'Default 30. Range 1-365.' }
+      description:
+        'Counts caregiver_credentials that expire within `withinDays` days, grouped by credential_type.',
+      inputSchema: {
+        json: {
+          type: 'object',
+          properties: {
+            withinDays: { type: 'integer', description: 'Default 30. Range 1-365.' }
+          }
         }
       }
     }
   },
   {
-    type: 'function',
-    function: {
+    toolSpec: {
       name: 'agency_overview',
-      description: "High-level snapshot: counts of clients, caregivers, users, and visits in the last 30 days.",
-      parameters: { type: 'object', properties: {} }
+      description:
+        'High-level snapshot: counts of clients, caregivers, users, and visits in the last 30 days.',
+      inputSchema: { json: { type: 'object', properties: {} } }
     }
   }
 ];
@@ -165,10 +204,10 @@ async function runTool(
 }
 
 router.post('/chat', async (req, res) => {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.RAY_OPENAI_API_KEY;
-  if (!apiKey) {
+  if (!bedrockConfigured()) {
     res.status(503).json({
-      message: 'Admin assistant is offline (OPENAI_API_KEY not configured).'
+      message:
+        'Admin assistant is offline (AWS Bedrock not configured — set AWS_REGION + credentials).'
     });
     return;
   }
@@ -180,7 +219,7 @@ router.post('/chat', async (req, res) => {
       ? body.sessionId
       : randomUUID();
 
-  const messages = messagesRaw
+  const incoming = messagesRaw
     .filter(
       (m): m is { role: 'user' | 'assistant'; content: string } =>
         typeof m === 'object' &&
@@ -192,7 +231,7 @@ router.post('/chat', async (req, res) => {
     .slice(-MAX_HISTORY)
     .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_USER_LEN) }));
 
-  if (messages.length === 0 || messages[messages.length - 1].role !== 'user') {
+  if (incoming.length === 0 || incoming[incoming.length - 1].role !== 'user') {
     res.status(400).json({ message: 'last message must be from the user' });
     return;
   }
@@ -200,94 +239,87 @@ router.post('/chat', async (req, res) => {
   const db = req.app.get('db');
   const ctx: ToolContext = { db, agencyId: req.auth.agencyId };
 
-  const convo: Array<Record<string, unknown>> = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    ...messages
-  ];
+  // Bedrock Converse requires a separate `system` array and `messages` whose
+  // content is `{text}` blocks (or tool-use / tool-result blocks).
+  const conversation: Message[] = incoming.map((m) => ({
+    role: m.role as ConversationRole,
+    content: [{ text: m.content }]
+  }));
 
   for (let i = 0; i < MAX_TOOL_LOOPS; i++) {
-    let upstream: Response;
+    let response;
     try {
-      upstream = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          temperature: 0.2,
-          max_tokens: 800,
-          messages: convo,
-          tools: TOOLS,
-          tool_choice: 'auto'
+      response = await bedrockClient().send(
+        new ConverseCommand({
+          modelId: MODEL_ID,
+          system: [{ text: SYSTEM_PROMPT }],
+          messages: conversation,
+          inferenceConfig: { maxTokens: 800, temperature: 0.2 },
+          toolConfig: { tools: TOOLS, toolChoice: { auto: {} } }
         })
-      });
+      );
     } catch (err) {
-      safeError('admin-assistant fetch failed', err);
+      safeError('admin-assistant bedrock send failed', err);
       res.status(502).json({ message: 'Could not reach the model.' });
       return;
     }
-    if (!upstream.ok) {
-      const errText = await upstream.text();
-      safeError(`admin-assistant openai ${upstream.status}`, errText.slice(0, 400));
-      res.status(502).json({ message: 'Upstream model error.' });
-      return;
-    }
-    const data = (await upstream.json()) as {
-      choices: Array<{
-        message: {
-          role: string;
-          content?: string;
-          tool_calls?: Array<{
-            id: string;
-            type: 'function';
-            function: { name: string; arguments: string };
-          }>;
-        };
-        finish_reason: string;
-      }>;
-    };
-    const choice = data.choices[0];
-    if (!choice) {
+
+    const out = response.output?.message;
+    if (!out || !out.content) {
       res.status(502).json({ message: 'Empty model response.' });
       return;
     }
-    const msg = choice.message;
-    convo.push(msg);
 
-    if (msg.tool_calls && msg.tool_calls.length > 0) {
-      for (const call of msg.tool_calls) {
-        let argsObj: Record<string, unknown> = {};
-        try {
-          argsObj = JSON.parse(call.function.arguments) as Record<string, unknown>;
-        } catch {
-          argsObj = {};
-        }
+    // Append assistant turn (which may contain text blocks, toolUse blocks,
+    // or both) to the conversation so the next loop iteration sees it.
+    conversation.push(out);
+
+    const stopReason = response.stopReason;
+
+    // If the model wants to call tools, run them and loop.
+    if (stopReason === 'tool_use') {
+      const toolUseBlocks = out.content.filter(
+        (b): b is ContentBlock.ToolUseMember => 'toolUse' in b && b.toolUse !== undefined
+      );
+      const toolResults: ContentBlock[] = [];
+      for (const block of toolUseBlocks) {
+        const tu = block.toolUse!;
+        const argsObj = (tu.input ?? {}) as Record<string, unknown>;
         let toolResult: Record<string, unknown>;
         try {
-          toolResult = await runTool(call.function.name, argsObj, ctx);
+          toolResult = await runTool(tu.name ?? '', argsObj, ctx);
         } catch (err) {
-          safeError(`admin-assistant tool ${call.function.name} failed`, err);
+          safeError(`admin-assistant tool ${tu.name} failed`, err);
           toolResult = { error: 'tool execution failed' };
         }
-        convo.push({
-          role: 'tool',
-          tool_call_id: call.id,
-          content: JSON.stringify(toolResult)
+        toolResults.push({
+          toolResult: {
+            toolUseId: tu.toolUseId!,
+            // Bedrock's `json` block is typed as DocumentType (a recursive
+            // primitive/array/object union). Plain `Record<string, unknown>`
+            // doesn't structurally match; cast through unknown so the SDK
+            // serializes it as JSON without a TS shape complaint.
+            content: [{ json: toolResult as unknown as Record<string, never> }]
+          }
         });
       }
+      conversation.push({ role: 'user', content: toolResults });
       continue;
     }
 
-    const text = (msg.content ?? '').trim();
+    // Otherwise extract the final text from text blocks.
+    const text = out.content
+      .filter((b): b is ContentBlock.TextMember => 'text' in b && typeof b.text === 'string')
+      .map((b) => b.text)
+      .join('\n')
+      .trim();
     if (!text) {
       res.status(502).json({ message: 'Empty model response.' });
       return;
     }
 
     try {
-      const ip = (req.header('cf-connecting-ip') ?? req.ip ?? null);
+      const ip = req.header('cf-connecting-ip') ?? req.ip ?? null;
       await (db as (table: string) => { insert: (rows: unknown[]) => Promise<unknown> })(
         'support_conversations'
       ).insert([
@@ -295,8 +327,8 @@ router.post('/chat', async (req, res) => {
           id: randomUUID(),
           session_id: sessionId,
           role: 'user',
-          content: messages[messages.length - 1].content,
-          model: MODEL,
+          content: incoming[incoming.length - 1].content,
+          model: MODEL_ID,
           ip_address: ip
         },
         {
@@ -304,7 +336,7 @@ router.post('/chat', async (req, res) => {
           session_id: sessionId,
           role: 'assistant',
           content: text,
-          model: MODEL,
+          model: MODEL_ID,
           ip_address: ip
         }
       ]);

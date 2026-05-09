@@ -1,12 +1,37 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
+import {
+  BedrockRuntimeClient,
+  ConverseCommand,
+  type ContentBlock,
+  type Message
+} from '@aws-sdk/client-bedrock-runtime';
+
+// Bedrock's TS type for message.role is the string literal "user" | "assistant".
+type ConversationRole = 'user' | 'assistant';
 import { safeError } from '../security/safe-log.js';
 
 const router = Router();
 
 const MAX_USER_LEN = 4000;
 const MAX_HISTORY = 20;
-const MODEL = process.env.SUPPORT_MODEL || 'gpt-4o-mini';
+const MODEL_ID =
+  process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-3-5-haiku-20241022-v1:0';
+const REGION = process.env.AWS_REGION || 'us-east-1';
+
+let cachedClient: BedrockRuntimeClient | null = null;
+function bedrockClient(): BedrockRuntimeClient {
+  if (!cachedClient) cachedClient = new BedrockRuntimeClient({ region: REGION });
+  return cachedClient;
+}
+
+function bedrockConfigured(): boolean {
+  return Boolean(
+    process.env.AWS_ACCESS_KEY_ID ||
+      process.env.AWS_BEARER_TOKEN_BEDROCK ||
+      process.env.AWS_PROFILE
+  );
+}
 
 // System prompt — defines what RayHealthAssist will and won't do. Hard
 // refusals around PHI, admin operations, and out-of-domain questions.
@@ -29,8 +54,7 @@ What you must NEVER do:
 If a visitor asks for any of the forbidden things, politely decline and offer to connect them with a human via /contact. Keep replies concise (3-6 sentences) and brand-voice calm — no "disrupt" / "revolutionize", no alarm-bell language. End every reply that's about a feature or pricing with a single soft call-to-action.`;
 
 router.post('/chat', async (req, res) => {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.RAY_OPENAI_API_KEY;
-  if (!apiKey) {
+  if (!bedrockConfigured()) {
     res.status(503).json({
       message:
         'Live support is currently offline. Please use the contact form at /contact and we will reply within one business day.'
@@ -49,7 +73,6 @@ router.post('/chat', async (req, res) => {
     return;
   }
 
-  // Accept only well-shaped {role, content} entries; cap history.
   const messages = messagesRaw
     .filter(
       (m): m is { role: 'user' | 'assistant'; content: string } =>
@@ -72,7 +95,7 @@ router.post('/chat', async (req, res) => {
   const db = req.app.get('db');
 
   // Log the user turn before calling upstream so we always have it even if
-  // OpenAI fails. Not agency-scoped; visitors who paste PHI here are still
+  // Bedrock fails. Not agency-scoped; visitors who paste PHI here are still
   // recorded but the table has no FK relationship to PHI tables.
   try {
     await db('support_conversations').insert({
@@ -80,45 +103,42 @@ router.post('/chat', async (req, res) => {
       session_id: sessionId,
       role: 'user',
       content: messages[messages.length - 1].content,
-      model: MODEL,
+      model: MODEL_ID,
       ip_address: ipAddress
     });
   } catch (err) {
     safeError('support_conversations user-turn insert failed', err);
   }
 
-  // Call OpenAI.
+  // Call Bedrock Converse. The marketing chat has no tools — pure conversation.
+  const conversation: Message[] = messages.map((m) => ({
+    role: m.role as ConversationRole,
+    content: [{ text: m.content }]
+  }));
+
   let assistantText = '';
   try {
-    const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.4,
-        max_tokens: 600,
-        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages]
+    const response = await bedrockClient().send(
+      new ConverseCommand({
+        modelId: MODEL_ID,
+        system: [{ text: SYSTEM_PROMPT }],
+        messages: conversation,
+        inferenceConfig: { maxTokens: 600, temperature: 0.4 }
       })
-    });
-    if (!upstream.ok) {
-      const errText = await upstream.text();
-      safeError(`openai upstream ${upstream.status}`, errText.slice(0, 400));
-      res.status(502).json({ message: 'Upstream model error. Please try again in a moment.' });
-      return;
-    }
-    const data = (await upstream.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    assistantText = data.choices?.[0]?.message?.content?.trim() ?? '';
+    );
+    const out = response.output?.message;
+    assistantText =
+      (out?.content ?? [])
+        .filter((b): b is ContentBlock.TextMember => 'text' in b && typeof b.text === 'string')
+        .map((b) => b.text)
+        .join('\n')
+        .trim() ?? '';
     if (!assistantText) {
       res.status(502).json({ message: 'Empty response from model.' });
       return;
     }
   } catch (err) {
-    safeError('support /chat upstream call failed', err);
+    safeError('support /chat bedrock call failed', err);
     res.status(502).json({ message: 'Could not reach the model. Try again in a moment.' });
     return;
   }
@@ -130,7 +150,7 @@ router.post('/chat', async (req, res) => {
       session_id: sessionId,
       role: 'assistant',
       content: assistantText,
-      model: MODEL,
+      model: MODEL_ID,
       ip_address: ipAddress
     });
   } catch (err) {
