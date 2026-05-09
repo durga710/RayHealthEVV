@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, ActivityIndicator, Pressable } from 'react-native';
 import { useAuth } from '../../lib/AuthContext';
 import { useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
@@ -8,6 +8,7 @@ interface Assignment {
   id: string;
   clientName: string;
   time?: string; // Placeholder for now
+  serviceCode?: string;
 }
 
 export default function DashboardScreen() {
@@ -31,10 +32,22 @@ export default function DashboardScreen() {
   }, []);
 
   const renderItem = ({ item }: { item: Assignment }) => (
-    <View style={styles.item}>
+    <Pressable
+      style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+      onPress={() => router.push({
+        pathname: '/clockin',
+        params: {
+          assignmentId: item.id,
+          clientName: item.clientName,
+          scheduledTime: item.time ?? '',
+          serviceCode: item.serviceCode ?? ''
+        }
+      })}
+    >
       <Text style={styles.itemText}>{item.clientName}</Text>
       <Text>{item.time || 'Time not specified'}</Text>
-    </View>
+      {item.serviceCode ? <Text style={styles.serviceCode}>{item.serviceCode}</Text> : null}
+    </Pressable>
   );
   
   return (
@@ -62,5 +75,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
   title: { fontSize: 24, fontWeight: 'bold', color: '#1a3a5c' },
   item: { backgroundColor: 'white', padding: 20, marginVertical: 8, marginHorizontal: 16, borderRadius: 8, elevation: 1 },
+  itemPressed: { opacity: 0.75 },
   itemText: { fontSize: 18, fontWeight: '500' },
+  serviceCode: { marginTop: 8, color: '#1a5fa8', fontWeight: '600' },
 });

@@ -1,5 +1,5 @@
 import type { Knex } from 'knex';
-import type { Caregiver, CaregiverCredential, StaffInvite } from '../domain/caregiver.js';
+import type { Caregiver, CaregiverCredential, PersistedStaffInvite, StaffInvite } from '../domain/caregiver.js';
 import { decryptCell, encryptCell } from '../security/cell-cipher.js';
 
 export class CaregiverRepository {
@@ -63,7 +63,7 @@ export class CaregiverRepository {
     await this.db('caregiver_credentials').where({ id }).update({ status: 'expired' });
   }
 
-  async createInvite(invite: Omit<StaffInvite, 'id'>): Promise<StaffInvite> {
+  async createInvite(invite: Omit<StaffInvite, 'id'>): Promise<PersistedStaffInvite> {
     const [row] = await this.db('staff_invites').insert({
       id: this.db.raw('gen_random_uuid()'),
       agency_id: invite.agencyId,
@@ -85,7 +85,7 @@ export class CaregiverRepository {
    */
   async findInviteById(
     id: string,
-  ): Promise<(StaffInvite & { acceptedAt: string | null; agencyName: string | null }) | undefined> {
+  ): Promise<(PersistedStaffInvite & { acceptedAt: string | null; agencyName: string | null }) | undefined> {
     const row = await this.db('staff_invites as si')
       .leftJoin('agencies as a', 'a.id', 'si.agency_id')
       .where('si.id', id)
@@ -149,7 +149,7 @@ export class CaregiverRepository {
     };
   }
 
-  private mapInvite(row: Record<string, unknown>): StaffInvite {
+  private mapInvite(row: Record<string, unknown>): PersistedStaffInvite {
     return {
       id: row.id as string,
       agencyId: row.agency_id as string,

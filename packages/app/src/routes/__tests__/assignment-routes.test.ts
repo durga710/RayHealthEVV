@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import * as core from '@rayhealth/core';
 import { makeToken, setTestJwtSecret } from './test-helpers.js';
@@ -7,6 +7,10 @@ import { makeToken, setTestJwtSecret } from './test-helpers.js';
 beforeAll(() => setTestJwtSecret());
 
 describe('assignment routes', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('creates an assignment when the authorization and caregiver are valid', async () => {
     const mockCreateAssignment = vi.fn().mockResolvedValue({
       id: '123',
@@ -30,5 +34,46 @@ describe('assignment routes', () => {
 
     expect(response.status).toBe(201);
     expect(mockCreateAssignment).toHaveBeenCalled();
+  });
+
+  it('forbids caregivers from creating assignments', async () => {
+    const mockCreateAssignment = vi.fn();
+    vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
+      createAssignment: mockCreateAssignment
+    } as any));
+
+    const response = await request(createApp())
+      .post('/assignments')
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', 'caregiver-1')}`)
+      .send({
+        caregiverId: 'caregiver-2',
+        visitTemplateId: 'template-1',
+        visitDate: '2026-05-20'
+      });
+
+    expect(response.status).toBe(403);
+    expect(mockCreateAssignment).not.toHaveBeenCalled();
+  });
+
+  it('rejects assignment creation without an explicit visit template', async () => {
+    const mockCreateAssignment = vi.fn().mockResolvedValue({
+      id: '123',
+      caregiverId: 'caregiver-1',
+      visitTemplateId: '00000000-0000-0000-0000-000000000000'
+    });
+    vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
+      createAssignment: mockCreateAssignment
+    } as any));
+
+    const response = await request(createApp())
+      .post('/assignments')
+      .set('Authorization', `Bearer ${makeToken('coordinator')}`)
+      .send({
+        caregiverId: 'caregiver-1',
+        visitDate: '2026-05-20'
+      });
+
+    expect(response.status).toBe(400);
+    expect(mockCreateAssignment).not.toHaveBeenCalled();
   });
 });

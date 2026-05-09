@@ -7,6 +7,7 @@ export declare class ScheduleRepository {
     getTemplates(agencyId: string): Promise<any[]>;
     createAssignment(assignment: AssignmentInput): Promise<any>;
     getAssignments(agencyId: string): Promise<any[]>;
-    getAssignmentsByCaregiver(caregiverId: string): Promise<any[]>;
+    getAssignmentsByCaregiver(caregiverId: string, agencyId?: string): Promise<any[]>;
+    getAssignmentForCaregiver(assignmentId: string, caregiverId: string, agencyId?: string): Promise<any | null>;
 }
 //# sourceMappingURL=schedule-repository.d.ts.map

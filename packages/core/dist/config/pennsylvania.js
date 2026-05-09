@@ -42,20 +42,20 @@ const ROLE_CAPABILITIES = {
         'staff.read', 'staff.write',
         'client.read', 'client.write',
         'schedule.read', 'schedule.write',
+        'evv.read', 'evv.write',
         'auth.read', 'auth.write'
     ],
     coordinator: [
         'agency.read',
         'staff.read',
         'client.read', 'client.write',
-        'schedule.read', 'schedule.write'
+        'schedule.read', 'schedule.write',
+        'evv.read'
     ],
     caregiver: [
-        // schedule.write is required to hit /evv/clock-in and /evv/clock-out —
-        // without it caregivers cannot record their own visits. This was missing
-        // from the initial role config and surfaced during EVV smoke testing on
-        // 2026-05-08.
-        'schedule.read', 'schedule.write'
+        // EVV write lets caregivers record their own visits without granting
+        // broad schedule mutation rights such as creating assignments.
+        'schedule.read', 'evv.read', 'evv.write'
     ],
     family: [
         'client.read',

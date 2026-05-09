@@ -1,4 +1,20 @@
 import { z } from 'zod';
+import { paServiceCodes } from '../config/pennsylvania.js';
+export const evvVisitIdSchema = z.string().uuid();
+export const evvServiceCodeSchema = z.enum(paServiceCodes);
+export const evvLocationSchema = z.object({
+    lat: z.number().finite().min(-90).max(90),
+    lng: z.number().finite().min(-180).max(180),
+    accuracy: z.number().finite().nonnegative()
+});
+export const evvClockInInputSchema = z.object({
+    assignmentId: z.string().uuid(),
+    location: evvLocationSchema,
+    serviceCode: evvServiceCodeSchema.optional()
+});
+export const evvClockOutInputSchema = z.object({
+    location: evvLocationSchema
+});
 export const evvVisitSchema = z.object({
     id: z.string().uuid().optional(),
     assignmentId: z.string().uuid(),
@@ -6,19 +22,11 @@ export const evvVisitSchema = z.object({
     // Cures-Act #2 (beneficiary) — snapshotted onto the row at clock-in.
     clientId: z.string().uuid().optional(),
     // Cures-Act #1 (type of service) — HCPCS code stamped at clock-in.
-    serviceCode: z.enum(['T1019', 'S5125', 'T1004', 'T1021']).optional(),
+    serviceCode: evvServiceCodeSchema.optional(),
     clockInTime: z.string().datetime(),
     clockOutTime: z.string().datetime().optional(),
-    clockInLocation: z.object({
-        lat: z.number(),
-        lng: z.number(),
-        accuracy: z.number()
-    }),
-    clockOutLocation: z.object({
-        lat: z.number(),
-        lng: z.number(),
-        accuracy: z.number()
-    }).optional(),
+    clockInLocation: evvLocationSchema,
+    clockOutLocation: evvLocationSchema.optional(),
     status: z.enum(['pending', 'verified', 'flagged']).default('pending')
 });
 //# sourceMappingURL=evv.js.map

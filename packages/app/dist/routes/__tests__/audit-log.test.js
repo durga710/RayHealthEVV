@@ -11,6 +11,17 @@ describe('audit logging middleware', () => {
     it('persists a structured audit event for protected write requests', async () => {
         const createAuditEvent = vi.fn().mockResolvedValue({});
         vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create: createAuditEvent }));
+        vi.spyOn(core, 'CaregiverRepository').mockImplementation(() => ({
+            createInvite: vi.fn().mockResolvedValue({
+                id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+                agencyId: 'agency-1',
+                email: 'caregiver@keystone.example',
+                role: 'caregiver',
+                status: 'pending',
+                invitedBy: 'user-1',
+                expiresAt: '2026-05-23T14:00:00.000Z'
+            })
+        }));
         const response = await request(createApp())
             .post('/invites')
             .set('Authorization', `Bearer ${makeToken('admin')}`)

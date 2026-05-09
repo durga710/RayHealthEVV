@@ -1,5 +1,5 @@
 import type { Knex } from 'knex';
-import type { Caregiver, CaregiverCredential, StaffInvite } from '../domain/caregiver.js';
+import type { Caregiver, CaregiverCredential, PersistedStaffInvite, StaffInvite } from '../domain/caregiver.js';
 export declare class CaregiverRepository {
     private readonly db;
     constructor(db: Knex);
@@ -11,7 +11,7 @@ export declare class CaregiverRepository {
     saveCredential(credential: Omit<CaregiverCredential, 'id'>): Promise<CaregiverCredential>;
     getCredentials(caregiverId: string): Promise<CaregiverCredential[]>;
     expireCredential(id: string): Promise<void>;
-    createInvite(invite: Omit<StaffInvite, 'id'>): Promise<StaffInvite>;
+    createInvite(invite: Omit<StaffInvite, 'id'>): Promise<PersistedStaffInvite>;
     /**
      * Look up an invite by its UUID (which is the share-token). Returns
      * undefined for unknown ids so the caller can render a generic
@@ -19,7 +19,7 @@ export declare class CaregiverRepository {
      * ever issued. Includes the agency name so the accept-invite UI can
      * show "you're joining <Agency>" before the user types a password.
      */
-    findInviteById(id: string): Promise<(StaffInvite & {
+    findInviteById(id: string): Promise<(PersistedStaffInvite & {
         acceptedAt: string | null;
         agencyName: string | null;
     }) | undefined>;

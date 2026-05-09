@@ -12,10 +12,15 @@ export function setTestJwtSecret() {
   process.env.NODE_ENV = 'test';
 }
 
-export function makeToken(role: AppRole, agencyId = 'agency-1', userId = 'user-1'): string {
+export function makeToken(
+  role: AppRole,
+  agencyId = 'agency-1',
+  userId = 'user-1',
+  caregiverId?: string
+): string {
   // jti claim is required by auth-context.ts for bearer tokens. Mint a fresh
   // UUID per call so tests don't share state.
-  return jwt.sign({ sub: userId, agencyId, role }, TEST_SECRET, {
+  return jwt.sign({ sub: userId, agencyId, role, caregiverId }, TEST_SECRET, {
     expiresIn: '1h',
     jwtid: randomUUID()
   });

@@ -61,24 +61,65 @@ export class ScheduleRepository {
     }));
   }
 
-  async getAssignmentsByCaregiver(caregiverId: string): Promise<any[]> {
-    const rows = await this.db('assignments')
+  async getAssignmentsByCaregiver(caregiverId: string, agencyId?: string): Promise<any[]> {
+    const query = this.db('assignments')
       .join('visit_templates', 'assignments.visit_template_id', 'visit_templates.id')
       .join('clients', 'visit_templates.client_id', 'clients.id')
+      .leftJoin('authorizations', 'authorizations.client_id', 'clients.id')
       .where('assignments.caregiver_id', caregiverId)
       .select(
         'assignments.id', 
         'assignments.caregiver_id',
         'assignments.visit_template_id',
+        'clients.id as client_id',
         'clients.first_name',
-        'clients.last_name'
-      );
+        'clients.last_name',
+        'authorizations.service_code'
+      )
+      .orderBy('authorizations.end_date', 'desc');
+    if (agencyId) query.andWhere('clients.agency_id', agencyId);
+    const rows = await query;
       
     return rows.map(row => ({
       id: row.id,
       caregiverId: row.caregiver_id,
       visitTemplateId: row.visit_template_id,
-      clientName: `${row.first_name} ${row.last_name}`
+      clientId: row.client_id,
+      clientName: `${row.first_name} ${row.last_name}`,
+      serviceCode: row.service_code ?? undefined
     }));
+  }
+
+  async getAssignmentForCaregiver(
+    assignmentId: string,
+    caregiverId: string,
+    agencyId?: string
+  ): Promise<any | null> {
+    const query = this.db('assignments')
+      .join('visit_templates', 'assignments.visit_template_id', 'visit_templates.id')
+      .join('clients', 'visit_templates.client_id', 'clients.id')
+      .leftJoin('authorizations', 'authorizations.client_id', 'clients.id')
+      .where('assignments.id', assignmentId)
+      .andWhere('assignments.caregiver_id', caregiverId)
+      .select(
+        'assignments.id',
+        'assignments.caregiver_id',
+        'assignments.visit_template_id',
+        'clients.id as client_id',
+        'authorizations.service_code'
+      )
+      .orderBy('authorizations.end_date', 'desc');
+    if (agencyId) query.andWhere('clients.agency_id', agencyId);
+    const row = await query.first();
+
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      caregiverId: row.caregiver_id,
+      visitTemplateId: row.visit_template_id,
+      clientId: row.client_id,
+      serviceCode: row.service_code ?? undefined
+    };
   }
 }

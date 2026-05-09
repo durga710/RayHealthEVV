@@ -20,6 +20,8 @@ export declare class EvvRepository {
     updateVisit(id: string, agencyId: string, visit: Partial<EvvVisit>): Promise<EvvVisit | null>;
     /** All visits within an agency. */
     getVisitsForAgency(agencyId: string): Promise<EvvVisit[]>;
+    /** Single visit within an agency; returns null without leaking cross-tenant existence. */
+    getVisitByIdForAgency(id: string, agencyId: string): Promise<EvvVisit | null>;
     /**
      * Aggregator-export rows. Each row carries all seven 21st Century Cures
      * Act data points needed by HHAeXchange / Sandata:

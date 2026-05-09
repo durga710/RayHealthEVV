@@ -53,4 +53,7 @@ export declare const staffInviteSchema: z.ZodObject<{
     expiresAt: z.ZodString;
 }, z.core.$strip>;
 export type StaffInvite = z.infer<typeof staffInviteSchema>;
+export type PersistedStaffInvite = StaffInvite & {
+    id: string;
+};
 //# sourceMappingURL=caregiver.d.ts.map

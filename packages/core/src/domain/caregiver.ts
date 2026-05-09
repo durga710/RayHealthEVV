@@ -38,3 +38,4 @@ export const staffInviteSchema = z.object({
 });
 
 export type StaffInvite = z.infer<typeof staffInviteSchema>;
+export type PersistedStaffInvite = StaffInvite & { id: string };
