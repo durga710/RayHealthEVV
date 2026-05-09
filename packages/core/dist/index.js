@@ -27,6 +27,7 @@ export * from './services/credential-compliance-service.js';
 export * from './services/assignment-eligibility-service.js';
 export * from './services/evv-compliance-service.js';
 export * from './security/cell-cipher.js';
+export * from './security/geofence.js';
 export * from './domain/mobile-session.js';
 export * from './repositories/mobile-session-repository.js';
 //# sourceMappingURL=index.js.map

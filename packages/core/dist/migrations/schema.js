@@ -20,6 +20,28 @@ export async function up(knex) {
             table.timestamps(true, true);
         });
     }
+    // Address + GPS for geofencing. Added 2026-05-09 when the clock-in/
+    // clock-out path started enforcing distance-from-client-address. The
+    // geofence_radius_m default of 150m covers a typical detached home plus
+    // driveway / front-door margin; agencies can override per-client for
+    // apartment buildings (smaller) or rural acreage (larger).
+    if (await knex.schema.hasTable('clients')) {
+        const adds = [
+            ['address_line_1', (t) => t.string('address_line_1', 200).nullable()],
+            ['address_line_2', (t) => t.string('address_line_2', 200).nullable()],
+            ['city', (t) => t.string('city', 100).nullable()],
+            ['state', (t) => t.specificType('state', 'char(2)').nullable()],
+            ['postal_code', (t) => t.string('postal_code', 10).nullable()],
+            ['latitude', (t) => t.decimal('latitude', 9, 6).nullable()],
+            ['longitude', (t) => t.decimal('longitude', 9, 6).nullable()],
+            ['geofence_radius_m', (t) => t.integer('geofence_radius_m').nullable().defaultTo(150)]
+        ];
+        for (const [col, build] of adds) {
+            if (!(await knex.schema.hasColumn('clients', col))) {
+                await knex.schema.alterTable('clients', build);
+            }
+        }
+    }
     if (!(await knex.schema.hasTable('authorizations'))) {
         await knex.schema.createTable('authorizations', (table) => {
             table.uuid('id').primary();
@@ -48,6 +70,24 @@ export async function up(knex) {
             table.uuid('visit_template_id').references('id').inTable('visit_templates').notNullable();
             table.timestamps(true, true);
         });
+    }
+    // Scheduled times for an assignment. Added 2026-05-09 when the mobile
+    // 30-second pre-warning haptic + notification feature shipped — the
+    // mobile app needs to know "this caregiver is supposed to clock in at
+    // X:00 PM" so it can fire the local notification 30s prior. Without
+    // these, the predecessor design relied on the caregiver clocking in
+    // whenever they got there, with no scheduled-vs-actual delta.
+    if (await knex.schema.hasTable('assignments')) {
+        if (!(await knex.schema.hasColumn('assignments', 'scheduled_start_time'))) {
+            await knex.schema.alterTable('assignments', (t) => {
+                t.timestamp('scheduled_start_time').nullable();
+            });
+        }
+        if (!(await knex.schema.hasColumn('assignments', 'scheduled_end_time'))) {
+            await knex.schema.alterTable('assignments', (t) => {
+                t.timestamp('scheduled_end_time').nullable();
+            });
+        }
     }
     if (!(await knex.schema.hasTable('evv_visits'))) {
         await knex.schema.createTable('evv_visits', (table) => {

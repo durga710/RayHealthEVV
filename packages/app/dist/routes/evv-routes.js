@@ -1,7 +1,21 @@
 import { Router } from 'express';
 import { requireCapability } from '../middleware/require-capability.js';
-import { EvvRepository, ScheduleRepository, evvClockInInputSchema, evvClockOutInputSchema, evvServiceCodeSchema, evvVisitIdSchema } from '@rayhealth/core';
+import { AuditEventRepository, ClientRepository, EvvRepository, ScheduleRepository, checkGeofence, evvClockInInputSchema, evvClockOutInputSchema, evvServiceCodeSchema, evvVisitIdSchema } from '@rayhealth/core';
+import { safeError } from '../security/safe-log.js';
 const router = Router();
+/**
+ * Build the friendly 422 envelope for a geofence violation. Distance is
+ * already rounded by `checkGeofence`. Message is human-readable so the
+ * mobile app can surface it directly without composing copy client-side.
+ */
+function geofenceRejection(envelope) {
+    return {
+        message: `You are ${envelope.distanceM} m from the client's address — please move closer to clock in.`,
+        code: 'GEOFENCE_OUT_OF_BOUNDS',
+        distanceM: envelope.distanceM,
+        allowedM: envelope.allowedM
+    };
+}
 router.get('/visits', requireCapability('evv.read'), async (req, res) => {
     try {
         const db = req.app.get('db');
@@ -34,6 +48,41 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
         const assignment = await scheduleRepo.getAssignmentForCaregiver(parsed.data.assignmentId, req.auth.caregiverId, req.auth.agencyId);
         if (!assignment)
             return res.status(404).json({ message: 'Assignment not found' });
+        // Geofence gate. Pulls the client's anchor + radius (tenant-scoped) and
+        // compares against the GPS lat/lng captured by the mobile app. Fails
+        // open when the client has no registered coordinates — see
+        // checkGeofence() docstring for the rationale.
+        const clientRepo = new ClientRepository(db);
+        const clientGeofence = await clientRepo.getClientGeofence(assignment.clientId, req.auth.agencyId);
+        if (clientGeofence) {
+            const violation = checkGeofence(parsed.data.location, clientGeofence);
+            if (violation) {
+                // Audit out-of-bounds attempts so the policy gap is observable —
+                // a caregiver hammering clock-in from a single off-site location
+                // shows up as repeated permission.denied rows on the assignment.
+                try {
+                    await new AuditEventRepository(db).create({
+                        agencyId: req.auth.agencyId,
+                        actorId: req.auth.userId,
+                        actorType: 'user',
+                        eventType: 'permission.denied',
+                        entityType: 'evv.clock-in',
+                        entityId: parsed.data.assignmentId,
+                        outcome: 'denied',
+                        payload: {
+                            reason: 'geofence',
+                            distanceM: violation.distanceM,
+                            allowedM: violation.allowedM
+                        },
+                        occurredAt: new Date().toISOString()
+                    });
+                }
+                catch (err) {
+                    safeError('Failed to record geofence audit event', err);
+                }
+                return res.status(422).json(geofenceRejection(violation));
+            }
+        }
         const authorizedServiceCode = assignment.serviceCode
             ? evvServiceCodeSchema.safeParse(assignment.serviceCode)
             : null;
@@ -82,6 +131,41 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
         const existing = await repo.getVisitByIdForAgency(id.data, req.auth.agencyId);
         if (!existing || existing.caregiverId !== req.auth.caregiverId) {
             return res.status(404).json({ message: 'Visit not found' });
+        }
+        // Geofence gate at clock-out. Same fail-open semantics as clock-in.
+        // Visit rows carry `clientId` since the Cures-Act #2 snapshot rollout;
+        // older rows without it skip the geofence check (the alternative is to
+        // re-resolve via the assignment, which costs an extra query for a
+        // legacy edge case that's been migrated).
+        if (existing.clientId) {
+            const clientRepo = new ClientRepository(db);
+            const clientGeofence = await clientRepo.getClientGeofence(existing.clientId, req.auth.agencyId);
+            if (clientGeofence) {
+                const violation = checkGeofence(parsed.data.location, clientGeofence);
+                if (violation) {
+                    try {
+                        await new AuditEventRepository(db).create({
+                            agencyId: req.auth.agencyId,
+                            actorId: req.auth.userId,
+                            actorType: 'user',
+                            eventType: 'permission.denied',
+                            entityType: 'evv.clock-out',
+                            entityId: id.data,
+                            outcome: 'denied',
+                            payload: {
+                                reason: 'geofence',
+                                distanceM: violation.distanceM,
+                                allowedM: violation.allowedM
+                            },
+                            occurredAt: new Date().toISOString()
+                        });
+                    }
+                    catch (err) {
+                        safeError('Failed to record geofence audit event', err);
+                    }
+                    return res.status(422).json(geofenceRejection(violation));
+                }
+            }
         }
         // updateVisit returns null when the visit is on another tenant OR does
         // not exist. Both surface as 404 — we never confirm cross-tenant existence.

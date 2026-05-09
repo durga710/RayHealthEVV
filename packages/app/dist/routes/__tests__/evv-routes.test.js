@@ -76,6 +76,12 @@ describe('evv routes', () => {
                 serviceCode: 'BAD'
             })
         }));
+        // The clock-in route now also fetches the client's geofence anchor
+        // before service-code validation. Mock to fail-open (no geofence
+        // registered) so this test stays focused on the service-code path.
+        vi.spyOn(core, 'ClientRepository').mockImplementation(() => ({
+            getClientGeofence: vi.fn().mockResolvedValue(undefined)
+        }));
         const response = await request(createApp())
             .post('/evv/clock-in')
             .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)

@@ -22,6 +22,7 @@ import authorizationRoutes from './routes/authorization-routes.js';
 import templateRoutes from './routes/template-routes.js';
 import assignmentRoutes from './routes/assignment-routes.js';
 import evvRoutes from './routes/evv-routes.js';
+import mobileRoutes from './routes/mobile-routes.js';
 import maintenanceRoutes from './routes/maintenance-routes.js';
 import taskRoutes from './routes/task-routes.js';
 // Skip rate limits in unit tests so the test runner can fire 100s of
@@ -87,6 +88,9 @@ export function createApp() {
     app.use('/templates', templateRoutes);
     app.use('/assignments', assignmentRoutes);
     app.use('/evv', evvRoutes);
+    // Mobile-app dashboard composite endpoint(s). Caregiver-scoped, lives
+    // alongside /evv since it serves the same field-app surface.
+    app.use('/mobile', mobileRoutes);
     app.use('/maintenance', maintenanceRoutes);
     app.use('/tasks', taskRoutes);
     app.use('/exports', exportRoutes);

@@ -15,6 +15,23 @@ export declare class ClientRepository {
      * reassigned cannot leak across tenants.
      */
     getClientsForFamilyMember(userId: string, agencyId: string): Promise<Client[]>;
+    /**
+     * Reads the client's geofence anchor — registered street-address GPS plus
+     * the per-client allowed radius — for EVV clock-in / clock-out validation.
+     *
+     * Tenant-scoped via `agency_id` so a caregiver in agency A can never probe
+     * a client UUID from agency B. Returns undefined when the client row does
+     * not exist or belongs to a different tenant; the caller MUST treat that
+     * as "client not found" rather than fail-open through the geofence.
+     *
+     * Numeric columns come back from pg as strings (decimal/numeric); we
+     * coerce to JS numbers here so callers don't have to repeat the dance.
+     */
+    getClientGeofence(clientId: string, agencyId: string): Promise<{
+        latitude: number | null;
+        longitude: number | null;
+        geofenceRadiusM: number | null;
+    } | undefined>;
     createAuthorization(authorization: Authorization): Promise<Authorization>;
     getAuthorizations(agencyId: string): Promise<Authorization[]>;
     private mapRowToClient;

@@ -1,6 +1,37 @@
 import type { Knex } from 'knex';
 import type { AssignmentInput } from '../domain/scheduling.js';
 
+/**
+ * Row shape returned by `getTodaysScheduleForCaregiver`. Strings are
+ * ISO-8601 UTC; numerics are coerced from pg's text-decimal output.
+ */
+export type TodayScheduleRow = {
+  assignmentId: string;
+  scheduledStartTime: string | null;
+  scheduledEndTime: string | null;
+  clientId: string;
+  clientFirstName: string;
+  clientLastName: string;
+  clientAddressLine1: string | null;
+  clientCity: string | null;
+  clientState: string | null;
+  clientLatitude: number | null;
+  clientLongitude: number | null;
+  geofenceRadiusM: number;
+  templateId: string;
+  templateName: string;
+  currentVisitId: string | null;
+  currentVisitStatus: string | null;
+  currentClockInTime: string | null;
+  currentClockOutTime: string | null;
+};
+
+function toIsoOrNull(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return value.toISOString();
+  return new Date(String(value)).toISOString();
+}
+
 export class ScheduleRepository {
   constructor(private readonly db: Knex) {}
 
@@ -121,5 +152,108 @@ export class ScheduleRepository {
       clientId: row.client_id,
       serviceCode: row.service_code ?? undefined
     };
+  }
+
+  /**
+   * Today's schedule for one caregiver — every assignment whose
+   * `scheduled_start_time` falls in a 36-hour window around now (12 h back,
+   * 24 h forward), joined with the client + visit template, plus an optional
+   * LEFT-JOINed `evv_visits` row from earlier in the UTC day so the mobile
+   * dashboard can surface "you're already clocked in" state.
+   *
+   * Tenant scope: enforced by joining `caregivers` and asserting
+   * `caregivers.agency_id = ?`. We do NOT scope only by caregiver_id —
+   * doing so would let a caregiver row that's been moved between agencies
+   * leak its old assignments. Agency must match on the caregiver row that
+   * owns the assignment.
+   *
+   * Why a 12-hour back-window: an overnight (NOC) shift that started at
+   * 22:00 should still show up on the caregiver's dashboard at 06:00 the
+   * next morning so they can clock out from the same screen.
+   *
+   * `NULLS LAST` on the order so caregivers with on-call (no scheduled
+   * time) assignments still see them at the bottom rather than at top.
+   */
+  async getTodaysScheduleForCaregiver(
+    caregiverId: string,
+    agencyId: string
+  ): Promise<TodayScheduleRow[]> {
+    const rows = await this.db('assignments as a')
+      .innerJoin('caregivers as cg', 'cg.id', 'a.caregiver_id')
+      .innerJoin('visit_templates as vt', 'vt.id', 'a.visit_template_id')
+      .innerJoin('clients as c', 'c.id', 'vt.client_id')
+      // LEFT JOIN evv_visits by assignment id only — Knex's typed
+      // JoinClause doesn't expose raw-predicate methods. We narrow to
+      // "today's visit row" via CASE expressions in the SELECT below
+      // so an assignment with only a non-today visit still surfaces
+      // (with currentVisitId = null) instead of being filtered out.
+      .leftJoin('evv_visits as v', 'v.assignment_id', 'a.id')
+      .where('a.caregiver_id', caregiverId)
+      .andWhere('cg.agency_id', agencyId)
+      .andWhereRaw(
+        "a.scheduled_start_time BETWEEN (now() - interval '12 hours') AND (now() + interval '24 hours')"
+      )
+      .orderByRaw('a.scheduled_start_time ASC NULLS LAST')
+      .select(
+        'a.id as assignment_id',
+        'a.scheduled_start_time',
+        'a.scheduled_end_time',
+        'c.id as client_id',
+        'c.first_name as client_first_name',
+        'c.last_name as client_last_name',
+        'c.address_line_1 as client_address_line_1',
+        'c.city as client_city',
+        'c.state as client_state',
+        'c.latitude as client_latitude',
+        'c.longitude as client_longitude',
+        'c.geofence_radius_m as geofence_radius_m',
+        'vt.id as template_id',
+        'vt.name as template_name',
+        // CASE-WHEN narrows the LEFT-JOINed visit row to "today only" —
+        // see comment on the leftJoin above for why this is in the SELECT
+        // rather than the JOIN predicate.
+        this.db.raw(
+          "CASE WHEN v.clock_in_time::date = (current_date AT TIME ZONE 'UTC') THEN v.id END AS current_visit_id"
+        ),
+        this.db.raw(
+          "CASE WHEN v.clock_in_time::date = (current_date AT TIME ZONE 'UTC') THEN v.status END AS current_visit_status"
+        ),
+        this.db.raw(
+          "CASE WHEN v.clock_in_time::date = (current_date AT TIME ZONE 'UTC') THEN v.clock_in_time END AS current_clock_in_time"
+        ),
+        this.db.raw(
+          "CASE WHEN v.clock_in_time::date = (current_date AT TIME ZONE 'UTC') THEN v.clock_out_time END AS current_clock_out_time"
+        )
+      );
+
+    return rows.map((row): TodayScheduleRow => ({
+      assignmentId: row.assignment_id,
+      scheduledStartTime: toIsoOrNull(row.scheduled_start_time),
+      scheduledEndTime: toIsoOrNull(row.scheduled_end_time),
+      clientId: row.client_id,
+      clientFirstName: row.client_first_name,
+      clientLastName: row.client_last_name,
+      clientAddressLine1: row.client_address_line_1 ?? null,
+      clientCity: row.client_city ?? null,
+      clientState: row.client_state ?? null,
+      clientLatitude:
+        row.client_latitude === null || row.client_latitude === undefined
+          ? null
+          : Number(row.client_latitude),
+      clientLongitude:
+        row.client_longitude === null || row.client_longitude === undefined
+          ? null
+          : Number(row.client_longitude),
+      geofenceRadiusM:
+        row.geofence_radius_m === null || row.geofence_radius_m === undefined
+          ? 150
+          : Number(row.geofence_radius_m),
+      templateId: row.template_id,
+      templateName: row.template_name,
+      currentVisitId: row.current_visit_id ?? null,
+      currentVisitStatus: row.current_visit_status ?? null,
+      currentClockInTime: toIsoOrNull(row.current_clock_in_time),
+      currentClockOutTime: toIsoOrNull(row.current_clock_out_time)
+    }));
   }
 }

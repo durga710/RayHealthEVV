@@ -43,6 +43,37 @@ export class ClientRepository {
     return rows.map((row) => this.mapRowToClient(row));
   }
 
+  /**
+   * Reads the client's geofence anchor — registered street-address GPS plus
+   * the per-client allowed radius — for EVV clock-in / clock-out validation.
+   *
+   * Tenant-scoped via `agency_id` so a caregiver in agency A can never probe
+   * a client UUID from agency B. Returns undefined when the client row does
+   * not exist or belongs to a different tenant; the caller MUST treat that
+   * as "client not found" rather than fail-open through the geofence.
+   *
+   * Numeric columns come back from pg as strings (decimal/numeric); we
+   * coerce to JS numbers here so callers don't have to repeat the dance.
+   */
+  async getClientGeofence(
+    clientId: string,
+    agencyId: string
+  ): Promise<{ latitude: number | null; longitude: number | null; geofenceRadiusM: number | null } | undefined> {
+    const row = await this.db('clients')
+      .where({ id: clientId, agency_id: agencyId })
+      .select('latitude', 'longitude', 'geofence_radius_m')
+      .first();
+    if (!row) return undefined;
+    return {
+      latitude: row.latitude === null || row.latitude === undefined ? null : Number(row.latitude),
+      longitude: row.longitude === null || row.longitude === undefined ? null : Number(row.longitude),
+      geofenceRadiusM:
+        row.geofence_radius_m === null || row.geofence_radius_m === undefined
+          ? null
+          : Number(row.geofence_radius_m)
+    };
+  }
+
   async createAuthorization(authorization: Authorization): Promise<Authorization> {
     const [inserted] = await this.db('authorizations').insert({
       id: authorization.id ?? crypto.randomUUID(),
