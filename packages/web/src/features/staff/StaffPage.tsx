@@ -8,11 +8,25 @@ interface StaffMember {
   status: string;
 }
 
+interface CreatedInvite {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  expiresAt: string;
+  acceptPath: string;
+}
+
 export function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('caregiver');
   const [message, setMessage] = useState('');
+  // Last successfully-created invite. Surfaced prominently because email
+  // delivery via Resend is not yet wired (BAA pending) — the admin
+  // copies this URL and shares it manually until that's done.
+  const [createdInvite, setCreatedInvite] = useState<CreatedInvite | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     getJson<StaffMember[]>('/api/staff')
@@ -23,13 +37,33 @@ export function StaffPage() {
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
+    setCreatedInvite(null);
+    setCopied(false);
     try {
-      const invite = await postJson<StaffMember>('/api/invites', { email, role });
-      setStaff(prev => [...prev, invite]);
-      setMessage(`Invite sent to ${email}`);
+      const invite = await postJson<CreatedInvite>('/api/invites', { email, role });
+      setStaff(prev => [...prev, { id: invite.id, email: invite.email, role: invite.role, status: invite.status }]);
+      setCreatedInvite(invite);
+      setMessage(`Invite created for ${email} — copy the link below and share it with them.`);
       setEmail('');
-    } catch (err) {
-      setMessage('Failed to send invite');
+    } catch {
+      setMessage('Failed to create invite');
+    }
+  };
+
+  const inviteUrl = createdInvite
+    ? `${window.location.origin}${createdInvite.acceptPath}`
+    : '';
+
+  const handleCopy = async () => {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // Fallback: select the text input so the user can Cmd-C manually.
+      const el = document.getElementById('invite-url') as HTMLInputElement | null;
+      el?.select();
     }
   };
 
@@ -68,9 +102,62 @@ export function StaffPage() {
               </select>
             </div>
             
-            <button type="submit">Send Invite</button>
+            <button type="submit">Create Invite</button>
           </form>
-          {message && <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e0f2fe', color: '#0369a1', borderRadius: '8px' }}>{message}</div>}
+          {message && (
+            <div
+              style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                backgroundColor: createdInvite ? '#e0f2fe' : '#fee2e2',
+                color: createdInvite ? '#0369a1' : '#991b1b',
+                borderRadius: '8px'
+              }}
+            >
+              {message}
+            </div>
+          )}
+          {createdInvite && inviteUrl && (
+            <div
+              style={{
+                marginTop: '1rem',
+                padding: '1.25rem',
+                border: '1px solid #c9d8e8',
+                borderRadius: '8px',
+                backgroundColor: '#f8fafc'
+              }}
+            >
+              <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
+                Share this link with {createdInvite.email}. They'll set a password and finish creating their account.
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+                <input
+                  id="invite-url"
+                  type="text"
+                  readOnly
+                  value={inviteUrl}
+                  onFocus={(e) => e.currentTarget.select()}
+                  style={{
+                    flex: 1,
+                    padding: '0.6rem 0.75rem',
+                    border: '1px solid #c9d8e8',
+                    borderRadius: '6px',
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                    fontSize: '0.8125rem',
+                    backgroundColor: 'white'
+                  }}
+                />
+                <button type="button" onClick={handleCopy} style={{ whiteSpace: 'nowrap' }}>
+                  {copied ? 'Copied ✓' : 'Copy link'}
+                </button>
+              </div>
+              <div style={{ marginTop: '0.75rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                Expires {new Date(createdInvite.expiresAt).toLocaleString()}
+                {' · '}
+                Single-use — once they accept, the link stops working.
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
