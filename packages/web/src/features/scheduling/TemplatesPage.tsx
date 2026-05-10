@@ -20,6 +20,7 @@ export function TemplatesPage() {
   const [name, setName] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     getJson<Template[]>('/api/templates')
@@ -122,19 +123,76 @@ export function TemplatesPage() {
             </div>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {templates.map(t => (
-                <li key={t.id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                  <strong>{t.name}</strong>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Client: {t.clientId.slice(0,6)}...</div>
-                  <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                    {t.tasks.map((task, i) => (
-                      <span key={i} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '4px' }}>
-                        {task}
-                      </span>
-                    ))}
-                  </div>
-                </li>
-              ))}
+              {templates.map(t => {
+                const isExpanded = expandedId === t.id;
+                return (
+                  <li
+                    key={t.id}
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      backgroundColor: isExpanded ? '#f8fafc' : 'white'
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      onClick={() => setExpandedId(isExpanded ? null : t.id)}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        font: 'inherit',
+                        color: 'inherit',
+                        display: 'block'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong>{t.name}</strong>
+                        <span style={{ color: '#94a3b8', fontSize: '0.875rem', minWidth: '1ch', textAlign: 'center' }}>
+                          {isExpanded ? '▾' : '▸'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                        Client: {t.clientId.slice(0, 6)}...
+                      </div>
+                      <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                        {t.tasks.map((task, i) => (
+                          <span key={i} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '4px' }}>
+                            {task}
+                          </span>
+                        ))}
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <div
+                        style={{
+                          padding: '0 1rem 1rem',
+                          borderTop: '1px solid #e2e8f0',
+                          fontSize: '0.85rem',
+                          display: 'grid',
+                          gridTemplateColumns: 'auto 1fr',
+                          gap: '0.35rem 1rem',
+                          color: '#475569'
+                        }}
+                      >
+                        <div style={{ fontWeight: 600 }}>Template ID</div>
+                        <div style={{ fontFamily: 'monospace' }}>{t.id}</div>
+                        <div style={{ fontWeight: 600 }}>Client ID</div>
+                        <div style={{ fontFamily: 'monospace' }}>{t.clientId}</div>
+                        <div style={{ fontWeight: 600 }}>Name</div>
+                        <div>{t.name}</div>
+                        <div style={{ fontWeight: 600 }}>Tasks ({t.tasks.length})</div>
+                        <div>{t.tasks.join(', ') || <em style={{ color: '#94a3b8' }}>none</em>}</div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

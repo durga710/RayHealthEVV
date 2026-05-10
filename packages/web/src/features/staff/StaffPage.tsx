@@ -27,6 +27,7 @@ export function StaffPage() {
   // copies this URL and shares it manually until that's done.
   const [createdInvite, setCreatedInvite] = useState<CreatedInvite | null>(null);
   const [copied, setCopied] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     getJson<StaffMember[]>('/api/staff')
@@ -168,17 +169,74 @@ export function StaffPage() {
             </div>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {staff.map(s => (
-                <li key={s.id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong>{s.email}</strong>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Role: {s.role}</div>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', backgroundColor: s.status === 'pending' ? '#fef3c7' : '#e0f2fe', color: s.status === 'pending' ? '#d97706' : '#0284c7', borderRadius: '4px', textTransform: 'uppercase' }}>
-                    {s.status}
-                  </div>
-                </li>
-              ))}
+              {staff.map(s => {
+                const isExpanded = expandedId === s.id;
+                return (
+                  <li
+                    key={s.id}
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      backgroundColor: isExpanded ? '#f8fafc' : 'white'
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      onClick={() => setExpandedId(isExpanded ? null : s.id)}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        font: 'inherit',
+                        color: 'inherit'
+                      }}
+                    >
+                      <div>
+                        <strong>{s.email}</strong>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Role: {s.role}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', backgroundColor: s.status === 'pending' ? '#fef3c7' : '#e0f2fe', color: s.status === 'pending' ? '#d97706' : '#0284c7', borderRadius: '4px', textTransform: 'uppercase' }}>
+                          {s.status}
+                        </div>
+                        <span style={{ color: '#94a3b8', fontSize: '0.875rem', minWidth: '1ch', textAlign: 'center' }}>
+                          {isExpanded ? '▾' : '▸'}
+                        </span>
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <div
+                        style={{
+                          padding: '0 1rem 1rem',
+                          borderTop: '1px solid #e2e8f0',
+                          fontSize: '0.85rem',
+                          display: 'grid',
+                          gridTemplateColumns: 'auto 1fr',
+                          gap: '0.35rem 1rem',
+                          color: '#475569'
+                        }}
+                      >
+                        <div style={{ fontWeight: 600 }}>User ID</div>
+                        <div style={{ fontFamily: 'monospace' }}>{s.id}</div>
+                        <div style={{ fontWeight: 600 }}>Email</div>
+                        <div>{s.email}</div>
+                        <div style={{ fontWeight: 600 }}>Role</div>
+                        <div style={{ textTransform: 'capitalize' }}>{s.role}</div>
+                        <div style={{ fontWeight: 600 }}>Status</div>
+                        <div style={{ textTransform: 'capitalize' }}>{s.status}</div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

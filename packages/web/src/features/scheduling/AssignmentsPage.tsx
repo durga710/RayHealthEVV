@@ -24,6 +24,7 @@ export function AssignmentsPage() {
   const [visitTemplateId, setVisitTemplateId] = useState('');
   const [visitDate, setVisitDate] = useState('');
   const [message, setMessage] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     getJson<Assignment[]>('/api/assignments')
@@ -104,15 +105,78 @@ export function AssignmentsPage() {
             </div>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {assignments.map(a => (
-                <li key={a.id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong>Caregiver: {a.caregiverId.slice(0,6)}...</strong>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Client: {a.clientId.slice(0,6)}...</div>
-                  </div>
-                  {a.visitDate && <div style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', backgroundColor: '#fef3c7', color: '#047857', borderRadius: '4px' }}>Date: {a.visitDate}</div>}
-                </li>
-              ))}
+              {assignments.map(a => {
+                const isExpanded = expandedId === a.id;
+                return (
+                  <li
+                    key={a.id}
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      backgroundColor: isExpanded ? '#f8fafc' : 'white'
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      onClick={() => setExpandedId(isExpanded ? null : a.id)}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        font: 'inherit',
+                        color: 'inherit'
+                      }}
+                    >
+                      <div>
+                        <strong>Caregiver: {a.caregiverId.slice(0, 6)}...</strong>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Client: {a.clientId.slice(0, 6)}...</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {a.visitDate && (
+                          <div style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', backgroundColor: '#fef3c7', color: '#047857', borderRadius: '4px' }}>
+                            Date: {a.visitDate}
+                          </div>
+                        )}
+                        <span style={{ color: '#94a3b8', fontSize: '0.875rem', minWidth: '1ch', textAlign: 'center' }}>
+                          {isExpanded ? '▾' : '▸'}
+                        </span>
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <div
+                        style={{
+                          padding: '0 1rem 1rem',
+                          borderTop: '1px solid #e2e8f0',
+                          fontSize: '0.85rem',
+                          display: 'grid',
+                          gridTemplateColumns: 'auto 1fr',
+                          gap: '0.35rem 1rem',
+                          color: '#475569'
+                        }}
+                      >
+                        <div style={{ fontWeight: 600 }}>Assignment ID</div>
+                        <div style={{ fontFamily: 'monospace' }}>{a.id}</div>
+                        <div style={{ fontWeight: 600 }}>Caregiver ID</div>
+                        <div style={{ fontFamily: 'monospace' }}>{a.caregiverId}</div>
+                        <div style={{ fontWeight: 600 }}>Client ID</div>
+                        <div style={{ fontFamily: 'monospace' }}>{a.clientId}</div>
+                        <div style={{ fontWeight: 600 }}>Template ID</div>
+                        <div style={{ fontFamily: 'monospace' }}>{a.visitTemplateId}</div>
+                        <div style={{ fontWeight: 600 }}>Visit date</div>
+                        <div>{a.visitDate || <em style={{ color: '#94a3b8' }}>not set</em>}</div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
