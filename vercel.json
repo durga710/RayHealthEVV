@@ -1,7 +1,8 @@
 {
-  "installCommand": "npm install --include-workspace-root --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
-  "buildCommand": "npm run build -- --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
+  "installCommand": "npm ci --workspace=@rayhealth/web --workspace=@rayhealth/app --workspace=@rayhealth/core --include-workspace-root --no-audit --no-fund --prefer-offline",
+  "buildCommand": "npx turbo run build --filter=@rayhealth/web --filter=@rayhealth/app --filter=@rayhealth/core",
   "outputDirectory": "packages/web/dist",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- packages/web packages/app packages/core package.json package-lock.json vercel.json turbo.json && exit 0 || exit 1",
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -10,6 +11,12 @@
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/admin/audit-retention/sweep",
+      "schedule": "0 7 * * *"
     }
   ]
 }
