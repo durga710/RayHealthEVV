@@ -19,6 +19,7 @@ import assignmentRoutes from './routes/assignment-routes.js';
 import evvRoutes from './routes/evv-routes.js';
 import maintenanceRoutes from './routes/maintenance-routes.js';
 import taskRoutes from './routes/task-routes.js';
+import auditRetentionRoutes from './routes/audit-retention-routes.js';
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 
@@ -54,6 +55,7 @@ export function createApp() {
     app.use(`${prefix}/evv`, evvRoutes);
     app.use(`${prefix}/maintenance`, maintenanceRoutes);
     app.use(`${prefix}/tasks`, taskRoutes);
+    app.use(`${prefix}/admin/audit-retention`, auditRetentionRoutes);
   }
 
   // Protected route for testing (keep for now or remove if redundant)
