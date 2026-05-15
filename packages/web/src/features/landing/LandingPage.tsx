@@ -106,10 +106,35 @@ const roles = [
 const compliance = [
   { name: '21st Century Cures Act', detail: 'All six federal EVV data elements captured and validated on every clock-out.' },
   { name: 'PA DHS / PROMISe', detail: 'Built around PA personal-assistance and home-health operating tracks; PA task codes 106–256 are first-class.' },
-  { name: 'HIPAA', detail: 'PHI is scoped per agency and capability. Access tokens are JWT, password storage is bcrypt with cost 12.' },
+  { name: 'HIPAA', detail: 'PHI is scoped per agency and capability. Web sessions are server-managed via HttpOnly cookies (no browser-stored JWTs); mobile uses device secure storage; passwords are bcrypt with cost 12.' },
   { name: 'Sandata aggregator ready', detail: 'EVV records map cleanly to the federal element schema for downstream submission.' },
-  { name: 'Audit-grade trail', detail: 'Immutable audit_events records the actor, entity, payload, and timestamp for every state change.' },
-  { name: 'Operational guardrails', detail: 'Rate-limited login and bootstrap, advisory-locked first-admin creation, CORS scoped to allowlisted origins.' },
+  { name: 'Audit-grade trail', detail: 'Durable audit_events capture actor, actor type, event type, outcome, correlation id, and payload for every state change — including auth login, logout, and CSRF failures.' },
+  { name: 'Operational guardrails', detail: 'Rate-limited login (web + mobile + bootstrap), advisory-locked first-admin creation, double-submit CSRF tokens on cookie sessions, credentials-aware CORS scoped to allowlisted origins.' },
+];
+
+// Security-hardening shipped items — surfaced on the landing page so prospects
+// and HIPAA reviewers can see the cookie-session migration is live, not roadmap.
+const recentlyShipped = [
+  {
+    badge: 'AUTH',
+    title: 'Cookie-session web auth',
+    body: 'Replaced browser-stored JWTs with server-managed sessions. Login sets an HttpOnly cookie + rotating CSRF token; the API revokes on logout.',
+  },
+  {
+    badge: 'CSRF',
+    title: 'Double-submit CSRF protection',
+    body: 'All unsafe cookie-authenticated requests now require an x-csrf-token header that hashes to the session record. CSRF failures are audited.',
+  },
+  {
+    badge: 'AUDIT',
+    title: 'Durable audit events',
+    body: 'auth.login.success, session.revoked, csrf.failure, phi.read, request.write are now persisted with actor, outcome, correlation id, and payload.',
+  },
+  {
+    badge: 'MOBILE',
+    title: 'Secure-storage caregiver auth',
+    body: 'Mobile access tokens are stored in expo-secure-store and attached via an axios interceptor — never in plain JS state.',
+  },
 ];
 
 const faqs = [
@@ -190,6 +215,7 @@ export function LandingPage() {
           RayHealthEVV<span style={{ fontSize: '0.7rem', verticalAlign: 'super', color: 'var(--color-accent)' }}>™</span>
         </div>
         <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <a href="#shipped" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>What's new</a>
           <a href="#features" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Features</a>
           <Link to="/pricing" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Pricing</Link>
           <Link to="/demo" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', fontWeight: 600 }}>Demo</Link>
@@ -263,6 +289,57 @@ export function LandingPage() {
               <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 600 }}>{s.label}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Recently shipped — security hardening */}
+      <section id="shipped" style={{ padding: '5rem 2rem 1rem' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <p style={sectionEyebrow}>Recently shipped</p>
+            <h2 style={sectionHeading}>Security hardening — May 2026.</h2>
+            <p style={sectionLead}>
+              The auth, session, and audit primitives a HIPAA review will ask about — now in production.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+            {recentlyShipped.map((item) => (
+              <div
+                key={item.title}
+                style={{
+                  ...cardBase,
+                  padding: '1.75rem',
+                  border: '1px solid #c9d8e8',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                }}
+              >
+                <span
+                  style={{
+                    alignSelf: 'flex-start',
+                    backgroundColor: 'var(--color-primary-dark)',
+                    color: 'white',
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: '0.7rem',
+                    letterSpacing: '2px',
+                    fontWeight: 800,
+                    padding: '0.3rem 0.7rem',
+                    borderRadius: '999px',
+                  }}
+                >
+                  {item.badge}
+                </span>
+                <h3 style={{ margin: 0, color: 'var(--color-primary-dark)', fontSize: '1.1rem', lineHeight: 1.3 }}>
+                  {item.title}
+                </h3>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1.55, margin: 0 }}>
+                  {item.body}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
