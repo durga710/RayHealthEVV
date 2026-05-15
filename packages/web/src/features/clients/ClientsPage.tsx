@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getJson, postJson } from '../../lib/api-client.js';
+import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
 
 interface Client {
   id: string;
@@ -23,8 +24,9 @@ export function ClientsPage() {
   const [banner, setBanner] = useState<Banner>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadClients = useCallback(() => {
     setLoading(true);
+    setLoadError(null);
     getJson<Client[]>('/api/clients')
       .then((data) => {
         setClients(data || []);
@@ -33,6 +35,14 @@ export function ClientsPage() {
       .catch((err: Error) => setLoadError(err.message || 'Failed to load clients'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadClients();
+  }, [loadClients]);
+
+  const focusAddClient = () => {
+    document.getElementById('firstName')?.focus();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,17 +122,15 @@ export function ClientsPage() {
         <div>
           <h3>Client Roster</h3>
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b', marginTop: '1rem' }}>
-              Loading…
-            </div>
+            <LoadingSkeleton rows={5} columns={2} />
           ) : loadError ? (
-            <div role="alert" style={{ padding: '1rem', backgroundColor: '#fef2f2', color: '#991b1b', borderRadius: '8px', marginTop: '1rem', fontWeight: 600 }}>
-              {loadError}
-            </div>
+            <ErrorRetry message={loadError} onRetry={loadClients} />
           ) : clients.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b', marginTop: '1rem' }}>
-              No clients yet. Add one to get started.
-            </div>
+            <EmptyState
+              title="No clients yet"
+              body="Add a client to start tracking demographics, Medicaid info, and care plans."
+              cta={{ label: 'Add a client', onClick: focusAddClient }}
+            />
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {clients.map(c => {

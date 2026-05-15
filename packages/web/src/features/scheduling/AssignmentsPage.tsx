@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getJson, postJson } from '../../lib/api-client.js';
+import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
 
 interface Template {
   id: string;
@@ -18,7 +19,9 @@ interface Assignment {
 export function AssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
-  
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [clientId, setClientId] = useState('');
   const [caregiverId, setCaregiverId] = useState('');
   const [visitTemplateId, setVisitTemplateId] = useState('');
@@ -26,15 +29,26 @@ export function AssignmentsPage() {
   const [message, setMessage] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadAssignments = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
     getJson<Assignment[]>('/api/assignments')
       .then(data => setAssignments(data || []))
-      .catch(console.error);
-      
+      .catch((err: Error) => setLoadError(err.message || 'Failed to load assignments'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadAssignments();
+
     getJson<Template[]>('/api/templates')
       .then(data => setTemplates(data || []))
       .catch(console.error);
-  }, []);
+  }, [loadAssignments]);
+
+  const focusAddAssignment = () => {
+    document.getElementById('clientId')?.focus();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,10 +113,16 @@ export function AssignmentsPage() {
 
         <div>
           <h3>Upcoming Assignments</h3>
-          {assignments.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b', marginTop: '1rem' }}>
-              No assignments found.
-            </div>
+          {loading ? (
+            <LoadingSkeleton rows={5} columns={2} />
+          ) : loadError ? (
+            <ErrorRetry message={loadError} onRetry={loadAssignments} />
+          ) : assignments.length === 0 ? (
+            <EmptyState
+              title="No assignments yet"
+              body="Schedule a caregiver against a visit template to populate this list."
+              cta={{ label: 'Add an assignment', onClick: focusAddAssignment }}
+            />
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {assignments.map(a => {

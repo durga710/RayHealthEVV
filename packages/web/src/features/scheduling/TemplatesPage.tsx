@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getJson, postJson } from '../../lib/api-client.js';
+import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
 
 interface Template {
   id: string;
@@ -16,21 +17,34 @@ interface PATask {
 export function TemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [availableTasks, setAvailableTasks] = useState<PATask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [clientId, setClientId] = useState('');
   const [name, setName] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadTemplates = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
     getJson<Template[]>('/api/templates')
       .then(data => setTemplates(data || []))
-      .catch(console.error);
-      
+      .catch((err: Error) => setLoadError(err.message || 'Failed to load templates'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadTemplates();
+
     getJson<PATask[]>('/api/tasks')
       .then(data => setAvailableTasks(data || []))
       .catch(console.error);
-  }, []);
+  }, [loadTemplates]);
+
+  const focusAddTemplate = () => {
+    document.getElementById('clientId')?.focus();
+  };
 
   const handleTaskToggle = (duty: string) => {
     const newSelected = new Set(selectedTasks);
@@ -117,10 +131,16 @@ export function TemplatesPage() {
 
         <div>
           <h3>Template Library</h3>
-          {templates.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b', marginTop: '1rem' }}>
-              No templates found.
-            </div>
+          {loading ? (
+            <LoadingSkeleton rows={5} columns={2} />
+          ) : loadError ? (
+            <ErrorRetry message={loadError} onRetry={loadTemplates} />
+          ) : templates.length === 0 ? (
+            <EmptyState
+              title="No templates yet"
+              body="Build a visit template so caregivers can complete plan-of-care tasks consistently."
+              cta={{ label: 'Add a template', onClick: focusAddTemplate }}
+            />
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {templates.map(t => {

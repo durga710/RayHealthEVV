@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getJson, postJson } from '../../lib/api-client.js';
+import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
 
 interface Authorization {
   id: string;
@@ -13,6 +14,8 @@ interface Authorization {
 
 export function AuthorizationsPage() {
   const [authorizations, setAuthorizations] = useState<Authorization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [clientId, setClientId] = useState('');
   const [payerId, setPayerId] = useState('');
   const [serviceCode, setServiceCode] = useState('');
@@ -22,11 +25,22 @@ export function AuthorizationsPage() {
   const [message, setMessage] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadAuthorizations = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
     getJson<Authorization[]>('/api/authorizations')
       .then(data => setAuthorizations(data || []))
-      .catch(console.error);
+      .catch((err: Error) => setLoadError(err.message || 'Failed to load authorizations'))
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadAuthorizations();
+  }, [loadAuthorizations]);
+
+  const focusAddAuthorization = () => {
+    document.getElementById('clientId')?.focus();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,10 +115,16 @@ export function AuthorizationsPage() {
 
         <div>
           <h3>Active Authorizations</h3>
-          {authorizations.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b', marginTop: '1rem' }}>
-              No authorizations found.
-            </div>
+          {loading ? (
+            <LoadingSkeleton rows={5} columns={2} />
+          ) : loadError ? (
+            <ErrorRetry message={loadError} onRetry={loadAuthorizations} />
+          ) : authorizations.length === 0 ? (
+            <EmptyState
+              title="No authorizations yet"
+              body="Add a PA authorization to track service units and effective dates."
+              cta={{ label: 'Add an authorization', onClick: focusAddAuthorization }}
+            />
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {authorizations.map(a => {
