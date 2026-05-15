@@ -5,10 +5,12 @@ node_modules/
 # Build artifacts
 dist/
 **/dist/
-# But DO commit the per-package dist/ — Vercel deploys are pre-built.
+# packages/core/dist and packages/app/dist are still committed because the
+# monorepo's TypeScript resolution consumes core/app at compile time via dist.
+# packages/web/dist is now built by Vercel on every deploy (see vercel.json) —
+# no need to commit web build output.
 !packages/core/dist/
 !packages/app/dist/
-!packages/web/dist/
 .turbo/
 **/.turbo/
 *.tsbuildinfo

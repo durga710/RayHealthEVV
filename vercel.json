@@ -1,6 +1,6 @@
 {
-  "installCommand": "npm install --omit=dev",
-  "buildCommand": "echo 'pre-built artifacts committed; skipping build'",
+  "installCommand": "npm ci",
+  "buildCommand": "npm --workspace @rayhealth/web run build",
   "outputDirectory": "packages/web/dist",
   "functions": {
     "api/**/*.js": {
