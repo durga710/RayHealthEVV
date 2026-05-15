@@ -17,6 +17,7 @@ import { StatusPage } from './features/marketing/StatusPage.js';
 import { PrivacyPage } from './features/marketing/PrivacyPage.js';
 import { AdminAssistant } from './features/support/AdminAssistant.js';
 import { AuditRetentionPage } from './features/audit/AuditRetentionPage.js';
+import { DashboardPage } from './features/admin/DashboardPage.js';
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth();
@@ -29,7 +30,9 @@ function ProtectedRoute() {
 }
 
 function AdminLayout() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+
+  const initial = (user?.userId ?? '?').slice(0, 1).toUpperCase();
 
   return (
     <div className="admin-shell">
@@ -38,6 +41,7 @@ function AdminLayout() {
           RayHealth <span className="evv-badge">EVV</span>
         </Link>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <Link to="/admin" className="nav-link">Dashboard</Link>
           <Link to="/admin/agency" className="nav-link">Agency Setup</Link>
           <Link to="/admin/staff" className="nav-link">Staff</Link>
           <Link to="/admin/clients" className="nav-link">Clients</Link>
@@ -47,12 +51,108 @@ function AdminLayout() {
           <Link to="/admin/review" className="nav-link">Visit Review</Link>
           <Link to="/admin/audit-retention" className="nav-link">Audit Retention</Link>
         </div>
-        <button 
-          onClick={logout} 
-          style={{ backgroundColor: 'transparent', border: '1px solid rgba(255,255,255,0.2)', padding: '0.5rem', width: '100%', marginTop: 'auto', textAlign: 'center' }}
+        <div
+          style={{
+            marginTop: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            padding: '1rem',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '10px',
+            backgroundColor: 'rgba(255,255,255,0.04)',
+          }}
         >
-          Sign Out
-        </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div
+              aria-hidden
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '999px',
+                backgroundColor: 'var(--color-accent)',
+                color: 'white',
+                display: 'grid',
+                placeItems: 'center',
+                fontFamily: 'var(--font-heading)',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+              }}
+            >
+              {initial}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              <span
+                style={{
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {user?.role ?? 'Signed in'}
+              </span>
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  color: 'rgba(255,255,255,0.55)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                title={user?.userId}
+              >
+                {user?.userId ? `${user.userId.slice(0, 8)}…` : '—'}
+              </span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              backgroundColor: 'rgba(34,197,94,0.16)',
+              color: '#86efac',
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase',
+              padding: '0.25rem 0.55rem',
+              borderRadius: '999px',
+              alignSelf: 'flex-start',
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: '5px',
+                height: '5px',
+                borderRadius: '999px',
+                backgroundColor: '#16a34a',
+                boxShadow: '0 0 0 3px rgba(22,163,74,0.25)',
+              }}
+            />
+            Cookie session
+          </div>
+
+          <button
+            onClick={logout}
+            style={{
+              backgroundColor: 'transparent',
+              border: '1px solid rgba(255,255,255,0.2)',
+              padding: '0.5rem',
+              width: '100%',
+              textAlign: 'center',
+              borderRadius: '6px',
+              color: 'inherit',
+              cursor: 'pointer',
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
       </nav>
       <main>
         <div className="card">
@@ -87,7 +187,7 @@ export function App() {
           <Route path="assignments" element={<AssignmentsPage />} />
           <Route path="review" element={<VisitReviewPage />} />
           <Route path="audit-retention" element={<AuditRetentionPage />} />
-          <Route index element={<Navigate to="/admin/agency" replace />} />
+          <Route index element={<DashboardPage />} />
         </Route>
       </Route>
       
