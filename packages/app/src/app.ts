@@ -10,6 +10,7 @@ import { requireCsrf } from './middleware/csrf.js';
 import { createDb } from '@rayhealth/core';
 
 import authRoutes from './routes/auth-routes.js';
+import healthRoutes, { healthLimiter } from './routes/health-routes.js';
 import inviteAcceptanceRoutes from './routes/invite-acceptance-routes.js';
 import invitationsRoutes from './routes/invitations-routes.js';
 import inviteRoutes from './routes/invite-routes.js';
@@ -148,6 +149,10 @@ export function createApp() {
     // Public invitation lookup + accept (newer surface; same rate-limit
     // category as the legacy /invites/accept endpoint).
     app.use(`${prefix}/invitations`, inviteAcceptanceLimiter, invitationsRoutes);
+    // Public health endpoints (liveness, DB, audit-pipeline). Unauthenticated
+    // on purpose — the public /status page polls these. Mounted BEFORE
+    // authContext, behind their own tighter rate limit (60 / 15-min per IP).
+    app.use(`${prefix}/health`, healthLimiter, healthRoutes);
   }
 
   // ---------- Authenticated surface ----------
