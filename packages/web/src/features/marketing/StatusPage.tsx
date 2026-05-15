@@ -1,44 +1,208 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MarketingShell } from './MarketingShell.js';
 
+/**
+ * Public status page. Polls three real backend probes — liveness, DB,
+ * audit pipeline — and renders a card per service plus a roll-up header.
+ * Refresh interval is 30s. All three endpoints are unauthenticated and
+ * sit behind their own rate limiter (60 / 15-min per IP).
+ */
+
 const API_BASE =
   (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? '/api';
 
-interface Probe {
-  at: number; // epoch ms
-  ok: boolean;
-  ms: number;
+const POLL_MS = 30_000;
+
+type ProbeStatus = 'ok' | 'stale' | 'empty' | 'down' | 'error';
+
+interface HealthResp {
+  status: string;
+  uptimeSeconds?: number;
+  version?: string;
+  timestamp?: string;
+}
+
+interface DbResp {
+  status: string;
+  latencyMs?: number;
+  timestamp?: string;
   error?: string;
 }
 
-const POLL_MS = 30_000;
-const HISTORY = 20;
+interface AuditResp {
+  status: string;
+  lastEventAt?: string | null;
+  ageSeconds?: number | null;
+  timestamp?: string;
+  error?: string;
+}
+
+interface ServiceCard {
+  name: string;
+  status: ProbeStatus;
+  metricLabel: string;
+  metricValue: string;
+  detail?: string;
+  lastChecked: number;
+}
+
+interface PageState {
+  cards: ServiceCard[];
+  loading: boolean;
+  /** True only when every single probe failed — distinguishes "API down"
+   *  from "API up but DB stale". */
+  allFailed: boolean;
+  lastChecked: number | null;
+}
+
+/** Try to parse a JSON response. If the server returned 503 with a body,
+ *  we still want the body (it carries `status: 'down'`). Only treat a
+ *  network-level failure as "error". */
+async function fetchJsonSafe<T>(url: string): Promise<{ ok: boolean; body: T | null }> {
+  try {
+    const r = await fetch(url, { headers: { accept: 'application/json' }, cache: 'no-store' });
+    let body: T | null = null;
+    try {
+      body = (await r.json()) as T;
+    } catch {
+      body = null;
+    }
+    return { ok: r.ok, body };
+  } catch {
+    return { ok: false, body: null };
+  }
+}
+
+function formatUptime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '—';
+  const d = Math.floor(seconds / 86_400);
+  const h = Math.floor((seconds % 86_400) / 3_600);
+  const m = Math.floor((seconds % 3_600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${Math.round(seconds)}s`;
+}
+
+function formatAge(seconds: number | null | undefined): string {
+  if (seconds == null) return '—';
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3_600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86_400) return `${Math.floor(seconds / 3_600)}h ago`;
+  return `${Math.floor(seconds / 86_400)}d ago`;
+}
+
+function toCard(name: string, body: unknown, networkOk: boolean): ServiceCard {
+  const now = Date.now();
+  if (!networkOk && !body) {
+    return {
+      name,
+      status: 'error',
+      metricLabel: 'Status',
+      metricValue: 'unreachable',
+      detail: 'Network error',
+      lastChecked: now,
+    };
+  }
+  const obj = (body ?? {}) as Record<string, unknown>;
+  const rawStatus = typeof obj.status === 'string' ? obj.status : 'error';
+
+  if (name === 'API') {
+    const r = obj as unknown as HealthResp;
+    return {
+      name,
+      status: rawStatus === 'ok' ? 'ok' : 'error',
+      metricLabel: 'Uptime',
+      metricValue: r.uptimeSeconds != null ? formatUptime(r.uptimeSeconds) : '—',
+      detail: r.version ? `v${r.version}` : undefined,
+      lastChecked: now,
+    };
+  }
+  if (name === 'Database') {
+    const r = obj as unknown as DbResp;
+    const status: ProbeStatus = rawStatus === 'ok' ? 'ok' : 'down';
+    return {
+      name,
+      status,
+      metricLabel: 'Latency',
+      metricValue: r.latencyMs != null ? `${r.latencyMs} ms` : '—',
+      detail: status === 'down' ? 'Connection failed' : undefined,
+      lastChecked: now,
+    };
+  }
+  // Audit
+  const r = obj as unknown as AuditResp;
+  let status: ProbeStatus;
+  if (rawStatus === 'ok') status = 'ok';
+  else if (rawStatus === 'stale') status = 'stale';
+  else if (rawStatus === 'empty') status = 'empty';
+  else status = 'down';
+  return {
+    name,
+    status,
+    metricLabel: 'Last event',
+    metricValue:
+      r.ageSeconds != null
+        ? formatAge(r.ageSeconds)
+        : status === 'empty'
+          ? 'No events yet'
+          : '—',
+    detail: status === 'down' ? 'Probe failed' : undefined,
+    lastChecked: now,
+  };
+}
+
+const PILL_COLORS: Record<ProbeStatus, { bg: string; fg: string; label: string }> = {
+  ok: { bg: '#dcfce7', fg: '#166534', label: 'OK' },
+  stale: { bg: '#fef9c3', fg: '#854d0e', label: 'STALE' },
+  empty: { bg: '#fef9c3', fg: '#854d0e', label: 'EMPTY' },
+  down: { bg: '#fee2e2', fg: '#991b1b', label: 'DOWN' },
+  error: { bg: '#fee2e2', fg: '#991b1b', label: 'ERROR' },
+};
+
+function overallStatus(cards: ServiceCard[]): ProbeStatus {
+  if (cards.length === 0) return 'error';
+  if (cards.some((c) => c.status === 'down' || c.status === 'error')) return 'down';
+  if (cards.some((c) => c.status === 'stale' || c.status === 'empty')) return 'stale';
+  return 'ok';
+}
+
+const OVERALL_TITLE: Record<ProbeStatus, string> = {
+  ok: 'All systems operational.',
+  stale: 'Degraded — investigating.',
+  empty: 'Degraded — investigating.',
+  down: 'Outage — investigating.',
+  error: 'Unable to reach status API.',
+};
 
 export function StatusPage() {
-  const [probes, setProbes] = useState<Probe[]>([]);
-  const [now, setNow] = useState(Date.now());
+  const [state, setState] = useState<PageState>({
+    cards: [],
+    loading: true,
+    allFailed: false,
+    lastChecked: null,
+  });
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
     const probe = async () => {
-      const start = performance.now();
-      try {
-        const r = await fetch(`${API_BASE}/health?cb=${Date.now()}`, {
-          headers: { accept: 'application/json' }
-        });
-        const ms = Math.round(performance.now() - start);
-        const ok = r.ok;
-        if (cancelled) return;
-        setProbes((prev) => [...prev, { at: Date.now(), ok, ms }].slice(-HISTORY));
-      } catch (err) {
-        const ms = Math.round(performance.now() - start);
-        if (cancelled) return;
-        setProbes((prev) =>
-          [...prev, { at: Date.now(), ok: false, ms, error: (err as Error).message }].slice(-HISTORY)
-        );
-      }
-      setNow(Date.now());
+      const [health, db, audit] = await Promise.all([
+        fetchJsonSafe(`${API_BASE}/health`),
+        fetchJsonSafe(`${API_BASE}/health/db`),
+        fetchJsonSafe(`${API_BASE}/health/audit`),
+      ]);
+      if (cancelled) return;
+      const cards: ServiceCard[] = [
+        toCard('API', health.body, health.ok),
+        toCard('Database', db.body, db.ok),
+        toCard('Audit pipeline', audit.body, audit.ok),
+      ];
+      // Every probe reachable means we got *some* body back; if the network
+      // was dead for all three we render the friendly all-failed banner.
+      const allFailed = cards.every((c) => c.status === 'error');
+      setState({ cards, loading: false, allFailed, lastChecked: Date.now() });
     };
 
     probe();
@@ -49,122 +213,167 @@ export function StatusPage() {
     };
   }, []);
 
-  const last = probes[probes.length - 1];
-  const overall: 'green' | 'red' | 'unknown' = !last ? 'unknown' : last.ok ? 'green' : 'red';
-  const uptimePct =
-    probes.length === 0
-      ? '—'
-      : `${Math.round((probes.filter((p) => p.ok).length / probes.length) * 100)}%`;
-
-  const statusColor: Record<typeof overall, string> = {
-    green: '#16a34a',
-    red: '#dc2626',
-    unknown: '#94a3b8'
-  };
+  const overall = overallStatus(state.cards);
 
   return (
-    <MarketingShell
-      eyebrow="System status"
-      title={
-        overall === 'green'
-          ? 'All systems operational.'
-          : overall === 'red'
-            ? 'Degraded — investigating.'
-            : 'Checking…'
-      }
-    >
+    <MarketingShell eyebrow="System status" title={OVERALL_TITLE[overall]}>
       <div
         style={{
           maxWidth: '720px',
           margin: '2rem auto 0',
-          backgroundColor: 'white',
-          padding: '2rem',
-          borderRadius: '16px',
-          boxShadow: '0 6px 20px rgba(26, 95, 168, 0.08)'
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <div
+        {/* Header row */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            backgroundColor: 'white',
+            padding: '1rem 1.25rem',
+            borderRadius: '12px',
+            boxShadow: '0 6px 20px rgba(26, 95, 168, 0.08)',
+          }}
+        >
+          <strong style={{ color: 'var(--color-primary-dark)', fontSize: '1.05rem' }}>
+            Overall
+          </strong>
+          <StatusPill status={overall} />
+          <span
             style={{
-              width: '14px',
-              height: '14px',
-              borderRadius: '50%',
-              backgroundColor: statusColor[overall],
-              boxShadow: `0 0 0 4px ${statusColor[overall]}33`
+              marginLeft: 'auto',
+              fontSize: '0.85rem',
+              color: 'var(--color-text-muted)',
             }}
-          />
-          <strong style={{ color: 'var(--color-primary-dark)', fontSize: '1.1rem' }}>API</strong>
-          <span style={{ marginLeft: 'auto', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-            Last probe: {last ? new Date(last.at).toLocaleTimeString() : '—'}
+          >
+            {state.lastChecked
+              ? `Last checked ${new Date(state.lastChecked).toLocaleTimeString()}`
+              : state.loading
+                ? 'Checking…'
+                : '—'}
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px', marginBottom: '0.5rem' }}>
-          {Array.from({ length: HISTORY }).map((_, i) => {
-            const offsetIndex = probes.length - HISTORY + i;
-            const probe = offsetIndex >= 0 ? probes[offsetIndex] : undefined;
-            const color = !probe ? '#e2e8f0' : probe.ok ? '#16a34a' : '#dc2626';
-            const height = !probe ? 12 : Math.max(8, Math.min(60, probe.ms / 4));
-            return (
-              <div
-                key={i}
-                title={
-                  probe
-                    ? `${probe.ok ? 'OK' : 'FAIL'} — ${probe.ms} ms — ${new Date(probe.at).toLocaleTimeString()}`
-                    : 'pending'
-                }
-                style={{ flex: 1, height: `${height}px`, backgroundColor: color, borderRadius: '2px' }}
-              />
-            );
-          })}
-        </div>
+        {state.loading && state.cards.length === 0 && (
+          <div
+            style={{
+              backgroundColor: 'white',
+              padding: '1.25rem',
+              borderRadius: '12px',
+              textAlign: 'center',
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            Loading status…
+          </div>
+        )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '1.5rem' }}>
-          <Stat label="Uptime (last 20)" value={uptimePct} />
-          <Stat label="Last latency" value={last ? `${last.ms} ms` : '—'} />
-          <Stat label="Polled every" value={`${POLL_MS / 1000}s`} />
-        </div>
-
-        {last && !last.ok && last.error && (
+        {state.allFailed && !state.loading && (
           <div
             role="alert"
             style={{
-              marginTop: '1.5rem',
-              padding: '1rem',
               backgroundColor: '#fef2f2',
               color: '#991b1b',
-              borderRadius: '8px',
-              fontFamily: 'monospace',
-              fontSize: '0.85rem'
+              padding: '1rem 1.25rem',
+              borderRadius: '12px',
+              fontSize: '0.9rem',
             }}
           >
-            {last.error}
+            We can't reach the status API right now. This page will keep retrying every
+            30&nbsp;seconds.
           </div>
         )}
-      </div>
 
-      <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-        This page polls <code>/api/health</code> from your browser. Numbers are independent of any third-party
-        uptime service. Source of truth: {API_BASE}/health · {now ? new Date(now).toLocaleString() : '—'}
-      </p>
+        {state.cards.map((card) => (
+          <ServiceCardView key={card.name} card={card} />
+        ))}
+
+        <p
+          style={{
+            textAlign: 'center',
+            marginTop: '0.5rem',
+            color: 'var(--color-text-muted)',
+            fontSize: '0.8rem',
+          }}
+        >
+          Probes run every {POLL_MS / 1000}s against {API_BASE}/health, /health/db, /health/audit.
+        </p>
+      </div>
     </MarketingShell>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function StatusPill({ status }: { status: ProbeStatus }) {
+  const { bg, fg, label } = PILL_COLORS[status];
   return (
-    <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
-      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary-dark)' }}>{value}</div>
-      <div
-        style={{
-          fontSize: '0.75rem',
-          color: 'var(--color-text-muted)',
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-          marginTop: '0.25rem'
-        }}
-      >
-        {label}
+    <span
+      style={{
+        backgroundColor: bg,
+        color: fg,
+        padding: '2px 10px',
+        borderRadius: '12px',
+        fontSize: '0.75rem',
+        letterSpacing: '1px',
+        fontWeight: 800,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function ServiceCardView({ card }: { card: ServiceCard }) {
+  return (
+    <div
+      style={{
+        backgroundColor: 'white',
+        padding: '1.25rem',
+        borderRadius: '12px',
+        boxShadow: '0 6px 20px rgba(26, 95, 168, 0.06)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginBottom: '0.25rem',
+          }}
+        >
+          <strong style={{ color: 'var(--color-primary-dark)' }}>{card.name}</strong>
+          <StatusPill status={card.status} />
+        </div>
+        {card.detail && (
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{card.detail}</div>
+        )}
+      </div>
+      <div style={{ textAlign: 'right' }}>
+        <div
+          style={{
+            fontSize: '1.25rem',
+            fontWeight: 800,
+            color: 'var(--color-primary-dark)',
+          }}
+        >
+          {card.metricValue}
+        </div>
+        <div
+          style={{
+            fontSize: '0.7rem',
+            color: 'var(--color-text-muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+          }}
+        >
+          {card.metricLabel}
+        </div>
       </div>
     </div>
   );
