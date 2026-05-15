@@ -31,18 +31,23 @@ function makePendingInvite(over: Partial<Record<string, unknown>> = {}) {
 
 function mockInviteLookup(invite: ReturnType<typeof makePendingInvite> | undefined) {
   vi.spyOn(core, 'CaregiverRepository').mockImplementation(
-    () =>
-      ({
+    function () {
+      return {
         findInviteById: vi.fn().mockResolvedValue(invite),
         create: vi.fn(),
         markInviteAccepted: vi.fn()
-      } as any)
+      } as any;
+    } as unknown as (db: unknown) => core.CaregiverRepository
   );
   vi.spyOn(core, 'UserRepository').mockImplementation(
-    () => ({ create: vi.fn() } as any)
+    function () {
+      return { create: vi.fn() } as any;
+    } as unknown as (db: unknown) => core.UserRepository
   );
   vi.spyOn(core, 'AuditEventRepository').mockImplementation(
-    () => ({ create: vi.fn() } as any)
+    function () {
+      return { create: vi.fn() } as any;
+    } as unknown as (db: unknown) => core.AuditEventRepository
   );
 }
 

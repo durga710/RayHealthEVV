@@ -12,20 +12,26 @@ afterEach(() => {
 
 describe('invite routes', () => {
   it('creates a pending staff invite for a caregiver role', async () => {
-    vi.spyOn(core, 'CaregiverRepository').mockImplementation(() => ({
-      createInvite: vi.fn().mockResolvedValue({
-        id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
-        agencyId: 'agency-1',
-        email: 'caregiver@keystone.example',
-        role: 'caregiver',
-        status: 'pending',
-        invitedBy: 'user-1',
-        expiresAt: '2026-05-23T14:00:00.000Z'
-      })
-    } as any));
-    vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({
-      create: vi.fn().mockResolvedValue({})
-    } as any));
+    vi.spyOn(core, 'CaregiverRepository').mockImplementation(
+      function () {
+        return {
+          createInvite: vi.fn().mockResolvedValue({
+            id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+            agencyId: 'agency-1',
+            email: 'caregiver@keystone.example',
+            role: 'caregiver',
+            status: 'pending',
+            invitedBy: 'user-1',
+            expiresAt: '2026-05-23T14:00:00.000Z'
+          })
+        } as any;
+      } as unknown as (db: unknown) => core.CaregiverRepository
+    );
+    vi.spyOn(core, 'AuditEventRepository').mockImplementation(
+      function () {
+        return { create: vi.fn().mockResolvedValue({}) } as any;
+      } as unknown as (db: unknown) => core.AuditEventRepository
+    );
 
     const response = await request(createApp())
       .post('/invites')

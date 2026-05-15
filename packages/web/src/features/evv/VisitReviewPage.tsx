@@ -7,7 +7,7 @@ interface EvvVisit {
   caregiverId: string;
   clockInTime: string;
   clockOutTime?: string;
-  status: 'pending' | 'verified' | 'flagged';
+  status: 'pending' | 'verified' | 'flagged' | 'corrected';
 }
 
 export function VisitReviewPage() {
