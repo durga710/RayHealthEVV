@@ -19,21 +19,22 @@
 import { vi } from 'vitest';
 
 const realSpyOn = vi.spyOn.bind(vi);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(vi as any).spyOn = function patchedSpyOn(this: unknown, ...spyArgs: unknown[]) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const spy = realSpyOn(...(spyArgs as [any, any]));
+(vi as unknown as { spyOn: (...a: unknown[]) => unknown }).spyOn = function patchedSpyOn(
+  this: unknown,
+  ...spyArgs: unknown[]
+) {
+  const spy = realSpyOn(...(spyArgs as Parameters<typeof realSpyOn>)) as unknown as {
+    mockImplementation: (fn: (...args: unknown[]) => unknown) => unknown;
+  };
   const originalMockImpl = spy.mockImplementation.bind(spy);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  spy.mockImplementation = function patchedMockImpl(fn: any) {
+  spy.mockImplementation = function patchedMockImpl(fn: (...args: unknown[]) => unknown) {
     if (typeof fn === 'function' && !fn.prototype) {
       // Arrow function — wrap so `new` works.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return originalMockImpl(function wrapped(this: unknown, ...args: any[]) {
+      return originalMockImpl(function wrapped(this: unknown, ...args: unknown[]) {
         return fn(...args);
       });
     }
     return originalMockImpl(fn);
   };
   return spy;
-};
+} as unknown as typeof vi.spyOn;
