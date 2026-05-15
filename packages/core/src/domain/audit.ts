@@ -19,8 +19,9 @@ export const auditEventTypes = [
   'permission.denied',
   // Invite lifecycle. `invite.created` is admin-side (a coordinator
   // sending an invite); `invite.accepted` is public-side (a caregiver
-  // redeeming the token to create their account).
-  'invite.created', 'invite.accepted',
+  // redeeming the token to create their account). `invite.access_code_failed`
+  // logs a brute-force attempt on the access code.
+  'invite.created', 'invite.accepted', 'invite.access_code_failed',
 ] as const;
 
 export const auditOutcomes = ['success', 'failure', 'denied'] as const;
