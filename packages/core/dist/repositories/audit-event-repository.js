@@ -44,6 +44,51 @@ export class AuditEventRepository {
         return rows.map((row) => this.mapRow(row));
     }
     /**
+     * Paginated timeline list for the admin Audit Events page.
+     *
+     * Always filters by `agencyId` (agency isolation — a required argument,
+     * never optional). Optional filters narrow by `event_type`, `actor_id`,
+     * `outcome`, and an `occurred_at` range. Ordered by `occurred_at` DESC.
+     *
+     * Returns `{ rows, total }` where `total` is the COUNT of rows matching
+     * the same filter set (ignoring `limit`/`offset`) so the UI can render
+     * accurate pagination.
+     *
+     * Caller is responsible for clamping `limit` (the route enforces a
+     * hard 200 ceiling); this repo accepts whatever it's given but defaults
+     * limit to 50 and offset to 0 when unspecified.
+     */
+    async list(params) {
+        const limit = params.limit ?? 50;
+        const offset = params.offset ?? 0;
+        const applyFilters = (q) => {
+            q.where({ agency_id: params.agencyId });
+            if (params.eventType)
+                q.andWhere({ event_type: params.eventType });
+            if (params.actorId)
+                q.andWhere({ actor_id: params.actorId });
+            if (params.outcome)
+                q.andWhere({ outcome: params.outcome });
+            if (params.fromIso)
+                q.andWhere('occurred_at', '>=', params.fromIso);
+            if (params.toIso)
+                q.andWhere('occurred_at', '<=', params.toIso);
+            return q;
+        };
+        const rowsQuery = applyFilters(this.db('audit_events'))
+            .orderBy('occurred_at', 'desc')
+            .limit(limit)
+            .offset(offset);
+        const countQuery = applyFilters(this.db('audit_events'))
+            .count('id as count');
+        const [rows, countResult] = await Promise.all([rowsQuery, countQuery]);
+        const total = Number(countResult[0]?.count ?? 0);
+        return {
+            rows: rows.map((row) => this.mapRow(row)),
+            total
+        };
+    }
+    /**
      * Aggregate retention status for the agency's audit_events. Used by
      * the admin /admin/audit-retention/status endpoint as HIPAA evidence
      * (45 CFR §164.530(j) — 6-year retention floor for audit logs).

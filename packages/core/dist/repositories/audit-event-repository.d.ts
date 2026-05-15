@@ -22,6 +22,34 @@ export declare class AuditEventRepository {
     findByEntity(entityType: string, entityId: string): Promise<AuditEvent[]>;
     findByAgency(agencyId: string, limit?: number): Promise<AuditEvent[]>;
     /**
+     * Paginated timeline list for the admin Audit Events page.
+     *
+     * Always filters by `agencyId` (agency isolation — a required argument,
+     * never optional). Optional filters narrow by `event_type`, `actor_id`,
+     * `outcome`, and an `occurred_at` range. Ordered by `occurred_at` DESC.
+     *
+     * Returns `{ rows, total }` where `total` is the COUNT of rows matching
+     * the same filter set (ignoring `limit`/`offset`) so the UI can render
+     * accurate pagination.
+     *
+     * Caller is responsible for clamping `limit` (the route enforces a
+     * hard 200 ceiling); this repo accepts whatever it's given but defaults
+     * limit to 50 and offset to 0 when unspecified.
+     */
+    list(params: {
+        agencyId: string;
+        eventType?: AuditEvent['eventType'];
+        actorId?: string;
+        outcome?: AuditEvent['outcome'];
+        fromIso?: string;
+        toIso?: string;
+        limit?: number;
+        offset?: number;
+    }): Promise<{
+        rows: AuditEvent[];
+        total: number;
+    }>;
+    /**
      * Aggregate retention status for the agency's audit_events. Used by
      * the admin /admin/audit-retention/status endpoint as HIPAA evidence
      * (45 CFR §164.530(j) — 6-year retention floor for audit logs).

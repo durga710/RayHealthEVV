@@ -18,6 +18,7 @@ import { PrivacyPage } from './features/marketing/PrivacyPage.js';
 import { AdminAssistant } from './features/support/AdminAssistant.js';
 import { AuditRetentionPage } from './features/audit/AuditRetentionPage.js';
 import { DashboardPage } from './features/admin/DashboardPage.js';
+import { AuditEventsPage } from './features/audit/AuditEventsPage.js';
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth();
@@ -49,6 +50,7 @@ function AdminLayout() {
           <Link to="/admin/templates" className="nav-link">Templates</Link>
           <Link to="/admin/assignments" className="nav-link">Assignments</Link>
           <Link to="/admin/review" className="nav-link">Visit Review</Link>
+          <Link to="/admin/audit-events" className="nav-link">Audit Events</Link>
           <Link to="/admin/audit-retention" className="nav-link">Audit Retention</Link>
         </div>
         <div
@@ -186,6 +188,7 @@ export function App() {
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="assignments" element={<AssignmentsPage />} />
           <Route path="review" element={<VisitReviewPage />} />
+          <Route path="audit-events" element={<AuditEventsPage />} />
           <Route path="audit-retention" element={<AuditRetentionPage />} />
           <Route index element={<DashboardPage />} />
         </Route>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export declare const auditEventTypes: readonly ["visit.created", "visit.clock-out", "visit.approved", "visit.flagged", "credential.created", "credential.expired", "credential.renewed", "caregiver.created", "caregiver.status-changed", "assignment.created", "assignment.cancelled", "exception.filed", "exception.approved", "auth.login.success", "auth.login.failure", "auth.logout", "session.created", "session.revoked", "csrf.failure", "phi.read", "phi.create", "phi.update", "phi.delete", "phi.export", "request.write", "permission.denied", "invite.created", "invite.accepted"];
+export declare const auditEventTypes: readonly ["visit.created", "visit.clock-out", "visit.approved", "visit.flagged", "credential.created", "credential.expired", "credential.renewed", "caregiver.created", "caregiver.status-changed", "assignment.created", "assignment.cancelled", "exception.filed", "exception.approved", "auth.login.success", "auth.login.failure", "auth.logout", "session.created", "session.revoked", "csrf.failure", "phi.read", "phi.create", "phi.update", "phi.delete", "phi.export", "request.write", "permission.denied", "invite.created", "invite.accepted", "invite.access_code_failed"];
 export declare const auditOutcomes: readonly ["success", "failure", "denied"];
 export declare const auditActorTypes: readonly ["user", "service", "system"];
 export declare const auditEventSchema: z.ZodObject<{
@@ -40,6 +40,7 @@ export declare const auditEventSchema: z.ZodObject<{
         "permission.denied": "permission.denied";
         "invite.created": "invite.created";
         "invite.accepted": "invite.accepted";
+        "invite.access_code_failed": "invite.access_code_failed";
     }>;
     entityType: z.ZodString;
     entityId: z.ZodString;
