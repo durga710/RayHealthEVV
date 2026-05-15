@@ -11,10 +11,9 @@ import { createDb } from '@rayhealth/core';
 
 import authRoutes from './routes/auth-routes.js';
 import inviteAcceptanceRoutes from './routes/invite-acceptance-routes.js';
+import invitationsRoutes from './routes/invitations-routes.js';
 import inviteRoutes from './routes/invite-routes.js';
 import agencyRoutes from './routes/agency-routes.js';
-import agencyHhaexchangeConfigRoutes from './routes/agency-hhaexchange-config-routes.js';
-import agencySandataConfigRoutes from './routes/agency-sandata-config-routes.js';
 import staffRoutes from './routes/staff-routes.js';
 import clientRoutes from './routes/client-routes.js';
 import authorizationRoutes from './routes/authorization-routes.js';
@@ -24,8 +23,6 @@ import evvRoutes from './routes/evv-routes.js';
 import maintenanceRoutes from './routes/maintenance-routes.js';
 import taskRoutes from './routes/task-routes.js';
 import auditRetentionRoutes from './routes/audit-retention-routes.js';
-import learningRoutes from './routes/learning-routes.js';
-import copilotRoutes from './routes/copilot-routes.js';
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 
@@ -39,18 +36,6 @@ const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeade
 const authenticatedDefaultLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
-});
-
-/** Tighter limit on the AI Copilot — each call is an LLM round-trip with
- *  real dollar cost and cost-amplification risk. 40 calls per 15-min per
- *  IP covers normal interactive use and stops a leaked session from racking
- *  up a bill. */
-const copilotLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 40,
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
@@ -159,6 +144,9 @@ export function createApp() {
     // caregiver clicking the email link can hit them without a session.
     // Rate-limited to dampen access-code brute-force.
     app.use(`${prefix}/invites/accept`, inviteAcceptanceLimiter, inviteAcceptanceRoutes);
+    // Public invitation lookup + accept (newer surface; same rate-limit
+    // category as the legacy /invites/accept endpoint).
+    app.use(`${prefix}/invitations`, inviteAcceptanceLimiter, invitationsRoutes);
   }
 
   // ---------- Authenticated surface ----------
@@ -172,10 +160,6 @@ export function createApp() {
   for (const prefix of ['', '/api']) {
     app.use(`${prefix}/invites`, inviteRoutes);
     app.use(`${prefix}/agencies`, agencyRoutes);
-    // Same prefix — Express stacks routers, so /agencies/me/hhaexchange-config
-    // resolves through this router after agencyRoutes doesn't match.
-    app.use(`${prefix}/agencies`, agencyHhaexchangeConfigRoutes);
-    app.use(`${prefix}/agencies`, agencySandataConfigRoutes);
     app.use(`${prefix}/staff`, staffRoutes);
     app.use(`${prefix}/clients`, clientRoutes);
     app.use(`${prefix}/authorizations`, authorizationRoutes);
@@ -185,8 +169,6 @@ export function createApp() {
     app.use(`${prefix}/maintenance`, maintenanceRoutes);
     app.use(`${prefix}/tasks`, taskRoutes);
     app.use(`${prefix}/admin/audit-retention`, adminAuditLimiter, auditRetentionRoutes);
-    app.use(`${prefix}/learning`, learningRoutes);
-    app.use(`${prefix}/copilot`, copilotLimiter, copilotRoutes);
   }
 
   // Protected route for testing (keep for now or remove if redundant)
