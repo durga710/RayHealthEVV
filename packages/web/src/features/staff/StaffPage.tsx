@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getJson, postJson } from '../../lib/api-client.js';
+import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
 
 interface StaffMember {
   id: string;
@@ -19,6 +20,8 @@ interface CreatedInvite {
 
 export function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('caregiver');
   const [message, setMessage] = useState('');
@@ -29,11 +32,22 @@ export function StaffPage() {
   const [copied, setCopied] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadStaff = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
     getJson<StaffMember[]>('/api/staff')
       .then(data => setStaff(data || []))
-      .catch(console.error);
+      .catch((err: Error) => setLoadError(err.message || 'Failed to load staff'))
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadStaff();
+  }, [loadStaff]);
+
+  const focusInvite = () => {
+    document.getElementById('email')?.focus();
+  };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,10 +177,16 @@ export function StaffPage() {
 
         <div>
           <h3>Active Staff Directory</h3>
-          {staff.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b', marginTop: '1rem' }}>
-              No staff found. Send an invite to add one.
-            </div>
+          {loading ? (
+            <LoadingSkeleton rows={5} columns={2} />
+          ) : loadError ? (
+            <ErrorRetry message={loadError} onRetry={loadStaff} />
+          ) : staff.length === 0 ? (
+            <EmptyState
+              title="No staff yet"
+              body="Invite a caregiver, coordinator, or admin to start staffing visits."
+              cta={{ label: 'Invite a staff member', onClick: focusInvite }}
+            />
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {staff.map(s => {

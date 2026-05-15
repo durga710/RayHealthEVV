@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getJson, postJson } from '../../lib/api-client.js';
+import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
 
 interface EvvVisit {
   id: string;
@@ -13,6 +14,7 @@ interface EvvVisit {
 export function VisitReviewPage() {
   const [visits, setVisits] = useState<EvvVisit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -22,10 +24,12 @@ export function VisitReviewPage() {
   const fetchVisits = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await getJson<EvvVisit[]>('/api/evv/visits');
       setVisits(data || []);
     } catch (err) {
       console.error('Failed to fetch visits', err);
+      setLoadError((err as Error).message || 'Failed to load visits');
     } finally {
       setLoading(false);
     }
@@ -55,7 +59,14 @@ export function VisitReviewPage() {
       {message && <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#ecfdf5', color: '#065f46', borderRadius: '8px' }}>{message}</div>}
 
       {loading ? (
-        <p>Loading visits...</p>
+        <LoadingSkeleton rows={6} columns={5} />
+      ) : loadError ? (
+        <ErrorRetry message={loadError} onRetry={fetchVisits} />
+      ) : visits.length === 0 ? (
+        <EmptyState
+          title="No visits yet"
+          body="Verified visits will appear here once caregivers complete a clock-in/clock-out cycle."
+        />
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
