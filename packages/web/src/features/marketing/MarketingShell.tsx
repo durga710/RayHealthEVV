@@ -113,6 +113,7 @@ export function MarketingShell({
           <Link to="/status" style={{ color: 'var(--color-text-muted)' }}>Status</Link>
           <Link to="/contact" style={{ color: 'var(--color-text-muted)' }}>Contact</Link>
           <Link to="/privacy" style={{ color: 'var(--color-text-muted)' }}>Privacy</Link>
+          <Link to="/compliance/hipaa" style={{ color: 'var(--color-text-muted)' }}>HIPAA Compliance</Link>
         </div>
       </footer>
 

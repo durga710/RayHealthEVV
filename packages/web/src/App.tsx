@@ -19,6 +19,7 @@ import { AdminAssistant } from './features/support/AdminAssistant.js';
 import { AuditRetentionPage } from './features/audit/AuditRetentionPage.js';
 import { DashboardPage } from './features/admin/DashboardPage.js';
 import { AuditEventsPage } from './features/audit/AuditEventsPage.js';
+import { HipaaCompliancePage } from './features/compliance/HipaaCompliancePage.js';
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth();
@@ -177,6 +178,7 @@ export function App() {
       <Route path="/launch" element={<LaunchPage />} />
       <Route path="/status" element={<StatusPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/compliance/hipaa" element={<HipaaCompliancePage />} />
       <Route path="/login" element={<LoginPage />} />
       
       <Route path="/admin" element={<ProtectedRoute />}>

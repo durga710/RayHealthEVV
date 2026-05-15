@@ -237,6 +237,39 @@ export function LandingPage() {
             Bring scheduling, EVV, billing readiness, payroll, training, and family visibility into one calm workspace — built for the people doing the work.
           </p>
 
+          {/* Trust pill — subtle, understated, links to the controls page. */}
+          <Link
+            to="/compliance/hipaa"
+            aria-label="HIPAA-compliant — view our control documentation"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              backgroundColor: 'rgba(34, 197, 94, 0.12)',
+              color: '#15803d',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              padding: '0.3rem 0.75rem',
+              borderRadius: '999px',
+              fontSize: '0.625rem',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              textDecoration: 'none'
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                display: 'inline-block',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: '#16a34a'
+              }}
+            />
+            HIPAA-COMPLIANT
+          </Link>
+
           <div className="landing-hero-panel" role="region" aria-label="Live operations snapshot">
             <div className="landing-hero-panel-main">
               <p className="landing-panel-eyebrow">Live operations command center</p>
@@ -498,7 +531,11 @@ export function LandingPage() {
       <footer style={{ padding: '2.5rem 2rem', backgroundColor: 'var(--color-primary-dark)', color: '#9bb0c8', fontSize: '0.875rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <span>&copy; {new Date().getFullYear()} RayHealthEVV™. All rights reserved.</span>
-          <span>Pennsylvania-built • HIPAA-aware • 21st Century Cures Act ready by design</span>
+          <span style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <Link to="/compliance/hipaa" style={{ color: '#bdd3f0', textDecoration: 'underline' }}>HIPAA Compliance</Link>
+            <Link to="/privacy" style={{ color: '#bdd3f0', textDecoration: 'underline' }}>Privacy</Link>
+            <span>Pennsylvania-built • 21st Century Cures Act ready by design</span>
+          </span>
         </div>
       </footer>
 

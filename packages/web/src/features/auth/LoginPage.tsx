@@ -282,6 +282,41 @@ export function LoginPage() {
           >
             Need access? <Link to="/" style={{ color: 'var(--color-primary-light)', fontWeight: 600 }}>Talk to your agency admin.</Link>
           </p>
+
+          {/* Trust footer — links to public HIPAA compliance page. */}
+          <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'center' }}>
+            <Link
+              to="/compliance/hipaa"
+              aria-label="HIPAA-compliant — view our control documentation"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                color: '#15803d',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                padding: '0.3rem 0.75rem',
+                borderRadius: '999px',
+                fontSize: '0.625rem',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'inline-block',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: '#16a34a',
+                }}
+              />
+              HIPAA-COMPLIANT
+            </Link>
+          </div>
         </div>
       </main>
     </div>
