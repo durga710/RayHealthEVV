@@ -1,0 +1,93 @@
+# Dependabot configuration
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# We use npm workspaces (packages/{app,core,mobile,web}). Dependabot only
+# needs a single entry per ecosystem at the workspace root; it discovers
+# all workspaces automatically. We also watch GitHub Actions versions so
+# `actions/checkout@v4` and friends stay current.
+#
+# Cadence is weekly (Mondays) to avoid daily PR noise on a small team.
+# Security updates are NOT gated by schedule — Dependabot opens those
+# immediately regardless of the cadence here.
+#
+# Open PR cap of 5 per ecosystem prevents floods on snapshot weeks.
+
+version: 2
+
+updates:
+  # ----- npm (workspaces root) -----
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
+    labels:
+      - dependencies
+      - npm
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: scope
+
+    # Group all minor + patch bumps into a single weekly PR per scope so
+    # the review surface stays small. Majors stay as individual PRs so
+    # breaking changes get explicit attention.
+    groups:
+      production-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      development-minor-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+    # Pinned ignores — bumping these requires coordinated work that
+    # shouldn't be auto-opened.
+    ignore:
+      # Expo SDK majors require a documented per-version migration
+      - dependency-name: expo
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-major"]
+
+      # React Native majors require parallel native-side work
+      - dependency-name: react-native
+        update-types: ["version-update:semver-major"]
+
+      # React 19 -> 20 majors will need a coordinated rollout
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]
+
+      # TypeScript majors break compile across all 4 workspaces
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+
+  # ----- GitHub Actions -----
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(ci)"
+      include: scope
+    groups:
+      actions-minor-patch:
+        update-types:
+          - minor
+          - patch
