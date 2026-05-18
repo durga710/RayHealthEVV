@@ -36,6 +36,10 @@ Top-level surface:
 git clone git@github.com:durga710/rayhealth-evv-platform.git
 cd rayhealth-evv-platform
 npm install
+# Note: if you ever need to regenerate package-lock.json from scratch,
+# run `./scripts/sync-lockfile.sh` (Docker-backed). Doing it via plain
+# `npm install` on macOS silently strips Linux native bindings and
+# breaks CI — see docs/LOCKFILE.md.
 
 # 2. Set up local Postgres (or use a Neon dev branch). Set DATABASE_URL.
 cp .env.example .env   # if present

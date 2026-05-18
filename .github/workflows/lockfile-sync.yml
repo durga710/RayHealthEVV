@@ -1,0 +1,109 @@
+name: Lockfile Sync
+
+# Detects package-lock.json drift on PRs (typically caused by a developer
+# regenerating the lockfile on macOS, which silently drops Linux-specific
+# native binding entries — see https://github.com/npm/cli/issues/4828).
+#
+# Behaviour:
+#   - If the PR is from the same repo (not a fork): regenerates the lockfile
+#     on ubuntu-latest and commits the fix back to the PR branch.
+#   - If from a fork: prints the fixed lockfile in the logs and fails the
+#     check, so the contributor can pull it locally and re-push.
+#
+# Caveat: pushes made by the default GITHUB_TOKEN do not re-trigger other
+# workflows. Once this workflow auto-fixes a PR, the developer needs to
+# push any commit (or close-reopen the PR) to re-run the main CI workflow.
+# Set up a PAT in the LOCKFILE_SYNC_TOKEN secret to bypass that limitation.
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'packages/*/package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: lockfile-sync-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.LOCKFILE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Regenerate lockfile on Linux
+        run: npm install --legacy-peer-deps --no-audit --no-fund --package-lock-only
+
+      - name: Detect drift
+        id: drift
+        run: |
+          if git diff --quiet package-lock.json; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "✅ package-lock.json is in sync with package.json on linux/amd64"
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️  Lockfile drift detected on linux/amd64. Diff:"
+            git --no-pager diff --stat package-lock.json
+            echo ""
+            echo "Most common cause: regenerating the lockfile on macOS or Windows."
+            echo "Run ./scripts/sync-lockfile.sh locally to reproduce this fix."
+          fi
+
+      - name: Commit & push synced lockfile
+        if: steps.drift.outputs.drift == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore(ci): sync package-lock.json on linux/amd64
+
+          Regenerated automatically because the lockfile was missing
+          one or more @rolldown/binding-linux-x64-gnu (or related)
+          install entries the CI runners need.
+
+          See: https://github.com/npm/cli/issues/4828"
+          git push
+
+      - name: Comment on PR (forked-PR path)
+        if: steps.drift.outputs.drift == 'true' && github.event.pull_request.head.repo.full_name != github.repository
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: [
+                '🔧 **Lockfile drift detected**',
+                '',
+                'This PR\'s `package-lock.json` is missing platform-specific native binding entries the CI runners need (commonly happens when regenerating on macOS — see [npm/cli#4828](https://github.com/npm/cli/issues/4828)).',
+                '',
+                'Because this PR is from a fork I can\'t push the fix directly. Please run:',
+                '',
+                '```bash',
+                './scripts/sync-lockfile.sh',
+                'git add package-lock.json && git commit -m "chore: sync lockfile" && git push',
+                '```',
+              ].join('\n')
+            })
+
+      - name: Fail (forked-PR path) so the check is visible
+        if: steps.drift.outputs.drift == 'true' && github.event.pull_request.head.repo.full_name != github.repository
+        run: exit 1
