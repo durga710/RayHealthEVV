@@ -14,8 +14,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "build": "expo export",
-    "prepare": "npm run build"
+    "build": "expo export"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
