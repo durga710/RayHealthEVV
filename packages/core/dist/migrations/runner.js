@@ -1,6 +1,14 @@
 /**
- * Minimal baseline-only migration runner. For the full set of dated
- * migrations use `packages/core/scripts/apply-new-migrations.ts` instead.
+ * Baseline migration runner — applies the inlined `schema.ts` migrations
+ * idempotently via knex.schema.hasTable/hasColumn guards. Invoked by
+ * `npm run db:migrate`.
+ *
+ * The eight dated 2026-05-11 migrations (learning, sandata, retention,
+ * etc.) referenced by an earlier `apply-new-migrations.ts` script live in
+ * a separate monorepo and have not been ported into this repo yet. The
+ * features that depend on them (Learning Hub, audit retention sweep,
+ * agency Sandata config) are tracked as pending engineering work in
+ * PROJECT_STATUS.md.
  *
  * Writes status to stderr (not stdout) so the parent shell can pipe stdout
  * for JSON without contamination. No `console.*` calls — keeps `npm run
