@@ -47,7 +47,7 @@ export DATABASE_URL='postgres://localhost/rayhealth_dev'
 export JWT_SECRET="$(openssl rand -hex 32)"
 
 # 3. Run migrations
-npx tsx packages/core/scripts/apply-new-migrations.ts
+npm run db:migrate
 
 # 4. Run all the quality gates (this is what CI runs on every PR)
 npm run typecheck
