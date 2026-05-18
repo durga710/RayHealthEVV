@@ -9,6 +9,8 @@ interface StaffMember {
   status: string;
 }
 
+type EmailDeliveryStatus = 'sent' | 'failed' | 'not_configured';
+
 interface CreatedInvite {
   id: string;
   email: string;
@@ -16,7 +18,20 @@ interface CreatedInvite {
   status: string;
   expiresAt: string;
   acceptPath: string;
+  emailDelivery?: EmailDeliveryStatus;
 }
+
+interface ResendResponse {
+  id: string;
+  email: string;
+  emailDelivery: EmailDeliveryStatus;
+}
+
+type ResendState =
+  | { status: 'idle' }
+  | { status: 'sending' }
+  | { status: 'sent' }
+  | { status: 'failed'; reason: string };
 
 export function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -25,12 +40,15 @@ export function StaffPage() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('caregiver');
   const [message, setMessage] = useState('');
-  // Last successfully-created invite. Surfaced prominently because email
-  // delivery via Resend is not yet wired (BAA pending) — the admin
-  // copies this URL and shares it manually until that's done.
+  // Last successfully-created invite. Surfaced prominently so the admin
+  // can copy the URL as a fallback when email delivery isn't configured
+  // or fails.
   const [createdInvite, setCreatedInvite] = useState<CreatedInvite | null>(null);
   const [copied, setCopied] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Per-row resend state — keyed by invite id so multiple rows don't
+  // share a single "sending" indicator.
+  const [resendState, setResendState] = useState<Record<string, ResendState>>({});
 
   const loadStaff = useCallback(() => {
     setLoading(true);
@@ -63,10 +81,58 @@ export function StaffPage() {
       const invite = await postJson<CreatedInvite>('/api/invites', { email, role });
       setStaff(prev => [...prev, { id: invite.id, email: invite.email, role: invite.role, status: invite.status }]);
       setCreatedInvite(invite);
-      setMessage(`Invite created for ${email} — copy the link below and share it with them.`);
+      // Different copy depending on whether email delivery actually
+      // succeeded. `'sent'` means Resend accepted the message — we
+      // celebrate that path. Everything else falls back to the
+      // copy-and-share UX, same as before email delivery existed.
+      if (invite.emailDelivery === 'sent') {
+        setMessage(
+          `We've emailed the invitation to ${email}. They'll click the link to set their password. ` +
+          `(If they don't get it, copy the link below as a fallback.)`
+        );
+      } else {
+        setMessage(`Invite created for ${email} — copy the link below and share it with them.`);
+      }
       setEmail('');
     } catch {
       setMessage('Failed to create invite');
+    }
+  };
+
+  const handleResend = async (inviteId: string) => {
+    setResendState(prev => ({ ...prev, [inviteId]: { status: 'sending' } }));
+    try {
+      const result = await postJson<ResendResponse>(
+        `/api/invites/${encodeURIComponent(inviteId)}/resend-email`,
+        {}
+      );
+      if (result.emailDelivery === 'sent') {
+        setResendState(prev => ({ ...prev, [inviteId]: { status: 'sent' } }));
+        // Auto-clear after a few seconds so the button is reusable.
+        setTimeout(() => {
+          setResendState(prev => {
+            const next = { ...prev };
+            delete next[inviteId];
+            return next;
+          });
+        }, 4000);
+      } else if (result.emailDelivery === 'not_configured') {
+        setResendState(prev => ({
+          ...prev,
+          [inviteId]: { status: 'failed', reason: 'Email not configured on server' }
+        }));
+      } else {
+        setResendState(prev => ({
+          ...prev,
+          [inviteId]: { status: 'failed', reason: 'Send failed — try again later' }
+        }));
+      }
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : 'Request failed';
+      setResendState(prev => ({
+        ...prev,
+        [inviteId]: { status: 'failed', reason }
+      }));
     }
   };
 
@@ -91,7 +157,7 @@ export function StaffPage() {
     <div>
       <h2>Staff Management</h2>
       <p style={{ marginBottom: '2rem', color: 'var(--color-text-muted)' }}>Manage caregivers, coordinators, and invite new staff members.</p>
-      
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -132,12 +198,12 @@ export function StaffPage() {
                 placeholder="staff@example.com"
               />
             </div>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
               <label htmlFor="role">Role</label>
-              <select 
-                id="role" 
-                value={role} 
+              <select
+                id="role"
+                value={role}
                 onChange={e => setRole(e.target.value)}
                 style={{ padding: '0.75rem 1rem', border: '1px solid #c9d8e8', borderRadius: '8px', fontFamily: 'inherit', fontSize: '1rem' }}
               >
@@ -146,7 +212,7 @@ export function StaffPage() {
                 <option value="admin">Admin</option>
               </select>
             </div>
-            
+
             <button type="submit">Create Invite</button>
           </form>
           {message && (
@@ -173,7 +239,9 @@ export function StaffPage() {
               }}
             >
               <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
-                Share this link with {createdInvite.email}. They'll set a password and finish creating their account.
+                {createdInvite.emailDelivery === 'sent'
+                  ? `Backup link — only needed if ${createdInvite.email} doesn't see the email.`
+                  : `Share this link with ${createdInvite.email}. They'll set a password and finish creating their account.`}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
                 <input
@@ -221,6 +289,8 @@ export function StaffPage() {
             <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {staff.map(s => {
                 const isExpanded = expandedId === s.id;
+                const isPending = s.status === 'pending';
+                const resend = resendState[s.id] ?? { status: 'idle' as const };
                 return (
                   <li
                     key={s.id}
@@ -282,6 +352,40 @@ export function StaffPage() {
                         <div style={{ textTransform: 'capitalize' }}>{s.role}</div>
                         <div style={{ fontWeight: 600 }}>Status</div>
                         <div style={{ textTransform: 'capitalize' }}>{s.status}</div>
+                        {isPending && (
+                          <>
+                            <div style={{ fontWeight: 600 }}>Actions</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-start' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleResend(s.id)}
+                                disabled={resend.status === 'sending'}
+                                style={{
+                                  padding: '0.4rem 0.85rem',
+                                  fontSize: '0.8125rem',
+                                  fontWeight: 600,
+                                  backgroundColor: resend.status === 'sent' ? '#dcfce7' : '#0b2a4a',
+                                  color: resend.status === 'sent' ? '#166534' : '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: resend.status === 'sending' ? 'wait' : 'pointer',
+                                  opacity: resend.status === 'sending' ? 0.7 : 1
+                                }}
+                              >
+                                {resend.status === 'sending'
+                                  ? 'Resending…'
+                                  : resend.status === 'sent'
+                                  ? 'Email resent ✓'
+                                  : 'Resend email'}
+                              </button>
+                              {resend.status === 'failed' && (
+                                <span style={{ fontSize: '0.75rem', color: '#991b1b' }}>
+                                  {resend.reason}
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </li>

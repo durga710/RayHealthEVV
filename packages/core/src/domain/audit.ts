@@ -20,8 +20,13 @@ export const auditEventTypes = [
   // Invite lifecycle. `invite.created` is admin-side (a coordinator
   // sending an invite); `invite.accepted` is public-side (a caregiver
   // redeeming the token to create their account). `invite.access_code_failed`
-  // logs a brute-force attempt on the access code.
+  // logs a brute-force attempt on the access code. `invite.email.sent` /
+  // `invite.email.failed` track automated email delivery via Resend so
+  // an admin can audit which invites actually reached the recipient's
+  // inbox (or fell back to manual-copy). Payload is delivery metadata
+  // only (`messageId`, `error` category) — never the URL or token.
   'invite.created', 'invite.accepted', 'invite.access_code_failed',
+  'invite.email.sent', 'invite.email.failed',
 ] as const;
 
 export const auditOutcomes = ['success', 'failure', 'denied'] as const;

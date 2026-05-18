@@ -1,7 +1,39 @@
-import { Stack } from 'expo-router';
-import React from 'react';
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { AuthProvider, useAuth } from '../src/lib/AuthContext';
+
+// Show shift-alert notifications even when the app is foregrounded so the
+// system banner + sound + vibration still fire. We mirror the haptic
+// independently from the dashboard tick, but letting the banner show is the
+// cue the user expects.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false
+  })
+});
+
+interface ShiftAlertPayload {
+  assignmentId: string;
+  clientName: string;
+  scheduledTime: string;
+  serviceCode: string;
+}
+
+function isShiftAlertPayload(value: unknown): value is ShiftAlertPayload {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.assignmentId === 'string' &&
+    typeof v.clientName === 'string' &&
+    typeof v.scheduledTime === 'string' &&
+    typeof v.serviceCode === 'string'
+  );
+}
 
 export default function RootLayout() {
   return (
@@ -12,6 +44,29 @@ export default function RootLayout() {
 }
 
 function RootContent() {
+  const router = useRouter();
+
+  // Deep-link on notification tap. Pull the assignment data we embedded when
+  // scheduling and route to /clockin with the same param shape the dashboard
+  // Pressable uses, so the clock-in screen renders identically regardless of
+  // entry point.
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      if (!isShiftAlertPayload(data)) return;
+      router.push({
+        pathname: '/clockin',
+        params: {
+          assignmentId: data.assignmentId,
+          clientName: data.clientName,
+          scheduledTime: data.scheduledTime,
+          serviceCode: data.serviceCode
+        }
+      });
+    });
+    return () => sub.remove();
+  }, [router]);
+
   return (
     <View style={{ flex: 1 }}>
       <Stack>

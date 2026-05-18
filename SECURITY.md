@@ -57,7 +57,7 @@ We will keep you informed at each step and coordinate on a public disclosure tim
 - DoS / DDoS testing (we do not authorize load testing against production)
 - Reports from automated scanners without manual validation
 - Self-XSS or attacks requiring an attacker-controlled browser extension
-- Reports about software outside our control (Vercel, Neon, Resend, Google AI, AWS Bedrock) — report those directly to the provider
+- Reports about software outside our control (Vercel, Neon, AWS SES, Google AI, AWS Bedrock) — report those directly to the provider
 
 ## HIPAA-aligned operational posture
 
@@ -72,6 +72,27 @@ We track the security controls expected of a HIPAA Business Associate, even ahea
 - **Input validation** — Zod schemas validate every untrusted boundary; database access is parameterized.
 - **Audit retention** — configurable per-agency retention with archival before purge.
 - **CI security gates** — typecheck, lint, security-surface-scan, dependency-review, CodeQL, gitleaks all run on every PR and block merge on failure.
+
+## Email delivery (Amazon SES)
+
+Staff-invite emails are delivered via Amazon SES using the `@aws-sdk/client-sesv2` SDK. The implementation in `packages/app/src/email/email-client.ts` never embeds session tokens or API keys in message bodies — only the time-limited, single-use invite URL is included.
+
+**Operator action required before email actually sends:**
+
+1. **Verify the sender domain in SES.** Add the DKIM CNAME + MAIL FROM MX/SPF + DMARC TXT records SES prescribes to the domain's DNS. The DKIM CNAMEs must be set to **DNS-only** (Cloudflare grey-cloud / proxy off) or DKIM signature verification will fail.
+2. **Create an IAM user (or role) with `ses:SendEmail` permission only.** Do NOT reuse a root account or an admin user. The scoped IAM policy is:
+   ```json
+   { "Version": "2012-10-17", "Statement": [{ "Effect": "Allow", "Action": ["ses:SendEmail", "ses:SendRawEmail"], "Resource": "*" }] }
+   ```
+3. **Set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in the Vercel project env vars.** When either is unset, the invite API still works but falls back to the manual-copy flow (the admin shares the URL by hand). The response field `emailDelivery: 'not_configured'` tells the UI to show the copy-link fallback.
+4. **Set `AWS_SES_REGION`** to the region where your domain is verified (must match the region prefix in the MX `feedback-smtp.<region>.amazonses.com` record).
+5. **Set `EMAIL_FROM`** to a `Display Name <local@verified-domain>` value matching the verified domain.
+6. **Set `INVITE_URL_BASE`** to the production origin so emails contain absolute URLs (e.g. `https://rayhealthevv.com`).
+7. **Request production access.** SES starts every new account in sandbox mode (recipients must be verified identities, max 200/day). Submit the "Request production access" form in the SES Account dashboard before going to production. Approval is typically 24–48 hours.
+
+**Residual risk — BAA required for HIPAA:** AWS provides a Business Associate Addendum (BAA) for HIPAA-eligible services including SES. The BAA is signed via AWS Artifact (accept the agreement in the AWS console). Until the BAA is accepted, invite emails should not contain PHI. The current template embeds only the recipient email address, the agency display name, the role, and the invite URL — none of which is PHI — but operators handling PHI must accept the BAA before going to production. This is tracked alongside the other subprocessor BAAs in `docs/compliance/hipaa/`.
+
+**Audit trail:** every delivery attempt emits an `invite.email.sent` (with `messageId`) or `invite.email.failed` (with an error category, never the URL or token) audit event. The full invite URL is never written to stdout / Vercel logs.
 
 ## Coordinated disclosure credit
 

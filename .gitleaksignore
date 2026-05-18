@@ -1,0 +1,11 @@
+# gitleaks false-positive allowlist.
+#
+# Format: <commit-sha>:<file>:<rule-id>:<line>
+# Add a comment above each entry explaining why it is not a credential.
+
+# packages/mobile/src/lib/notification-permissions.ts PERM_KEY:
+# A SecureStore key name (a string used as a storage key, not a credential).
+# Gitleaks' generic-api-key rule fires on the entropy of the underscored phrase,
+# but the value is checked into source intentionally — every mobile client
+# reads/writes the same key — and grants access to nothing on its own.
+72e0509b694716bac129c92c02fc4a58e6638072:packages/mobile/src/lib/notification-permissions.ts:generic-api-key:15
