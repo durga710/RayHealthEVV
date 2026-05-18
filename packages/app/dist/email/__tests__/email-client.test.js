@@ -112,7 +112,7 @@ describe('createEmailClient', () => {
             expiresAt: '2026-06-01T00:00:00.000Z',
         });
         const command = sendSpy.mock.calls[0]?.[0];
-        expect(command.input.FromEmailAddress).toBe('RayHealth <onboarding@rayhealthevv.com>');
+        expect(command.input.FromEmailAddress).toBe('RayHealth <onboarding@www.rayhealthevv.com>');
     });
     it('returns ok:false with an error category when SES throws a known error', async () => {
         process.env.AWS_ACCESS_KEY_ID = 'AKIA-test';

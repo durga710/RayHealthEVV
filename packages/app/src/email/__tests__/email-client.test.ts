@@ -130,7 +130,7 @@ describe('createEmailClient', () => {
     });
 
     const command = sendSpy.mock.calls[0]?.[0] as SendEmailCommand;
-    expect(command.input.FromEmailAddress).toBe('RayHealth <onboarding@rayhealthevv.com>');
+    expect(command.input.FromEmailAddress).toBe('RayHealth <onboarding@www.rayhealthevv.com>');
   });
 
   it('returns ok:false with an error category when SES throws a known error', async () => {
