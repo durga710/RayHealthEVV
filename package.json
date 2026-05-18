@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "prepare": "patch-package",
     "build": "turbo build",
     "test": "turbo test",
     "lint": "turbo lint",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.2",
+    "patch-package": "^8.0.1",
     "vite": "^8.0.13"
   },
   "overrides": {
