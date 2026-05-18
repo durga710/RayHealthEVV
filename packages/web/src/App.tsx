@@ -1,4 +1,4 @@
-import { Link, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { NavLink, Link, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from './lib/AuthContext.js';
 import { AgencySetupPage } from './features/agency/AgencySetupPage.js';
 import { StaffPage } from './features/staff/StaffPage.js';
@@ -25,9 +25,10 @@ import { LearningPortalPage } from './features/learning/LearningPortalPage.js';
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth();
-  
+  const location = useLocation();
+
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
 
   return <Outlet />;
@@ -45,18 +46,18 @@ function AdminLayout() {
           RayHealth <span className="evv-badge">EVV</span>
         </Link>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <Link to="/admin" className="nav-link">Dashboard</Link>
-          <Link to="/admin/agency" className="nav-link">Agency Setup</Link>
-          <Link to="/admin/staff" className="nav-link">Staff</Link>
-          <Link to="/admin/clients" className="nav-link">Clients</Link>
-          <Link to="/admin/authorizations" className="nav-link">Authorizations</Link>
-          <Link to="/admin/templates" className="nav-link">Templates</Link>
-          <Link to="/admin/assignments" className="nav-link">Assignments</Link>
-          <Link to="/admin/review" className="nav-link">Visit Review</Link>
-          <Link to="/admin/audit-events" className="nav-link">Audit Events</Link>
-          <Link to="/admin/audit-retention" className="nav-link">Audit Retention</Link>
-          <Link to="/admin/learning" className="nav-link">Learning Hub</Link>
-          <Link to="/admin/learning/portal" className="nav-link">My Training</Link>
+          <NavLink to="/admin" end className="nav-link">Dashboard</NavLink>
+          <NavLink to="/admin/agency" className="nav-link">Agency Setup</NavLink>
+          <NavLink to="/admin/staff" className="nav-link">Staff</NavLink>
+          <NavLink to="/admin/clients" className="nav-link">Clients</NavLink>
+          <NavLink to="/admin/authorizations" className="nav-link">Authorizations</NavLink>
+          <NavLink to="/admin/templates" className="nav-link">Templates</NavLink>
+          <NavLink to="/admin/assignments" className="nav-link">Assignments</NavLink>
+          <NavLink to="/admin/review" className="nav-link">Visit Review</NavLink>
+          <NavLink to="/admin/audit-events" className="nav-link">Audit Events</NavLink>
+          <NavLink to="/admin/audit-retention" className="nav-link">Audit Retention</NavLink>
+          <NavLink to="/admin/learning" end className="nav-link">Learning Hub</NavLink>
+          <NavLink to="/admin/learning/portal" className="nav-link">My Training</NavLink>
         </div>
         <div
           style={{

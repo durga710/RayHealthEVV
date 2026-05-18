@@ -39,6 +39,8 @@ interface Insight {
   totalCount: number;
 }
 
+interface StaffMember { id: string; email: string; role: string; }
+
 const severityColors: Record<string, { bg: string; text: string; border: string }> = {
   critical: { bg: '#fef2f2', text: '#b91c1c', border: '#fca5a5' },
   warning: { bg: '#fffbeb', text: '#d97706', border: '#fde68a' },
@@ -56,10 +58,11 @@ export function LearningHubPage() {
   const [rollup, setRollup] = useState<Rollup | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [caregivers, setCaregivers] = useState<StaffMember[]>([]);
   const [enrollCaregiverId, setEnrollCaregiverId] = useState('');
   const [enrollCourseId, setEnrollCourseId] = useState('');
   const [enrollDueAt, setEnrollDueAt] = useState('');
-  const [enrollMsg, setEnrollMsg] = useState('');
+  const [enrollMsg, setEnrollMsg] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,11 +70,14 @@ export function LearningHubPage() {
       getJson<{ success: boolean; data: Rollup }>('/api/learning/rollup'),
       getJson<{ success: boolean; data: { insights: Insight[] } }>('/api/learning/insights'),
       getJson<{ success: boolean; data: Course[] }>('/api/learning/courses'),
+      getJson<StaffMember[]>('/api/staff'),
     ])
-      .then(([rollupRes, insightsRes, coursesRes]) => {
+      .then(([rollupRes, insightsRes, coursesRes, staffData]) => {
         if (rollupRes.success) setRollup(rollupRes.data);
         if (insightsRes.success) setInsights(insightsRes.data.insights ?? []);
         if (coursesRes.success) setCourses(coursesRes.data ?? []);
+        const cgList = (staffData || []).filter(s => s.role === 'caregiver' || s.role === 'coordinator');
+        setCaregivers(cgList);
       })
       .catch(() => undefined)
       .finally(() => setLoading(false));
@@ -79,19 +85,19 @@ export function LearningHubPage() {
 
   const handleEnroll = async (e: React.FormEvent) => {
     e.preventDefault();
-    setEnrollMsg('');
+    setEnrollMsg(null);
     try {
       await postJson('/api/learning/enroll', {
         caregiverId: enrollCaregiverId,
         courseId: enrollCourseId,
         dueAt: enrollDueAt || null,
       });
-      setEnrollMsg('Enrolled successfully.');
+      setEnrollMsg({ kind: 'success', text: 'Enrolled successfully.' });
       setEnrollCaregiverId('');
       setEnrollCourseId('');
       setEnrollDueAt('');
     } catch {
-      setEnrollMsg('Failed to enroll — check caregiver and course IDs.');
+      setEnrollMsg({ kind: 'error', text: 'Failed to enroll caregiver.' });
     }
   };
 
@@ -305,16 +311,20 @@ export function LearningHubPage() {
           <form onSubmit={handleEnroll} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <label htmlFor="enroll-caregiver" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                Caregiver ID
+                Caregiver
               </label>
-              <input
+              <select
                 id="enroll-caregiver"
-                type="text"
                 value={enrollCaregiverId}
                 onChange={(e) => setEnrollCaregiverId(e.target.value)}
-                placeholder="Caregiver UUID"
                 required
-              />
+                style={{ padding: '0.75rem 1rem', border: '1px solid #c9d8e8', borderRadius: '8px', fontFamily: 'inherit', fontSize: '0.9rem', backgroundColor: 'white' }}
+              >
+                <option value="">Select a caregiver…</option>
+                {caregivers.map(s => (
+                  <option key={s.id} value={s.id}>{s.email} ({s.role})</option>
+                ))}
+              </select>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <label htmlFor="enroll-course" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
@@ -355,15 +365,17 @@ export function LearningHubPage() {
             <button type="submit">Enroll Caregiver</button>
             {enrollMsg && (
               <div
+                role={enrollMsg.kind === 'error' ? 'alert' : 'status'}
                 style={{
                   padding: '0.75rem 1rem',
-                  backgroundColor: enrollMsg.includes('success') ? '#f0fdf4' : '#fef2f2',
-                  color: enrollMsg.includes('success') ? '#166534' : '#b91c1c',
+                  backgroundColor: enrollMsg.kind === 'success' ? '#f0fdf4' : '#fef2f2',
+                  color: enrollMsg.kind === 'success' ? '#166534' : '#b91c1c',
                   borderRadius: '8px',
                   fontSize: '0.875rem',
+                  fontWeight: 600,
                 }}
               >
-                {enrollMsg}
+                {enrollMsg.text}
               </div>
             )}
           </form>

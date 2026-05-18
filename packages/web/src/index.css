@@ -100,6 +100,13 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
 }
 
+.admin-nav .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.18);
+  color: white;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
 main {
   flex: 1;
   padding: 3rem;
