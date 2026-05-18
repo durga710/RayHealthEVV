@@ -1,11 +1,11 @@
-import axios from 'axios';
+import { create as axiosCreate, type AxiosInstance } from 'axios';
 import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'https://rayhealthevv.com';
 let accessToken: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 
-const apiClient = axios.create({
+const apiClient: AxiosInstance = axiosCreate({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'

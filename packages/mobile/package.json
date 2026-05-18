@@ -52,5 +52,8 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "eslint-plugin-react": "^7.37.3"
   }
 }
