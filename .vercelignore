@@ -1,0 +1,10 @@
+.turbo
+**/.turbo
+packages/*/dist
+packages/mobile/.expo
+packages/mobile/.expo-shared
+*.tsbuildinfo
+**/*.tsbuildinfo
+ui-screenshots-personas
+coverage
+node_modules

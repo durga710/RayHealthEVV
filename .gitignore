@@ -1,0 +1,14 @@
+.vercel
+.superpowers/
+.turbo/
+**/.turbo/
+node_modules/
+packages/*/dist/
+*.tsbuildinfo
+coverage/
+ui-screenshots-personas/
+
+# Environment files — never commit. Values belong in Vercel project env or local-only files.
+.env
+.env.*
+!.env.example

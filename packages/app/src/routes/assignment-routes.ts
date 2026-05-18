@@ -1,0 +1,60 @@
+import { Router } from 'express';
+import { requireCapability } from '../middleware/require-capability.js';
+import { ScheduleRepository, assignmentInputSchema } from '@rayhealth/core';
+
+const router = Router();
+
+router.get('/caregiver', requireCapability('schedule.read'), async (req, res) => {
+  try {
+    if (!req.auth.caregiverId) {
+      return res.status(403).json({ message: 'User is not authorized as a caregiver' });
+    }
+    const db = req.app.get('db');
+    const repo = new ScheduleRepository(db);
+    const assignments = await repo.getAssignmentsByCaregiver(req.auth.caregiverId);
+    res.json(assignments);
+  } catch (error) {
+    console.error('Failed to get caregiver assignments:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.post('/', requireCapability('schedule.write'), async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    if (!db) {
+      console.error('Database connection not found in app context');
+      return res.status(500).json({ message: 'Database connection missing' });
+    }
+    const repo = new ScheduleRepository(db);
+
+    const assignmentInput = {
+      caregiverId: req.body.caregiverId,
+      visitTemplateId: req.body.visitTemplateId,
+      credentialStatus: 'active' as const
+    };
+    const parsed = assignmentInputSchema.safeParse(assignmentInput);
+    if (!parsed.success) {
+      return res.status(400).json({ message: 'caregiverId and visitTemplateId are required to create an assignment' });
+    }
+
+    const assignment = await repo.createAssignment(parsed.data);
+    res.status(201).json({ ...assignment, visitDate: req.body.visitDate });
+  } catch (error) {
+    console.error('Assignment creation failed:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.get('/', requireCapability('schedule.read'), async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const repo = new ScheduleRepository(db);
+    const assignments = await repo.getAssignments(req.auth.agencyId);
+    res.json(assignments);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+export default router;
