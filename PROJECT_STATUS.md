@@ -1,6 +1,6 @@
 # RayHealth EVV — Project Status
 
-**Last updated:** 2026-05-11 (rev 4 — invite acceptance + EVV aggregator config + Copilot context injection + VMUR PA-DHS upgrade + HHAeXchange/Sandata admin surface)
+**Last updated:** 2026-05-18 (rev 5 — operational hygiene: production audit clean, CI hardening, broken-script cleanup)
 **Maintained by:** Durga Ghimeray, Founder
 **Replaces:** `AGENT_HANDOFF_2026-05-08.md`, `HANDOFF.md`, `HANDOFF_CLAUDE_SECURITY_PHASE_1_2026-05-08.md`, `HANDOFF_CODEX.md`, `docs/SESSION_HANDOFF_2026-05-09.md`
 
@@ -88,26 +88,31 @@ The three repos diverged when production was extracted from the original monorep
 
 ---
 
-## What's ready in this monorepo but not yet deployed
+## What's ready in the source monorepo but not yet in `rayhealth-evv-platform`
 
-These changes are committed to the worktree at `/rayhealth-fresh` and need to be picked up into the deployed repos.
+The source-of-truth monorepo (`rayhealthevv-fresh/rayhealth-fresh` on Durga's machine) has several files that haven't been ported into this deployed repo (`durga710/rayhealth-evv-platform`). Verified via direct filesystem audit on 2026-05-18.
 
-| File | Purpose | Where it lands |
+| File (source-monorepo path) | Status here | Purpose |
 |---|---|---|
-| `vercel.json` | Fix `npm install` timeout (replace pnpm `--filter=` with correct `--workspace=` syntax; add `ignoreCommand`; add cron schedule) | This repo (or wherever the Vercel deploy is rooted) |
-| `packages/core/scripts/seed-app-store-fixture.ts` | Idempotent, prod-guarded fixture seed | This repo + `rayhealth-evv-platform` |
-| `packages/core/src/migrations/2026-05-11-add-agency-sandata-config.ts` | Per-agency Sandata config table | This repo + `rayhealth-evv-platform` |
-| `packages/core/src/migrations/2026-05-11-add-audit-retention.ts` | Archive table + run log | This repo + `rayhealth-evv-platform` |
-| `packages/app/src/services/sandata-mapping.ts` | Sandata Provider/Worker/HCPCS mapping + CSV builder | `rayhealth-evv-platform` |
-| `packages/app/src/services/audit-retention-sweep.ts` | Retention sweep with safe trigger bypass | `rayhealth-evv-platform` |
-| `packages/app/src/routes/audit-retention-routes.ts` | `GET /status` + `POST /sweep` endpoints | `rayhealth-evv-platform` |
-| `packages/app/src/scripts/run-audit-retention-sweep.ts` | Standalone CLI for the sweep | `rayhealth-evv-platform` |
-| `deliverables/app-icon/rayhealth-icon-*.png` | App Store + Play Store icon set, 1024×1024 master + iOS/Android sizes | `rayhealth-evv-mobile` (replace placeholder in `AppIcon.appiconset`) |
-| `docs/compliance/hipaa/RISK_ANALYSIS_2026.md` | Annual HIPAA §164.308(a)(1)(ii)(A) risk analysis — 15 risks, NIST SP 800-30 methodology, awaiting countersignature | Sign and retain in private vault |
-| `docs/compliance/hipaa/BAA_REQUEST_EMAILS.md` | Ready-to-send BAA emails for Vercel/Neon/Resend; AWS already active; Google self-service | Send |
-| `docs/sandata-onboarding.md` | First-pilot-agency runbook | Used during first pilot onboarding |
-| `packages/web/src/features/evv/VisitReviewPage.tsx` | Disabled state + auto-clearing success message | Already in this monorepo |
-| `packages/web/src/features/landing/LandingPage.tsx` | FAQ added to nav | Already in this monorepo |
+| `vercel.json` | ✅ in prod | Fix `npm install` timeout (`--workspace=` syntax; add cron schedule) |
+| `packages/core/scripts/seed-app-store-fixture.ts` | ✅ in prod | Idempotent, prod-guarded fixture seed |
+| `packages/app/src/routes/audit-retention-routes.ts` | ✅ in prod | `GET /status` endpoint (read-only stats; sweep endpoint not wired yet because the service is missing) |
+| `packages/web/src/features/evv/VisitReviewPage.tsx` tweaks | ✅ in prod | Disabled state + auto-clearing success message |
+| `packages/web/src/features/landing/LandingPage.tsx` tweaks | ✅ in prod | FAQ added to nav |
+| `packages/core/src/migrations/2026-05-11-add-agency-sandata-config.ts` | ❌ pending port | Per-agency Sandata config table |
+| `packages/core/src/migrations/2026-05-11-add-audit-retention.ts` | ❌ pending port | Archive table + run log |
+| `packages/core/src/migrations/2026-05-11-add-{learning,agency-features,invite-access-code,agency-evv-config,extend-visit-maintenance,agency-hhaexchange-config}.ts` | ❌ pending port (6 files) | Learning Hub, Copilot feature flag, invite access codes, agency EVV/HHAeXchange config, VMUR upgrade |
+| `packages/core/src/services/sandata-mapping.ts` | ❌ pending port | Sandata Provider/Worker/HCPCS mapping + CSV builder (note: PROJECT_STATUS rev 4 incorrectly said `packages/app/src/services/` — actual path is `packages/core/src/services/`) |
+| `packages/core/src/services/audit-retention-sweep.ts` | ❌ pending port | Retention sweep with safe trigger bypass |
+| `packages/core/src/repositories/agency-sandata-config-repository.ts` | ❌ pending port | Repository for the Sandata config table |
+| `packages/app/src/routes/agency-sandata-config-routes.ts` | ❌ pending port | `GET`/`PUT /agencies/me/sandata-config` |
+| `packages/app/src/scripts/run-audit-retention-sweep.ts` | ❌ pending port | Standalone CLI for the sweep |
+| `deliverables/app-icon/rayhealth-icon-*.png` | N/A (mobile repo) | App Store + Play Store icon set |
+| `docs/compliance/hipaa/RISK_ANALYSIS_2026.md` | N/A (sign offline) | HIPAA §164.308(a)(1)(ii)(A) risk analysis |
+| `docs/compliance/hipaa/BAA_REQUEST_EMAILS.md` | N/A (send manually) | Ready-to-send BAA emails for Vercel/Neon/Resend |
+| `docs/sandata-onboarding.md` | N/A (runbook) | First-pilot-agency runbook |
+
+**Port checklist for the engineering items:** each migration is 30-80 lines of idempotent Knex schema code. The migrations should be ported as a set with their corresponding service/route/repository files, otherwise routes will compile but fail at runtime against a Postgres `relation does not exist` error. Right now Learning Hub features that PROJECT_STATUS rev 2/3 described as "live" likely depend on tables (`learning_courses`, `course_enrollments`, `audit_events_archive`, `agency_sandata_config`, etc.) that don't exist in this repo's schema — production may have been migrated through a different path (manual SQL? earlier monorepo's `apply-new-migrations.ts`?). **Worth a Neon-side schema audit before relying on those features in a pilot.**
 
 ---
 
@@ -146,7 +151,7 @@ These changes are committed to the worktree at `/rayhealth-fresh` and need to be
 
 - [ ] First-agency Sandata test transmission once Provider ID is issued
 - [ ] Add a mock-location detector if PA DHS audit flags geofence integrity
-- [ ] CodeQL / Dependabot on `rayhealth-evv-platform` and `rayhealth-evv-mobile`
+- [x] ~~CodeQL / Dependabot on `rayhealth-evv-platform`~~ — CodeQL via `.github/workflows/codeql.yml`, Dependabot via `.github/dependabot.yml` (#21, 2026-05-18). `rayhealth-evv-mobile` still pending.
 - [ ] Playwright e2e in CI for caregiver clock-in/out
 
 **Stretch:**
@@ -207,6 +212,17 @@ What's still required for spots: VO recording, music license (~$15 Artlist/Epide
 ---
 
 ## Changelog
+
+### 2026-05-18 rev 5 (operational hygiene — CI hardening + ghost cleanup)
+
+A pure-housekeeping cycle. No new features; the goal was getting the GitHub side of the project to stop being a constant footgun.
+
+- **Production dependency audit clean** (#18) — undici, esbuild, vite, brace-expansion, axios, expo, `@vitejs/plugin-react`, `react-native-css-interop` all bumped past their advisories; `@vercel/node`'s vulnerable transitive undici pinned via `overrides`. `npm audit --omit=dev` now reports **0 vulnerabilities** (was 11 — 3 high, 5 moderate, 3 low). Bumped cell-cipher to cast `Buffer → Uint8Array` for `@types/node` 22 compatibility.
+- **Lockfile cross-platform fix** (#20) — permanent fix for the [npm/cli#4828](https://github.com/npm/cli/issues/4828) native-binding-drop bug that bricked PR #18 across three sessions. Ships `scripts/sync-lockfile.sh` (Docker `linux/amd64` regen), `.github/workflows/lockfile-sync.yml` (auto-fixes drift on PRs touching `package.json`), `docs/LOCKFILE.md` (explainer).
+- **Dependabot enabled** (#21) — closes the second half of "CodeQL / Dependabot on rayhealth-evv-platform" (CodeQL already shipped via `.github/workflows/codeql.yml`). Weekly Monday scan, grouped minor+patch updates, ignore lists for Expo / React Native / React / TypeScript majors. Security advisories not gated by schedule.
+- **Broken migration script removed** (#32) — `packages/core/scripts/apply-new-migrations.ts` imported eight 2026-05-11 dated migration files that never landed in this repo (`tsc --noEmit` surfaced 8 `TS2307: Cannot find module` errors). Deleted. README quickstart step 3 now uses `npm run db:migrate` (the command that has worked all along via `packages/core/src/migrations/runner.ts`).
+- **Pull-request cleanup** — Merged PR #4 (codex launch-ads brief — resolved tracked-dist conflicts), PR #15 (mobile 30-second pre-shift vibration alert). Deleted five dangling no-PR branches (`codex/security-phase-1-platform`, `fix/app-dangling-routes`, `fix/vercel-install`, `feat/empty-states`, `feat/mobile-polish`). Repo went from 9 branches / 3 open PRs to **2 branches / 0 open PRs** (now back to 1 branch after this work lands).
+- **Local-side cleanup** — pruned 10 orphan `git worktree`s, 12 stale local branches, 18 stale remote-tracking refs.
 
 ### 2026-05-11 rev 4 (invite acceptance + EVV aggregator config + VMUR upgrade + HHAeXchange/Sandata admin surface)
 - **Caregiver invite acceptance flow** — public `GET`/`POST /api/invites/accept/:token` endpoints (mounted before `authContext` so a logged-out caregiver can hit them). Access-code comparison is case- and dash-insensitive, password is bcrypt-cost-12, creates `caregivers` + `users` rows in a transaction, marks invite accepted, returns an 8h bearer. Failed access-code attempts emit a new `invite.access_code_failed` audit event. Web page at `/accept/:token` (`AcceptInvitePage.tsx`) handles expired/revoked/already-used cases. 13 tests.
