@@ -35,6 +35,12 @@ const ALGO = 'aes-256-gcm';
 const IV_LEN = 12;
 const TAG_LEN = 16;
 
+// Node's Buffer is a Uint8Array subclass at runtime; @types/node 22+ widened
+// Buffer's generic to ArrayBufferLike which TS no longer auto-narrows to the
+// ArrayBuffer expected by createCipheriv/createDecipheriv. The cast is safe
+// because every Buffer here is backed by a real ArrayBuffer (not Shared).
+const bytes = (b: Buffer | Uint8Array): Uint8Array => b as unknown as Uint8Array;
+
 function loadKey(): Buffer {
   const raw = process.env.ENCRYPTION_KEY;
   if (!raw) {
@@ -57,10 +63,10 @@ function key(): Buffer {
 export function encryptCell(plain: string | null | undefined): string | null {
   if (plain == null || plain === '') return null;
   const iv = randomBytes(IV_LEN);
-  const cipher = createCipheriv(ALGO, key(), iv);
-  const ct = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
+  const cipher = createCipheriv(ALGO, bytes(key()), bytes(iv));
+  const ct = Buffer.concat([bytes(cipher.update(plain, 'utf8')), bytes(cipher.final())]);
   const tag = cipher.getAuthTag();
-  return `${VERSION}:${Buffer.concat([iv, tag, ct]).toString('base64')}`;
+  return `${VERSION}:${Buffer.concat([bytes(iv), bytes(tag), bytes(ct)]).toString('base64')}`;
 }
 
 export function decryptCell(blob: string | null | undefined): string | null | undefined {
@@ -73,8 +79,8 @@ export function decryptCell(blob: string | null | undefined): string | null | un
   const iv = buf.subarray(0, IV_LEN);
   const tag = buf.subarray(IV_LEN, IV_LEN + TAG_LEN);
   const ct = buf.subarray(IV_LEN + TAG_LEN);
-  const decipher = createDecipheriv(ALGO, key(), iv);
-  decipher.setAuthTag(tag);
-  const pt = Buffer.concat([decipher.update(ct), decipher.final()]);
+  const decipher = createDecipheriv(ALGO, bytes(key()), bytes(iv));
+  decipher.setAuthTag(bytes(tag));
+  const pt = Buffer.concat([bytes(decipher.update(bytes(ct))), bytes(decipher.final())]);
   return pt.toString('utf8');
 }
