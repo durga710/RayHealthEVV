@@ -47,6 +47,7 @@
     "@expo/metro-config": {
       "postcss": "^8.5.10"
     },
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "eslint-plugin-react": "^7.37.3"
   }
 }
