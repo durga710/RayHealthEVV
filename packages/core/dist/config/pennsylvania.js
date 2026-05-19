@@ -44,19 +44,22 @@ const ROLE_CAPABILITIES = {
         'schedule.read', 'schedule.write',
         'evv.read', 'evv.write',
         'auth.read', 'auth.write',
-        'audit.read'
+        'audit.read',
+        'learning.read'
     ],
     coordinator: [
         'agency.read',
         'staff.read',
         'client.read', 'client.write',
         'schedule.read', 'schedule.write',
-        'evv.read'
+        'evv.read',
+        'learning.read'
     ],
     caregiver: [
         // EVV write lets caregivers record their own visits without granting
         // broad schedule mutation rights such as creating assignments.
-        'schedule.read', 'evv.read', 'evv.write'
+        'schedule.read', 'evv.read', 'evv.write',
+        'learning.read'
     ],
     family: [
         'client.read',

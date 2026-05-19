@@ -852,6 +852,15 @@ export async function up(knex) {
       END$$;
     `);
     }
+    // ── R10 — user profile fields ─────────────────────────────────────────────
+    if (!(await knex.schema.hasColumn('users', 'first_name'))) {
+        await knex.schema.alterTable('users', (t) => {
+            t.string('first_name', 100).nullable();
+            t.string('last_name', 100).nullable();
+            t.string('phone', 30).nullable();
+            t.text('avatar_url').nullable();
+        });
+    }
 }
 export async function down(knex) {
     await knex.schema.dropTableIfExists('onboarding_documents');

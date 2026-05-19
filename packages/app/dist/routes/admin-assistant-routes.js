@@ -1,54 +1,21 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
+import { generateText, tool, stepCountIs } from 'ai';
+import { z } from 'zod';
 import { safeError } from '../security/safe-log.js';
+import { aiModel } from '../ai.js';
+import { requireCapability } from '../middleware/require-capability.js';
 const router = Router();
+// Admin assistant is for admin/coordinator only — caregivers have no agency.read capability.
+router.use(requireCapability('agency.read'));
 const MAX_USER_LEN = 4000;
 const MAX_HISTORY = 20;
-const MAX_TOOL_LOOPS = 4;
-const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
-const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001';
-function anthropicConfigured() {
-    return !!process.env.ANTHROPIC_API_KEY;
-}
 const SYSTEM_PROMPT = `You are RayHealthOps, the in-app assistant for RayHealthEVV. The user is a coordinator or admin signed into their agency's account. You can answer operational questions about THIS agency by calling the provided tools. NEVER:
 - mention specific patient/client names or full PHI fields unless the user explicitly asked for a single record
 - perform admin operations (creating users, changing passwords, modifying agency settings) — instead point to the relevant /admin/* page
 - invent counts or numbers — always call a tool to get them
 
 When unsure, call a tool. Keep replies concise (3-5 sentences). End feature-related answers with one soft suggestion.`;
-const TOOLS = [
-    {
-        name: 'count_visits',
-        description: "Count this agency's EVV visits in a date range. Returns just a count, no PHI.",
-        input_schema: {
-            type: 'object',
-            properties: {
-                from: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' },
-                to: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' }
-            }
-        }
-    },
-    {
-        name: 'list_open_exceptions',
-        description: 'Counts of evv_exceptions for this agency grouped by type. No names, no patient data.',
-        input_schema: { type: 'object', properties: {} }
-    },
-    {
-        name: 'count_expiring_credentials',
-        description: 'Counts caregiver_credentials that expire within `withinDays` days, grouped by credential_type.',
-        input_schema: {
-            type: 'object',
-            properties: {
-                withinDays: { type: 'integer', description: 'Default 30. Range 1-365.' }
-            }
-        }
-    },
-    {
-        name: 'agency_overview',
-        description: 'High-level snapshot: counts of clients, caregivers, users, and visits in the last 30 days.',
-        input_schema: { type: 'object', properties: {} }
-    }
-];
 async function runTool(name, args, ctx) {
     const knex = ctx.db;
     switch (name) {
@@ -127,35 +94,7 @@ async function runTool(name, args, ctx) {
             return { error: `unknown tool: ${name}` };
     }
 }
-async function callAnthropic(messages) {
-    const res = await fetch(ANTHROPIC_API, {
-        method: 'POST',
-        headers: {
-            'content-type': 'application/json',
-            'x-api-key': process.env.ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-            model: MODEL,
-            max_tokens: 800,
-            system: SYSTEM_PROMPT,
-            messages,
-            tools: TOOLS
-        })
-    });
-    if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        throw new Error(`Anthropic API error ${res.status}: ${body.slice(0, 200)}`);
-    }
-    return (await res.json());
-}
 router.post('/chat', async (req, res) => {
-    if (!anthropicConfigured()) {
-        res.status(503).json({
-            message: 'Admin assistant is offline (ANTHROPIC_API_KEY not configured).'
-        });
-        return;
-    }
     const body = (req.body ?? {});
     const messagesRaw = Array.isArray(body.messages) ? body.messages : [];
     const sessionId = typeof body.sessionId === 'string' && body.sessionId.length <= 64
@@ -175,47 +114,42 @@ router.post('/chat', async (req, res) => {
     }
     const db = req.app.get('db');
     const ctx = { db, agencyId: req.auth.agencyId };
-    const conversation = incoming.map((m) => ({
-        role: m.role,
-        content: m.content
-    }));
-    for (let i = 0; i < MAX_TOOL_LOOPS; i++) {
-        let response;
-        try {
-            response = await callAnthropic(conversation);
-        }
-        catch (err) {
-            safeError('admin-assistant anthropic call failed', err);
-            res.status(502).json({ message: 'Could not reach the model.' });
-            return;
-        }
-        conversation.push({ role: 'assistant', content: response.content });
-        if (response.stop_reason === 'tool_use') {
-            const toolUseBlocks = response.content.filter((b) => b.type === 'tool_use');
-            const toolResults = [];
-            for (const block of toolUseBlocks) {
-                let toolResult;
-                try {
-                    toolResult = await runTool(block.name ?? '', block.input ?? {}, ctx);
-                }
-                catch (err) {
-                    safeError(`admin-assistant tool ${block.name} failed`, err);
-                    toolResult = { error: 'tool execution failed' };
-                }
-                toolResults.push({
-                    type: 'tool_result',
-                    tool_use_id: block.id,
-                    content: [{ type: 'text', text: JSON.stringify(toolResult) }]
-                });
-            }
-            conversation.push({ role: 'user', content: toolResults });
-            continue;
-        }
-        const text = response.content
-            .filter((b) => b.type === 'text' && typeof b.text === 'string')
-            .map((b) => b.text)
-            .join('\n')
-            .trim();
+    try {
+        const result = await generateText({
+            model: aiModel,
+            system: SYSTEM_PROMPT,
+            messages: incoming,
+            maxOutputTokens: 800,
+            stopWhen: stepCountIs(4),
+            tools: {
+                count_visits: tool({
+                    description: "Count this agency's EVV visits in a date range. Returns just a count, no PHI.",
+                    inputSchema: z.object({
+                        from: z.string().optional().describe('ISO date YYYY-MM-DD or ISO 8601'),
+                        to: z.string().optional().describe('ISO date YYYY-MM-DD or ISO 8601'),
+                    }),
+                    execute: ({ from, to }) => runTool('count_visits', { from, to }, ctx),
+                }),
+                list_open_exceptions: tool({
+                    description: 'Counts of evv_exceptions grouped by type. No names, no patient data.',
+                    inputSchema: z.object({}),
+                    execute: () => runTool('list_open_exceptions', {}, ctx),
+                }),
+                count_expiring_credentials: tool({
+                    description: 'Counts caregiver credentials expiring within withinDays days, grouped by type.',
+                    inputSchema: z.object({
+                        withinDays: z.number().int().optional().describe('Default 30. Range 1-365.'),
+                    }),
+                    execute: ({ withinDays }) => runTool('count_expiring_credentials', { withinDays }, ctx),
+                }),
+                agency_overview: tool({
+                    description: 'High-level snapshot: counts of clients, caregivers, users, visits last 30 days.',
+                    inputSchema: z.object({}),
+                    execute: () => runTool('agency_overview', {}, ctx),
+                }),
+            },
+        });
+        const text = result.text.trim();
         if (!text) {
             res.status(502).json({ message: 'Empty model response.' });
             return;
@@ -223,31 +157,19 @@ router.post('/chat', async (req, res) => {
         try {
             const ip = req.header('cf-connecting-ip') ?? req.ip ?? null;
             await db('support_conversations').insert([
-                {
-                    id: randomUUID(),
-                    session_id: sessionId,
-                    role: 'user',
-                    content: incoming[incoming.length - 1].content,
-                    model: MODEL,
-                    ip_address: ip
-                },
-                {
-                    id: randomUUID(),
-                    session_id: sessionId,
-                    role: 'assistant',
-                    content: text,
-                    model: MODEL,
-                    ip_address: ip
-                }
+                { id: randomUUID(), session_id: sessionId, role: 'user', content: incoming[incoming.length - 1].content, model: process.env.BEDROCK_MODEL_ID ?? 'bedrock', ip_address: ip },
+                { id: randomUUID(), session_id: sessionId, role: 'assistant', content: text, model: process.env.BEDROCK_MODEL_ID ?? 'bedrock', ip_address: ip },
             ]);
         }
         catch (err) {
             safeError('admin-assistant log insert failed', err);
         }
         res.json({ sessionId, message: text });
-        return;
     }
-    res.status(504).json({ message: 'Assistant ran out of steps. Try a simpler question or split it.' });
+    catch (err) {
+        safeError('admin-assistant generateText failed', err);
+        res.status(502).json({ message: 'Could not reach the assistant.' });
+    }
 });
 export default router;
 //# sourceMappingURL=admin-assistant-routes.js.map

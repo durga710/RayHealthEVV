@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { LearningRepository } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 const router = Router();
-// GET /learning/courses — catalog visible to this agency
-router.get('/courses', requireCapability('staff.read'), async (req, res) => {
+// GET /learning/courses — catalog visible to all authenticated roles (admin, coordinator, caregiver)
+router.get('/courses', requireCapability('learning.read'), async (req, res) => {
     try {
         const db = req.app.get('db');
         const repo = new LearningRepository(db);

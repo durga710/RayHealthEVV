@@ -317,5 +317,69 @@ router.post('/:id/resend-email', resendLimiter, requireCapability('staff.write')
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+// DELETE /invites/:id — revoke one pending invite
+router.delete('/:id', requireCapability('staff.write'), async (req, res) => {
+    const rawId = req.params.id;
+    const inviteId = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!inviteId) {
+        res.status(400).json({ message: 'invite id is required' });
+        return;
+    }
+    try {
+        const db = req.app.get('db');
+        const deleted = await db('staff_invites')
+            .where({ id: inviteId, agency_id: req.auth.agencyId, status: 'pending' })
+            .delete();
+        if (!deleted) {
+            res.status(404).json({ message: 'invite not found' });
+            return;
+        }
+        await audit(db, {
+            agencyId: req.auth.agencyId,
+            actorId: req.auth.userId,
+            actorType: 'user',
+            eventType: 'invite.revoked',
+            entityType: 'invite',
+            entityId: inviteId,
+            outcome: 'success',
+            payload: {},
+            occurredAt: new Date().toISOString(),
+        });
+        res.status(204).end();
+    }
+    catch (err) {
+        safeError('DELETE /invites/:id failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+// DELETE /invites?all=true — revoke all pending invites for the agency
+router.delete('/', requireCapability('staff.write'), async (req, res) => {
+    if (req.query.all !== 'true') {
+        res.status(400).json({ message: 'pass ?all=true to revoke all pending invites' });
+        return;
+    }
+    try {
+        const db = req.app.get('db');
+        const revoked = await db('staff_invites')
+            .where({ agency_id: req.auth.agencyId, status: 'pending' })
+            .delete();
+        await audit(db, {
+            agencyId: req.auth.agencyId,
+            actorId: req.auth.userId,
+            actorType: 'user',
+            eventType: 'invite.revoked_all',
+            entityType: 'invite',
+            entityId: req.auth.agencyId,
+            outcome: 'success',
+            payload: { count: revoked },
+            occurredAt: new Date().toISOString(),
+        });
+        res.json({ revoked });
+    }
+    catch (err) {
+        safeError('DELETE /invites?all=true failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 export default router;
 //# sourceMappingURL=invite-routes.js.map
