@@ -90,7 +90,7 @@ router.patch('/applicants/:id/status', async (req, res) => {
 
     const parse = updateStatusBodySchema.safeParse(req.body);
     if (!parse.success) {
-      res.status(400).json({ message: 'Invalid request', errors: parse.error.errors });
+      res.status(400).json({ message: 'Invalid request', errors: parse.error.issues });
       return;
     }
 
@@ -170,7 +170,7 @@ router.post('/applicants/:id/documents', async (req, res) => {
 
     const parse = requestDocumentBodySchema.safeParse(req.body);
     if (!parse.success) {
-      res.status(400).json({ message: 'Invalid request', errors: parse.error.errors });
+      res.status(400).json({ message: 'Invalid request', errors: parse.error.issues });
       return;
     }
 
@@ -201,7 +201,7 @@ router.patch('/documents/:docId/status', async (req, res) => {
 
     const parse = updateDocumentStatusBodySchema.safeParse(req.body);
     if (!parse.success) {
-      res.status(400).json({ message: 'Invalid request', errors: parse.error.errors });
+      res.status(400).json({ message: 'Invalid request', errors: parse.error.issues });
       return;
     }
 

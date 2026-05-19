@@ -59,6 +59,7 @@
     },
     "esbuild": "^0.25.0",
     "eslint-plugin-react": "^7.37.3",
-    "react-native": "0.81.5"
+    "react-native": "0.81.5",
+    "zod": "^4.4.3"
   }
 }

@@ -17,6 +17,10 @@ describe('assignment routes', () => {
         vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
             createAssignment: mockCreateAssignment
         }));
+        // The route now verifies caregiver belongs to the agency before creating.
+        vi.spyOn(core, 'CaregiverRepository').mockImplementation(() => ({
+            findById: vi.fn().mockResolvedValue({ id: 'caregiver-1', agencyId: 'agency-id', status: 'active' })
+        }));
         const response = await request(createApp())
             .post('/assignments')
             .set('Authorization', `Bearer ${makeToken('coordinator')}`)

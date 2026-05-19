@@ -71,6 +71,7 @@ export class LearningRepository {
         expires_after_days: data.expiresAfterDays,
         required: data.required,
         duration_minutes: data.durationMinutes,
+        external_url: data.externalUrl ?? null,
       })
       .returning('*');
     return this.mapCourse(row as Record<string, unknown>);
@@ -97,6 +98,13 @@ export class LearningRepository {
       .where({ caregiver_id: caregiverId, course_id: courseId })
       .first();
     return row ? this.mapEnrollment(row as Record<string, unknown>) : undefined;
+  }
+
+  async markInProgress(enrollmentId: string): Promise<void> {
+    await this.db('course_enrollments')
+      .where({ id: enrollmentId })
+      .whereIn('status', ['not_started', 'overdue'])
+      .update({ status: 'in_progress', updated_at: this.db.fn.now() });
   }
 
   async enroll(data: NewCourseEnrollment): Promise<CourseEnrollment> {
@@ -578,6 +586,7 @@ export class LearningRepository {
       expiresAfterDays: row.expires_after_days != null ? Number(row.expires_after_days) : null,
       required: Boolean(row.required),
       durationMinutes: Number(row.duration_minutes ?? 0),
+      externalUrl: row.external_url ? String(row.external_url) : null,
       createdAt: this.toIsoString(row.created_at),
     };
   }

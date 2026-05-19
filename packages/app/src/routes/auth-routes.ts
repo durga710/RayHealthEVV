@@ -77,9 +77,19 @@ router.post('/login', async (req, res) => {
       occurredAt: new Date().toISOString()
     });
 
-    const agencyTheme = await new AgencyRepository(db).findTheme(user.agencyId).catch(() => null);
+    type ProfileRow = { email: string; first_name: string | null; last_name: string | null; avatar_url: string | null };
+    const [agencyTheme, profileRow] = await Promise.all([
+      new AgencyRepository(db).findTheme(user.agencyId).catch(() => null),
+      (db('users').where({ id: user.id }).select('email', 'first_name', 'last_name', 'avatar_url').first().catch(() => null)) as Promise<ProfileRow | null>,
+    ]);
+    const profile = {
+      email:     profileRow?.email      ?? user.email ?? null,
+      firstName: profileRow?.first_name ?? null,
+      lastName:  profileRow?.last_name  ?? null,
+      avatarUrl: profileRow?.avatar_url ?? null,
+    };
     res.cookie(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
-    res.json({ userId: user.id, role: user.role, agencyId: user.agencyId, csrfToken, agencyTheme });
+    res.json({ userId: user.id, role: user.role, agencyId: user.agencyId, csrfToken, agencyTheme, ...profile });
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
   }
@@ -136,7 +146,7 @@ const signupSchema = z.object({
 router.post('/signup', async (req, res) => {
   const parsed = signupSchema.safeParse(req.body ?? {});
   if (!parsed.success) {
-    res.status(400).json({ message: parsed.error.errors[0]?.message ?? 'Invalid input' });
+    res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid input' });
     return;
   }
   const { agencyName, state, adminEmail, password } = parsed.data;

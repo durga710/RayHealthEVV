@@ -1,4 +1,14 @@
-import { getCsrfToken } from './session-state.js';
+import { getCsrfToken, setCsrfToken } from './session-state.js';
+
+async function refreshCsrfToken(): Promise<string | null> {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include', headers: { accept: 'application/json' } });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { csrfToken?: string };
+    if (data.csrfToken) { setCsrfToken(data.csrfToken); return data.csrfToken; }
+  } catch { /* ignore */ }
+  return null;
+}
 
 /**
  * Error thrown by getJson/postJson on non-2xx responses. Carries the HTTP
@@ -27,61 +37,49 @@ async function extractError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, message);
 }
 
-export async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const csrfToken = getCsrfToken();
-  const response = await fetch(path, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'content-type': 'application/json',
-      ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
-    },
-    body: JSON.stringify(body)
+async function mutate<T>(method: string, path: string, body?: unknown): Promise<T> {
+  let token = getCsrfToken();
+  const makeHeaders = (t: string | null) => ({
+    'content-type': 'application/json',
+    ...(t ? { 'x-csrf-token': t } : {})
+  });
+  const opts = (t: string | null): RequestInit => ({
+    method,
+    credentials: 'include' as RequestCredentials,
+    headers: makeHeaders(t),
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {})
   });
 
-  if (!response.ok) {
-    throw await extractError(response);
+  let response = await fetch(path, opts(token));
+
+  // CSRF token may have been rotated server-side (e.g. stale tab, re-deploy).
+  // Refresh once and retry before surfacing the error.
+  if (response.status === 403) {
+    const err = await extractError(response);
+    if (err.serverMessage === 'Invalid CSRF token') {
+      const fresh = await refreshCsrfToken();
+      if (fresh) {
+        response = await fetch(path, opts(fresh));
+      }
+    }
+    if (!response.ok) throw err;
   }
 
+  if (!response.ok) throw await extractError(response);
+  if (response.status === 204) return null as T;
   return (await response.json()) as T;
+}
+
+export async function postJson<T>(path: string, body: unknown): Promise<T> {
+  return mutate<T>('POST', path, body);
 }
 
 export async function putJson<T>(path: string, body: unknown): Promise<T> {
-  const csrfToken = getCsrfToken();
-  const response = await fetch(path, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      'content-type': 'application/json',
-      ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
-    },
-    body: JSON.stringify(body)
-  });
-
-  if (!response.ok) {
-    throw await extractError(response);
-  }
-
-  return (await response.json()) as T;
+  return mutate<T>('PUT', path, body);
 }
 
 export async function patchJson<T>(path: string, body: unknown): Promise<T> {
-  const csrfToken = getCsrfToken();
-  const response = await fetch(path, {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: {
-      'content-type': 'application/json',
-      ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
-    },
-    body: JSON.stringify(body)
-  });
-
-  if (!response.ok) {
-    throw await extractError(response);
-  }
-
-  return (await response.json()) as T;
+  return mutate<T>('PATCH', path, body);
 }
 
 export async function getJson<T>(path: string): Promise<T> {
@@ -98,17 +96,5 @@ export async function getJson<T>(path: string): Promise<T> {
 }
 
 export async function deleteJson<T = void>(path: string): Promise<T | null> {
-  const csrfToken = getCsrfToken();
-  const response = await fetch(path, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}) },
-  });
-
-  if (!response.ok) {
-    throw await extractError(response);
-  }
-
-  if (response.status === 204) return null;
-  return (await response.json()) as T;
+  return mutate<T | null>('DELETE', path);
 }

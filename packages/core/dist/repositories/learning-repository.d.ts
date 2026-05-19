@@ -11,6 +11,7 @@ export declare class LearningRepository {
     upsertCourseByCode(data: NewLearningCourse): Promise<LearningCourse>;
     listEnrollmentsForCaregiver(caregiverId: string): Promise<CourseEnrollment[]>;
     findEnrollment(caregiverId: string, courseId: string): Promise<CourseEnrollment | undefined>;
+    markInProgress(enrollmentId: string): Promise<void>;
     enroll(data: NewCourseEnrollment): Promise<CourseEnrollment>;
     recordCompletion(data: NewCourseCompletion): Promise<CourseCompletion>;
     getAgencyRollup(agencyId: string, now?: Date): Promise<LearningAgencyRollup>;

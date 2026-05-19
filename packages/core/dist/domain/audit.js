@@ -26,6 +26,7 @@ export const auditEventTypes = [
     // only (`messageId`, `error` category) — never the URL or token.
     'invite.created', 'invite.accepted', 'invite.access_code_failed',
     'invite.email.sent', 'invite.email.failed',
+    'invite.revoked', 'invite.revoked_all',
 ];
 export const auditOutcomes = ['success', 'failure', 'denied'];
 export const auditActorTypes = ['user', 'service', 'system'];

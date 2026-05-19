@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { LearningRepository } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 const router = Router();
-// GET /learning/courses — catalog visible to this agency
-router.get('/courses', requireCapability('staff.read'), async (req, res) => {
+// GET /learning/courses — catalog visible to all authenticated roles (admin, coordinator, caregiver)
+router.get('/courses', requireCapability('learning.read'), async (req, res) => {
     try {
         const db = req.app.get('db');
         const repo = new LearningRepository(db);
@@ -84,6 +84,23 @@ router.post('/enroll', requireCapability('staff.write'), async (req, res) => {
             dueAt: dueAt ?? null,
         });
         res.status(201).json({ success: true, data: enrollment });
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : 'unexpected error';
+        res.status(500).json({ success: false, error: message });
+    }
+});
+// POST /learning/start — mark enrollment as in_progress when caregiver opens external course
+router.post('/start', requireCapability('evv.write'), async (req, res) => {
+    try {
+        const { enrollmentId } = req.body;
+        if (!enrollmentId) {
+            return res.status(400).json({ success: false, error: 'enrollmentId is required' });
+        }
+        const db = req.app.get('db');
+        const repo = new LearningRepository(db);
+        await repo.markInProgress(enrollmentId);
+        res.json({ success: true });
     }
     catch (error) {
         const message = error instanceof Error ? error.message : 'unexpected error';

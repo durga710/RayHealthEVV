@@ -26,6 +26,8 @@ export interface LearningCourse {
     required: boolean;
     /** Estimated minutes the caregiver needs to complete it. */
     durationMinutes: number;
+    /** Link to an external training platform (e.g. PHCA, FEMA EMI). null = no link. */
+    externalUrl: string | null;
     createdAt: string;
 }
 export interface NewLearningCourse {
@@ -37,6 +39,7 @@ export interface NewLearningCourse {
     expiresAfterDays: number | null;
     required: boolean;
     durationMinutes: number;
+    externalUrl?: string | null;
 }
 export interface CourseEnrollment {
     id: string;

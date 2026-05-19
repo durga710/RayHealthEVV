@@ -29,6 +29,6 @@ export type PaServiceCode = typeof paServiceCodes[number];
 export type PaCredentialType = typeof paCredentialTypes[number];
 export type PaExceptionType = typeof paExceptionTypes[number];
 export type AppRole = 'admin' | 'coordinator' | 'caregiver' | 'family';
-export type Capability = 'agency.read' | 'agency.write' | 'staff.read' | 'staff.write' | 'client.read' | 'client.write' | 'schedule.read' | 'schedule.write' | 'evv.read' | 'evv.write' | 'auth.read' | 'auth.write' | 'audit.read';
+export type Capability = 'agency.read' | 'agency.write' | 'staff.read' | 'staff.write' | 'client.read' | 'client.write' | 'schedule.read' | 'schedule.write' | 'evv.read' | 'evv.write' | 'auth.read' | 'auth.write' | 'audit.read' | 'learning.read';
 export declare function hasCapability(role: AppRole, capability: Capability): boolean;
 //# sourceMappingURL=pennsylvania.d.ts.map

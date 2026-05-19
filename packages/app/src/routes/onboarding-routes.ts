@@ -106,7 +106,7 @@ router.post('/apply', async (req, res) => {
   try {
     const parse = applyBodySchema.safeParse(req.body);
     if (!parse.success) {
-      res.status(400).json({ message: 'Invalid request', errors: parse.error.errors });
+      res.status(400).json({ message: 'Invalid request', errors: parse.error.issues });
       return;
     }
 
@@ -208,7 +208,7 @@ router.post('/interview/:token/message', async (req, res) => {
 
     const parse = messageBodySchema.safeParse(req.body);
     if (!parse.success) {
-      res.status(400).json({ message: 'Invalid request', errors: parse.error.errors });
+      res.status(400).json({ message: 'Invalid request', errors: parse.error.issues });
       return;
     }
 

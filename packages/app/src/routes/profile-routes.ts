@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
 router.patch('/', async (req, res) => {
   const parse = profileSchema.safeParse(req.body);
   if (!parse.success) {
-    res.status(400).json({ message: parse.error.errors[0]?.message ?? 'Invalid input' });
+    res.status(400).json({ message: parse.error.issues[0]?.message ?? 'Invalid input' });
     return;
   }
 
@@ -93,7 +93,7 @@ router.patch('/', async (req, res) => {
 router.post('/change-password', async (req, res) => {
   const parse = changePasswordSchema.safeParse(req.body);
   if (!parse.success) {
-    res.status(400).json({ message: parse.error.errors[0]?.message ?? 'Invalid input' });
+    res.status(400).json({ message: parse.error.issues[0]?.message ?? 'Invalid input' });
     return;
   }
 
