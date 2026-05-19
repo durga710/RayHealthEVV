@@ -3,10 +3,19 @@ import { getCsrfToken, setCsrfToken } from './session-state.js';
 
 const API_BASE = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? '/api';
 
+interface AgencyTheme {
+  primaryColor?: string;
+  primaryDark?: string;
+  accentColor?: string;
+  logoText?: string;
+  tagline?: string;
+}
+
 interface AuthUser {
   userId: string;
   role: string;
   agencyId: string;
+  agencyTheme?: AgencyTheme | null;
 }
 
 interface AuthContextType {
@@ -14,6 +23,16 @@ interface AuthContextType {
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<{ role: string }>;
   logout: () => Promise<void>;
+}
+
+function applyAgencyTheme(theme?: AgencyTheme | null) {
+  const root = document.documentElement;
+  const primary = theme?.primaryColor ?? '#6366F1';
+  const primaryDark = theme?.primaryDark ?? '#4F46E5';
+  root.style.setProperty('--color-primary', primary);
+  root.style.setProperty('--color-primary-dark', primaryDark);
+  // Derive a low-opacity bg tint from the primary color for hover/active states.
+  root.style.setProperty('--color-primary-bg', primary + '14');
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,8 +53,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled) {
-          setUser({ userId: data.userId, role: data.role, agencyId: data.agencyId });
+          setUser({ userId: data.userId, role: data.role, agencyId: data.agencyId, agencyTheme: data.agencyTheme });
           setCsrfToken(data.csrfToken ?? null);
+          applyAgencyTheme(data.agencyTheme);
         }
       } catch {
         setCsrfToken(null);
@@ -62,8 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(message);
     }
     const data = await res.json();
-    setUser({ userId: data.userId, role: data.role, agencyId: data.agencyId });
+    setUser({ userId: data.userId, role: data.role, agencyId: data.agencyId, agencyTheme: data.agencyTheme });
     setCsrfToken(data.csrfToken ?? null);
+    applyAgencyTheme(data.agencyTheme);
     return { role: data.role as string };
   };
 
@@ -76,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }).catch(() => undefined);
     setCsrfToken(null);
     setUser(null);
+    applyAgencyTheme(null);
   };
 
   if (isLoading) {

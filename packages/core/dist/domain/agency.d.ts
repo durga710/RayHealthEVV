@@ -1,4 +1,12 @@
 import { z } from 'zod';
+export declare const agencyThemeSchema: z.ZodObject<{
+    primaryColor: z.ZodOptional<z.ZodString>;
+    primaryDark: z.ZodOptional<z.ZodString>;
+    accentColor: z.ZodOptional<z.ZodString>;
+    logoText: z.ZodOptional<z.ZodString>;
+    tagline: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+export type AgencyTheme = z.infer<typeof agencyThemeSchema>;
 export declare const agencySchema: z.ZodObject<{
     id: z.ZodOptional<z.ZodString>;
     name: z.ZodString;

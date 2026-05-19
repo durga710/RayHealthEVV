@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export const agencyThemeSchema = z.object({
+  primaryColor: z.string().optional(),
+  primaryDark: z.string().optional(),
+  accentColor: z.string().optional(),
+  logoText: z.string().optional(),
+  tagline: z.string().optional(),
+});
+
+export type AgencyTheme = z.infer<typeof agencyThemeSchema>;
+
 export const agencySchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().min(1),

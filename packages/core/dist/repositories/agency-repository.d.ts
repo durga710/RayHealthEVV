@@ -1,5 +1,5 @@
 import type { Knex } from 'knex';
-import type { Agency } from '../domain/agency.js';
+import type { Agency, AgencyTheme } from '../domain/agency.js';
 export interface AgencyRow {
     id: string;
     name: string;
@@ -19,6 +19,7 @@ export declare class AgencyRepository {
      * updated row, or null if the agency doesn't exist. Used by the admin
      * AgencySetupPage save action — previously a stub that didn't persist.
      */
+    findTheme(id: string): Promise<AgencyTheme | null>;
     updateName(id: string, name: string): Promise<Agency | null>;
     private mapRowToAgency;
 }

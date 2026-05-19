@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { AuditEventRepository, SessionRepository, UserRepository, type NewAuditEvent } from '@rayhealth/core';
+import { AgencyRepository, AuditEventRepository, SessionRepository, UserRepository, type NewAuditEvent } from '@rayhealth/core';
 import { authContext } from '../middleware/auth-context.js';
 import { requireCsrf } from '../middleware/csrf.js';
 import { clearSessionCookieOptions, SESSION_COOKIE_NAME, sessionCookieOptions } from '../security/cookies.js';
@@ -76,8 +76,9 @@ router.post('/login', async (req, res) => {
       occurredAt: new Date().toISOString()
     });
 
+    const agencyTheme = await new AgencyRepository(db).findTheme(user.agencyId).catch(() => null);
     res.cookie(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
-    res.json({ userId: user.id, role: user.role, agencyId: user.agencyId, csrfToken });
+    res.json({ userId: user.id, role: user.role, agencyId: user.agencyId, csrfToken, agencyTheme });
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
   }
@@ -194,14 +195,16 @@ router.post('/logout', authContext, requireCsrf, async (req, res) => {
 // Protected — authContext applied directly so this route isn't bypassed by mount order.
 router.get('/me', authContext, async (req, res) => {
   const { userId, role, agencyId } = req.auth;
+  const db = req.app.get('db');
+  const agencyTheme = await new AgencyRepository(db).findTheme(agencyId).catch(() => null);
   if (req.auth.authMethod === 'session' && req.auth.sessionId) {
     const csrfToken = createOpaqueToken();
-    await new SessionRepository(req.app.get('db')).rotateCsrfToken(req.auth.sessionId, hashOpaqueToken(csrfToken));
-    res.json({ userId, role, agencyId, csrfToken });
+    await new SessionRepository(db).rotateCsrfToken(req.auth.sessionId, hashOpaqueToken(csrfToken));
+    res.json({ userId, role, agencyId, csrfToken, agencyTheme });
     return;
   }
 
-  res.json({ userId, role, agencyId });
+  res.json({ userId, role, agencyId, agencyTheme });
 });
 
 export default router;

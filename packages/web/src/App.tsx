@@ -219,6 +219,7 @@ function AdminLayout() {
   const initial = (user?.userId ?? '?').slice(0, 1).toUpperCase();
   const roleLabel = user?.role ?? 'signed in';
   const userIdShort = user?.userId ? `${user.userId.slice(0, 8)}…` : '—';
+  const brandName = user?.agencyTheme?.logoText ?? 'RayHealth';
 
   // Only show nav groups relevant to this user's role.
   const visibleGroups = navGroupDefs.filter(
@@ -229,7 +230,7 @@ function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-sidebar" aria-label="Primary">
         <Link to="/" className="admin-sidebar__brand">
-          RayHealth
+          {brandName}
           <span className="admin-sidebar__evv-badge">EVV</span>
         </Link>
 
