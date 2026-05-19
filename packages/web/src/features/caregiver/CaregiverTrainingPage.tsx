@@ -128,22 +128,10 @@ export function CaregiverTrainingPage() {
     }
   };
 
-  const handleStart = async (item: ProgressItem) => {
-    if (!item.course.externalUrl) {
-      await handleMarkComplete(item);
-      return;
-    }
-    setCompleting(item.enrollment.id);
-    setError(null);
-    try {
-      await postJson('/api/learning/start', { enrollmentId: item.enrollment.id });
-      window.open(item.course.externalUrl, '_blank', 'noopener,noreferrer');
-      load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start course');
-    } finally {
-      setCompleting(null);
-    }
+  const trackStarted = (enrollmentId: string) => {
+    postJson('/api/learning/start', { enrollmentId })
+      .then(() => load())
+      .catch(() => { /* tracking failure doesn't block the link */ });
   };
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
@@ -265,6 +253,25 @@ export function CaregiverTrainingPage() {
                       🏅 Certificate
                     </span>
                   )}
+                  {isCompleted && course.externalUrl && (
+                    <a
+                      href={course.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '0.35rem 0.85rem',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        color: '#64748B',
+                        background: '#F8FAFC',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      Review ↗
+                    </a>
+                  )}
                   {isActionable && enrollment.status === 'in_progress' && course.externalUrl && (
                     <a
                       href={course.externalUrl}
@@ -304,11 +311,31 @@ export function CaregiverTrainingPage() {
                       {completing === enrollment.id ? 'Saving…' : 'Mark Complete'}
                     </button>
                   )}
-                  {isActionable && enrollment.status !== 'in_progress' && (
+                  {isActionable && enrollment.status !== 'in_progress' && course.externalUrl && (
+                    <a
+                      href={course.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackStarted(enrollment.id)}
+                      style={{
+                        padding: '0.35rem 0.85rem',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        color: '#fff',
+                        background: 'var(--color-primary, #6366F1)',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                        display: 'inline-block',
+                      }}
+                    >
+                      Start Course ↗
+                    </a>
+                  )}
+                  {isActionable && enrollment.status !== 'in_progress' && !course.externalUrl && (
                     <button
                       type="button"
                       disabled={completing === enrollment.id}
-                      onClick={() => void handleStart({ enrollment, course })}
+                      onClick={() => void handleMarkComplete({ enrollment, course })}
                       style={{
                         padding: '0.35rem 0.85rem',
                         fontSize: '0.8125rem',
@@ -321,7 +348,7 @@ export function CaregiverTrainingPage() {
                         opacity: completing === enrollment.id ? 0.7 : 1,
                       }}
                     >
-                      {completing === enrollment.id ? 'Starting…' : (course.externalUrl ? 'Start Course ↗' : 'Start')}
+                      {completing === enrollment.id ? 'Saving…' : 'Start'}
                     </button>
                   )}
                 </div>
