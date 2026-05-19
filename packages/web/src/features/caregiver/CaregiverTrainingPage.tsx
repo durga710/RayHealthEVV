@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { postJson, getJson } from '../../lib/api-client.js';
 
 interface Course {
@@ -72,6 +73,7 @@ function ProgressBar({ pct }: { pct: number }) {
 }
 
 export function CaregiverTrainingPage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<ProgressData | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TrainingTab>('all');
@@ -128,10 +130,8 @@ export function CaregiverTrainingPage() {
     }
   };
 
-  const trackStarted = (enrollmentId: string) => {
-    postJson('/api/learning/start', { enrollmentId })
-      .then(() => load())
-      .catch(() => { /* tracking failure doesn't block the link */ });
+  const openCourse = (courseId: string) => {
+    navigate(`/portal/training/${courseId}`);
   };
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
@@ -241,116 +241,26 @@ export function CaregiverTrainingPage() {
 
                 <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, alignItems: 'center' }}>
                   {isCompleted && (
-                    <span style={{
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      color: '#16A34A',
-                      background: '#F0FDF4',
-                      border: '1px solid #BBF7D0',
-                      borderRadius: '6px',
-                      padding: '0.3rem 0.7rem',
-                    }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#16A34A', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '6px', padding: '0.3rem 0.7rem' }}>
                       🏅 Certificate
                     </span>
                   )}
-                  {isCompleted && course.externalUrl && (
-                    <a
-                      href={course.externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        padding: '0.35rem 0.85rem',
-                        fontSize: '0.8125rem',
-                        fontWeight: 600,
-                        color: '#64748B',
-                        background: '#F8FAFC',
-                        border: '1px solid #E2E8F0',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                      }}
-                    >
-                      Review ↗
-                    </a>
-                  )}
-                  {isActionable && enrollment.status === 'in_progress' && course.externalUrl && (
-                    <a
-                      href={course.externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        padding: '0.35rem 0.85rem',
-                        fontSize: '0.8125rem',
-                        fontWeight: 600,
-                        color: 'var(--color-primary, #6366F1)',
-                        background: '#EEF2FF',
-                        border: '1px solid #C7D2FE',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                      }}
-                    >
-                      Continue ↗
-                    </a>
-                  )}
-                  {isActionable && enrollment.status === 'in_progress' && (
-                    <button
-                      type="button"
-                      disabled={completing === enrollment.id}
-                      onClick={() => void handleMarkComplete({ enrollment, course })}
-                      style={{
-                        padding: '0.35rem 0.85rem',
-                        fontSize: '0.8125rem',
-                        fontWeight: 600,
-                        color: '#fff',
-                        background: 'var(--color-primary, #6366F1)',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: completing === enrollment.id ? 'wait' : 'pointer',
-                        opacity: completing === enrollment.id ? 0.7 : 1,
-                      }}
-                    >
-                      {completing === enrollment.id ? 'Saving…' : 'Mark Complete'}
-                    </button>
-                  )}
-                  {isActionable && enrollment.status !== 'in_progress' && course.externalUrl && (
-                    <a
-                      href={course.externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => trackStarted(enrollment.id)}
-                      style={{
-                        padding: '0.35rem 0.85rem',
-                        fontSize: '0.8125rem',
-                        fontWeight: 600,
-                        color: '#fff',
-                        background: 'var(--color-primary, #6366F1)',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                        display: 'inline-block',
-                      }}
-                    >
-                      Start Course ↗
-                    </a>
-                  )}
-                  {isActionable && enrollment.status !== 'in_progress' && !course.externalUrl && (
-                    <button
-                      type="button"
-                      disabled={completing === enrollment.id}
-                      onClick={() => void handleMarkComplete({ enrollment, course })}
-                      style={{
-                        padding: '0.35rem 0.85rem',
-                        fontSize: '0.8125rem',
-                        fontWeight: 600,
-                        color: '#fff',
-                        background: 'var(--color-primary, #6366F1)',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: completing === enrollment.id ? 'wait' : 'pointer',
-                        opacity: completing === enrollment.id ? 0.7 : 1,
-                      }}
-                    >
-                      {completing === enrollment.id ? 'Saving…' : 'Start'}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => openCourse(course.id)}
+                    style={{
+                      padding: '0.35rem 0.85rem',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      color: isCompleted ? '#64748B' : '#fff',
+                      background: isCompleted ? '#F8FAFC' : 'var(--color-primary, #6366F1)',
+                      border: isCompleted ? '1px solid #E2E8F0' : 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {isCompleted ? 'Review' : enrollment.status === 'in_progress' ? 'Continue →' : 'Open Course →'}
+                  </button>
                 </div>
               </div>
 

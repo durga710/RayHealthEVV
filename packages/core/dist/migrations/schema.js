@@ -861,12 +861,16 @@ export async function up(knex) {
             t.text('avatar_url').nullable();
         });
     }
-    // ── R11 — external_url on learning_courses ────────────────────────────────
-    // Allows each course to link out to a free external training platform.
+    // ── R11 — external_url + modules on learning_courses ─────────────────────
     if (await knex.schema.hasTable('learning_courses')) {
         if (!(await knex.schema.hasColumn('learning_courses', 'external_url'))) {
             await knex.schema.alterTable('learning_courses', (t) => {
                 t.text('external_url').nullable();
+            });
+        }
+        if (!(await knex.schema.hasColumn('learning_courses', 'modules'))) {
+            await knex.schema.alterTable('learning_courses', (t) => {
+                t.jsonb('modules').nullable();
             });
         }
     }

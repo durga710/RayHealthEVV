@@ -17,6 +17,7 @@ import { CaregiverSchedulePage } from './features/caregiver/CaregiverSchedulePag
 import { CaregiverVisitsPage } from './features/caregiver/CaregiverVisitsPage.js';
 import { CaregiverLearningHubPage } from './features/caregiver/CaregiverLearningHubPage.js';
 import { CaregiverTrainingPage } from './features/caregiver/CaregiverTrainingPage.js';
+import { CourseDetailPage } from './features/caregiver/CourseDetailPage.js';
 import { LandingPage } from './features/landing/LandingPage.js';
 import { VisitReviewPage } from './features/evv/VisitReviewPage.js';
 import { PricingPage } from './features/marketing/PricingPage.js';
@@ -446,6 +447,7 @@ export function App() {
           <Route path="visits" element={<CaregiverVisitsPage />} />
           <Route path="learning" element={<CaregiverLearningHubPage />} />
           <Route path="training" element={<CaregiverTrainingPage />} />
+          <Route path="training/:courseId" element={<CourseDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
       </Route>
