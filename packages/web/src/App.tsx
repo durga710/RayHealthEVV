@@ -8,6 +8,7 @@ import { AuthorizationsPage } from './features/authorizations/AuthorizationsPage
 import { TemplatesPage } from './features/scheduling/TemplatesPage.js';
 import { AssignmentsPage } from './features/scheduling/AssignmentsPage.js';
 import { LoginPage } from './features/auth/LoginPage.js';
+import { AcceptInvitePage } from './features/auth/AcceptInvitePage.js';
 import { LandingPage } from './features/landing/LandingPage.js';
 import { VisitReviewPage } from './features/evv/VisitReviewPage.js';
 import { PricingPage } from './features/marketing/PricingPage.js';
@@ -279,6 +280,7 @@ export function App() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/compliance/hipaa" element={<HipaaCompliancePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
       
       <Route path="/admin" element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
