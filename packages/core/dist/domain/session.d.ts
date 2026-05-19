@@ -8,6 +8,7 @@ export declare const sessionRoleSchema: z.ZodEnum<{
 export declare const sessionSchema: z.ZodObject<{
     id: z.ZodString;
     agencyId: z.ZodString;
+    activeAgencyId: z.ZodOptional<z.ZodString>;
     userId: z.ZodString;
     role: z.ZodEnum<{
         admin: "admin";
@@ -32,6 +33,7 @@ export declare const newSessionSchema: z.ZodObject<{
         family: "family";
     }>;
     agencyId: z.ZodString;
+    activeAgencyId: z.ZodOptional<z.ZodString>;
     userId: z.ZodString;
     caregiverId: z.ZodOptional<z.ZodString>;
     sessionTokenHash: z.ZodString;

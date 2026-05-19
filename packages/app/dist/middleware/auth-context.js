@@ -9,7 +9,7 @@ export async function authContext(req, res, next) {
             const session = await new SessionRepository(req.app.get('db')).findActiveByTokenHash(hashOpaqueToken(sessionToken), new Date().toISOString());
             if (session) {
                 req.auth = {
-                    agencyId: session.agencyId,
+                    agencyId: session.activeAgencyId ?? session.agencyId,
                     role: session.role,
                     userId: session.userId,
                     caregiverId: session.caregiverId,

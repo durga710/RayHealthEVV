@@ -19,6 +19,7 @@ export declare class AgencyRepository {
      * updated row, or null if the agency doesn't exist. Used by the admin
      * AgencySetupPage save action — previously a stub that didn't persist.
      */
+    findAll(): Promise<Agency[]>;
     findTheme(id: string): Promise<AgencyTheme | null>;
     updateName(id: string, name: string): Promise<Agency | null>;
     private mapRowToAgency;

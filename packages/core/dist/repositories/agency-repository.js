@@ -22,6 +22,10 @@ export class AgencyRepository {
      * updated row, or null if the agency doesn't exist. Used by the admin
      * AgencySetupPage save action — previously a stub that didn't persist.
      */
+    async findAll() {
+        const rows = await this.db('agencies').select('*').orderBy('name');
+        return rows.map((r) => this.mapRowToAgency(r));
+    }
     async findTheme(id) {
         const row = await this.db('agencies').select('features').where({ id }).first();
         if (!row)

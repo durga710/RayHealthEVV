@@ -7,6 +7,7 @@ function mapSession(row) {
     return {
         id: row.id,
         agencyId: row.agency_id,
+        activeAgencyId: row.active_agency_id ?? undefined,
         userId: row.user_id,
         role: row.role,
         caregiverId: row.caregiver_id ?? undefined,
@@ -66,6 +67,12 @@ export class SessionRepository {
             .where({ id })
             .whereNull('revoked_at')
             .update({ csrf_token_hash: csrfTokenHash });
+    }
+    async switchAgency(sessionId, agencyId) {
+        await this.db('sessions')
+            .where({ id: sessionId })
+            .whereNull('revoked_at')
+            .update({ active_agency_id: agencyId });
     }
 }
 //# sourceMappingURL=session-repository.js.map

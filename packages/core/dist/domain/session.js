@@ -3,6 +3,7 @@ export const sessionRoleSchema = z.enum(['admin', 'coordinator', 'caregiver', 'f
 export const sessionSchema = z.object({
     id: z.string().uuid(),
     agencyId: z.string().uuid(),
+    activeAgencyId: z.string().uuid().optional(),
     userId: z.string().uuid(),
     role: sessionRoleSchema,
     caregiverId: z.string().uuid().optional(),

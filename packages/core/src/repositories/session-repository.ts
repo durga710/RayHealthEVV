@@ -4,6 +4,7 @@ import type { NewSession, Session } from '../domain/session.js';
 type SessionRow = {
   id: string;
   agency_id: string;
+  active_agency_id?: string | null;
   user_id: string;
   role: Session['role'];
   caregiver_id?: string | null;
@@ -25,6 +26,7 @@ function mapSession(row: SessionRow): Session {
   return {
     id: row.id,
     agencyId: row.agency_id,
+    activeAgencyId: row.active_agency_id ?? undefined,
     userId: row.user_id,
     role: row.role,
     caregiverId: row.caregiver_id ?? undefined,
@@ -88,5 +90,12 @@ export class SessionRepository {
       .where({ id })
       .whereNull('revoked_at')
       .update({ csrf_token_hash: csrfTokenHash });
+  }
+
+  async switchAgency(sessionId: string, agencyId: string): Promise<void> {
+    await this.db('sessions')
+      .where({ id: sessionId })
+      .whereNull('revoked_at')
+      .update({ active_agency_id: agencyId });
   }
 }

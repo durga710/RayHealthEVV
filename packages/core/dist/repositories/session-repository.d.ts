@@ -8,5 +8,6 @@ export declare class SessionRepository {
     revokeById(id: string, revokedAtIso: string): Promise<void>;
     revokeByTokenHash(sessionTokenHash: string, revokedAtIso: string): Promise<void>;
     rotateCsrfToken(id: string, csrfTokenHash: string): Promise<void>;
+    switchAgency(sessionId: string, agencyId: string): Promise<void>;
 }
 //# sourceMappingURL=session-repository.d.ts.map
