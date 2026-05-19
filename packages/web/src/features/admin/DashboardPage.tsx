@@ -97,7 +97,7 @@ export function DashboardPage() {
       safeCount('/api/clients'),
       safeCount('/api/staff'),
       safeCount('/api/assignments'),
-      safeCount('/api/evv'),
+      safeCount('/api/evv/visits'),
       safeRollup(),
     ]).then(([clients, staff, assignments, visits, complianceRate]) => {
       if (cancelled) return;

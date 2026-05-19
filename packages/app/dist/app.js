@@ -4,7 +4,6 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import './types.js';
 import { authContext } from './middleware/auth-context.js';
-import { requireCapability } from './middleware/require-capability.js';
 import { auditLog } from './middleware/audit-log.js';
 import { requireCsrf } from './middleware/csrf.js';
 import { createDb } from '@rayhealth/core';
@@ -25,6 +24,7 @@ import taskRoutes from './routes/task-routes.js';
 import auditRetentionRoutes from './routes/audit-retention-routes.js';
 import auditEventsRoutes from './routes/audit-events-routes.js';
 import learningRoutes from './routes/learning-routes.js';
+import adminAssistantRoutes from './routes/admin-assistant-routes.js';
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 /**
  * Default rate limit for the authenticated API surface. 300 requests per
@@ -160,11 +160,8 @@ export function createApp() {
         app.use(`${prefix}/admin/audit-retention`, adminAuditLimiter, auditRetentionRoutes);
         app.use(`${prefix}/admin/audit-events`, adminAuditLimiter, auditEventsRoutes);
         app.use(`${prefix}/learning`, learningRoutes);
+        app.use(`${prefix}/admin-assistant`, adminAssistantRoutes);
     }
-    // Protected route for testing (keep for now or remove if redundant)
-    app.get('/agencies/current-test', requireCapability('agency.read'), (req, res) => {
-        res.json({ id: req.auth.agencyId, name: 'Current Agency' });
-    });
     return app;
 }
 //# sourceMappingURL=app.js.map

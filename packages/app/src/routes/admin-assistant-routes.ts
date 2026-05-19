@@ -1,19 +1,5 @@
-// @ts-nocheck — depends on @aws-sdk/client-bedrock-runtime which is not yet
-// installed in this monorepo, and the file isn't currently mounted in app.ts.
-// Silencing typecheck so CI stays green. Re-enable after adding the dep + a
-// mount line for this route.
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
-import {
-  BedrockRuntimeClient,
-  ConverseCommand,
-  type ContentBlock,
-  type Message,
-  type Tool
-} from '@aws-sdk/client-bedrock-runtime';
-
-// Bedrock's TS type for message.role is the string literal "user" | "assistant".
-type ConversationRole = 'user' | 'assistant';
 import { safeError } from '../security/safe-log.js';
 
 const router = Router();
@@ -21,32 +7,11 @@ const router = Router();
 const MAX_USER_LEN = 4000;
 const MAX_HISTORY = 20;
 const MAX_TOOL_LOOPS = 4;
+const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
+const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001';
 
-// Bedrock under the AWS BAA covers PHI workloads. Default to Claude Haiku 4.5
-// (cheap, fast, current). AWS retired Claude 3.x Haiku as legacy, so the
-// older `claude-3-5-haiku-20241022` ID now 404s with "marked by provider
-// as Legacy". The `us.` prefix is a cross-region inference profile — falls
-// back across us-east-1 / us-east-2 / us-west-2 automatically. Override
-// at deploy time via BEDROCK_MODEL_ID.
-const MODEL_ID =
-  process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-4-5-20251001-v1:0';
-const REGION = process.env.AWS_REGION || 'us-east-1';
-
-let cachedClient: BedrockRuntimeClient | null = null;
-function bedrockClient(): BedrockRuntimeClient {
-  if (!cachedClient) cachedClient = new BedrockRuntimeClient({ region: REGION });
-  return cachedClient;
-}
-
-function bedrockConfigured(): boolean {
-  // SDK default credential chain covers env vars, IAM, etc. We treat the
-  // assistant as "online" if EITHER explicit credentials are present OR
-  // AWS_BEARER_TOKEN_BEDROCK is set (Bedrock-only short-lived token).
-  return Boolean(
-    process.env.AWS_ACCESS_KEY_ID ||
-      process.env.AWS_BEARER_TOKEN_BEDROCK ||
-      process.env.AWS_PROFILE
-  );
+function anthropicConfigured(): boolean {
+  return !!process.env.ANTHROPIC_API_KEY;
 }
 
 const SYSTEM_PROMPT = `You are RayHealthOps, the in-app assistant for RayHealthEVV. The user is a coordinator or admin signed into their agency's account. You can answer operational questions about THIS agency by calling the provided tools. NEVER:
@@ -56,55 +21,37 @@ const SYSTEM_PROMPT = `You are RayHealthOps, the in-app assistant for RayHealthE
 
 When unsure, call a tool. Keep replies concise (3-5 sentences). End feature-related answers with one soft suggestion.`;
 
-// Bedrock Converse uses a slightly different tool schema than OpenAI's
-// function-calling: each tool is a `{toolSpec: {name, description, inputSchema:
-// {json}}}` object, and `inputSchema.json` IS the JSON Schema directly.
-const TOOLS: Tool[] = [
+const TOOLS = [
   {
-    toolSpec: {
-      name: 'count_visits',
-      description: "Count this agency's EVV visits in a date range. Returns just a count, no PHI.",
-      inputSchema: {
-        json: {
-          type: 'object',
-          properties: {
-            from: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' },
-            to: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' }
-          }
-        }
+    name: 'count_visits',
+    description: "Count this agency's EVV visits in a date range. Returns just a count, no PHI.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        from: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' },
+        to: { type: 'string', description: 'ISO date YYYY-MM-DD or ISO 8601' }
       }
     }
   },
   {
-    toolSpec: {
-      name: 'list_open_exceptions',
-      description:
-        'Counts of evv_exceptions for this agency grouped by type. No names, no patient data.',
-      inputSchema: { json: { type: 'object', properties: {} } }
-    }
+    name: 'list_open_exceptions',
+    description: 'Counts of evv_exceptions for this agency grouped by type. No names, no patient data.',
+    input_schema: { type: 'object', properties: {} }
   },
   {
-    toolSpec: {
-      name: 'count_expiring_credentials',
-      description:
-        'Counts caregiver_credentials that expire within `withinDays` days, grouped by credential_type.',
-      inputSchema: {
-        json: {
-          type: 'object',
-          properties: {
-            withinDays: { type: 'integer', description: 'Default 30. Range 1-365.' }
-          }
-        }
+    name: 'count_expiring_credentials',
+    description: 'Counts caregiver_credentials that expire within `withinDays` days, grouped by credential_type.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        withinDays: { type: 'integer', description: 'Default 30. Range 1-365.' }
       }
     }
   },
   {
-    toolSpec: {
-      name: 'agency_overview',
-      description:
-        'High-level snapshot: counts of clients, caregivers, users, and visits in the last 30 days.',
-      inputSchema: { json: { type: 'object', properties: {} } }
-    }
+    name: 'agency_overview',
+    description: 'High-level snapshot: counts of clients, caregivers, users, and visits in the last 30 days.',
+    input_schema: { type: 'object', properties: {} }
   }
 ];
 
@@ -210,11 +157,53 @@ async function runTool(
   }
 }
 
+interface AnthropicContentBlock {
+  type: 'text' | 'tool_use' | 'tool_result';
+  text?: string;
+  id?: string;
+  name?: string;
+  input?: Record<string, unknown>;
+  tool_use_id?: string;
+  content?: Array<{ type: 'text'; text: string }>;
+}
+
+interface AnthropicMessage {
+  role: 'user' | 'assistant';
+  content: string | AnthropicContentBlock[];
+}
+
+interface AnthropicResponse {
+  content: AnthropicContentBlock[];
+  stop_reason: 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence';
+}
+
+async function callAnthropic(messages: AnthropicMessage[]): Promise<AnthropicResponse> {
+  const res = await fetch(ANTHROPIC_API, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY!,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 800,
+      system: SYSTEM_PROMPT,
+      messages,
+      tools: TOOLS
+    })
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Anthropic API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+  return (await res.json()) as AnthropicResponse;
+}
+
 router.post('/chat', async (req, res) => {
-  if (!bedrockConfigured()) {
+  if (!anthropicConfigured()) {
     res.status(503).json({
-      message:
-        'Admin assistant is offline (AWS Bedrock not configured — set AWS_REGION + credentials).'
+      message: 'Admin assistant is offline (ANTHROPIC_API_KEY not configured).'
     });
     return;
   }
@@ -246,80 +235,52 @@ router.post('/chat', async (req, res) => {
   const db = req.app.get('db');
   const ctx: ToolContext = { db, agencyId: req.auth.agencyId };
 
-  // Bedrock Converse requires a separate `system` array and `messages` whose
-  // content is `{text}` blocks (or tool-use / tool-result blocks).
-  const conversation: Message[] = incoming.map((m) => ({
-    role: m.role as ConversationRole,
-    content: [{ text: m.content }]
+  const conversation: AnthropicMessage[] = incoming.map((m) => ({
+    role: m.role,
+    content: m.content
   }));
 
   for (let i = 0; i < MAX_TOOL_LOOPS; i++) {
-    let response;
+    let response: AnthropicResponse;
     try {
-      response = await bedrockClient().send(
-        new ConverseCommand({
-          modelId: MODEL_ID,
-          system: [{ text: SYSTEM_PROMPT }],
-          messages: conversation,
-          inferenceConfig: { maxTokens: 800, temperature: 0.2 },
-          toolConfig: { tools: TOOLS, toolChoice: { auto: {} } }
-        })
-      );
+      response = await callAnthropic(conversation);
     } catch (err) {
-      safeError('admin-assistant bedrock send failed', err);
+      safeError('admin-assistant anthropic call failed', err);
       res.status(502).json({ message: 'Could not reach the model.' });
       return;
     }
 
-    const out = response.output?.message;
-    if (!out || !out.content) {
-      res.status(502).json({ message: 'Empty model response.' });
-      return;
-    }
+    conversation.push({ role: 'assistant', content: response.content });
 
-    // Append assistant turn (which may contain text blocks, toolUse blocks,
-    // or both) to the conversation so the next loop iteration sees it.
-    conversation.push(out);
-
-    const stopReason = response.stopReason;
-
-    // If the model wants to call tools, run them and loop.
-    if (stopReason === 'tool_use') {
-      const toolUseBlocks = out.content.filter(
-        (b): b is ContentBlock.ToolUseMember => 'toolUse' in b && b.toolUse !== undefined
-      );
-      const toolResults: ContentBlock[] = [];
+    if (response.stop_reason === 'tool_use') {
+      const toolUseBlocks = response.content.filter((b) => b.type === 'tool_use');
+      const toolResults: AnthropicContentBlock[] = [];
       for (const block of toolUseBlocks) {
-        const tu = block.toolUse!;
-        const argsObj = (tu.input ?? {}) as Record<string, unknown>;
         let toolResult: Record<string, unknown>;
         try {
-          toolResult = await runTool(tu.name ?? '', argsObj, ctx);
+          toolResult = await runTool(block.name ?? '', block.input ?? {}, ctx);
         } catch (err) {
-          safeError(`admin-assistant tool ${tu.name} failed`, err);
+          safeError(`admin-assistant tool ${block.name} failed`, err);
           toolResult = { error: 'tool execution failed' };
         }
         toolResults.push({
-          toolResult: {
-            toolUseId: tu.toolUseId!,
-            // Bedrock's `json` block is typed as DocumentType (a recursive
-            // primitive/array/object union). Plain `Record<string, unknown>`
-            // doesn't structurally match; cast through unknown so the SDK
-            // serializes it as JSON without a TS shape complaint.
-            content: [{ json: toolResult as unknown as Record<string, never> }]
-          }
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: [{ type: 'text', text: JSON.stringify(toolResult) }]
         });
       }
       conversation.push({ role: 'user', content: toolResults });
       continue;
     }
 
-    // Otherwise extract the final text from text blocks.
-    const text = out.content
-      .filter((b): b is ContentBlock.TextMember => 'text' in b && typeof b.text === 'string')
+    const text = response.content
+      .filter((b): b is AnthropicContentBlock & { type: 'text'; text: string } =>
+        b.type === 'text' && typeof b.text === 'string'
+      )
       .map((b) => b.text)
       .join('\n')
       .trim();
+
     if (!text) {
       res.status(502).json({ message: 'Empty model response.' });
       return;
@@ -335,7 +296,7 @@ router.post('/chat', async (req, res) => {
           session_id: sessionId,
           role: 'user',
           content: incoming[incoming.length - 1].content,
-          model: MODEL_ID,
+          model: MODEL,
           ip_address: ip
         },
         {
@@ -343,7 +304,7 @@ router.post('/chat', async (req, res) => {
           session_id: sessionId,
           role: 'assistant',
           content: text,
-          model: MODEL_ID,
+          model: MODEL,
           ip_address: ip
         }
       ]);
@@ -355,9 +316,7 @@ router.post('/chat', async (req, res) => {
     return;
   }
 
-  res
-    .status(504)
-    .json({ message: 'Assistant ran out of steps. Try a simpler question or split it.' });
+  res.status(504).json({ message: 'Assistant ran out of steps. Try a simpler question or split it.' });
 });
 
 export default router;
