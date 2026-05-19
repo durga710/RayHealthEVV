@@ -6,6 +6,8 @@ import { App } from './App.js';
 import { AuthProvider } from './lib/AuthContext.js';
 import './index.css';
 
+document.documentElement.dataset.appVersion = '2026.05.19';
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
