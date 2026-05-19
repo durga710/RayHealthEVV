@@ -56,6 +56,6 @@ describe('VisitReviewPage', () => {
         })
       );
     });
-    expect(screen.getByText('Correction request submitted')).toBeInTheDocument();
+    expect(screen.getByText('Correction request submitted successfully.')).toBeInTheDocument();
   });
 });

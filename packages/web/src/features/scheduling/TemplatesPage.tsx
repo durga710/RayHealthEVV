@@ -14,6 +14,8 @@ interface PATask {
   duty: string;
 }
 
+interface Client { id: string; firstName: string; lastName: string; }
+
 function taskLabel(task: unknown): string {
   if (typeof task === 'string') return task;
   if (task && typeof task === 'object') {
@@ -24,15 +26,28 @@ function taskLabel(task: unknown): string {
   return String(task);
 }
 
+const selectStyle: React.CSSProperties = {
+  padding: '0.75rem 1rem',
+  border: '1px solid #c9d8e8',
+  borderRadius: '8px',
+  fontFamily: 'inherit',
+  fontSize: '1rem',
+  color: 'var(--color-text)',
+  backgroundColor: 'white',
+  width: '100%',
+};
+
 export function TemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [availableTasks, setAvailableTasks] = useState<PATask[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [clientId, setClientId] = useState('');
   const [name, setName] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState('');
+  const [messageKind, setMessageKind] = useState<'success' | 'error'>('success');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadTemplates = useCallback(() => {
@@ -46,11 +61,18 @@ export function TemplatesPage() {
 
   useEffect(() => {
     loadTemplates();
-
     getJson<PATask[]>('/api/tasks')
       .then(data => setAvailableTasks(data || []))
-      .catch(console.error);
+      .catch(() => { /* non-critical */ });
+    getJson<Client[]>('/api/clients')
+      .then(data => setClients(data || []))
+      .catch(() => { /* non-critical */ });
   }, [loadTemplates]);
+
+  const clientName = (id: string) => {
+    const c = clients.find(x => x.id === id);
+    return c ? `${c.firstName} ${c.lastName}` : id.slice(0, 8) + '…';
+  };
 
   const focusAddTemplate = () => {
     document.getElementById('clientId')?.focus();
@@ -91,9 +113,11 @@ export function TemplatesPage() {
       setClientId('');
       setName('');
       setSelectedTasks(new Set());
-      setMessage('Template created successfully');
+      setMessage('Template created successfully.');
+      setMessageKind('success');
     } catch (err) {
-      setMessage('Failed to create template');
+      setMessage((err as Error).message || 'Failed to create template.');
+      setMessageKind('error');
     }
   };
 
@@ -130,10 +154,15 @@ export function TemplatesPage() {
           <form onSubmit={handleSubmit} style={{ marginTop: '1rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div>
-                <label htmlFor="clientId">Client ID</label>
+                <label htmlFor="clientId">Client</label>
                 <span style={{ color: '#dc2626', marginLeft: '0.25rem' }} aria-hidden="true">*</span>
               </div>
-              <input id="clientId" value={clientId} onChange={e => setClientId(e.target.value)} required />
+              <select id="clientId" value={clientId} onChange={e => setClientId(e.target.value)} required style={selectStyle}>
+                <option value="">Select a client…</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>
+                ))}
+              </select>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
@@ -178,7 +207,14 @@ export function TemplatesPage() {
             
             <button type="submit">Create Template</button>
           </form>
-          {message && <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#ecfdf5', color: '#065f46', borderRadius: '8px' }}>{message}</div>}
+          {message && (
+            <div
+              role={messageKind === 'error' ? 'alert' : 'status'}
+              style={{ marginTop: '1rem', padding: '1rem', borderRadius: '8px', fontWeight: 600, backgroundColor: messageKind === 'success' ? '#ecfdf5' : '#fef2f2', color: messageKind === 'success' ? '#065f46' : '#991b1b' }}
+            >
+              {message}
+            </div>
+          )}
         </div>
 
         <div>
@@ -230,7 +266,7 @@ export function TemplatesPage() {
                         </span>
                       </div>
                       <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                        Client: {t.clientId.slice(0, 6)}...
+                        Client: {clientName(t.clientId)}
                       </div>
                       <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                         {t.tasks.map((task, i) => (
@@ -254,8 +290,8 @@ export function TemplatesPage() {
                       >
                         <div style={{ fontWeight: 600 }}>Template ID</div>
                         <div style={{ fontFamily: 'monospace' }}>{t.id}</div>
-                        <div style={{ fontWeight: 600 }}>Client ID</div>
-                        <div style={{ fontFamily: 'monospace' }}>{t.clientId}</div>
+                        <div style={{ fontWeight: 600 }}>Client</div>
+                        <div>{clientName(t.clientId)}</div>
                         <div style={{ fontWeight: 600 }}>Name</div>
                         <div>{t.name}</div>
                         <div style={{ fontWeight: 600 }}>Tasks ({t.tasks.length})</div>

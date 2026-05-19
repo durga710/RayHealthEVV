@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext.js';
 
 const trustPoints = [
@@ -12,6 +12,7 @@ const trustPoints = [
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,7 +24,8 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/admin');
+      const returnTo = searchParams.get('returnTo');
+      navigate(returnTo && returnTo.startsWith('/') ? returnTo : '/admin');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
