@@ -68,9 +68,18 @@ router.post('/login', async (req, res) => {
             payload: { authMethod: 'session' },
             occurredAt: new Date().toISOString()
         });
-        const agencyTheme = await new AgencyRepository(db).findTheme(user.agencyId).catch(() => null);
+        const [agencyTheme, profileRow] = await Promise.all([
+            new AgencyRepository(db).findTheme(user.agencyId).catch(() => null),
+            (db('users').where({ id: user.id }).select('email', 'first_name', 'last_name', 'avatar_url').first().catch(() => null)),
+        ]);
+        const profile = {
+            email: profileRow?.email ?? user.email ?? null,
+            firstName: profileRow?.first_name ?? null,
+            lastName: profileRow?.last_name ?? null,
+            avatarUrl: profileRow?.avatar_url ?? null,
+        };
         res.cookie(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
-        res.json({ userId: user.id, role: user.role, agencyId: user.agencyId, csrfToken, agencyTheme });
+        res.json({ userId: user.id, role: user.role, agencyId: user.agencyId, csrfToken, agencyTheme, ...profile });
     }
     catch {
         res.status(500).json({ message: 'Internal Server Error' });
