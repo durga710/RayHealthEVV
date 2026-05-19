@@ -5,8 +5,8 @@ import { requireCapability } from '../middleware/require-capability.js';
 
 const router = Router();
 
-// GET /learning/courses — catalog visible to this agency
-router.get('/courses', requireCapability('staff.read'), async (req: Request, res: Response) => {
+// GET /learning/courses — catalog visible to all authenticated roles (admin, coordinator, caregiver)
+router.get('/courses', requireCapability('learning.read'), async (req: Request, res: Response) => {
   try {
     const db = req.app.get('db') as Knex;
     const repo = new LearningRepository(db);

@@ -15,6 +15,8 @@ import { CaregiverLayout } from './features/caregiver/CaregiverLayout.js';
 import { CaregiverDashboard } from './features/caregiver/CaregiverDashboard.js';
 import { CaregiverSchedulePage } from './features/caregiver/CaregiverSchedulePage.js';
 import { CaregiverVisitsPage } from './features/caregiver/CaregiverVisitsPage.js';
+import { CaregiverLearningHubPage } from './features/caregiver/CaregiverLearningHubPage.js';
+import { CaregiverTrainingPage } from './features/caregiver/CaregiverTrainingPage.js';
 import { LandingPage } from './features/landing/LandingPage.js';
 import { VisitReviewPage } from './features/evv/VisitReviewPage.js';
 import { PricingPage } from './features/marketing/PricingPage.js';
@@ -442,6 +444,8 @@ export function App() {
           <Route index element={<CaregiverDashboard />} />
           <Route path="schedule" element={<CaregiverSchedulePage />} />
           <Route path="visits" element={<CaregiverVisitsPage />} />
+          <Route path="learning" element={<CaregiverLearningHubPage />} />
+          <Route path="training" element={<CaregiverTrainingPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
       </Route>

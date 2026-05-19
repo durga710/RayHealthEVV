@@ -42,6 +42,28 @@ const NAV = [
     ),
   },
   {
+    to: '/portal/learning',
+    end: false,
+    label: 'Learning Hub',
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+      </svg>
+    ),
+  },
+  {
+    to: '/portal/training',
+    end: false,
+    label: 'My Training',
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+        <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
+      </svg>
+    ),
+  },
+  {
     to: '/portal/profile',
     end: false,
     label: 'My Profile',
