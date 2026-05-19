@@ -25,7 +25,7 @@ router.get('/', requireCapability('staff.read'), async (req, res) => {
             db('users')
                 .where({ agency_id: agencyId })
                 .whereIn('role', ['coordinator', 'admin'])
-                .whereNotLike('email', '%.local')
+                .whereRaw("email NOT LIKE '%.local'")
                 .select('id', 'email', 'role'),
             db('staff_invites')
                 .where({ agency_id: agencyId, status: 'pending' })
