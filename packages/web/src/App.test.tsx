@@ -22,9 +22,13 @@ describe('admin app shell', () => {
       </AuthProvider>
     );
 
-    // Hero h1 — unique to LandingPage (the launch banner uses different copy).
-    expect(await screen.findByText(/Care, finally on the/i)).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: /Live operations snapshot/i })).toBeInTheDocument();
+    // Hero h1 uses a <br />, so match by role to avoid text-node split issues.
+    const h1 = await screen.findByRole('heading', { level: 1 });
+    expect(h1).toBeInTheDocument();
+    expect(h1).toHaveTextContent(/Care, finally on/i);
+    // Log-in nav link confirms the full marketing shell rendered.
+    expect(screen.getByRole('link', { name: /log in/i })).toBeInTheDocument();
+    // Old hero copy must not be present.
     expect(screen.queryByText(/CARE\. VERIFIED\. DELIVERED/i)).not.toBeInTheDocument();
   });
 });
