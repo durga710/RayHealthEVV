@@ -1,0 +1,163 @@
+{
+  "results": [
+    {
+      "feature": "Landing (/)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Pricing (/pricing)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Contact (/contact)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Demo (/demo)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Launch (/launch)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Status (/status)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Privacy (/privacy)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "HIPAA Compliance (/compliance/hipaa)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Login Page (/login)",
+      "status": "PASS",
+      "note": "Login page loaded",
+      "extra": ""
+    },
+    {
+      "feature": "Login Flow",
+      "status": "PASS",
+      "note": "Login succeeded, redirected to /admin",
+      "extra": ""
+    },
+    {
+      "feature": "Dashboard (/admin)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Agency Setup (/admin/agency)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Staff Management (/admin/staff)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Clients (/admin/clients)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Authorizations (/admin/authorizations)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Templates (/admin/templates)",
+      "status": "FAIL",
+      "note": "Blank or spinner-only page",
+      "extra": "screenshot: /Users/durgaghimeray/Desktop/rayhealth-evv-clean/e2e-artifacts/Templates-(_admin_templates).png"
+    },
+    {
+      "feature": "Assignments (/admin/assignments)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Visit Review (/admin/review)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Audit Events (/admin/audit-events)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Audit Retention (/admin/audit-retention)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Learning Hub (/admin/learning)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "My Training (/admin/learning/portal)",
+      "status": "PASS",
+      "note": "Loaded OK (HTTP 200)",
+      "extra": ""
+    },
+    {
+      "feature": "Staff Invite - Open Form",
+      "status": "PASS",
+      "note": "Found and clicked invite button: \"button:has-text(\"Invite\")\"",
+      "extra": ""
+    },
+    {
+      "feature": "Staff Invite Flow",
+      "status": "WARN",
+      "note": "Invite created (ID: aef4fc27-d647-4671-b487-ec01ba2d99fa), emailDelivery: \"failed\"",
+      "extra": ""
+    }
+  ],
+  "consoleErrors": [
+    "[ERROR] Failed to load resource: the server responded with a status of 401 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 401 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 401 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 401 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 401 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 401 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 503 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 401 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 401 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 401 ()",
+    "[ERROR] Failed to load resource: the server responded with a status of 404 ()",
+    "[PAGE_ERROR] Minified React error #31; visit https://react.dev/errors/31?args[]=object%20with%20keys%20%7Bid%2C%20duty%7D for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  ],
+  "timestamp": "2026-05-18T21:30:44.980Z"
+}

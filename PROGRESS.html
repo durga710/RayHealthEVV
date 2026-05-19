@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RayHealth EVV — Progress Tracker</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --accent: #f97316;
+    --accent-dim: rgba(249,115,22,0.15);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.13);
+    --yellow: #eab308;
+    --yellow-dim: rgba(234,179,8,0.13);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.13);
+    --blue: #3b82f6;
+    --blue-dim: rgba(59,130,246,0.13);
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a0f05 0%, #0d1117 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 2.5rem 1.5rem;
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1.5rem; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 0.75rem; }
+  .brand-icon {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--accent) 0%, #dc2626 100%);
+    border-radius: 10px; display: grid; place-items: center;
+    font-size: 1.25rem; font-weight: 900; color: white; flex-shrink: 0;
+  }
+  h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 0.8rem; margin-top: 0.1rem; }
+  .header-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: var(--green-dim); color: var(--green);
+    border: 1px solid rgba(34,197,94,0.3);
+    padding: 0.3rem 0.75rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.25); }
+    50% { box-shadow: 0 0 0 6px rgba(34,197,94,0.1); }
+  }
+  .updated { color: var(--muted); font-size: 0.75rem; }
+  .prod-link { color: var(--accent); font-size: 0.75rem; text-decoration: none; }
+  .prod-link:hover { text-decoration: underline; }
+
+  .summary {
+    max-width: 1200px; margin: 1.5rem auto; padding: 0 2.5rem;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem;
+    display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  .stat-label { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 1.75rem; font-weight: 800; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.yellow { color: var(--yellow); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.blue { color: var(--blue); }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 4rem; }
+
+  .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 0.35rem 0.9rem; border-radius: 999px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; font-family: var(--font);
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  .sections { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  }
+  .section-header {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 1rem 1.25rem; cursor: pointer; user-select: none;
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .section-header:hover { background: rgba(255,255,255,0.03); }
+  .section-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: grid; place-items: center; font-size: 1rem; flex-shrink: 0;
+    background: rgba(255,255,255,0.04);
+  }
+  .section-title { font-weight: 700; font-size: 0.92rem; flex: 1; }
+  .section-progress { display: flex; align-items: center; gap: 0.75rem; }
+  .section-fraction { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+  .prog-bar { width: 90px; height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .prog-fill {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), #dc2626); transition: width 0.4s;
+  }
+  .prog-fill.all-green { background: linear-gradient(90deg, #16a34a, var(--green)); }
+  .chevron { color: var(--muted); font-size: 0.75rem; transition: transform 0.2s; flex-shrink: 0; }
+  .section.open .chevron { transform: rotate(180deg); }
+  .section-body { display: none; padding: 0.75rem 1.25rem 1rem; }
+  .section.open .section-body { display: block; }
+
+  .items { display: flex; flex-direction: column; gap: 0.35rem; }
+  .item {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px; transition: background 0.12s;
+  }
+  .item:hover { background: rgba(255,255,255,0.03); }
+  .item-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+  }
+  .item-dot.live    { background: var(--green);  box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
+  .item-dot.partial { background: var(--yellow); box-shadow: 0 0 0 3px rgba(234,179,8,0.2); }
+  .item-dot.blocked { background: var(--red);    box-shadow: 0 0 0 3px rgba(239,68,68,0.2); }
+  .item-dot.todo    { background: var(--border); }
+  .item-content { flex: 1; min-width: 0; }
+  .item-name { font-weight: 600; font-size: 0.88rem; }
+  .item-note { color: var(--muted); font-size: 0.78rem; margin-top: 0.1rem; }
+  .item-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.3rem; }
+  .badge {
+    font-size: 0.67rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+    padding: 0.15rem 0.5rem; border-radius: 4px;
+  }
+  .badge.new   { background: var(--accent-dim); color: var(--accent); }
+  .badge.owner { background: var(--blue-dim); color: var(--blue); }
+
+  .legend {
+    display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.25rem;
+    padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; width: fit-content;
+  }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  @media (max-width: 640px) {
+    header { padding: 1.5rem 1.25rem 1rem; }
+    .summary, main { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .prog-bar { width: 60px; }
+    h1 { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-icon">R</div>
+      <div>
+        <h1>RayHealth <span>EVV</span></h1>
+        <div class="subtitle">Electronic Visit Verification · Progress Tracker</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="live-badge"><div class="live-dot"></div>Production Live</div>
+      <div class="updated">Last updated: 2026-05-18</div>
+      <a class="prod-link" href="https://rayhealthevv.com" target="_blank">rayhealthevv.com ↗</a>
+    </div>
+  </div>
+</header>
+
+<div class="summary" id="summary"></div>
+
+<main>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Live in production</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>Built / needs config</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Blocked</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Planned</div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('live',this)">Live</button>
+    <button class="filter-btn" onclick="setFilter('partial',this)">In Progress</button>
+    <button class="filter-btn" onclick="setFilter('blocked',this)">Blocked</button>
+    <button class="filter-btn" onclick="setFilter('todo',this)">Planned</button>
+  </div>
+
+  <div class="sections" id="sections"></div>
+</main>
+
+<script>
+const SECTIONS = [
+  {
+    id: 'platform', icon: '⚙️', title: 'Platform & Infrastructure',
+    items: [
+      { name: 'Vercel deployment (web + API)', status: 'live', note: 'Auto-deploys on merge to main' },
+      { name: 'Neon PostgreSQL database', status: 'live', note: 'Pooler connection, SSL, 793+ audit events' },
+      { name: 'Web cookie sessions + CSRF', status: 'live', note: 'HttpOnly cookie, double-submit CSRF' },
+      { name: 'Mobile JWT auth + Secure Storage', status: 'live', note: 'Keychain (iOS) / Keystore (Android)' },
+      { name: 'Audit events — durable append-only log', status: 'live', note: 'Block-mutation trigger prevents tampering' },
+      { name: 'CI pipeline (9 checks)', status: 'live', note: 'lint, typecheck, test-app/core/web, security-scan, CodeQL, gitleaks', badges: ['new'] },
+      { name: 'Dependabot (weekly scan)', status: 'live', note: 'Minor+patch grouped; major versions blocked', badges: ['new'] },
+      { name: 'Lockfile cross-platform sync', status: 'live', note: 'Auto-fixes macOS→Linux drift on PRs', badges: ['new'] },
+      { name: 'npm audit — 0 vulnerabilities', status: 'live', note: 'Was 11 (3 high). All patched via overrides', badges: ['new'] },
+      { name: 'Neon HIPAA mode', status: 'blocked', note: 'Owner action required before any real PHI', badges: ['owner'] },
+    ]
+  },
+  {
+    id: 'web-admin', icon: '🖥️', title: 'Web Admin Portal',
+    items: [
+      { name: 'Dashboard — KPIs & training compliance', status: 'live', note: 'Active clients, staff, assignments, 100% training badge' },
+      { name: 'Agency Setup', status: 'live', note: 'Agency profile management' },
+      { name: 'Staff Management + Invite', status: 'live', note: 'Caregiver directory, invite form, acceptPath link' },
+      { name: 'Clients', status: 'live', note: 'Client record management' },
+      { name: 'PA Authorizations', status: 'live', note: 'All PA DHS required fields' },
+      { name: 'Visit Templates', status: 'live', note: 'Plan-of-care task templates', badges: ['new'] },
+      { name: 'Assignments + compliance gate', status: 'live', note: '422 on incomplete training, override with reason' },
+      { name: 'Visit Review', status: 'live', note: 'EVV visit audit + correction request flow' },
+      { name: 'Audit Events', status: 'live', note: 'Filterable log, 793+ events in prod' },
+      { name: 'Audit Retention', status: 'live', note: 'Retention status dashboard' },
+      { name: 'Learning Hub', status: 'live', note: 'Catalog, enrollments, analytics, drill-down' },
+      { name: 'My Training (caregiver view)', status: 'live', note: 'Per-caregiver course status + completion' },
+      { name: 'HIPAA Compliance page', status: 'live', note: 'Public /compliance/hipaa reference' },
+      { name: 'AI Admin Assistant', status: 'live', note: 'Claude Haiku 3.5 via AWS Bedrock' },
+    ]
+  },
+  {
+    id: 'invite', icon: '✉️', title: 'Staff Invite Flow',
+    items: [
+      { name: 'Admin creates invite', status: 'live', note: 'POST /api/invites — UUID token, 14-day expiry' },
+      { name: 'Email delivery via Amazon SES', status: 'live', note: 'us-east-1, sender: onboarding@www.rayhealthevv.com', badges: ['new'] },
+      { name: 'Invite link copy (fallback)', status: 'live', note: 'acceptPath always returned even when email sends' },
+      { name: 'Accept invite page + account creation', status: 'live', note: 'Access-code, bcrypt-12 password, caregivers+users tx' },
+      { name: 'SES out-of-sandbox', status: 'partial', note: 'Check AWS console — sandbox = verified addresses only', badges: ['owner'] },
+      { name: 'DNS: DKIM + MAIL FROM + DMARC', status: 'partial', note: 'Records provided by AWS SES — add to domain registrar', badges: ['owner'] },
+    ]
+  },
+  {
+    id: 'mobile', icon: '📱', title: 'Mobile App (Caregiver)',
+    items: [
+      { name: 'Login screen', status: 'live', note: 'JWT auth, secure token storage' },
+      { name: "Today's Schedule dashboard", status: 'live', note: '36h window, DISTINCT ON dedup' },
+      { name: 'Clock In with GPS geofence', status: 'live', note: '150m radius, 422 GEOFENCE_OUT_OF_BOUNDS' },
+      { name: 'Clock Out', status: 'live', note: 'Closes visit, stores GPS coords' },
+      { name: 'Offline visit-action queue', status: 'live', note: 'Stores actions locally, syncs on reconnect' },
+      { name: 'Push notification permission', status: 'live', note: 'Deferred to first clock-in (UX best practice)' },
+      { name: 'Learning Hub screens', status: 'partial', note: 'Built (LearningHubScreen + CourseDetailScreen) — needs router + auth + env wiring' },
+      { name: 'Dashboard visit cards refactor', status: 'todo', note: 'Use getTodaysSchedule() instead of recent history' },
+      { name: 'Real-device E2E smoke test', status: 'todo', note: 'Validate codepath fixes on physical device' },
+      { name: 'Clock reminder notification wiring', status: 'todo', note: 'Wire requestClockReminderPermission() into first clock-in' },
+    ]
+  },
+  {
+    id: 'evv', icon: '📋', title: 'EVV / Aggregators',
+    items: [
+      { name: 'Geofence enforcement', status: 'live', note: '150m default (100m PA spec, configurable per agency)' },
+      { name: 'Sandata CSV export endpoint', status: 'live', note: 'GET /api/exports/sandata.csv live' },
+      { name: 'Sandata full mapping module', status: 'partial', note: 'Provider/Worker/HCPCS mapping — built in source monorepo, port pending' },
+      { name: 'HHAeXchange config + export', status: 'partial', note: 'Built with 17 tests — port pending' },
+      { name: 'Agency EVV config UI (aggregator picker)', status: 'partial', note: 'Built — port pending' },
+      { name: 'Visit Maintenance Unlock (VMUR)', status: 'partial', note: 'PA DHS correction fields + coordinator queue — port pending' },
+      { name: 'First Sandata test transmission', status: 'todo', note: 'Waiting on Provider ID from PA DHS' },
+      { name: 'Mock-location detector', status: 'todo', note: 'If PA DHS audit flags geofence integrity' },
+    ]
+  },
+  {
+    id: 'learning', icon: '🎓', title: 'Learning Hub & AI Copilot',
+    items: [
+      { name: 'Course catalog (8 PA baseline courses)', status: 'live', note: 'Required / optional classification' },
+      { name: 'Enrollment management', status: 'live', note: 'Bulk + single enrollment, smart due-date defaults' },
+      { name: 'Compliance analytics', status: 'live', note: 'Per-course rates, avg days-to-complete, action-needed' },
+      { name: 'Course drill-down', status: 'live', note: 'Caregivers grouped by status (worst-first)' },
+      { name: 'Compliance gate on assignments', status: 'live', note: '422 on incomplete required training + override-with-reason' },
+      { name: 'AI Copilot chat (Gemini-backed)', status: 'partial', note: 'Full chat + action runner built — port from source monorepo pending' },
+      { name: 'Agency feature flags (Copilot toggle)', status: 'partial', note: 'Settings page + JSONB config built — port pending' },
+      { name: 'Notification settings', status: 'partial', note: 'Coordinator digest + caregiver push/email — port pending' },
+      { name: 'Mobile learning integration', status: 'partial', note: '5-point integration (router, auth hook, env, nav, api) needed' },
+    ]
+  },
+  {
+    id: 'marketing', icon: '🌐', title: 'Marketing & Public Pages',
+    items: [
+      { name: 'Landing page', status: 'live', note: 'Hero, FAQ, feature overview, brand video placeholder' },
+      { name: 'Pricing page', status: 'live', note: 'Starter / Pro tiers' },
+      { name: 'Contact, Demo, Launch, Status', status: 'live', note: 'All public routes render cleanly' },
+      { name: 'Privacy policy', status: 'live', note: '/privacy' },
+      { name: 'App icon (1024px master + 6 sizes)', status: 'live', note: 'Heraldic shield + ECG pulse, brand-color gradient' },
+      { name: 'status.rayhealthevv.com', status: 'todo', note: 'Better Stack or Statuspage.io' },
+      { name: 'App Store listing', status: 'todo', note: '6.7" screenshots captured; VO + edit still needed' },
+    ]
+  },
+  {
+    id: 'security', icon: '🔒', title: 'Security & Compliance',
+    items: [
+      { name: 'CSRF + session hardening', status: 'live', note: 'Double-submit cookie, HttpOnly, SameSite' },
+      { name: 'Security regression scan in CI', status: 'live', note: 'Fails build if localStorage token patterns reappear' },
+      { name: 'CodeQL static analysis', status: 'live', note: 'Runs on every PR and push to main', badges: ['new'] },
+      { name: 'Gitleaks secret scan', status: 'live', note: 'Blocks commits with exposed credentials', badges: ['new'] },
+      { name: 'Dependency vulnerability review', status: 'live', note: 'PRs fail if new high/critical deps added', badges: ['new'] },
+      { name: 'HIPAA Risk Analysis (15 risks, NIST 800-30)', status: 'partial', note: 'Drafted — needs owner signature + annual review date', badges: ['owner'] },
+      { name: 'BAA — Vercel', status: 'blocked', note: 'Enterprise upgrade OR move API to BAA-compliant AWS runtime', badges: ['owner'] },
+      { name: 'BAA — Neon', status: 'blocked', note: 'Send AFTER enabling HIPAA mode on Neon project', badges: ['owner'] },
+      { name: 'BAA — AWS (Bedrock + SES)', status: 'partial', note: 'AWS BAA active — confirm it covers SES scope', badges: ['owner'] },
+      { name: 'Penetration test', status: 'blocked', note: '~$8–15k one-week engagement — required before first pilot', badges: ['owner'] },
+      { name: 'Cyber liability insurance', status: 'blocked', note: '~$1.5–4k/yr with HIPAA-breach rider', badges: ['owner'] },
+      { name: 'YubiKey 2FA on admin accounts', status: 'todo', note: 'Google, AWS, GitHub, Vercel', badges: ['owner'] },
+    ]
+  },
+  {
+    id: 'owner', icon: '👤', title: 'Owner Action Items',
+    items: [
+      { name: 'Enable Neon HIPAA mode', status: 'blocked', note: 'Neon dashboard → project late-art-87716813 → Settings → HIPAA', badges: ['owner'] },
+      { name: 'Add DKIM + MAIL FROM + DMARC DNS records', status: 'partial', note: 'Records already generated in AWS SES — paste into domain registrar', badges: ['owner'] },
+      { name: 'Move SES account out of sandbox', status: 'partial', note: 'AWS console → SES → Account Dashboard → Request production access', badges: ['owner'] },
+      { name: 'Send 4 BAA request emails', status: 'blocked', note: 'Order: Vercel → AWS → Google → Neon (Neon last, after HIPAA mode)', badges: ['owner'] },
+      { name: 'Sign + date HIPAA Risk Analysis', status: 'partial', note: 'docs/compliance/hipaa/RISK_ANALYSIS_2026.md — schedule annual review 2027-05-11', badges: ['owner'] },
+      { name: 'Move fixture data to Neon branch', status: 'todo', note: "Create branch 'app-store-screenshots' before first pilot agency", badges: ['owner'] },
+      { name: 'Engage pen test firm', status: 'blocked', note: '$8–15k one-week engagement before first pilot', badges: ['owner'] },
+      { name: 'Cyber liability insurance', status: 'blocked', note: '~$1.5–4k/yr HIPAA-breach rider', badges: ['owner'] },
+    ]
+  },
+];
+
+let activeFilter = 'all';
+
+function countAll() {
+  let live=0, partial=0, blocked=0, todo=0;
+  SECTIONS.forEach(s => s.items.forEach(i => {
+    if      (i.status==='live')    live++;
+    else if (i.status==='partial') partial++;
+    else if (i.status==='blocked') blocked++;
+    else                           todo++;
+  }));
+  return { live, partial, blocked, todo, total: live+partial+blocked+todo };
+}
+
+function renderSummary() {
+  const { live, partial, blocked, todo, total } = countAll();
+  const pct = Math.round(live / total * 100);
+  document.getElementById('summary').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Live in Prod</div><div class="stat-value green">${live}</div></div>
+    <div class="stat-card"><div class="stat-label">In Progress</div><div class="stat-value yellow">${partial}</div></div>
+    <div class="stat-card"><div class="stat-label">Blocked</div><div class="stat-value red">${blocked}</div></div>
+    <div class="stat-card"><div class="stat-label">Planned</div><div class="stat-value" style="color:var(--muted)">${todo}</div></div>
+    <div class="stat-card"><div class="stat-label">Overall Progress</div><div class="stat-value blue">${pct}%</div></div>
+  `;
+}
+
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSections();
+}
+
+function renderSections() {
+  const container = document.getElementById('sections');
+  container.innerHTML = '';
+  SECTIONS.forEach(section => {
+    const visibleItems = activeFilter === 'all'
+      ? section.items
+      : section.items.filter(i => i.status === activeFilter);
+    if (visibleItems.length === 0) return;
+
+    const live = section.items.filter(i => i.status === 'live').length;
+    const total = section.items.length;
+    const pct = Math.round(live / total * 100);
+    const allGreen = live === total;
+
+    const div = document.createElement('div');
+    div.className = 'section open';
+    div.innerHTML = `
+      <div class="section-header" onclick="this.parentElement.classList.toggle('open')">
+        <div class="section-icon">${section.icon}</div>
+        <div class="section-title">${section.title}</div>
+        <div class="section-progress">
+          <div class="section-fraction">${live}/${total} live</div>
+          <div class="prog-bar"><div class="prog-fill${allGreen?' all-green':''}" style="width:${pct}%"></div></div>
+        </div>
+        <div class="chevron">▾</div>
+      </div>
+      <div class="section-body">
+        <div class="items">${visibleItems.map(renderItem).join('')}</div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function renderItem(item) {
+  const badges = (item.badges||[]).map(b =>
+    `<span class="badge ${b}">${b==='new'?'New this sprint':b==='owner'?'Owner action':b}</span>`
+  ).join('');
+  return `
+    <div class="item">
+      <div class="item-dot ${item.status}"></div>
+      <div class="item-content">
+        <div class="item-name">${item.name}</div>
+        ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
+        ${badges ? `<div class="item-badges">${badges}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+renderSummary();
+renderSections();
+</script>
+</body>
+</html>
