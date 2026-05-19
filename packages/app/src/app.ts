@@ -28,6 +28,8 @@ import learningRoutes from './routes/learning-routes.js';
 import adminAssistantRoutes from './routes/admin-assistant-routes.js';
 import marketingRoutes from './routes/marketing-routes.js';
 import billingRoutes from './routes/billing-routes.js';
+import onboardingRoutes from './routes/onboarding-routes.js';
+import onboardingAdminRoutes from './routes/onboarding-admin-routes.js';
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 
@@ -160,6 +162,7 @@ export function createApp() {
     // authContext, behind their own tighter rate limit (60 / 15-min per IP).
     app.use(`${prefix}/health`, healthLimiter, healthRoutes);
     app.use(`${prefix}/marketing`, marketingRoutes);
+    app.use(`${prefix}/onboarding`, onboardingRoutes);
   }
 
   // ---------- Authenticated surface ----------
@@ -186,6 +189,7 @@ export function createApp() {
     app.use(`${prefix}/learning`, learningRoutes);
     app.use(`${prefix}/admin-assistant`, adminAssistantRoutes);
     app.use(`${prefix}/billing`, billingRoutes);
+    app.use(`${prefix}/admin/onboarding`, onboardingAdminRoutes);
   }
 
   return app;

@@ -65,6 +65,25 @@ export async function putJson<T>(path: string, body: unknown): Promise<T> {
   return (await response.json()) as T;
 }
 
+export async function patchJson<T>(path: string, body: unknown): Promise<T> {
+  const csrfToken = getCsrfToken();
+  const response = await fetch(path, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'content-type': 'application/json',
+      ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    throw await extractError(response);
+  }
+
+  return (await response.json()) as T;
+}
+
 export async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path, {
     credentials: 'include',

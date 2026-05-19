@@ -32,4 +32,6 @@ export * from './domain/mobile-session.js';
 export * from './repositories/mobile-session-repository.js';
 export * from './domain/learning.js';
 export * from './repositories/learning-repository.js';
+export * from './domain/onboarding.js';
+export * from './repositories/onboarding-repository.js';
 //# sourceMappingURL=index.js.map

@@ -749,6 +749,118 @@ export async function up(knex: Knex): Promise<void> {
     }
   }
 
+  // ── R9 — Caregiver onboarding pipeline ──────────────────────────────────
+  // Three new tables support a fully integrated hiring funnel:
+  //   applicants            — one row per job application per agency
+  //   onboarding_interviews — AI chat session linked to each applicant
+  //   onboarding_documents  — document checklist per applicant
+  //
+  // All three are tenant-scoped via agency_id (directly or through applicant_id)
+  // and cascade-delete when the parent row is removed.
+
+  if (!(await knex.schema.hasTable('applicants'))) {
+    await knex.schema.createTable('applicants', (table) => {
+      table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+      table.uuid('agency_id').references('id').inTable('agencies').onDelete('CASCADE').notNullable();
+      table.string('first_name', 100).notNullable();
+      table.string('last_name', 100).notNullable();
+      table.string('email', 200).notNullable();
+      table.string('phone', 30).nullable();
+      table.string('position', 100).notNullable().defaultTo('Direct Support Associate');
+      table.text('cover_message').nullable();
+      table.string('status', 32).notNullable().defaultTo('applied');
+      table.timestamp('applied_at').notNullable().defaultTo(knex.fn.now());
+      table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now());
+      table.text('admin_notes').nullable();
+      table.unique(['agency_id', 'email']);
+      table.index(['agency_id', 'status']);
+    });
+  }
+
+  await knex.raw(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables
+                 WHERE table_schema='public' AND table_name='applicants')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                         WHERE table_schema='public'
+                           AND table_name='applicants'
+                           AND constraint_name='applicants_status_check') THEN
+        ALTER TABLE applicants
+          ADD CONSTRAINT applicants_status_check CHECK (
+            status IN ('applied','interviewing','interview_complete','under_review','offered','hired','rejected')
+          );
+      END IF;
+    END$$;
+  `);
+
+  if (!(await knex.schema.hasTable('onboarding_interviews'))) {
+    await knex.schema.createTable('onboarding_interviews', (table) => {
+      table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+      table.uuid('applicant_id').references('id').inTable('applicants').onDelete('CASCADE').notNullable();
+      table.string('session_token', 128).notNullable().unique();
+      table.jsonb('messages').notNullable().defaultTo('[]');
+      table.text('ai_summary').nullable();
+      table.integer('ai_score').nullable();
+      table.string('status', 32).notNullable().defaultTo('pending');
+      table.timestamp('started_at').nullable();
+      table.timestamp('completed_at').nullable();
+      table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
+      table.index(['session_token']);
+      table.index(['applicant_id']);
+    });
+  }
+
+  await knex.raw(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables
+                 WHERE table_schema='public' AND table_name='onboarding_interviews')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                         WHERE table_schema='public'
+                           AND table_name='onboarding_interviews'
+                           AND constraint_name='onboarding_interviews_status_check') THEN
+        ALTER TABLE onboarding_interviews
+          ADD CONSTRAINT onboarding_interviews_status_check CHECK (
+            status IN ('pending','in_progress','completed')
+          );
+      END IF;
+    END$$;
+  `);
+
+  if (!(await knex.schema.hasTable('onboarding_documents'))) {
+    await knex.schema.createTable('onboarding_documents', (table) => {
+      table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+      table.uuid('applicant_id').references('id').inTable('applicants').onDelete('CASCADE').notNullable();
+      table.string('document_type', 64).notNullable();
+      table.string('status', 32).notNullable().defaultTo('requested');
+      table.text('notes').nullable();
+      table.timestamp('requested_at').notNullable().defaultTo(knex.fn.now());
+      table.timestamp('submitted_at').nullable();
+      table.timestamp('verified_at').nullable();
+      table.uuid('verified_by_user_id').references('id').inTable('users').nullable();
+      table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
+      table.index(['applicant_id']);
+    });
+  }
+
+  await knex.raw(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables
+                 WHERE table_schema='public' AND table_name='onboarding_documents')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                         WHERE table_schema='public'
+                           AND table_name='onboarding_documents'
+                           AND constraint_name='onboarding_documents_status_check') THEN
+        ALTER TABLE onboarding_documents
+          ADD CONSTRAINT onboarding_documents_status_check CHECK (
+            status IN ('requested','submitted','verified','rejected')
+          );
+      END IF;
+    END$$;
+  `);
+
   // ── R7 — Sandata aggregator submission tracking ───────────────────────────
   // Track each visit's lifecycle through the state aggregator pipeline.
   // Intentionally excluded from the immutability trigger's blocked list —
@@ -789,6 +901,9 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTableIfExists('onboarding_documents');
+  await knex.schema.dropTableIfExists('onboarding_interviews');
+  await knex.schema.dropTableIfExists('applicants');
   await knex.schema.dropTableIfExists('course_completions');
   await knex.schema.dropTableIfExists('course_enrollments');
   await knex.schema.dropTableIfExists('learning_courses');

@@ -27,6 +27,10 @@ import { AuditEventsPage } from './features/audit/AuditEventsPage.js';
 import { HipaaCompliancePage } from './features/compliance/HipaaCompliancePage.js';
 import { LearningHubPage } from './features/learning/LearningHubPage.js';
 import { LearningPortalPage } from './features/learning/LearningPortalPage.js';
+import { ApplyPage } from './features/onboarding/ApplyPage.js';
+import { InterviewPage } from './features/onboarding/InterviewPage.js';
+import { OnboardingHubPage } from './features/onboarding/OnboardingHubPage.js';
+import { ApplicantDetailPage } from './features/onboarding/ApplicantDetailPage.js';
 
 const ADMIN_ROLES = new Set(['admin', 'coordinator']);
 
@@ -158,6 +162,14 @@ const icons = {
       <line x1="10" y1="13" x2="14" y2="13" />
     </svg>
   ),
+  hiring: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="19" y1="8" x2="19" y2="14" />
+      <line x1="22" y1="11" x2="16" y2="11" />
+    </svg>
+  ),
 };
 
 interface NavGroupDef extends NavGroup {
@@ -203,6 +215,13 @@ const navGroupDefs: NavGroupDef[] = [
     items: [
       { to: '/admin/learning', end: true, label: 'Learning Hub', icon: icons.learning },
       { to: '/admin/learning/portal', label: 'My Training', icon: icons.training },
+    ],
+  },
+  {
+    label: 'Hiring',
+    allowedRoles: ['admin', 'coordinator'],
+    items: [
+      { to: '/admin/onboarding', label: 'Onboarding', icon: icons.hiring },
     ],
   },
   {
@@ -392,6 +411,8 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
+      <Route path="/apply/:agencyId" element={<ApplyPage />} />
+      <Route path="/interview/:token" element={<InterviewPage />} />
 
       {/* Caregiver/family accounts land here — no admin portal access. */}
       <Route path="/portal" element={<ProtectedRoute />}>
@@ -412,6 +433,8 @@ export function App() {
           <Route path="audit-retention" element={<AuditRetentionPage />} />
           <Route path="learning" element={<LearningHubPage />} />
           <Route path="learning/portal" element={<LearningPortalPage />} />
+          <Route path="onboarding" element={<OnboardingHubPage />} />
+          <Route path="onboarding/:id" element={<ApplicantDetailPage />} />
           <Route index element={<DashboardPage />} />
         </Route>
       </Route>
