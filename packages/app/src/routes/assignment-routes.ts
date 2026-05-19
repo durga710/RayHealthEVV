@@ -32,14 +32,15 @@ router.post('/', requireCapability('schedule.write'), async (req, res) => {
     const parsed = assignmentInputSchema.safeParse({
       caregiverId: req.body.caregiverId,
       visitTemplateId: req.body.visitTemplateId,
-      credentialStatus: 'active' as const
+      credentialStatus: 'active' as const,
+      visitDate: req.body.visitDate ?? undefined
     });
     if (!parsed.success) {
       return res.status(400).json({ message: 'Valid caregiverId and visitTemplateId are required' });
     }
 
     const assignment = await repo.createAssignment(parsed.data);
-    res.status(201).json({ ...assignment, visitDate: req.body.visitDate });
+    res.status(201).json(assignment);
   } catch (error) {
     safeError('Assignment creation failed', error);
     res.status(500).json({ message: 'Internal Server Error' });

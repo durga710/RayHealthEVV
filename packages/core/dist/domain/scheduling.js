@@ -6,6 +6,7 @@ export const assignmentInputSchema = z.object({
     visitTemplateId: z.string().min(1),
     credentialStatus: z.literal('active', {
         message: 'Caregiver must be eligible for assignment'
-    })
+    }),
+    visitDate: z.string().optional()
 });
 //# sourceMappingURL=scheduling.js.map

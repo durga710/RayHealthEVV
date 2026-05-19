@@ -64,16 +64,23 @@ export class ScheduleRepository {
   }
 
   async createAssignment(assignment: AssignmentInput): Promise<any> {
+    const scheduledStart = assignment.visitDate
+      ? new Date(`${assignment.visitDate}T00:00:00.000Z`).toISOString()
+      : null;
     const [inserted] = await this.db('assignments').insert({
       id: crypto.randomUUID(),
       caregiver_id: assignment.caregiverId,
-      visit_template_id: assignment.visitTemplateId
+      visit_template_id: assignment.visitTemplateId,
+      ...(scheduledStart ? { scheduled_start_time: scheduledStart } : {})
     }).returning('*');
-    
+
     return {
       id: inserted.id,
       caregiverId: inserted.caregiver_id,
-      visitTemplateId: inserted.visit_template_id
+      visitTemplateId: inserted.visit_template_id,
+      visitDate: inserted.scheduled_start_time
+        ? new Date(inserted.scheduled_start_time).toISOString().slice(0, 10)
+        : undefined
     };
   }
 
@@ -83,12 +90,15 @@ export class ScheduleRepository {
       .join('clients', 'visit_templates.client_id', 'clients.id')
       .where('clients.agency_id', agencyId)
       .select('assignments.*', 'clients.id as client_id');
-      
+
     return rows.map(row => ({
       id: row.id,
       clientId: row.client_id,
       caregiverId: row.caregiver_id,
-      visitTemplateId: row.visit_template_id
+      visitTemplateId: row.visit_template_id,
+      visitDate: row.scheduled_start_time
+        ? new Date(row.scheduled_start_time).toISOString().slice(0, 10)
+        : undefined
     }));
   }
 

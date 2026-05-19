@@ -36,15 +36,22 @@ export class ScheduleRepository {
         }));
     }
     async createAssignment(assignment) {
+        const scheduledStart = assignment.visitDate
+            ? new Date(`${assignment.visitDate}T00:00:00.000Z`).toISOString()
+            : null;
         const [inserted] = await this.db('assignments').insert({
             id: crypto.randomUUID(),
             caregiver_id: assignment.caregiverId,
-            visit_template_id: assignment.visitTemplateId
+            visit_template_id: assignment.visitTemplateId,
+            ...(scheduledStart ? { scheduled_start_time: scheduledStart } : {})
         }).returning('*');
         return {
             id: inserted.id,
             caregiverId: inserted.caregiver_id,
-            visitTemplateId: inserted.visit_template_id
+            visitTemplateId: inserted.visit_template_id,
+            visitDate: inserted.scheduled_start_time
+                ? new Date(inserted.scheduled_start_time).toISOString().slice(0, 10)
+                : undefined
         };
     }
     async getAssignments(agencyId) {
@@ -57,7 +64,10 @@ export class ScheduleRepository {
             id: row.id,
             clientId: row.client_id,
             caregiverId: row.caregiver_id,
-            visitTemplateId: row.visit_template_id
+            visitTemplateId: row.visit_template_id,
+            visitDate: row.scheduled_start_time
+                ? new Date(row.scheduled_start_time).toISOString().slice(0, 10)
+                : undefined
         }));
     }
     async getAssignmentsByCaregiver(caregiverId, agencyId) {

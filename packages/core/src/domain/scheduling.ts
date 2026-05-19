@@ -9,7 +9,8 @@ export const assignmentInputSchema = z.object({
   visitTemplateId: z.string().min(1),
   credentialStatus: z.literal('active', {
     message: 'Caregiver must be eligible for assignment'
-  })
+  }),
+  visitDate: z.string().optional()
 });
 
 export type AssignmentInput = z.infer<typeof assignmentInputSchema>;
