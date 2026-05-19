@@ -57,14 +57,13 @@ export default function ClockInScreen() {
       const { data } = await apiClient.post('/api/evv/clock-in', payload);
       setVisit(data);
       Alert.alert('Success', 'Clocked in successfully!');
-    } catch (error) {
-      console.error('Clock-in failed', error);
+    } catch {
       Alert.alert('Error', 'Failed to clock in. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const handleClockOut = async () => {
     if (!visit) return;
     setIsLoading(true);
@@ -79,7 +78,7 @@ export default function ClockInScreen() {
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
-      
+
       const payload = {
         location: {
           lat: location.coords.latitude,
@@ -91,8 +90,7 @@ export default function ClockInScreen() {
       await apiClient.post(`/api/evv/clock-out/${visit.id}`, payload);
       setVisit(null);
       Alert.alert('Success', 'Clocked out successfully!');
-    } catch (error) {
-      console.error('Clock-out failed', error);
+    } catch {
       Alert.alert('Error', 'Failed to clock out. Please try again.');
     } finally {
       setIsLoading(false);

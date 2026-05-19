@@ -92,12 +92,8 @@ export default function DashboardScreen() {
         if (permStatus === 'granted') {
           await scheduleShiftAlerts(list);
         }
-      } catch (error) {
-        // 401 is handled centrally by the api-client interceptor (clears state, shows toast).
-        // For other errors, surface to the operator log without spamming console.error.
-        if ((error as { response?: { status?: number } })?.response?.status !== 401) {
-          console.log('Failed to fetch assignments', error);
-        }
+      } catch {
+        // 401 handled centrally by api-client interceptor; other errors are silent — empty list covers UX
       } finally {
         setLoading(false);
       }
