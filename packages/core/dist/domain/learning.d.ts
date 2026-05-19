@@ -13,6 +13,16 @@
  */
 export type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
 export type EnrollmentStatus = 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'expired';
+export interface CourseModule {
+    title: string;
+    content: string;
+}
+export interface CourseModules {
+    objectives: string[];
+    sections: CourseModule[];
+    note?: string;
+    videoSearchQuery?: string;
+}
 export interface LearningCourse {
     id: string;
     agencyId: string | null;
@@ -28,6 +38,8 @@ export interface LearningCourse {
     durationMinutes: number;
     /** Link to an external training platform (e.g. PHCA, FEMA EMI). null = no link. */
     externalUrl: string | null;
+    /** Structured in-app course content: objectives, sections, optional video search query. */
+    modules: CourseModules | null;
     createdAt: string;
 }
 export interface NewLearningCourse {
@@ -40,6 +52,7 @@ export interface NewLearningCourse {
     required: boolean;
     durationMinutes: number;
     externalUrl?: string | null;
+    modules?: CourseModules | null;
 }
 export interface CourseEnrollment {
     id: string;

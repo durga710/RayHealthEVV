@@ -587,6 +587,9 @@ export class LearningRepository {
       required: Boolean(row.required),
       durationMinutes: Number(row.duration_minutes ?? 0),
       externalUrl: row.external_url ? String(row.external_url) : null,
+      modules: row.modules
+        ? (typeof row.modules === 'string' ? JSON.parse(row.modules) : row.modules) as LearningCourse['modules']
+        : null,
       createdAt: this.toIsoString(row.created_at),
     };
   }
