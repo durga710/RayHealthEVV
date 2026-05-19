@@ -11,7 +11,10 @@ import { AssignmentsPage } from './features/scheduling/AssignmentsPage.js';
 import { LoginPage } from './features/auth/LoginPage.js';
 import { SignupPage } from './features/auth/SignupPage.js';
 import { AcceptInvitePage } from './features/auth/AcceptInvitePage.js';
-import { CaregiverPortalPage } from './features/auth/CaregiverPortalPage.js';
+import { CaregiverLayout } from './features/caregiver/CaregiverLayout.js';
+import { CaregiverDashboard } from './features/caregiver/CaregiverDashboard.js';
+import { CaregiverSchedulePage } from './features/caregiver/CaregiverSchedulePage.js';
+import { CaregiverVisitsPage } from './features/caregiver/CaregiverVisitsPage.js';
 import { LandingPage } from './features/landing/LandingPage.js';
 import { VisitReviewPage } from './features/evv/VisitReviewPage.js';
 import { PricingPage } from './features/marketing/PricingPage.js';
@@ -433,9 +436,14 @@ export function App() {
       <Route path="/apply/:agencyId" element={<ApplyPage />} />
       <Route path="/interview/:token" element={<InterviewPage />} />
 
-      {/* Caregiver/family accounts land here — no admin portal access. */}
+      {/* Caregiver/family portal — full self-service shell. Admins redirected to /admin by CaregiverLayout. */}
       <Route path="/portal" element={<ProtectedRoute />}>
-        <Route index element={<CaregiverPortalPage />} />
+        <Route element={<CaregiverLayout />}>
+          <Route index element={<CaregiverDashboard />} />
+          <Route path="schedule" element={<CaregiverSchedulePage />} />
+          <Route path="visits" element={<CaregiverVisitsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
       </Route>
 
       {/* Admin portal — admin and coordinator roles only. */}

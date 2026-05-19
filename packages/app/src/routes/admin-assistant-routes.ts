@@ -4,8 +4,11 @@ import { generateText, tool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { safeError } from '../security/safe-log.js';
 import { aiModel } from '../ai.js';
+import { requireCapability } from '../middleware/require-capability.js';
 
 const router = Router();
+// Admin assistant is for admin/coordinator only — caregivers have no agency.read capability.
+router.use(requireCapability('agency.read'));
 
 const MAX_USER_LEN = 4000;
 const MAX_HISTORY = 20;
