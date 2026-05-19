@@ -50,6 +50,7 @@
       "postcss": "^8.5.10"
     },
     "esbuild": "^0.25.0",
-    "eslint-plugin-react": "^7.37.3"
+    "eslint-plugin-react": "^7.37.3",
+    "react-native": "0.81.5"
   }
 }

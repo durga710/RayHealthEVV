@@ -40,6 +40,37 @@ function greetingFor(user: { role?: string; firstName?: string } | null): string
   return 'Welcome back.';
 }
 
+function AdminScreen({ role, onLogout }: { role: string; onLogout: () => void }) {
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
+        <View style={[styles.sessionPill, { marginBottom: 24 }]}>
+          <View style={styles.sessionDot} />
+          <Text style={styles.sessionPillText}>Secure Session</Text>
+        </View>
+        <Text style={{ fontSize: 48, marginBottom: 16 }}>🖥️</Text>
+        <Text style={{ fontSize: 22, fontWeight: '700', color: '#1a3a5c', textAlign: 'center', marginBottom: 12 }}>
+          {role === 'admin' ? 'Admin Portal' : 'Coordinator Portal'}
+        </Text>
+        <Text style={{ color: '#4a6480', textAlign: 'center', lineHeight: 22, marginBottom: 32 }}>
+          The mobile app is for caregivers. As a{role === 'admin' ? 'n admin' : ' coordinator'}, use the web portal to manage schedules, review visits, and configure your agency.
+        </Text>
+        <Text style={{ color: '#1a5fa8', fontWeight: '700', fontSize: 16, marginBottom: 32 }}>
+          rayhealthevv.com
+        </Text>
+        <Pressable
+          onPress={onLogout}
+          style={({ pressed }) => [{ minHeight: 44, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: pressed ? '#e8f0fa' : '#f0f4f8', borderRadius: 8, borderWidth: 1, borderColor: '#c9d8e8', justifyContent: 'center' }]}
+          accessibilityRole="button"
+          accessibilityLabel="Log out"
+        >
+          <Text style={{ color: '#1a5fa8', fontWeight: '600' }}>Log out</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
 export default function DashboardScreen() {
   const { logout, user } = useAuth();
   const router = useRouter();
@@ -105,6 +136,14 @@ export default function DashboardScreen() {
   // DEV-only long-press on the SECURE SESSION pill to fire a test notification
   // ~5s in the future. Lets us validate permissions + channel + vibration on
   // device without waiting for a real shift. Hard-guarded so it cannot ship.
+  const handleLogout = () => {
+    void logout().finally(() => router.replace('/login'));
+  };
+
+  if (user?.role === 'admin' || user?.role === 'coordinator') {
+    return <AdminScreen role={user.role} onLogout={handleLogout} />;
+  }
+
   const handleSessionPillLongPress = () => {
     if (!__DEV__) return;
     void fireDevTestShiftAlert();
@@ -149,7 +188,7 @@ export default function DashboardScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.greeting}>{greetingFor(user)}</Text>
           <Pressable
-            onPress={() => { void logout().finally(() => router.replace('/login')); }}
+            onPress={handleLogout}
             hitSlop={12}
             style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
             accessibilityRole="button"

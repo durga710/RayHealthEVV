@@ -45,8 +45,12 @@
           "color": "#1a5fa8",
           "defaultChannel": "shift-alerts"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
+    "extra": {
+      "apiUrl": "https://rayhealthevv.com"
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
