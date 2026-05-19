@@ -2,12 +2,13 @@
  * Provider-agnostic email client used by the invite flow.
  *
  * Provider selection (first match wins):
- *   1. Resend — set RESEND_API_KEY in Vercel environment variables.
- *   2. Amazon SES — set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY.
- *   3. No-op fallback — returns EMAIL_NOT_CONFIGURED so the admin can
- *      copy the invite link manually.
+ *   1. SMTP/Gmail — set GMAIL_USER + GMAIL_APP_PASSWORD in Vercel.
+ *   2. Resend — set RESEND_API_KEY in Vercel environment variables.
+ *   3. Amazon SES — set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY.
+ *   4. No-op fallback — returns EMAIL_NOT_CONFIGURED.
  */
 
+import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { renderInviteEmail } from './templates/invite-email.js';
@@ -34,6 +35,33 @@ export interface EmailClient {
 // Uses Resend's own shared domain so emails work before rayhealthevv.com
 // is verified in the Resend dashboard.
 const DEFAULT_FROM = 'onboarding@resend.dev';
+
+function createSmtpClient(user: string, pass: string): EmailClient {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass }
+  });
+  return {
+    async sendInviteEmail(params: InviteEmailParams): Promise<SendEmailResult> {
+      const { subject, html, text } = renderInviteEmail({
+        to: params.to,
+        inviteUrl: params.inviteUrl,
+        agencyName: params.agencyName,
+        role: params.role,
+        expiresAt: params.expiresAt,
+        invitedByName: params.invitedByName
+      });
+      try {
+        const info = await transporter.sendMail({ from: `RayHealth <${user}>`, to: params.to, subject, html, text });
+        return { ok: true, id: info.messageId ?? 'sent' };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'SMTP_ERROR';
+        safeError('smtp.send failed', new Error(msg));
+        return { ok: false, error: 'SMTP_ERROR' };
+      }
+    }
+  };
+}
 
 function createNoopClient(): EmailClient {
   return {
@@ -160,6 +188,10 @@ function createSesClient(client: SESv2Client, from: string): EmailClient {
  */
 export function createEmailClient(): EmailClient {
   const from = process.env.EMAIL_FROM?.trim() || DEFAULT_FROM;
+
+  const gmailUser = process.env.GMAIL_USER?.trim();
+  const gmailPass = process.env.GMAIL_APP_PASSWORD?.trim();
+  if (gmailUser && gmailPass) return createSmtpClient(gmailUser, gmailPass);
 
   const resendKey = process.env.RESEND_API_KEY?.trim();
   if (resendKey) return createResendClient(resendKey, from);
