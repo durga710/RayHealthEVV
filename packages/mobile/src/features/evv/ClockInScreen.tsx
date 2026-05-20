@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
@@ -35,7 +36,6 @@ function formatElapsed(seconds: number): string {
   return `${s}s`;
 }
 
-/** Haversine distance in metres — mirrors the server-side formula. */
 function haversineM(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number }
@@ -69,44 +69,75 @@ interface GeoRingProps {
 function GeoRing({ status, distanceM, allowedM, accuracy }: GeoRingProps) {
   const isInside = status === 'inside';
   const isOutside = status === 'outside';
-  const isRequesting = status === 'requesting';
+  const isWaiting = status === 'idle' || status === 'requesting';
 
-  const ringColor = isInside ? '#16a34a' : isOutside ? '#ef4444' : '#c9d8e8';
-  const bgColor = isInside ? '#f0fdf4' : isOutside ? '#fef2f2' : '#f8fafc';
-  const dotColor = isInside ? '#16a34a' : isOutside ? '#ef4444' : '#9ab0c8';
+  const ringGradient: [string, string] = isInside
+    ? ['#16a34a', '#4ade80']
+    : isOutside
+    ? ['#ef4444', '#f87171']
+    : ['#94a3b8', '#cbd5e1'];
+
+  const bgGradient: [string, string] = isInside
+    ? ['#f0fdf4', '#dcfce7']
+    : isOutside
+    ? ['#fef2f2', '#fee2e2']
+    : ['#f8fafc', '#f1f5f9'];
+
+  const textColor = isInside ? '#15803d' : isOutside ? '#dc2626' : '#94a3b8';
+
+  const pct = distanceM != null && allowedM > 0
+    ? Math.min(distanceM / allowedM, 2.5)
+    : null;
 
   return (
-    <View style={[styles.geoRingWrap, { backgroundColor: bgColor, borderColor: ringColor }]}>
-      {/* Centre dot */}
-      <View style={[styles.geoRingDot, { backgroundColor: dotColor }]} />
+    <LinearGradient colors={bgGradient} style={styles.geoRingOuter}>
+      {/* Concentric decorative rings */}
+      <View style={[styles.concRing, styles.concRing3, { borderColor: ringGradient[0] + '18' }]} />
+      <View style={[styles.concRing, styles.concRing2, { borderColor: ringGradient[0] + '30' }]} />
+      <View style={[styles.concRing, styles.concRing1, { borderColor: ringGradient[0] + '55' }]} />
 
-      {/* Status text */}
-      {status === 'idle' || status === 'requesting' ? (
-        <Text style={styles.geoRingIdle}>
-          {isRequesting ? 'Locating you…' : 'Waiting for GPS'}
-        </Text>
-      ) : status === 'denied' ? (
-        <>
-          <Text style={styles.geoRingLabel}>Location denied</Text>
-          <Text style={styles.geoRingSub}>Enable in Settings to clock in</Text>
-        </>
-      ) : (
-        <>
-          <Text style={[styles.geoRingDistance, { color: ringColor }]}>
+      {/* Inner circle */}
+      <View style={[styles.geoRingCircle, { borderColor: ringGradient[0] }]}>
+        <LinearGradient colors={ringGradient} style={styles.geoRingCircleDot} />
+
+        {isWaiting ? (
+          <Text style={[styles.geoRingIdleText, { color: textColor }]}>
+            {status === 'requesting' ? 'Locating…' : 'GPS'}
+          </Text>
+        ) : status === 'denied' ? (
+          <Text style={[styles.geoRingIdleText, { color: textColor }]}>Denied</Text>
+        ) : (
+          <Text style={[styles.geoRingDistanceText, { color: textColor }]}>
             {distanceM != null ? formatDistance(distanceM) : '—'}
           </Text>
-          <Text style={[styles.geoRingLabel, { color: ringColor }]}>
-            {isInside ? '✓ Within zone' : '✗ Outside zone'}
+        )}
+
+        {pct != null && (
+          <Text style={[styles.geoRingPctText, { color: textColor + 'cc' }]}>
+            {Math.round(pct * 100)}% of zone
           </Text>
-          <Text style={styles.geoRingAllowed}>
-            Allowed radius: {formatDistance(allowedM)}
-          </Text>
-          {accuracy != null && (
-            <Text style={styles.geoRingAccuracy}>GPS ±{Math.round(accuracy)} m</Text>
-          )}
-        </>
-      )}
-    </View>
+        )}
+      </View>
+
+      {/* Status label below the ring */}
+      <View style={styles.geoRingLabelRow}>
+        <View style={[styles.geoRingStatusDot, { backgroundColor: ringGradient[0] }]} />
+        <Text style={[styles.geoRingStatusText, { color: textColor }]}>
+          {isInside
+            ? 'Within allowed zone'
+            : isOutside
+            ? 'Outside allowed zone'
+            : status === 'denied'
+            ? 'Location access denied'
+            : 'Acquiring GPS signal…'}
+        </Text>
+      </View>
+
+      <Text style={styles.geoRingAllowed}>
+        Allowed radius: {formatDistance(allowedM)}
+        {accuracy != null ? `  ·  GPS ±${Math.round(accuracy)} m` : ''}
+      </Text>
+    </LinearGradient>
   );
 }
 
@@ -133,7 +164,9 @@ export default function ClockInScreen() {
   const clientGeofenceM = params.clientGeofenceM
     ? parseInt(firstParam(params.clientGeofenceM) ?? '150', 10)
     : 150;
-  const hasGeolock = Number.isFinite(clientLat) && Number.isFinite(clientLng) && clientLat !== null && clientLng !== null;
+  const hasGeolock =
+    Number.isFinite(clientLat) && Number.isFinite(clientLng) &&
+    clientLat !== null && clientLng !== null;
 
   const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle');
   const [distanceM, setDistanceM] = useState<number | null>(null);
@@ -143,11 +176,12 @@ export default function ClockInScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [visit, setVisit] = useState<{ id: string; clockInTime: string } | null>(null);
   const [elapsed, setElapsed] = useState(0);
-  const [geofenceError, setGeofenceError] = useState<{ message: string; distanceM: number; allowedM: number } | null>(null);
+  const [geofenceError, setGeofenceError] = useState<{
+    message: string; distanceM: number; allowedM: number;
+  } | null>(null);
 
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
 
-  // Start watching GPS as soon as the screen opens
   const startWatching = useCallback(async () => {
     setGeoStatus('requesting');
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -155,7 +189,6 @@ export default function ClockInScreen() {
       setGeoStatus('denied');
       return;
     }
-
     locationSubRef.current = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, distanceInterval: 5, timeInterval: 4000 },
       (loc) => {
@@ -167,7 +200,7 @@ export default function ClockInScreen() {
           setDistanceM(d);
           setGeoStatus(d <= clientGeofenceM ? 'inside' : 'outside');
         } else {
-          setGeoStatus('inside'); // No geofence configured — allow
+          setGeoStatus('inside');
         }
       }
     );
@@ -178,7 +211,6 @@ export default function ClockInScreen() {
     return () => { locationSubRef.current?.remove(); };
   }, [startWatching]);
 
-  // Elapsed timer when clocked in
   useEffect(() => {
     if (!visit) { setElapsed(0); return; }
     const start = new Date(visit.clockInTime).getTime();
@@ -194,7 +226,7 @@ export default function ClockInScreen() {
       return;
     }
     if (!currentCoords) {
-      Alert.alert('No GPS signal', 'Wait for your location to be acquired before clocking in.');
+      Alert.alert('No GPS signal', 'Wait for your location before clocking in.');
       return;
     }
     setGeofenceError(null);
@@ -207,7 +239,9 @@ export default function ClockInScreen() {
       });
       setVisit({ id: data.id, clockInTime: data.clockInTime ?? new Date().toISOString() });
     } catch (err: unknown) {
-      const resp = (err as { response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } } })?.response;
+      const resp = (err as {
+        response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } }
+      })?.response;
       if (resp?.status === 422 && resp.data?.code === 'GEOFENCE_OUT_OF_BOUNDS') {
         setGeofenceError({
           message: resp.data.message ?? 'You are outside the allowed zone.',
@@ -233,12 +267,14 @@ export default function ClockInScreen() {
       const totalElapsed = elapsed;
       setVisit(null);
       Alert.alert(
-        'Visit complete',
+        'Visit complete ✓',
         `Total visit time: ${formatElapsed(totalElapsed)}`,
         [{ text: 'Done', onPress: () => router.back() }]
       );
     } catch (err: unknown) {
-      const resp = (err as { response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } } })?.response;
+      const resp = (err as {
+        response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } }
+      })?.response;
       if (resp?.status === 422 && resp.data?.code === 'GEOFENCE_OUT_OF_BOUNDS') {
         setGeofenceError({
           message: resp.data.message ?? 'You are outside the allowed zone.',
@@ -254,13 +290,15 @@ export default function ClockInScreen() {
   };
 
   const isClockedIn = visit !== null;
-  const canClockIn = currentCoords != null && (geoStatus === 'inside') && !isLoading;
+  const canClockIn = currentCoords != null && geoStatus === 'inside' && !isLoading;
   const canClockOut = isClockedIn && currentCoords != null && !isLoading;
+
+  const initials = (clientName ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
+      {/* Gradient header */}
+      <LinearGradient colors={['#0f2d52', '#1a5fa8']} style={styles.heroHeader}>
         <Pressable
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
           onPress={() => router.back()}
@@ -270,121 +308,141 @@ export default function ClockInScreen() {
           <Text style={styles.backText}>← Back</Text>
         </Pressable>
 
-        {/* Visit info */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>CLIENT</Text>
-          <Text style={styles.clientName}>{clientName ?? '—'}</Text>
-          <View style={styles.metaRow}>
+        <View style={styles.heroContent}>
+          <View style={styles.clientAvatar}>
+            <Text style={styles.clientAvatarText}>{initials}</Text>
+          </View>
+          <Text style={styles.heroClientName}>{clientName ?? '—'}</Text>
+          <View style={styles.heroBadgeRow}>
             {serviceCode ? (
-              <View style={styles.serviceCodeBadge}>
-                <Text style={styles.serviceCodeText}>{serviceCode}</Text>
+              <View style={styles.heroServiceBadge}>
+                <Text style={styles.heroServiceText}>{serviceCode}</Text>
               </View>
             ) : null}
             {hasGeolock ? (
-              <View style={styles.geolockBadge}>
-                <Text style={styles.geolockBadgeText}>📍 Geolock active</Text>
+              <View style={styles.heroGeolockBadge}>
+                <Text style={styles.heroGeolockText}>📍 Geolock</Text>
               </View>
             ) : (
-              <View style={styles.noGeolockBadge}>
-                <Text style={styles.noGeolockBadgeText}>No geolock</Text>
+              <View style={styles.heroNoGeolockBadge}>
+                <Text style={styles.heroNoGeolockText}>No geolock</Text>
               </View>
             )}
           </View>
-          <View style={styles.divider} />
-          <View style={styles.infoRow}>
-            <Text style={styles.infoKey}>Scheduled</Text>
-            <Text style={styles.infoVal}>{formatScheduledTime(scheduledTime)}</Text>
+          <View style={styles.heroScheduleRow}>
+            <Text style={styles.heroScheduleLabel}>Scheduled</Text>
+            <Text style={styles.heroScheduleVal}>{formatScheduledTime(scheduledTime)}</Text>
           </View>
         </View>
+      </LinearGradient>
+
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* Geo-ring */}
-        <GeoRing
-          status={geoStatus}
-          distanceM={distanceM}
-          allowedM={clientGeofenceM}
-          accuracy={accuracy}
-        />
+        {hasGeolock && (
+          <GeoRing
+            status={geoStatus}
+            distanceM={distanceM}
+            allowedM={clientGeofenceM}
+            accuracy={accuracy}
+          />
+        )}
 
         {/* Geofence violation banner */}
         {geofenceError ? (
           <View style={styles.geofenceBanner}>
-            <Text style={styles.geofenceBannerTitle}>Outside allowed zone</Text>
+            <Text style={styles.geofenceBannerTitle}>⛔ Outside allowed zone</Text>
             <Text style={styles.geofenceBannerMsg}>{geofenceError.message}</Text>
-            <Text style={styles.geofenceBannerSub}>
-              You are {formatDistance(geofenceError.distanceM)} away •{' '}
-              Allowed: {formatDistance(geofenceError.allowedM)}
-            </Text>
+            <View style={styles.geofenceBannerStats}>
+              <View style={styles.geofenceStat}>
+                <Text style={styles.geofenceStatLabel}>Your distance</Text>
+                <Text style={styles.geofenceStatVal}>{formatDistance(geofenceError.distanceM)}</Text>
+              </View>
+              <View style={styles.geofenceStatDivider} />
+              <View style={styles.geofenceStat}>
+                <Text style={styles.geofenceStatLabel}>Allowed radius</Text>
+                <Text style={styles.geofenceStatVal}>{formatDistance(geofenceError.allowedM)}</Text>
+              </View>
+            </View>
           </View>
         ) : null}
 
-        {/* Active visit timer */}
+        {/* Active timer card */}
         {isClockedIn ? (
-          <View style={styles.activeCard}>
-            <View style={styles.activePulse} />
-            <View>
+          <LinearGradient colors={['#f0fdf4', '#dcfce7']} style={styles.activeCard}>
+            <View style={styles.activeCardHeader}>
+              <View style={styles.activePulseDot} />
               <Text style={styles.activeLabel}>Visit in progress</Text>
-              <Text style={styles.elapsedTime}>{formatElapsed(elapsed)}</Text>
             </View>
-          </View>
+            <Text style={styles.elapsedTime}>{formatElapsed(elapsed)}</Text>
+            <Text style={styles.activeSubtitle}>Elapsed time</Text>
+          </LinearGradient>
         ) : null}
 
         {/* Clock In / Out button */}
         {!isClockedIn ? (
           <Pressable
-            style={({ pressed }) => [
-              styles.actionBtn,
-              styles.clockInBtn,
-              !canClockIn && styles.actionBtnDisabled,
-              pressed && canClockIn && { opacity: 0.85 },
-            ]}
             onPress={handleClockIn}
             disabled={!canClockIn}
             accessibilityRole="button"
             accessibilityLabel="Clock in"
           >
-            <Text style={styles.actionBtnIcon}>📍</Text>
-            <Text style={styles.actionBtnText}>
-              {isLoading
-                ? 'Clocking in…'
-                : geoStatus === 'outside'
-                ? 'Move closer to clock in'
-                : geoStatus === 'requesting' || geoStatus === 'idle'
-                ? 'Acquiring location…'
-                : 'Clock In'}
-            </Text>
+            <LinearGradient
+              colors={canClockIn ? ['#1a5fa8', '#0f3d72'] : ['#a8bdd4', '#8ea8bf']}
+              style={styles.actionBtn}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.actionBtnIcon}>📍</Text>
+              <Text style={styles.actionBtnText}>
+                {isLoading
+                  ? 'Clocking in…'
+                  : geoStatus === 'outside'
+                  ? 'Move closer to clock in'
+                  : geoStatus === 'requesting' || geoStatus === 'idle'
+                  ? 'Acquiring location…'
+                  : 'Clock In'}
+              </Text>
+            </LinearGradient>
           </Pressable>
         ) : (
           <Pressable
-            style={({ pressed }) => [
-              styles.actionBtn,
-              styles.clockOutBtn,
-              !canClockOut && styles.actionBtnDisabled,
-              pressed && canClockOut && { opacity: 0.85 },
-            ]}
             onPress={handleClockOut}
             disabled={!canClockOut}
             accessibilityRole="button"
             accessibilityLabel="Clock out"
           >
-            <Text style={styles.actionBtnIcon}>✅</Text>
-            <Text style={styles.actionBtnText}>
-              {isLoading ? 'Clocking out…' : 'Clock Out'}
-            </Text>
+            <LinearGradient
+              colors={canClockOut ? ['#16a34a', '#15803d'] : ['#86b89a', '#70a080']}
+              style={styles.actionBtn}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.actionBtnIcon}>✅</Text>
+              <Text style={styles.actionBtnText}>
+                {isLoading ? 'Clocking out…' : 'Clock Out'}
+              </Text>
+            </LinearGradient>
           </Pressable>
         )}
 
         {geoStatus === 'denied' ? (
-          <Text style={styles.deniedNote}>
-            Location access is required for EVV compliance. Enable it in your device Settings.
-          </Text>
+          <View style={styles.deniedBox}>
+            <Text style={styles.deniedTitle}>Location access required</Text>
+            <Text style={styles.deniedNote}>
+              EVV compliance requires location access. Enable it in your device Settings.
+            </Text>
+          </View>
         ) : null}
 
+        {/* EVV compliance note */}
         <View style={styles.evvNote}>
+          <Text style={styles.evvNoteIcon}>🔒</Text>
           <Text style={styles.evvNoteText}>
-            GPS coordinates are captured at clock-in and clock-out for Pennsylvania EVV compliance.
+            GPS is captured at clock-in and clock-out for PA EVV compliance.
             {hasGeolock
-              ? ` Geolock enforces a ${formatDistance(clientGeofenceM)} presence radius.`
-              : ' No geolock is configured for this client — location is still recorded.'}
+              ? ` A ${formatDistance(clientGeofenceM)} presence radius is enforced for this client.`
+              : ' No radius is configured — location is still recorded.'}
           </Text>
         </View>
       </ScrollView>
@@ -394,102 +452,144 @@ export default function ClockInScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const PRIMARY = '#1a5fa8';
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f8' },
+
+  // Hero header
+  heroHeader: { paddingBottom: 28 },
+  backBtn: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8 },
+  backText: { color: '#90bde0', fontSize: 15, fontWeight: '700' },
+  heroContent: { alignItems: 'center', paddingHorizontal: 24 },
+  clientAvatar: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: '#ffffff25',
+    borderWidth: 2, borderColor: '#ffffff40',
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 12,
+  },
+  clientAvatarText: { fontSize: 28, fontWeight: '900', color: '#fff' },
+  heroClientName: {
+    fontSize: 24, fontWeight: '900', color: '#fff', textAlign: 'center', marginBottom: 10,
+    textShadowColor: '#00000030', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3,
+  },
+  heroBadgeRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  heroServiceBadge: {
+    backgroundColor: '#ffffff20', borderRadius: 999,
+    paddingHorizontal: 12, paddingVertical: 5,
+    borderWidth: 1, borderColor: '#ffffff30',
+  },
+  heroServiceText: { color: '#bfdbfe', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroGeolockBadge: {
+    backgroundColor: '#fef3c720', borderRadius: 999,
+    paddingHorizontal: 12, paddingVertical: 5,
+    borderWidth: 1, borderColor: '#fcd34d40',
+  },
+  heroGeolockText: { color: '#fde68a', fontSize: 11, fontWeight: '700' },
+  heroNoGeolockBadge: {
+    backgroundColor: '#ffffff12', borderRadius: 999,
+    paddingHorizontal: 12, paddingVertical: 5,
+  },
+  heroNoGeolockText: { color: '#94a3b8', fontSize: 11 },
+  heroScheduleRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#ffffff15', borderRadius: 10,
+    paddingHorizontal: 16, paddingVertical: 8,
+  },
+  heroScheduleLabel: { color: '#90bde0', fontSize: 12, fontWeight: '600' },
+  heroScheduleVal: { color: '#fff', fontSize: 14, fontWeight: '800' },
+
   scroll: { padding: 20, paddingBottom: 48 },
 
-  backBtn: { marginBottom: 20 },
-  backText: { color: PRIMARY, fontSize: 15, fontWeight: '600' },
+  // Geo ring
+  geoRingOuter: {
+    borderRadius: 24, padding: 32, alignItems: 'center', marginBottom: 16,
+    gap: 10,
+  },
+  concRing: {
+    position: 'absolute', borderRadius: 999, borderWidth: 1,
+  },
+  concRing3: { width: 220, height: 220, top: 18 },
+  concRing2: { width: 170, height: 170, top: 43 },
+  concRing1: { width: 130, height: 130, top: 63 },
+  geoRingCircle: {
+    width: 120, height: 120, borderRadius: 60,
+    borderWidth: 3, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#fff',
+    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 }, elevation: 4,
+    gap: 2,
+  },
+  geoRingCircleDot: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: 4, borderTopLeftRadius: 60, borderTopRightRadius: 60,
+  },
+  geoRingDistanceText: {
+    fontSize: 26, fontWeight: '900', fontVariant: ['tabular-nums'],
+  },
+  geoRingPctText: { fontSize: 10, fontWeight: '700' },
+  geoRingIdleText: { fontSize: 13, fontWeight: '700' },
+  geoRingLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  geoRingStatusDot: { width: 8, height: 8, borderRadius: 4 },
+  geoRingStatusText: { fontSize: 14, fontWeight: '700' },
+  geoRingAllowed: { fontSize: 11, color: '#94a3b8', textAlign: 'center' },
 
-  infoCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 20, marginBottom: 16,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 1 }, elevation: 2,
-  },
-  infoLabel: {
-    fontSize: 10, fontWeight: '700', color: '#9ab0c8',
-    letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6,
-  },
-  clientName: { fontSize: 26, fontWeight: '800', color: '#1a3a5c', marginBottom: 10 },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  serviceCodeBadge: {
-    backgroundColor: '#e8f0fa', borderRadius: 6,
-    paddingHorizontal: 10, paddingVertical: 4,
-  },
-  serviceCodeText: { color: PRIMARY, fontWeight: '700', fontSize: 12, textTransform: 'uppercase' },
-  geolockBadge: {
-    backgroundColor: '#fef3c7', borderRadius: 6,
-    paddingHorizontal: 10, paddingVertical: 4,
-  },
-  geolockBadgeText: { color: '#92400e', fontSize: 12, fontWeight: '600' },
-  noGeolockBadge: {
-    backgroundColor: '#f3f4f6', borderRadius: 6,
-    paddingHorizontal: 10, paddingVertical: 4,
-  },
-  noGeolockBadgeText: { color: '#9ca3af', fontSize: 12 },
-  divider: { height: 1, backgroundColor: '#e8edf2', marginBottom: 14 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  infoKey: { color: '#6b8aa6', fontSize: 14 },
-  infoVal: { color: '#1a3a5c', fontSize: 14, fontWeight: '600' },
-
-  // Geo-ring
-  geoRingWrap: {
-    borderRadius: 16, borderWidth: 2,
-    padding: 24, alignItems: 'center', marginBottom: 16,
-    gap: 8,
-  },
-  geoRingDot: { width: 14, height: 14, borderRadius: 7 },
-  geoRingDistance: { fontSize: 40, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  geoRingLabel: { fontSize: 16, fontWeight: '700' },
-  geoRingAllowed: { fontSize: 12, color: '#6b8aa6' },
-  geoRingAccuracy: { fontSize: 11, color: '#9ab0c8' },
-  geoRingIdle: { fontSize: 15, color: '#9ab0c8', fontStyle: 'italic' },
-  geoRingSub: { fontSize: 12, color: '#9ab0c8', textAlign: 'center' },
-
-  // Geofence violation banner
+  // Geofence banner
   geofenceBanner: {
-    backgroundColor: '#fef2f2', borderRadius: 12, padding: 16,
-    marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#ef4444',
+    backgroundColor: '#fff5f5',
+    borderRadius: 16, padding: 18, marginBottom: 16,
+    borderWidth: 1, borderColor: '#fecaca',
   },
-  geofenceBannerTitle: { color: '#991b1b', fontWeight: '700', fontSize: 14, marginBottom: 4 },
-  geofenceBannerMsg: { color: '#b91c1c', fontSize: 13, lineHeight: 19, marginBottom: 6 },
-  geofenceBannerSub: { color: '#ef4444', fontSize: 12, fontWeight: '600' },
+  geofenceBannerTitle: { color: '#991b1b', fontWeight: '800', fontSize: 15, marginBottom: 6 },
+  geofenceBannerMsg: { color: '#b91c1c', fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  geofenceBannerStats: { flexDirection: 'row', alignItems: 'center' },
+  geofenceStat: { flex: 1, alignItems: 'center' },
+  geofenceStatLabel: { color: '#f87171', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 },
+  geofenceStatVal: { color: '#991b1b', fontSize: 18, fontWeight: '900' },
+  geofenceStatDivider: { width: 1, height: 32, backgroundColor: '#fecaca' },
 
   // Active timer
   activeCard: {
-    backgroundColor: '#f0fdf4', borderRadius: 12, padding: 16,
-    flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16,
+    borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 16,
     borderWidth: 1, borderColor: '#bbf7d0',
+    shadowColor: '#16a34a', shadowOpacity: 0.1, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
-  activePulse: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#16a34a' },
-  activeLabel: { color: '#15803d', fontSize: 13, fontWeight: '600', marginBottom: 2 },
+  activeCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  activePulseDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#16a34a' },
+  activeLabel: { color: '#15803d', fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
   elapsedTime: {
-    color: '#166534', fontSize: 32, fontWeight: '800',
-    fontVariant: ['tabular-nums'],
+    color: '#166534', fontSize: 52, fontWeight: '900',
+    fontVariant: ['tabular-nums'], lineHeight: 56,
   },
+  activeSubtitle: { color: '#4ade80', fontSize: 12, fontWeight: '600', marginTop: 4 },
 
-  // Action buttons
+  // Action button
   actionBtn: {
-    borderRadius: 14, height: 64,
+    borderRadius: 16, height: 62,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10,
-    marginBottom: 16, shadowOpacity: 0.25, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 }, elevation: 4,
+    marginBottom: 16,
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 }, elevation: 5,
   },
-  clockInBtn: { backgroundColor: PRIMARY, shadowColor: PRIMARY },
-  clockOutBtn: { backgroundColor: '#16a34a', shadowColor: '#16a34a' },
-  actionBtnDisabled: { opacity: 0.45, shadowOpacity: 0, elevation: 0 },
   actionBtnIcon: { fontSize: 22 },
-  actionBtnText: { color: '#fff', fontSize: 17, fontWeight: '700', letterSpacing: 0.2 },
+  actionBtnText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 0.2 },
 
-  deniedNote: {
-    color: '#ef4444', fontSize: 13, textAlign: 'center',
-    marginBottom: 16, paddingHorizontal: 8,
+  // Denied
+  deniedBox: {
+    backgroundColor: '#fff5f5', borderRadius: 12, padding: 14, marginBottom: 16,
+    borderWidth: 1, borderColor: '#fecaca',
   },
+  deniedTitle: { color: '#991b1b', fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  deniedNote: { color: '#b91c1c', fontSize: 13, lineHeight: 19 },
+
+  // EVV note
   evvNote: {
-    backgroundColor: '#fff', borderRadius: 10, padding: 14,
-    marginTop: 8, borderLeftWidth: 3, borderLeftColor: '#c9d8e8',
+    flexDirection: 'row', gap: 10, alignItems: 'flex-start',
+    backgroundColor: '#fff', borderRadius: 12, padding: 14,
+    marginTop: 4,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 }, elevation: 1,
   },
-  evvNoteText: { color: '#6b8aa6', fontSize: 12, lineHeight: 18 },
+  evvNoteIcon: { fontSize: 14, marginTop: 1 },
+  evvNoteText: { flex: 1, color: '#7a98b4', fontSize: 12, lineHeight: 18 },
 });
