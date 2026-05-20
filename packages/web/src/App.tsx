@@ -253,40 +253,14 @@ const navGroupDefs: NavGroupDef[] = [
   },
 ];
 
-interface AgencyOption { id: string; name: string; }
-
 function AdminLayout() {
-  const { logout, user, switchAgency } = useAuth();
-  const [agencies, setAgencies] = useState<AgencyOption[]>([]);
-  const [switching, setSwitching] = useState(false);
+  const { logout, user } = useAuth();
 
   const roleLabel = user?.role ?? 'signed in';
   const brandName = user?.agencyTheme?.logoText ?? 'RayHealth';
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || roleLabel;
   const initial = displayName.slice(0, 1).toUpperCase() || '?';
 
-  // Fetch all agencies for the switcher — admin only.
-  useEffect(() => {
-    if (user?.role !== 'admin') return;
-    fetch('/api/agencies', { credentials: 'include', headers: { accept: 'application/json' } })
-      .then((r) => r.ok ? r.json() : [])
-      .then((data: AgencyOption[]) => setAgencies(data))
-      .catch(() => undefined);
-  }, [user?.role]);
-
-  const handleAgencySwitch = async (agencyId: string) => {
-    if (agencyId === user?.agencyId || switching) return;
-    setSwitching(true);
-    try {
-      await switchAgency(agencyId);
-      // Reload the current page so all data refreshes for the new agency.
-      window.location.reload();
-    } catch {
-      setSwitching(false);
-    }
-  };
-
-  // Only show nav groups relevant to this user's role.
   const visibleGroups = navGroupDefs.filter(
     (g) => !g.allowedRoles || (user?.role && g.allowedRoles.includes(user.role))
   );
@@ -298,45 +272,6 @@ function AdminLayout() {
           {brandName}
           <span className="admin-sidebar__evv-badge">EVV</span>
         </Link>
-
-        {user?.role === 'admin' && agencies.length > 1 && (
-          <div style={{ padding: '0 0.75rem 0.5rem' }}>
-            <label
-              htmlFor="agency-switcher"
-              style={{ display: 'block', fontSize: '0.625rem', fontWeight: 600, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.35rem' }}
-            >
-              Active agency
-            </label>
-            <select
-              id="agency-switcher"
-              disabled={switching}
-              value={user.agencyId}
-              onChange={(e) => void handleAgencySwitch(e.target.value)}
-              style={{
-                width: '100%',
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                color: '#E2E8F0',
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '6px',
-                padding: '0.4rem 0.6rem',
-                cursor: switching ? 'wait' : 'pointer',
-                appearance: 'none',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 0.5rem center',
-                paddingRight: '1.75rem',
-              }}
-            >
-              {agencies.map((a) => (
-                <option key={a.id} value={a.id} style={{ backgroundColor: '#1E293B', color: '#E2E8F0' }}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         <nav className="admin-sidebar__nav">
           {visibleGroups.map((group) => (

@@ -27,7 +27,6 @@ interface AuthContextType {
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<{ role: string }>;
   logout: () => Promise<void>;
-  switchAgency: (agencyId: string) => Promise<{ agencyName: string }>;
   refreshUser: () => Promise<void>;
 }
 
@@ -94,27 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { role: data.role as string };
   };
 
-  const switchAgency = async (agencyId: string): Promise<{ agencyName: string }> => {
-    const csrfToken = getCsrfToken();
-    const res = await fetch(`${API_BASE}/agencies/switch`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
-      },
-      body: JSON.stringify({ agencyId })
-    });
-    if (!res.ok) {
-      const { message } = await res.json().catch(() => ({ message: 'Switch failed' }));
-      throw new Error(message);
-    }
-    const data = await res.json();
-    setUser((prev) => prev ? { ...prev, agencyId: data.agencyId, agencyTheme: data.agencyTheme } : prev);
-    applyAgencyTheme(data.agencyTheme);
-    return { agencyName: data.agencyName as string };
-  };
-
   const refreshUser = async () => {
     try {
       const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include', headers: { accept: 'application/json' } });
@@ -141,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!user, user, login, logout, switchAgency, refreshUser }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!user, user, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

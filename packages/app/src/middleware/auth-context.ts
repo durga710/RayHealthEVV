@@ -21,7 +21,7 @@ export async function authContext(req: Request, res: Response, next: NextFunctio
       );
       if (session) {
         req.auth = {
-          agencyId: session.activeAgencyId ?? session.agencyId,
+          agencyId: session.agencyId,
           role: session.role,
           userId: session.userId,
           caregiverId: session.caregiverId,
