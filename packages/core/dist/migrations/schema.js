@@ -861,7 +861,18 @@ export async function up(knex) {
             t.text('avatar_url').nullable();
         });
     }
-    // ── R11 — external_url + modules on learning_courses ─────────────────────
+    // ── R11 — password_reset_tokens ──────────────────────────────────────────
+    if (!(await knex.schema.hasTable('password_reset_tokens'))) {
+        await knex.schema.createTable('password_reset_tokens', (table) => {
+            table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+            table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
+            table.text('token_hash').notNullable().unique();
+            table.timestamp('expires_at', { useTz: true }).notNullable();
+            table.timestamp('used_at', { useTz: true }).nullable();
+            table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+        });
+    }
+    // ── R12 — external_url + modules on learning_courses ─────────────────────
     if (await knex.schema.hasTable('learning_courses')) {
         if (!(await knex.schema.hasColumn('learning_courses', 'external_url'))) {
             await knex.schema.alterTable('learning_courses', (t) => {
@@ -876,6 +887,7 @@ export async function up(knex) {
     }
 }
 export async function down(knex) {
+    await knex.schema.dropTableIfExists('password_reset_tokens');
     await knex.schema.dropTableIfExists('onboarding_documents');
     await knex.schema.dropTableIfExists('onboarding_interviews');
     await knex.schema.dropTableIfExists('applicants');

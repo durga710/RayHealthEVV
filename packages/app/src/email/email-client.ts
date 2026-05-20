@@ -12,6 +12,7 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { renderInviteEmail } from './templates/invite-email.js';
+import { renderPasswordResetEmail } from './templates/password-reset-email.js';
 import { safeError } from '../security/safe-log.js';
 
 export interface InviteEmailParams {
@@ -24,12 +25,18 @@ export interface InviteEmailParams {
   invitedByName?: string;
 }
 
+export interface PasswordResetEmailParams {
+  to: string;
+  resetUrl: string;
+}
+
 export type SendEmailResult =
   | { ok: true; id: string }
   | { ok: false; error: string };
 
 export interface EmailClient {
   sendInviteEmail(params: InviteEmailParams): Promise<SendEmailResult>;
+  sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<SendEmailResult>;
 }
 
 const DEFAULT_FROM = 'RayHealth <onboarding@www.rayhealthevv.com>';
@@ -39,6 +46,19 @@ function createSmtpClient(user: string, pass: string): EmailClient {
     service: 'gmail',
     auth: { user, pass }
   });
+  const from = `RayHealth <${user}>`;
+
+  async function smtpSend(to: string, subject: string, html: string, text: string): Promise<SendEmailResult> {
+    try {
+      const info = await transporter.sendMail({ from, to, subject, html, text });
+      return { ok: true, id: info.messageId ?? 'sent' };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'SMTP_ERROR';
+      safeError('smtp.send failed', new Error(msg));
+      return { ok: false, error: 'SMTP_ERROR' };
+    }
+  }
+
   return {
     async sendInviteEmail(params: InviteEmailParams): Promise<SendEmailResult> {
       const { subject, html, text } = renderInviteEmail({
@@ -47,17 +67,14 @@ function createSmtpClient(user: string, pass: string): EmailClient {
         agencyName: params.agencyName,
         role: params.role,
         expiresAt: params.expiresAt,
-        invitedByName: params.invitedByName
+        invitedByName: params.invitedByName,
       });
-      try {
-        const info = await transporter.sendMail({ from: `RayHealth <${user}>`, to: params.to, subject, html, text });
-        return { ok: true, id: info.messageId ?? 'sent' };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'SMTP_ERROR';
-        safeError('smtp.send failed', new Error(msg));
-        return { ok: false, error: 'SMTP_ERROR' };
-      }
-    }
+      return smtpSend(params.to, subject, html, text);
+    },
+    async sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<SendEmailResult> {
+      const { subject, html, text } = renderPasswordResetEmail({ resetUrl: params.resetUrl });
+      return smtpSend(params.to, subject, html, text);
+    },
   };
 }
 
@@ -65,12 +82,35 @@ function createNoopClient(): EmailClient {
   return {
     async sendInviteEmail(): Promise<SendEmailResult> {
       return { ok: false, error: 'EMAIL_NOT_CONFIGURED' };
-    }
+    },
+    async sendPasswordResetEmail(): Promise<SendEmailResult> {
+      return { ok: false, error: 'EMAIL_NOT_CONFIGURED' };
+    },
   };
 }
 
 function createResendClient(apiKey: string, from: string): EmailClient {
   const resend = new Resend(apiKey);
+
+  async function resendSend(to: string, subject: string, html: string, text: string): Promise<SendEmailResult> {
+    try {
+      const { data, error } = await resend.emails.send({ from, to: [to], subject, html, text });
+      if (error) {
+        safeError('resend.send failed', new Error(error.name ?? 'RESEND_ERROR'));
+        return { ok: false, error: error.name ?? 'RESEND_ERROR' };
+      }
+      if (!data?.id) {
+        safeError('resend.send returned ok without id');
+        return { ok: false, error: 'NO_MESSAGE_ID' };
+      }
+      return { ok: true, id: data.id };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
+      safeError('resend.send threw', new Error(msg));
+      return { ok: false, error: msg };
+    }
+  }
+
   return {
     async sendInviteEmail(params: InviteEmailParams): Promise<SendEmailResult> {
       const { subject, html, text } = renderInviteEmail({
@@ -79,33 +119,14 @@ function createResendClient(apiKey: string, from: string): EmailClient {
         agencyName: params.agencyName,
         role: params.role,
         expiresAt: params.expiresAt,
-        invitedByName: params.invitedByName
+        invitedByName: params.invitedByName,
       });
-
-      try {
-        const { data, error } = await resend.emails.send({
-          from,
-          to: [params.to],
-          subject,
-          html,
-          text
-        });
-
-        if (error) {
-          safeError('resend.send failed', new Error(error.name ?? 'RESEND_ERROR'));
-          return { ok: false, error: error.name ?? 'RESEND_ERROR' };
-        }
-        if (!data?.id) {
-          safeError('resend.send returned ok without id');
-          return { ok: false, error: 'NO_MESSAGE_ID' };
-        }
-        return { ok: true, id: data.id };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
-        safeError('resend.send threw', new Error(msg));
-        return { ok: false, error: msg };
-      }
-    }
+      return resendSend(params.to, subject, html, text);
+    },
+    async sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<SendEmailResult> {
+      const { subject, html, text } = renderPasswordResetEmail({ resetUrl: params.resetUrl });
+      return resendSend(params.to, subject, html, text);
+    },
   };
 }
 
@@ -129,6 +150,36 @@ function categorizeSesError(err: unknown): string {
 }
 
 function createSesClient(client: SESv2Client, from: string): EmailClient {
+  async function sesSend(to: string, subject: string, html: string, text: string): Promise<SendEmailResult> {
+    try {
+      const result = await client.send(
+        new SendEmailCommand({
+          FromEmailAddress: from,
+          Destination: { ToAddresses: [to] },
+          Content: {
+            Simple: {
+              Subject: { Data: subject, Charset: 'UTF-8' },
+              Body: {
+                Html: { Data: html, Charset: 'UTF-8' },
+                Text: { Data: text, Charset: 'UTF-8' },
+              },
+            },
+          },
+        })
+      );
+      const id = result.MessageId;
+      if (!id) {
+        safeError('ses.send returned ok without MessageId');
+        return { ok: false, error: 'NO_MESSAGE_ID' };
+      }
+      return { ok: true, id };
+    } catch (err) {
+      const category = categorizeSesError(err);
+      safeError('ses.send failed', new Error(category));
+      return { ok: false, error: category };
+    }
+  }
+
   return {
     async sendInviteEmail(params: InviteEmailParams): Promise<SendEmailResult> {
       const { subject, html, text } = renderInviteEmail({
@@ -137,38 +188,14 @@ function createSesClient(client: SESv2Client, from: string): EmailClient {
         agencyName: params.agencyName,
         role: params.role,
         expiresAt: params.expiresAt,
-        invitedByName: params.invitedByName
+        invitedByName: params.invitedByName,
       });
-
-      try {
-        const result = await client.send(
-          new SendEmailCommand({
-            FromEmailAddress: from,
-            Destination: { ToAddresses: [params.to] },
-            Content: {
-              Simple: {
-                Subject: { Data: subject, Charset: 'UTF-8' },
-                Body: {
-                  Html: { Data: html, Charset: 'UTF-8' },
-                  Text: { Data: text, Charset: 'UTF-8' }
-                }
-              }
-            }
-          })
-        );
-
-        const id = result.MessageId;
-        if (!id) {
-          safeError('ses.send returned ok without MessageId');
-          return { ok: false, error: 'NO_MESSAGE_ID' };
-        }
-        return { ok: true, id };
-      } catch (err) {
-        const category = categorizeSesError(err);
-        safeError('ses.send failed', new Error(category));
-        return { ok: false, error: category };
-      }
-    }
+      return sesSend(params.to, subject, html, text);
+    },
+    async sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<SendEmailResult> {
+      const { subject, html, text } = renderPasswordResetEmail({ resetUrl: params.resetUrl });
+      return sesSend(params.to, subject, html, text);
+    },
   };
 }
 
@@ -229,4 +256,13 @@ export function buildInviteUrl(inviteId: string): string {
     'http://localhost:5173'
   ).replace(/\/+$/, '');
   return `${base}/accept-invite?token=${encodeURIComponent(inviteId)}`;
+}
+
+export function buildPasswordResetUrl(token: string): string {
+  const base = (
+    process.env.APP_URL ||
+    process.env.BASE_URL ||
+    'http://localhost:5173'
+  ).replace(/\/+$/, '');
+  return `${base}/reset-password/${encodeURIComponent(token)}`;
 }

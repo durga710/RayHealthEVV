@@ -34,3 +34,4 @@ export * from './domain/learning.js';
 export * from './repositories/learning-repository.js';
 export * from './domain/onboarding.js';
 export * from './repositories/onboarding-repository.js';
+export * from './repositories/password-reset-repository.js';

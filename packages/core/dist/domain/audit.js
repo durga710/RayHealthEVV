@@ -27,6 +27,7 @@ export const auditEventTypes = [
     'invite.created', 'invite.accepted', 'invite.access_code_failed',
     'invite.email.sent', 'invite.email.failed',
     'invite.revoked', 'invite.revoked_all',
+    'auth.password_reset.requested', 'auth.password_reset.completed',
 ];
 export const auditOutcomes = ['success', 'failure', 'denied'];
 export const auditActorTypes = ['user', 'service', 'system'];

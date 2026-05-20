@@ -18,6 +18,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const passwordWasReset = searchParams.get('reset') === '1';
 
   // If the user is already authenticated (e.g. pressing Back from /admin),
   // send them straight to their dashboard instead of showing the login form.
@@ -222,6 +223,22 @@ export function LoginPage() {
             </p>
           </div>
 
+          {passwordWasReset && (
+            <div
+              role="status"
+              style={{
+                backgroundColor: '#F0FDF4',
+                border: '1px solid #BBF7D0',
+                borderRadius: '8px',
+                padding: '0.75rem 1rem',
+                color: '#166534',
+                fontSize: '0.9rem',
+              }}
+            >
+              Password updated. Sign in with your new password.
+            </div>
+          )}
+
           {error && (
             <div
               role="alert"
@@ -280,6 +297,15 @@ export function LoginPage() {
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
+
+            <div style={{ textAlign: 'center' }}>
+              <Link
+                to="/forgot-password"
+                style={{ fontSize: '0.875rem', color: '#6366F1', fontWeight: 500 }}
+              >
+                Forgot your password?
+              </Link>
+            </div>
           </form>
 
           <div

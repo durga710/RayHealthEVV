@@ -16,6 +16,10 @@ export interface InviteEmailParams {
     expiresAt: string;
     invitedByName?: string;
 }
+export interface PasswordResetEmailParams {
+    to: string;
+    resetUrl: string;
+}
 export type SendEmailResult = {
     ok: true;
     id: string;
@@ -25,6 +29,7 @@ export type SendEmailResult = {
 };
 export interface EmailClient {
     sendInviteEmail(params: InviteEmailParams): Promise<SendEmailResult>;
+    sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<SendEmailResult>;
 }
 /**
  * Construct the email client from environment variables.
@@ -50,4 +55,5 @@ export declare function createEmailClient(): EmailClient;
  *  4. `http://localhost:5173` for local dev.
  */
 export declare function buildInviteUrl(inviteId: string): string;
+export declare function buildPasswordResetUrl(token: string): string;
 //# sourceMappingURL=email-client.d.ts.map

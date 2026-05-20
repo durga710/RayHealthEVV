@@ -11,6 +11,8 @@ import { AssignmentsPage } from './features/scheduling/AssignmentsPage.js';
 import { LoginPage } from './features/auth/LoginPage.js';
 import { SignupPage } from './features/auth/SignupPage.js';
 import { AcceptInvitePage } from './features/auth/AcceptInvitePage.js';
+import { ForgotPasswordPage } from './features/auth/ForgotPasswordPage.js';
+import { ResetPasswordPage } from './features/auth/ResetPasswordPage.js';
 import { CaregiverLayout } from './features/caregiver/CaregiverLayout.js';
 import { CaregiverDashboard } from './features/caregiver/CaregiverDashboard.js';
 import { CaregiverSchedulePage } from './features/caregiver/CaregiverSchedulePage.js';
@@ -372,6 +374,8 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route path="/apply/:agencyId" element={<ApplyPage />} />
       <Route path="/interview/:token" element={<InterviewPage />} />
 

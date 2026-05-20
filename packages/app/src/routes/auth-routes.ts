@@ -2,11 +2,13 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { AgencyRepository, AuditEventRepository, SessionRepository, UserRepository, type NewAuditEvent } from '@rayhealth/core';
+import { AgencyRepository, AuditEventRepository, PasswordResetRepository, SessionRepository, UserRepository, type NewAuditEvent } from '@rayhealth/core';
 import { authContext } from '../middleware/auth-context.js';
 import { requireCsrf } from '../middleware/csrf.js';
 import { clearSessionCookieOptions, SESSION_COOKIE_NAME, sessionCookieOptions } from '../security/cookies.js';
 import { createOpaqueToken, hashOpaqueToken } from '../security/token-hashing.js';
+import { createEmailClient, buildPasswordResetUrl } from '../email/email-client.js';
+import { safeError } from '../security/safe-log.js';
 
 const router = Router();
 type AuditEventDb = ConstructorParameters<typeof AuditEventRepository>[0];
@@ -286,6 +288,114 @@ router.post('/logout', authContext, requireCsrf, async (req, res) => {
     res.clearCookie(SESSION_COOKIE_NAME, clearSessionCookieOptions());
     res.status(204).send();
   } catch {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email().max(200),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1).max(128),
+  password: z.string().min(12).max(128),
+});
+
+// POST /auth/forgot-password
+// Always returns 200 so we don't reveal whether an email exists.
+router.post('/forgot-password', async (req, res) => {
+  const parsed = forgotPasswordSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ message: 'Valid email required' });
+    return;
+  }
+  const { email } = parsed.data;
+
+  try {
+    const db = req.app.get('db');
+    const user = await new UserRepository(db).findByEmail(email);
+
+    if (user) {
+      const rawToken = createOpaqueToken(32);
+      const tokenHash = hashOpaqueToken(rawToken);
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+
+      await new PasswordResetRepository(db).create(user.id, tokenHash, expiresAt);
+
+      const resetUrl = buildPasswordResetUrl(rawToken);
+      const emailClient = createEmailClient();
+      const result = await emailClient.sendPasswordResetEmail({ to: email, resetUrl });
+
+      await recordAuditEvent(db, {
+        agencyId: user.agencyId,
+        actorId: user.id,
+        actorType: 'user',
+        eventType: 'auth.password_reset.requested',
+        entityType: 'user',
+        entityId: user.id,
+        outcome: result.ok ? 'success' : 'failure',
+        payload: { emailDelivery: result.ok ? 'sent' : result.error },
+        occurredAt: new Date().toISOString(),
+      });
+    }
+
+    // Always 200 — never disclose whether the email is registered
+    res.json({ message: 'If that email is registered, a reset link has been sent.' });
+  } catch (err) {
+    safeError('POST /auth/forgot-password failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// POST /auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  const parsed = resetPasswordSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid input' });
+    return;
+  }
+  const { token, password } = parsed.data;
+
+  try {
+    const db = req.app.get('db');
+    const tokenHash = hashOpaqueToken(token);
+    const resetRepo = new PasswordResetRepository(db);
+    const resetToken = await resetRepo.findValid(tokenHash);
+
+    if (!resetToken) {
+      res.status(400).json({ message: 'This reset link is invalid or has expired.' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await db.transaction(async (trx: typeof db) => {
+      await trx('users').where('id', resetToken.userId).update({ password_hash: passwordHash });
+      await resetRepo.markUsed(resetToken.id);
+      // Revoke all active sessions for security
+      await trx('sessions').where('user_id', resetToken.userId).whereNull('revoked_at').update({
+        revoked_at: new Date().toISOString(),
+      });
+    });
+
+    const user = await new UserRepository(db).findById(resetToken.userId);
+    if (user) {
+      await recordAuditEvent(db, {
+        agencyId: user.agencyId,
+        actorId: user.id,
+        actorType: 'user',
+        eventType: 'auth.password_reset.completed',
+        entityType: 'user',
+        entityId: user.id,
+        outcome: 'success',
+        payload: {},
+        occurredAt: new Date().toISOString(),
+      });
+    }
+
+    res.json({ message: 'Password updated. You can now sign in with your new password.' });
+  } catch (err) {
+    safeError('POST /auth/reset-password failed', err);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
