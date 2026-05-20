@@ -17,11 +17,18 @@ export interface CourseModule {
     title: string;
     content: string;
 }
+export interface QuizQuestion {
+    question: string;
+    options: string[];
+    correct: number;
+}
 export interface CourseModules {
     objectives: string[];
     sections: CourseModule[];
     note?: string;
     videoSearchQuery?: string;
+    videoUrl?: string | null;
+    quiz?: QuizQuestion[] | null;
 }
 export interface LearningCourse {
     id: string;

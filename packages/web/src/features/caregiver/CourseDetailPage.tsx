@@ -7,11 +7,19 @@ interface CourseSection {
   content: string;
 }
 
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correct: number;
+}
+
 interface CourseModules {
   objectives: string[];
   sections: CourseSection[];
   note?: string | null;
   videoSearchQuery?: string | null;
+  videoUrl?: string | null;
+  quiz?: QuizQuestion[] | null;
 }
 
 interface Course {
@@ -41,12 +49,16 @@ interface ProgressData {
   enrollments: Array<{ enrollment: Enrollment; course: Course }>;
 }
 
+type QuizState = 'active' | 'passed' | 'failed';
+
 const CADENCE_LABEL: Record<string, string> = {
   one_time: 'One-time',
   annual: 'Annual',
   biennial: 'Every 2 years',
   certification: 'Certification',
 };
+
+const PASS_THRESHOLD = 0.8;
 
 function formatDate(iso: string | null) {
   if (!iso) return '—';
@@ -64,6 +76,256 @@ const backBtnStyle: React.CSSProperties = {
   display: 'block',
 };
 
+function VideoPlayer({ videoUrl, onPlay }: { videoUrl: string; onPlay?: () => void }) {
+  const [started, setStarted] = useState(false);
+
+  const handleStart = () => {
+    setStarted(true);
+    onPlay?.();
+  };
+
+  // Normalize watch URLs to nocookie embed URLs
+  const embedUrl = videoUrl
+    .replace('https://www.youtube.com/watch?v=', 'https://www.youtube-nocookie.com/embed/')
+    .replace('https://youtu.be/', 'https://www.youtube-nocookie.com/embed/');
+
+  if (!started) {
+    return (
+      <div
+        style={{
+          position: 'relative',
+          paddingBottom: '56.25%',
+          background: '#0F172A',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          marginBottom: '1.25rem',
+          cursor: 'pointer',
+        }}
+        onClick={handleStart}
+        role="button"
+        aria-label="Play training video"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && handleStart()}
+      >
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: '0.75rem',
+        }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '50%',
+            background: 'rgba(99,102,241,0.9)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.875rem', fontWeight: 600 }}>
+            Play Training Video
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: 'relative', paddingBottom: '56.25%', borderRadius: '10px', overflow: 'hidden', marginBottom: '1.25rem' }}>
+      <iframe
+        src={`${embedUrl}?autoplay=1&rel=0&modestbranding=1`}
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        title="Training video"
+      />
+    </div>
+  );
+}
+
+interface QuizProps {
+  questions: QuizQuestion[];
+  onPass: () => void;
+}
+
+function Quiz({ questions, onPass }: QuizProps) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [quizState, setQuizState] = useState<QuizState>('active');
+  const [wrongIndexes, setWrongIndexes] = useState<Set<number>>(new Set());
+
+  const allAnswered = questions.every((_, i) => answers[i] !== undefined);
+
+  const handleSubmit = () => {
+    let correct = 0;
+    const wrong = new Set<number>();
+    questions.forEach((q, i) => {
+      if (answers[i] === q.correct) {
+        correct++;
+      } else {
+        wrong.add(i);
+      }
+    });
+
+    const score = correct / questions.length;
+    if (score >= PASS_THRESHOLD) {
+      setQuizState('passed');
+      onPass();
+    } else {
+      setWrongIndexes(wrong);
+      setQuizState('failed');
+    }
+  };
+
+  const handleRetry = () => {
+    setAnswers({});
+    setWrongIndexes(new Set());
+    setQuizState('active');
+  };
+
+  const correctCount = questions.filter((q, i) => answers[i] === q.correct).length;
+
+  return (
+    <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+          padding: '1rem 1.5rem',
+          display: 'flex', alignItems: 'center', gap: '0.75rem',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+          </svg>
+          <div>
+            <div style={{ color: 'white', fontWeight: 700, fontSize: '0.9375rem' }}>Knowledge Check</div>
+            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.75rem' }}>
+              {questions.length} questions · Pass {Math.round(PASS_THRESHOLD * 100)}% to complete this course
+            </div>
+          </div>
+        </div>
+
+        {quizState === 'passed' ? (
+          <div style={{ padding: '2rem 1.5rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🏅</div>
+            <div style={{ fontWeight: 700, fontSize: '1.125rem', color: '#15803D', marginBottom: '0.25rem' }}>
+              Quiz Passed!
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#16A34A' }}>
+              {correctCount} of {questions.length} correct — course is now marked complete.
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {quizState === 'failed' && (
+              <div style={{
+                background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px',
+                padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#DC2626',
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+              }}>
+                <span>✗</span>
+                <span>
+                  {correctCount} of {questions.length} correct — {Math.round(PASS_THRESHOLD * 100)}% required to pass.
+                  Review the highlighted questions and try again.
+                </span>
+              </div>
+            )}
+
+            {questions.map((q, qi) => {
+              const isWrong = wrongIndexes.has(qi);
+              const selected = answers[qi];
+
+              return (
+                <div key={qi} style={{
+                  background: isWrong ? '#FFF7F7' : 'white',
+                  border: `1px solid ${isWrong ? '#FECACA' : '#E2E8F0'}`,
+                  borderRadius: '10px', padding: '1rem 1.25rem',
+                }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#0F172A', marginBottom: '0.75rem', lineHeight: 1.45 }}>
+                    <span style={{ color: '#94A3B8', marginRight: '0.4rem' }}>{qi + 1}.</span>
+                    {q.question}
+                    {isWrong && (
+                      <span style={{ marginLeft: '0.5rem', color: '#EF4444', fontSize: '0.8rem', fontWeight: 500 }}>
+                        — Correct: {q.options[q.correct]}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {q.options.map((opt, oi) => {
+                      const isSelected = selected === oi;
+                      const isCorrectOpt = quizState === 'failed' && isWrong && oi === q.correct;
+                      const isWrongSelection = quizState === 'failed' && isWrong && isSelected && oi !== q.correct;
+
+                      let optBg = isSelected ? '#EEF2FF' : 'transparent';
+                      let optBorder = isSelected ? '#C7D2FE' : '#E2E8F0';
+                      let optColor = isSelected ? '#4338CA' : '#334155';
+
+                      if (isCorrectOpt) { optBg = '#F0FDF4'; optBorder = '#BBF7D0'; optColor = '#15803D'; }
+                      if (isWrongSelection) { optBg = '#FEF2F2'; optBorder = '#FECACA'; optColor = '#DC2626'; }
+
+                      return (
+                        <label
+                          key={oi}
+                          style={{
+                            display: 'flex', alignItems: 'flex-start', gap: '0.6rem',
+                            padding: '0.6rem 0.75rem',
+                            background: optBg, border: `1px solid ${optBorder}`,
+                            borderRadius: '7px', cursor: quizState === 'active' ? 'pointer' : 'default',
+                            fontSize: '0.875rem', color: optColor, lineHeight: 1.4,
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name={`q-${qi}`}
+                            value={oi}
+                            checked={isSelected}
+                            disabled={quizState !== 'active'}
+                            onChange={() => setAnswers((prev) => ({ ...prev, [qi]: oi }))}
+                            style={{ marginTop: '2px', flexShrink: 0, accentColor: '#6366F1' }}
+                          />
+                          <span>{opt}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {quizState === 'active' && (
+                <button
+                  type="button"
+                  disabled={!allAnswered}
+                  onClick={handleSubmit}
+                  style={{
+                    padding: '0.65rem 1.5rem', fontWeight: 700, fontSize: '0.9375rem',
+                    color: '#fff', background: allAnswered ? '#6366F1' : '#CBD5E1',
+                    border: 'none', borderRadius: '8px', cursor: allAnswered ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  Submit Answers
+                </button>
+              )}
+              {quizState === 'failed' && (
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  style={{
+                    padding: '0.65rem 1.5rem', fontWeight: 700, fontSize: '0.9375rem',
+                    color: '#fff', background: '#6366F1',
+                    border: 'none', borderRadius: '8px', cursor: 'pointer',
+                  }}
+                >
+                  Try Again
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -74,6 +336,7 @@ export function CourseDetailPage() {
   const [completedNow, setCompletedNow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<number | null>(0);
+  const [quizPassed, setQuizPassed] = useState(false);
 
   useEffect(() => {
     getJson<{ success: boolean; data: ProgressData }>('/api/learning/progress')
@@ -100,6 +363,11 @@ export function CourseDetailPage() {
     } finally {
       setCompleting(false);
     }
+  };
+
+  const handleQuizPass = () => {
+    setQuizPassed(true);
+    void handleMarkComplete();
   };
 
   const trackStarted = () => {
@@ -132,9 +400,9 @@ export function CourseDetailPage() {
   const mods = course.modules;
   const isCompleted = completedNow || enrollment.status === 'completed';
   const isInProgress = !isCompleted && enrollment.status === 'in_progress';
-  const ytSearchUrl = mods?.videoSearchQuery
-    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(mods.videoSearchQuery)}`
-    : null;
+  const hasQuiz = !!(mods?.quiz && mods.quiz.length > 0);
+  const hasVideo = !!mods?.videoUrl;
+  const canMarkComplete = !hasQuiz || quizPassed;
 
   return (
     <div style={{ maxWidth: '720px' }}>
@@ -203,11 +471,21 @@ export function CourseDetailPage() {
         </div>
       )}
 
-      {/* In-person / important note */}
+      {/* Important note */}
       {mods?.note && (
         <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '10px', padding: '0.85rem 1.25rem', marginBottom: '1.25rem', fontSize: '0.875rem', color: '#92400E', display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
           <span style={{ fontSize: '1rem', flexShrink: 0 }}>ℹ️</span>
           <span>{mods.note}</span>
+        </div>
+      )}
+
+      {/* Embedded training video */}
+      {hasVideo && (
+        <div style={{ marginBottom: '0.25rem' }}>
+          <h2 style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#64748B', margin: '0 0 0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Training Video
+          </h2>
+          <VideoPlayer videoUrl={mods!.videoUrl!} onPlay={trackStarted} />
         </div>
       )}
 
@@ -264,28 +542,9 @@ export function CourseDetailPage() {
         </div>
       )}
 
-      {/* Video + official resource links */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        {ytSearchUrl && (
-          <a
-            href={ytSearchUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={trackStarted}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.6rem 1.1rem', background: '#FF0000', color: '#fff',
-              borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', textDecoration: 'none',
-            }}
-          >
-            <svg width="18" height="13" viewBox="0 0 18 13" fill="white" aria-hidden="true">
-              <path d="M17.6 2.03C17.4 1.27 16.8.66 16.07.45 14.7.07 9 .07 9 .07s-5.7 0-7.07.38C1.2.66.6 1.27.4 2.03.07 3.42.07 6.5.07 6.5s0 3.08.33 4.47c.2.76.8 1.37 1.53 1.58C3.3 12.93 9 12.93 9 12.93s5.7 0 7.07-.38c.73-.21 1.33-.82 1.53-1.58.33-1.39.33-4.47.33-4.47s0-3.08-.33-4.47z" fill="white"/>
-              <path d="M7.2 9.29V3.71L11.93 6.5 7.2 9.29z" fill="#FF0000"/>
-            </svg>
-            Watch Free Training Videos on YouTube
-          </a>
-        )}
-        {course.externalUrl && (
+      {/* Official resource link */}
+      {course.externalUrl && (
+        <div style={{ marginBottom: '1.5rem' }}>
           <a
             href={course.externalUrl}
             target="_blank"
@@ -300,10 +559,15 @@ export function CourseDetailPage() {
           >
             📋 Official Course Resource ↗
           </a>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Mark complete footer */}
+      {/* Knowledge check quiz — required to unlock completion */}
+      {!isCompleted && hasQuiz && (
+        <Quiz questions={mods!.quiz!} onPass={handleQuizPass} />
+      )}
+
+      {/* Completion footer */}
       <div style={{
         background: isCompleted ? '#F0FDF4' : '#F8FAFC',
         border: `1px solid ${isCompleted ? '#BBF7D0' : '#E2E8F0'}`,
@@ -319,6 +583,13 @@ export function CourseDetailPage() {
                 {enrollment.expiresAt && ` · Expires ${formatDate(enrollment.expiresAt)}`}
               </div>
             </>
+          ) : hasQuiz && !quizPassed ? (
+            <>
+              <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.9375rem' }}>Pass the knowledge check to complete</div>
+              <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: '0.2rem' }}>
+                Answer all questions above — {Math.round(PASS_THRESHOLD * 100)}% correct required.
+              </div>
+            </>
           ) : (
             <>
               <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.9375rem' }}>Ready to mark this course complete?</div>
@@ -328,7 +599,7 @@ export function CourseDetailPage() {
             </>
           )}
         </div>
-        {!isCompleted && (
+        {!isCompleted && canMarkComplete && !quizPassed && (
           <button
             type="button"
             disabled={completing}
@@ -341,6 +612,9 @@ export function CourseDetailPage() {
           >
             {completing ? 'Saving…' : '✓ Mark Complete'}
           </button>
+        )}
+        {!isCompleted && completing && quizPassed && (
+          <span style={{ fontSize: '0.875rem', color: '#64748B' }}>Saving…</span>
         )}
       </div>
     </div>
