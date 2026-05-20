@@ -269,6 +269,7 @@ function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-sidebar" aria-label="Primary">
         <Link to="/" className="admin-sidebar__brand">
+          <span className="admin-sidebar__brand-mark">R</span>
           {brandName}
           <span className="admin-sidebar__evv-badge">EVV</span>
         </Link>
