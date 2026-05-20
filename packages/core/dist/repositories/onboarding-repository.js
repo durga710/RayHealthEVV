@@ -109,13 +109,14 @@ export class OnboardingRepository {
         if (status === 'submitted') {
             patch.submitted_at = new Date().toISOString();
         }
-        // Tenant-scope via join through applicants — only update if doc belongs to this agency
-        const [row] = await this.db('onboarding_documents as od')
-            .join('applicants as a', 'a.id', 'od.applicant_id')
-            .where('od.id', docId)
-            .where('a.agency_id', agencyId)
+        // Tenant-scope: only update if the doc belongs to an applicant of this agency.
+        // Knex JOIN+UPDATE+RETURNING with table aliases generates invalid SQL in PostgreSQL,
+        // so we use a subquery instead.
+        const [row] = await this.db('onboarding_documents')
+            .where('id', docId)
+            .whereIn('applicant_id', this.db('applicants').select('id').where('agency_id', agencyId))
             .update(patch)
-            .returning('od.*');
+            .returning('*');
         return row ? this.mapDocument(row) : null;
     }
     async listDocuments(applicantId) {

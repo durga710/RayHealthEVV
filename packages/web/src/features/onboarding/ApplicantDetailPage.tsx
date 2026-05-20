@@ -229,8 +229,9 @@ export function ApplicantDetailPage() {
           ? { ...prev, documents: prev.documents.map((d) => (d.id === docId ? updated : d)) }
           : prev
       );
-    } catch {
-      // ignore
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update document status.';
+      setError(msg);
     } finally {
       setDocWorking((prev) => ({ ...prev, [docId]: false }));
     }
