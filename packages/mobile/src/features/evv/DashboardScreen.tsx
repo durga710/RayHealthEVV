@@ -20,6 +20,9 @@ interface Assignment {
   clientName: string;
   time?: string;
   serviceCode?: string;
+  clientLat?: number | null;
+  clientLng?: number | null;
+  clientGeofenceM?: number;
 }
 
 const FOREGROUND_FIRE_WINDOW_MS = 32_000;
@@ -117,7 +120,6 @@ export default function DashboardScreen() {
 
   useEffect(() => { void fetchAssignments(); }, []);
 
-  // Foreground haptic for 30-second shift warning
   useEffect(() => {
     if (assignments.length === 0) return;
     const tick = () => {
@@ -154,13 +156,12 @@ export default function DashboardScreen() {
   };
 
   const todayStr = new Date().toLocaleDateString([], {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
+    weekday: 'long', month: 'long', day: 'numeric',
   });
 
   const renderItem = ({ item }: { item: Assignment }) => {
     const status = getVisitStatus(item.time);
+    const hasGeolock = item.clientLat != null && item.clientLng != null;
     return (
       <Pressable
         style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
@@ -172,6 +173,9 @@ export default function DashboardScreen() {
               clientName: item.clientName,
               scheduledTime: item.time ?? '',
               serviceCode: item.serviceCode ?? '',
+              clientLat: item.clientLat != null ? String(item.clientLat) : '',
+              clientLng: item.clientLng != null ? String(item.clientLng) : '',
+              clientGeofenceM: item.clientGeofenceM != null ? String(item.clientGeofenceM) : '150',
             },
           })
         }
@@ -200,9 +204,16 @@ export default function DashboardScreen() {
             ) : null}
           </View>
           <Text style={styles.visitTime}>{formatTime(item.time)}</Text>
-          {item.serviceCode ? (
-            <Text style={styles.serviceCode}>{item.serviceCode}</Text>
-          ) : null}
+          <View style={styles.cardMeta}>
+            {item.serviceCode ? (
+              <Text style={styles.serviceCode}>{item.serviceCode}</Text>
+            ) : null}
+            {hasGeolock ? (
+              <View style={styles.geolockBadge}>
+                <Text style={styles.geolockBadgeText}>📍 Geolock</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.tapHint}>Tap to clock in →</Text>
         </View>
       </Pressable>
@@ -211,7 +222,6 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Pressable
@@ -234,12 +244,10 @@ export default function DashboardScreen() {
             <Text style={styles.logoutText}>Log out</Text>
           </Pressable>
         </View>
-
         <Text style={styles.greeting}>{greetingFor(user)}</Text>
         <Text style={styles.dateLabel}>{todayStr}</Text>
       </View>
 
-      {/* Visit list */}
       <FlatList
         data={assignments}
         renderItem={renderItem}
@@ -255,10 +263,7 @@ export default function DashboardScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              void fetchAssignments(true);
-            }}
+            onRefresh={() => { setRefreshing(true); void fetchAssignments(true); }}
             tintColor="#1a5fa8"
           />
         }
@@ -298,11 +303,8 @@ const styles = StyleSheet.create({
   },
   sessionDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: SESSION_GREEN },
   sessionPillText: {
-    color: SESSION_GREEN,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    color: SESSION_GREEN, fontSize: 10, fontWeight: '700',
+    letterSpacing: 0.8, textTransform: 'uppercase',
   },
   logoutBtn: { paddingVertical: 6, paddingHorizontal: 4 },
   logoutText: { color: '#5b8fc9', fontSize: 14, fontWeight: '600' },
@@ -311,70 +313,51 @@ const styles = StyleSheet.create({
 
   listContent: { paddingHorizontal: 16, paddingBottom: 32 },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#4a6480',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: 20,
-    marginBottom: 10,
+    fontSize: 13, fontWeight: '700', color: '#4a6480',
+    textTransform: 'uppercase', letterSpacing: 0.8,
+    marginTop: 20, marginBottom: 10,
   },
 
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 12,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
+    backgroundColor: '#fff', borderRadius: 12, marginBottom: 12,
+    flexDirection: 'row', overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 }, elevation: 2,
   },
   cardAccent: { width: 4, backgroundColor: PRIMARY },
   accentNow: { backgroundColor: '#f97316' },
   accentPast: { backgroundColor: '#d1d5db' },
   cardBody: { flex: 1, padding: 16 },
   cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 4,
   },
   clientName: { fontSize: 17, fontWeight: '700', color: '#1a3a5c', flex: 1, paddingRight: 8 },
-  visitTime: { fontSize: 15, color: PRIMARY, fontWeight: '600', marginBottom: 4 },
+  visitTime: { fontSize: 15, color: PRIMARY, fontWeight: '600', marginBottom: 6 },
+  cardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 6 },
   serviceCode: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#e8f0fa',
-    color: PRIMARY,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    marginBottom: 6,
+    backgroundColor: '#e8f0fa', color: PRIMARY,
+    fontSize: 11, fontWeight: '700', letterSpacing: 0.5,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4,
     textTransform: 'uppercase',
   },
-  tapHint: { fontSize: 12, color: '#9ab0c8', marginTop: 4 },
+  geolockBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4,
+  },
+  geolockBadgeText: { color: '#92400e', fontSize: 11, fontWeight: '600' },
+  tapHint: { fontSize: 12, color: '#9ab0c8' },
 
   badgeNow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff7ed',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    gap: 4,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#fff7ed', borderRadius: 999,
+    paddingHorizontal: 8, paddingVertical: 3, gap: 4,
   },
   badgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#f97316' },
   badgeNowText: { color: '#ea580c', fontSize: 11, fontWeight: '700' },
   badgePast: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: '#f3f4f6', borderRadius: 999,
+    paddingHorizontal: 8, paddingVertical: 3,
   },
   badgePastText: { color: '#9ca3af', fontSize: 11, fontWeight: '600' },
 
@@ -389,12 +372,9 @@ const styles = StyleSheet.create({
   adminBody: { color: '#4a6480', textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   adminUrl: { color: PRIMARY, fontWeight: '700', fontSize: 16, marginBottom: 32 },
   logoutCardBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#f0f4f8',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#c9d8e8',
+    paddingHorizontal: 24, paddingVertical: 12,
+    backgroundColor: '#f0f4f8', borderRadius: 10,
+    borderWidth: 1, borderColor: '#c9d8e8',
   },
   logoutCardBtnText: { color: PRIMARY, fontWeight: '600', fontSize: 15 },
 });

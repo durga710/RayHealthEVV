@@ -76,7 +76,7 @@ export class ScheduleRepository {
             .join('clients', 'visit_templates.client_id', 'clients.id')
             .leftJoin('authorizations', 'authorizations.client_id', 'clients.id')
             .where('assignments.caregiver_id', caregiverId)
-            .select('assignments.id', 'assignments.caregiver_id', 'assignments.visit_template_id', 'clients.id as client_id', 'clients.first_name', 'clients.last_name', 'authorizations.service_code')
+            .select('assignments.id', 'assignments.caregiver_id', 'assignments.visit_template_id', 'clients.id as client_id', 'clients.first_name', 'clients.last_name', 'clients.latitude as client_latitude', 'clients.longitude as client_longitude', 'clients.geofence_radius_m', 'authorizations.service_code')
             .orderBy('authorizations.end_date', 'desc');
         if (agencyId)
             query.andWhere('clients.agency_id', agencyId);
@@ -87,7 +87,10 @@ export class ScheduleRepository {
             visitTemplateId: row.visit_template_id,
             clientId: row.client_id,
             clientName: `${row.first_name} ${row.last_name}`,
-            serviceCode: row.service_code ?? undefined
+            serviceCode: row.service_code ?? undefined,
+            clientLat: row.client_latitude != null ? Number(row.client_latitude) : null,
+            clientLng: row.client_longitude != null ? Number(row.client_longitude) : null,
+            clientGeofenceM: row.geofence_radius_m != null ? Number(row.geofence_radius_m) : 150
         }));
     }
     async getAssignmentForCaregiver(assignmentId, caregiverId, agencyId) {
