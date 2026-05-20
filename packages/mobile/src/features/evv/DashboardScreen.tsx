@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, ActivityIndicator, Pressable } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../lib/AuthContext';
 import { useRouter } from 'expo-router';
@@ -10,16 +18,10 @@ import { fireDevTestShiftAlert, scheduleShiftAlerts } from '../../lib/shift-aler
 interface Assignment {
   id: string;
   clientName: string;
-  time?: string; // ISO 8601 datetime when present; falsy when not yet scheduled.
+  time?: string;
   serviceCode?: string;
 }
 
-/**
- * Foreground vibration window: if the user is staring at the dashboard
- * when the 30-second mark is crossed, we fire a haptic warning so the
- * device buzzes even though a scheduled notification may suppress itself.
- * Range is 30s ±2s of slack to forgive interval drift.
- */
 const FOREGROUND_FIRE_WINDOW_MS = 32_000;
 const FOREGROUND_FIRE_MIN_MS = 28_000;
 const FOREGROUND_TICK_MS = 5_000;
@@ -28,46 +30,62 @@ function dayKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-function formatRole(role: string | undefined): string {
-  if (!role) return '';
-  // 'caregiver' -> 'Caregiver', 'admin' -> 'Admin'
-  return role.charAt(0).toUpperCase() + role.slice(1);
+function formatTime(iso: string | undefined): string {
+  if (!iso) return 'Time TBD';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return 'Time TBD';
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
-function greetingFor(user: { role?: string; firstName?: string } | null): string {
-  if (user?.firstName) return `Welcome back, ${user.firstName}.`;
-  if (user?.role) return `Welcome back, ${formatRole(user.role)}.`;
-  return 'Welcome back.';
+function getVisitStatus(iso: string | undefined): 'upcoming' | 'now' | 'past' {
+  if (!iso) return 'upcoming';
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return 'upcoming';
+  const now = Date.now();
+  const diff = t - now;
+  if (diff < -3_600_000) return 'past';
+  if (Math.abs(diff) < 1_800_000) return 'now';
+  return 'upcoming';
+}
+
+function greetingFor(user: { firstName?: string | null } | null): string {
+  const hour = new Date().getHours();
+  const timeGreet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  return user?.firstName ? `${timeGreet}, ${user.firstName}` : timeGreet;
 }
 
 function AdminScreen({ role, onLogout }: { role: string; onLogout: () => void }) {
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
-        <View style={[styles.sessionPill, { marginBottom: 24 }]}>
-          <View style={styles.sessionDot} />
-          <Text style={styles.sessionPillText}>Secure Session</Text>
-        </View>
-        <Text style={{ fontSize: 48, marginBottom: 16 }}>🖥️</Text>
-        <Text style={{ fontSize: 22, fontWeight: '700', color: '#1a3a5c', textAlign: 'center', marginBottom: 12 }}>
+      <View style={styles.adminWrap}>
+        <Text style={styles.adminEmoji}>🖥️</Text>
+        <Text style={styles.adminTitle}>
           {role === 'admin' ? 'Admin Portal' : 'Coordinator Portal'}
         </Text>
-        <Text style={{ color: '#4a6480', textAlign: 'center', lineHeight: 22, marginBottom: 32 }}>
-          The mobile app is for caregivers. As a{role === 'admin' ? 'n admin' : ' coordinator'}, use the web portal to manage schedules, review visits, and configure your agency.
+        <Text style={styles.adminBody}>
+          The mobile app is for caregivers. Use the web portal to manage schedules, review visits,
+          and configure your agency.
         </Text>
-        <Text style={{ color: '#1a5fa8', fontWeight: '700', fontSize: 16, marginBottom: 32 }}>
-          rayhealthevv.com
-        </Text>
+        <Text style={styles.adminUrl}>rayhealthevv.com</Text>
         <Pressable
           onPress={onLogout}
-          style={({ pressed }) => [{ minHeight: 44, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: pressed ? '#e8f0fa' : '#f0f4f8', borderRadius: 8, borderWidth: 1, borderColor: '#c9d8e8', justifyContent: 'center' }]}
+          style={({ pressed }) => [styles.logoutCardBtn, pressed && { opacity: 0.7 }]}
           accessibilityRole="button"
-          accessibilityLabel="Log out"
         >
-          <Text style={{ color: '#1a5fa8', fontWeight: '600' }}>Log out</Text>
+          <Text style={styles.logoutCardBtnText}>Log out</Text>
         </Pressable>
       </View>
     </SafeAreaView>
+  );
+}
+
+function EmptyVisits() {
+  return (
+    <View style={styles.emptyWrap}>
+      <Text style={styles.emptyEmoji}>📋</Text>
+      <Text style={styles.emptyTitle}>No visits scheduled</Text>
+      <Text style={styles.emptyBody}>Your assigned visits will appear here.</Text>
+    </View>
   );
 }
 
@@ -76,38 +94,32 @@ export default function DashboardScreen() {
   const router = useRouter();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
-  // Tracks `${assignmentId}-${dayKey}` entries we've already buzzed for in the
-  // foreground today, so the interval doesn't spam haptics every tick.
+  const [refreshing, setRefreshing] = useState(false);
   const firedForegroundRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        const { data } = await apiClient.get('/api/assignments/caregiver');
-        const list: Assignment[] = data || [];
-        setAssignments(list);
-        // Ask once, then schedule background notifications. Both no-op safely
-        // if permission is denied — we never block the dashboard UI on this.
-        const permStatus = await ensureNotificationPermission();
-        if (permStatus === 'granted') {
-          await scheduleShiftAlerts(list);
-        }
-      } catch {
-        // 401 handled centrally by api-client interceptor; other errors are silent — empty list covers UX
-      } finally {
-        setLoading(false);
+  const fetchAssignments = async (quiet = false) => {
+    if (!quiet) setLoading(true);
+    try {
+      const { data } = await apiClient.get('/api/assignments/caregiver');
+      const list: Assignment[] = data || [];
+      setAssignments(list);
+      const permStatus = await ensureNotificationPermission();
+      if (permStatus === 'granted') {
+        await scheduleShiftAlerts(list);
       }
-    };
-    void fetchAssignments();
-  }, []);
+    } catch {
+      // 401 handled centrally; other errors leave the list empty
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-  // Foreground vibration tick. iOS scheduled notifications can be suppressed
-  // when the app is foregrounded, so we mirror the 30-second alert in-app via
-  // expo-haptics. Runs at FOREGROUND_TICK_MS cadence; fires once per shift
-  // per day when the time-to-shift lands inside the 28-32s window.
+  useEffect(() => { void fetchAssignments(); }, []);
+
+  // Foreground haptic for 30-second shift warning
   useEffect(() => {
     if (assignments.length === 0) return;
-
     const tick = () => {
       const now = Date.now();
       const today = dayKey(new Date(now));
@@ -123,15 +135,11 @@ export default function DashboardScreen() {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       }
     };
-
     tick();
     const handle = setInterval(tick, FOREGROUND_TICK_MS);
     return () => clearInterval(handle);
   }, [assignments]);
 
-  // DEV-only long-press on the SECURE SESSION pill to fire a test notification
-  // ~5s in the future. Lets us validate permissions + channel + vibration on
-  // device without waiting for a real shift. Hard-guarded so it cannot ship.
   const handleLogout = () => {
     void logout().finally(() => router.replace('/login'));
   };
@@ -145,115 +153,248 @@ export default function DashboardScreen() {
     void fireDevTestShiftAlert();
   };
 
-  const renderItem = ({ item }: { item: Assignment }) => (
-    <Pressable
-      style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
-      onPress={() => router.push({
-        pathname: '/clockin',
-        params: {
-          assignmentId: item.id,
-          clientName: item.clientName,
-          scheduledTime: item.time ?? '',
-          serviceCode: item.serviceCode ?? ''
+  const todayStr = new Date().toLocaleDateString([], {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const renderItem = ({ item }: { item: Assignment }) => {
+    const status = getVisitStatus(item.time);
+    return (
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+        onPress={() =>
+          router.push({
+            pathname: '/clockin',
+            params: {
+              assignmentId: item.id,
+              clientName: item.clientName,
+              scheduledTime: item.time ?? '',
+              serviceCode: item.serviceCode ?? '',
+            },
+          })
         }
-      })}
-    >
-      <Text style={styles.itemText}>{item.clientName}</Text>
-      <Text>{item.time || 'Time not specified'}</Text>
-      {item.serviceCode ? <Text style={styles.serviceCode}>{item.serviceCode}</Text> : null}
-    </Pressable>
-  );
+        accessibilityRole="button"
+        accessibilityLabel={`Visit with ${item.clientName}, tap to open`}
+      >
+        <View
+          style={[
+            styles.cardAccent,
+            status === 'now' && styles.accentNow,
+            status === 'past' && styles.accentPast,
+          ]}
+        />
+        <View style={styles.cardBody}>
+          <View style={styles.cardTop}>
+            <Text style={styles.clientName}>{item.clientName}</Text>
+            {status === 'now' ? (
+              <View style={styles.badgeNow}>
+                <View style={styles.badgeDot} />
+                <Text style={styles.badgeNowText}>Now</Text>
+              </View>
+            ) : status === 'past' ? (
+              <View style={styles.badgePast}>
+                <Text style={styles.badgePastText}>Past</Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.visitTime}>{formatTime(item.time)}</Text>
+          {item.serviceCode ? (
+            <Text style={styles.serviceCode}>{item.serviceCode}</Text>
+          ) : null}
+          <Text style={styles.tapHint}>Tap to clock in →</Text>
+        </View>
+      </Pressable>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerBlock}>
-        {/* SECURE SESSION pill — mirrors the web client's COOKIE SESSION ACTIVE indicator.
-            Long-press is a DEV-only gesture to fire a test shift alert; it is a no-op
-            outside __DEV__ so prod users see only the static indicator. */}
-        <Pressable
-          onLongPress={handleSessionPillLongPress}
-          delayLongPress={600}
-          style={styles.sessionPill}
-          accessibilityRole="text"
-          accessibilityLabel="Secure session active"
-        >
-          <View style={styles.sessionDot} />
-          <Text style={styles.sessionPillText}>Secure Session</Text>
-        </Pressable>
-
-        <View style={styles.headerRow}>
-          <Text style={styles.greeting}>{greetingFor(user)}</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Pressable
+            onLongPress={handleSessionPillLongPress}
+            delayLongPress={600}
+            style={styles.sessionPill}
+            accessibilityRole="text"
+            accessibilityLabel="Secure session active"
+          >
+            <View style={styles.sessionDot} />
+            <Text style={styles.sessionPillText}>Secure Session</Text>
+          </Pressable>
           <Pressable
             onPress={handleLogout}
             hitSlop={12}
-            style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
+            style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.6 }]}
             accessibilityRole="button"
             accessibilityLabel="Log out"
           >
-            <Text style={styles.logoutText}>Logout</Text>
+            <Text style={styles.logoutText}>Log out</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.sectionTitle}>{"Today's Visits"}</Text>
+        <Text style={styles.greeting}>{greetingFor(user)}</Text>
+        <Text style={styles.dateLabel}>{todayStr}</Text>
       </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#1a5fa8" style={{ marginTop: 24 }} />
-      ) : (
-        <FlatList
-          data={assignments}
-          renderItem={renderItem}
-          keyExtractor={item => item.id}
-          ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>No visits scheduled for today.</Text>}
-        />
-      )}
+      {/* Visit list */}
+      <FlatList
+        data={assignments}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={[
+          styles.listContent,
+          assignments.length === 0 && { flex: 1 },
+        ]}
+        ListHeaderComponent={
+          <Text style={styles.sectionTitle}>{"Today's Visits"}</Text>
+        }
+        ListEmptyComponent={loading ? null : <EmptyVisits />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void fetchAssignments(true);
+            }}
+            tintColor="#1a5fa8"
+          />
+        }
+      />
     </SafeAreaView>
   );
 }
 
+const PRIMARY = '#1a5fa8';
 const SESSION_GREEN = '#16a34a';
-// 12% tint of #16a34a — using hex alpha (1F ~= 12%).
-const SESSION_GREEN_TINT = '#16a34a1F';
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f8' },
-  headerBlock: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+
+  header: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e8edf2',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   sessionPill: {
-    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: SESSION_GREEN_TINT,
+    backgroundColor: '#f0fdf4',
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginBottom: 12
+    paddingVertical: 5,
+    gap: 6,
   },
-  sessionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: SESSION_GREEN,
-    marginRight: 6
-  },
+  sessionDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: SESSION_GREEN },
   sessionPillText: {
     color: SESSION_GREEN,
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase'
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  headerRow: {
+  logoutBtn: { paddingVertical: 6, paddingHorizontal: 4 },
+  logoutText: { color: '#5b8fc9', fontSize: 14, fontWeight: '600' },
+  greeting: { fontSize: 22, fontWeight: '700', color: '#1a3a5c' },
+  dateLabel: { fontSize: 13, color: '#6b8aa6', marginTop: 2 },
+
+  listContent: { paddingHorizontal: 16, paddingBottom: 32 },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4a6480',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  cardAccent: { width: 4, backgroundColor: PRIMARY },
+  accentNow: { backgroundColor: '#f97316' },
+  accentPast: { backgroundColor: '#d1d5db' },
+  cardBody: { flex: 1, padding: 16 },
+  cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  greeting: { fontSize: 20, fontWeight: '600', color: '#1a3a5c', flexShrink: 1, paddingRight: 12 },
-  logoutButton: { minHeight: 44, minWidth: 64, justifyContent: 'center', alignItems: 'flex-end' },
-  logoutButtonPressed: { opacity: 0.6 },
-  logoutText: { color: '#1a5fa8', fontWeight: '600' },
-  sectionTitle: { fontSize: 24, fontWeight: 'bold', color: '#1a3a5c', marginTop: 16 },
-  item: { backgroundColor: 'white', padding: 20, marginVertical: 8, marginHorizontal: 16, borderRadius: 8, elevation: 1 },
-  itemPressed: { opacity: 0.75 },
-  itemText: { fontSize: 18, fontWeight: '500' },
-  serviceCode: { marginTop: 8, color: '#1a5fa8', fontWeight: '600' }
+  clientName: { fontSize: 17, fontWeight: '700', color: '#1a3a5c', flex: 1, paddingRight: 8 },
+  visitTime: { fontSize: 15, color: PRIMARY, fontWeight: '600', marginBottom: 4 },
+  serviceCode: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#e8f0fa',
+    color: PRIMARY,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  tapHint: { fontSize: 12, color: '#9ab0c8', marginTop: 4 },
+
+  badgeNow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff7ed',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    gap: 4,
+  },
+  badgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#f97316' },
+  badgeNowText: { color: '#ea580c', fontSize: 11, fontWeight: '700' },
+  badgePast: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  badgePastText: { color: '#9ca3af', fontSize: 11, fontWeight: '600' },
+
+  emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+  emptyEmoji: { fontSize: 48, marginBottom: 16 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1a3a5c', marginBottom: 8 },
+  emptyBody: { fontSize: 14, color: '#6b8aa6', textAlign: 'center' },
+
+  adminWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  adminEmoji: { fontSize: 52, marginBottom: 16 },
+  adminTitle: { fontSize: 22, fontWeight: '700', color: '#1a3a5c', textAlign: 'center', marginBottom: 12 },
+  adminBody: { color: '#4a6480', textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  adminUrl: { color: PRIMARY, fontWeight: '700', fontSize: 16, marginBottom: 32 },
+  logoutCardBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#f0f4f8',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#c9d8e8',
+  },
+  logoutCardBtnText: { color: PRIMARY, fontWeight: '600', fontSize: 15 },
 });
