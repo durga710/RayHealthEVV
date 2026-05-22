@@ -1,7 +1,9 @@
 import { create } from 'axios';
 import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'https://rayhealthevv.com';
+const API_URL = __DEV__
+  ? 'http://10.0.2.2:3000'
+  : (Constants.expoConfig?.extra?.apiUrl || 'https://rayhealthevv.com');
 let accessToken: string | null = null;
 
 const apiClient = create({

@@ -26,7 +26,6 @@ beforeAll(async () => {
     dbAvailable = true
   } catch {
     // Intentional: skip these tests when no Postgres is reachable.
-    // eslint-disable-next-line no-console
     console.warn('Skipping audit-retention-sweep tests - no DB connection or migration')
   }
 })
