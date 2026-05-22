@@ -29,6 +29,9 @@ import billingRoutes from './routes/billing-routes.js';
 import onboardingRoutes from './routes/onboarding-routes.js';
 import onboardingAdminRoutes from './routes/onboarding-admin-routes.js';
 import profileRoutes from './routes/profile-routes.js';
+import agencySandataConfigRoutes from './routes/agency-sandata-config-routes.js';
+import agencyHhaexchangeConfigRoutes from './routes/agency-hhaexchange-config-routes.js';
+import copilotRoutes from './routes/copilot-routes.js';
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 /**
  * Default rate limit for the authenticated API surface. 300 requests per
@@ -49,6 +52,13 @@ const authenticatedDefaultLimiter = rateLimit({
 const adminAuditLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'test',
+});
+const copilotLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 40,
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => process.env.NODE_ENV === 'test',
@@ -157,6 +167,8 @@ export function createApp() {
     for (const prefix of ['', '/api']) {
         app.use(`${prefix}/invites`, inviteRoutes);
         app.use(`${prefix}/agencies`, agencyRoutes);
+        app.use(`${prefix}/agencies`, agencySandataConfigRoutes);
+        app.use(`${prefix}/agencies`, agencyHhaexchangeConfigRoutes);
         app.use(`${prefix}/staff`, staffRoutes);
         app.use(`${prefix}/clients`, clientRoutes);
         app.use(`${prefix}/authorizations`, authorizationRoutes);
@@ -169,6 +181,7 @@ export function createApp() {
         app.use(`${prefix}/admin/audit-events`, adminAuditLimiter, auditEventsRoutes);
         app.use(`${prefix}/learning`, learningRoutes);
         app.use(`${prefix}/admin-assistant`, adminAssistantRoutes);
+        app.use(`${prefix}/copilot`, copilotLimiter, copilotRoutes);
         app.use(`${prefix}/billing`, billingRoutes);
         app.use(`${prefix}/admin/onboarding`, onboardingAdminRoutes);
         app.use(`${prefix}/profile`, profileRoutes);

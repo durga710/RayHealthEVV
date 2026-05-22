@@ -29,6 +29,8 @@ export const auditEventTypes = [
   'invite.email.sent', 'invite.email.failed',
   'invite.revoked', 'invite.revoked_all',
   'auth.password_reset.requested', 'auth.password_reset.completed',
+  'agency.evv-config.changed',
+  'copilot.query', 'copilot.action.confirmed', 'copilot.action.declined',
 ] as const;
 
 export const auditOutcomes = ['success', 'failure', 'denied'] as const;

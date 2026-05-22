@@ -18,23 +18,32 @@ async function refreshCsrfToken(): Promise<string | null> {
 export class ApiError extends Error {
   status: number;
   serverMessage?: string;
-  constructor(status: number, serverMessage?: string) {
+  body?: any;
+  constructor(status: number, serverMessage?: string, body?: any) {
     super(serverMessage || `Request failed: ${status}`);
     this.name = 'ApiError';
     this.status = status;
     this.serverMessage = serverMessage;
+    this.body = body;
   }
 }
 
 async function extractError(response: Response): Promise<ApiError> {
   let message: string | undefined;
+  let body: any = null;
   try {
-    const body = (await response.clone().json()) as { message?: unknown };
-    if (body && typeof body.message === 'string') message = body.message;
+    body = await response.clone().json();
+    if (body) {
+      if (typeof body.message === 'string') {
+        message = body.message;
+      } else if (typeof body.error === 'string') {
+        message = body.error;
+      }
+    }
   } catch {
     // Body wasn't JSON — leave message undefined.
   }
-  return new ApiError(response.status, message);
+  return new ApiError(response.status, message, body);
 }
 
 async function mutate<T>(method: string, path: string, body?: unknown): Promise<T> {

@@ -44,8 +44,8 @@ const ROLE_CAPABILITIES = {
         'schedule.read', 'schedule.write',
         'evv.read', 'evv.write',
         'auth.read', 'auth.write',
-        'audit.read',
-        'learning.read'
+        'audit.read', 'audit.write',
+        'learning.read', 'learning.write'
     ],
     coordinator: [
         'agency.read',
@@ -53,7 +53,7 @@ const ROLE_CAPABILITIES = {
         'client.read', 'client.write',
         'schedule.read', 'schedule.write',
         'evv.read',
-        'learning.read'
+        'learning.read', 'learning.write'
     ],
     caregiver: [
         // EVV write lets caregivers record their own visits without granting
