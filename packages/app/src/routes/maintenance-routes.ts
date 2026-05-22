@@ -26,7 +26,7 @@ router.post('/approve-unlock/:id', requireCapability('schedule.write'), async (r
   try {
     const db = req.app.get('db') as Knex;
     const repo = new VisitMaintenanceRepository(db);
-    const maintenance = await repo.approveUnlock(req.params.id, req.body.adjustedTimes);
+    const maintenance = await repo.approveUnlock(req.params.id as string, req.body.adjustedTimes);
     if (!maintenance) return res.status(404).json({ success: false, error: 'Unlock request not found' });
     res.json({ success: true, data: maintenance });
   } catch (error: unknown) {
@@ -39,7 +39,7 @@ router.post('/reject-unlock/:id', requireCapability('schedule.write'), async (re
   try {
     const db = req.app.get('db') as Knex;
     const repo = new VisitMaintenanceRepository(db);
-    const maintenance = await repo.rejectUnlock(req.params.id, req.body.reason);
+    const maintenance = await repo.rejectUnlock(req.params.id as string, req.body.reason);
     if (!maintenance) return res.status(404).json({ success: false, error: 'Unlock request not found' });
     res.json({ success: true, data: maintenance });
   } catch (error: unknown) {
@@ -76,7 +76,7 @@ router.get('/visit/:visitId', requireCapability('schedule.read'), async (req: Re
   try {
     const db = req.app.get('db') as Knex;
     const repo = new VisitMaintenanceRepository(db);
-    const records = await repo.getByVisitId(req.params.visitId);
+    const records = await repo.getByVisitId(req.params.visitId as string);
     res.json({ success: true, data: records });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unexpected error';

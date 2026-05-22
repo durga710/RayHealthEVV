@@ -30,7 +30,7 @@ router.post('/', requireCapability('staff.write'), async (req: Request, res: Res
 });
 
 router.post('/:id/resend', requireCapability('staff.write'), async (req: Request, res: Response) => {
-  const invite = inviteStore.get(req.params.id);
+  const invite = inviteStore.get(req.params.id as string);
   if (!invite) return res.status(404).json({ success: false, error: 'Invite not found' });
   if (invite.status !== 'pending') {
     return res.status(409).json({ success: false, error: `Cannot resend a ${invite.status} invite` });
@@ -39,7 +39,7 @@ router.post('/:id/resend', requireCapability('staff.write'), async (req: Request
 });
 
 router.post('/:id/revoke', requireCapability('staff.write'), async (req: Request, res: Response) => {
-  const invite = inviteStore.get(req.params.id);
+  const invite = inviteStore.get(req.params.id as string);
   if (!invite) return res.status(404).json({ success: false, error: 'Invite not found' });
   invite.status = 'revoked';
   res.json({ success: true, data: invite });

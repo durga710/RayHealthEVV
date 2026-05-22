@@ -130,7 +130,7 @@ export function LearningHubPage() {
               { label: 'Overdue', value: rollup.overdue, warn: rollup.overdue > 0 },
               { label: 'Expired', value: rollup.expired, warn: rollup.expired > 0 },
               { label: 'Not started', value: rollup.notStarted },
-            ] as const
+            ] as Array<{ label: string; value: string | number; ok?: boolean; warn?: boolean }>
           ).map(({ label, value, ok, warn }) => (
             <div key={label} style={{ backgroundColor: 'white', padding: '1.25rem 1rem', textAlign: 'center' }}>
               <div
