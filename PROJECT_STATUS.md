@@ -1,6 +1,6 @@
 # RayHealth EVV — Project Status
 
-**Last updated:** 2026-05-11
+**Last updated:** 2026-05-24
 **Maintained by:** Durga Ghimeray, Founder
 **Replaces:** `AGENT_HANDOFF_2026-05-08.md`, `HANDOFF.md`, `HANDOFF_CLAUDE_SECURITY_PHASE_1_2026-05-08.md`, `HANDOFF_CODEX.md`, `docs/SESSION_HANDOFF_2026-05-09.md`
 
@@ -62,6 +62,11 @@ These changes are committed to the worktree at `/rayhealth-fresh` and need to be
 | `packages/app/src/services/audit-retention-sweep.ts` | Retention sweep with safe trigger bypass | `rayhealth-evv-platform` |
 | `packages/app/src/routes/audit-retention-routes.ts` | `GET /status` + `POST /sweep` endpoints | `rayhealth-evv-platform` |
 | `packages/app/src/scripts/run-audit-retention-sweep.ts` | Standalone CLI for the sweep | `rayhealth-evv-platform` |
+| `packages/core/src/repositories/learning-repository.ts` | Full implementation of domain data queries for course enrollments, insight calculations, and compliance rules | `rayhealth-evv-platform` |
+| `packages/core/src/repositories/visit-maintenance-repository.ts` | Database handlers for caregiver correction requests, locking control, and administrative queues | `rayhealth-evv-platform` |
+| `packages/app/src/routes/{learning,invite,maintenance}-routes.ts` | Security-hardened invite endpoints, correction queue APIs, and PA §52.18 learning portal routes | `rayhealth-evv-platform` |
+| `packages/web/src/features/learning/` | Coordinator portal hub page and caregiver learning dashboard web portals | `rayhealth-evv-platform` (web package) |
+| `packages/mobile/` | Complete new premium caretaker app suite including geofence map, AI support chat, duty attestations, offline queue inspector, and slide-carousel learning viewer | `rayhealth-evv-mobile` |
 | `deliverables/app-icon/rayhealth-icon-*.png` | App Store + Play Store icon set, 1024×1024 master + iOS/Android sizes | `rayhealth-evv-mobile` (replace placeholder in `AppIcon.appiconset`) |
 | `docs/compliance/hipaa/RISK_ANALYSIS_2026.md` | Annual HIPAA §164.308(a)(1)(ii)(A) risk analysis — 15 risks, NIST SP 800-30 methodology, awaiting countersignature | Sign and retain in private vault |
 | `docs/compliance/hipaa/BAA_REQUEST_EMAILS.md` | Ready-to-send BAA emails for Vercel/Neon/Resend; AWS already active; Google self-service | Send |
@@ -168,7 +173,18 @@ What's still required for spots: VO recording, music license (~$15 Artlist/Epide
 
 ## Changelog
 
-### 2026-05-11 (this update)
+### 2026-05-24 (this update)
+- Caregiver Mobile app cockpit redesigned with premium branding, dashboard welcome metrics (KPI grids), and offline actions queue inspector.
+- Integrated GPS Yandex static maps in EVVMapView to compute real-time caregiver distance from client and enforce a 150-meter geofence.
+- Implemented PA duty task checklists as a mandatory attestation during the mobile clock-out sequence.
+- Deployed caregiver training slide viewer carousel and self-service learning hub for regulatory onboarding.
+- Built active support chatbot integration on mobile connected to AWS Bedrock Claude 3.5 Haiku API.
+- Fully implemented security-oriented invite management system and visit maintenance correction queue services with PostgreSQL repositories.
+- Restored PA §52.18 Caregiver learning portal domain logic, deterministic rollup calculators, and insights engine in backend packages.
+- Added API requests proxy mapping to local web server configuration (`packages/web/vite.config.ts`).
+- Consolidated all tests under Vitest with 88 fully green unit and integration tests.
+
+### 2026-05-11 (prior)
 - Vercel deploy timeout root-caused and fixed (`--filter=` → `--workspace=` in `installCommand`; `npx turbo` in `buildCommand`)
 - Seed script `seed-app-store-fixture.ts` ported into monorepo with prod-guard
 - App Store icon designed (heraldic shield + ECG pulse, brand-color gradient) — 1024 master + 6 platform sizes
