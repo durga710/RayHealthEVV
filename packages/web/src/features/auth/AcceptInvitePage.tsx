@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type FormEvent } from 'react';
+import React, { useEffect, useId, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 /**
@@ -298,8 +298,8 @@ export function AcceptInvitePage(): React.JSX.Element {
         </Field>
 
         <Field
-          label="Create a password"
-          hint={`At least ${PASSWORD_MIN_LENGTH} characters. Mix letters, numbers, and symbols.`}
+          label="Password"
+          hint={`Minimum ${PASSWORD_MIN_LENGTH} characters — mix letters, numbers, and symbols.`}
         >
           <input
             type="password"
@@ -378,10 +378,13 @@ interface FieldProps {
   children: React.ReactNode;
 }
 function Field({ label, hint, children }: FieldProps): React.JSX.Element {
+  const id = useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.75rem' }}>
-      <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>{label}</label>
-      {children}
+      <label htmlFor={id} style={{ fontSize: '0.875rem', fontWeight: 600 }}>{label}</label>
+      {React.isValidElement(children)
+        ? React.cloneElement(children as React.ReactElement<Record<string, unknown>>, { id })
+        : children}
       {hint && (
         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{hint}</span>
       )}
