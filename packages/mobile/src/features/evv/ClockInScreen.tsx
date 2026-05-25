@@ -3,6 +3,7 @@ import { View, Text, Button, StyleSheet, Alert, ActivityIndicator } from 'react-
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
+import { requestClockReminderPermission } from '../../services/clockReminderService';
 
 export default function ClockInScreen() {
   const router = useRouter();
@@ -48,6 +49,9 @@ export default function ClockInScreen() {
       const { data } = await apiClient.post('/api/evv/clock-in', payload);
       setVisit(data);
       Alert.alert('Success', 'Clocked in successfully!');
+      // Request clock-reminder notification permission on first clock-in.
+      // Deferred until genuine use (per Apple HIG and project convention).
+      void requestClockReminderPermission();
     } catch (error) {
       console.error('Clock-in failed', error);
       Alert.alert('Error', 'Failed to clock in. Please try again.');
