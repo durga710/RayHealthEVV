@@ -1,6 +1,17 @@
 import type { Knex } from 'knex';
 import type { AssignmentInput } from '../domain/scheduling.js';
 
+export interface TodayScheduleItem {
+  id: string;
+  caregiverId: string;
+  visitTemplateId: string;
+  clientName: string;
+  /** Null until a scheduled_date column lands on assignments table (planned migration). */
+  scheduledTime: string | null;
+  /** True if caregiver has already clocked in on this assignment today. */
+  clockedInToday: boolean;
+}
+
 export class ScheduleRepository {
   constructor(private readonly db: Knex) {}
 
@@ -97,5 +108,43 @@ export class ScheduleRepository {
       caregiverId: row.caregiver_id,
       visitTemplateId: row.visit_template_id
     };
+  }
+
+  /**
+   * Returns all assignments for a caregiver, annotated with whether they have
+   * already clocked in on that assignment today (UTC date).
+   *
+   * NOTE: The assignments table does not yet have a scheduled_date column, so
+   * scheduledTime is always null. A follow-up migration will add that column and
+   * populate this field. The shape is stable so mobile can handle null gracefully.
+   */
+  async getTodaySchedule(caregiverId: string, date: string): Promise<TodayScheduleItem[]> {
+    const todayVisitsSubquery = this.db('evv_visits')
+      .select('assignment_id')
+      .whereRaw("DATE(clock_in_time) = ?", [date])
+      .as('today_visits');
+
+    const rows = await this.db('assignments')
+      .join('visit_templates', 'assignments.visit_template_id', 'visit_templates.id')
+      .join('clients', 'visit_templates.client_id', 'clients.id')
+      .leftJoin(todayVisitsSubquery, 'today_visits.assignment_id', 'assignments.id')
+      .where('assignments.caregiver_id', caregiverId)
+      .select(
+        'assignments.id',
+        'assignments.caregiver_id',
+        'assignments.visit_template_id',
+        'clients.first_name',
+        'clients.last_name',
+        this.db.raw('(today_visits.assignment_id IS NOT NULL) as clocked_in_today'),
+      );
+
+    return rows.map((row: Record<string, unknown>) => ({
+      id: row['id'] as string,
+      caregiverId: row['caregiver_id'] as string,
+      visitTemplateId: row['visit_template_id'] as string,
+      clientName: `${row['first_name'] as string} ${row['last_name'] as string}`,
+      scheduledTime: null,
+      clockedInToday: Boolean(row['clocked_in_today']),
+    }));
   }
 }

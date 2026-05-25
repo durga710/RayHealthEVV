@@ -82,4 +82,32 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
   }
 });
 
+/**
+ * GET /api/evv/today-schedule
+ *
+ * Returns the authenticated caregiver's assignments for today, annotated
+ * with clockedInToday so the mobile dashboard can show status.
+ *
+ * Response shape: TodayScheduleItem[]
+ * - id: assignment UUID
+ * - clientName: full name from clients table
+ * - scheduledTime: null (until scheduled_date column migration lands)
+ * - clockedInToday: true if caregiver already clocked-in on this assignment today
+ */
+router.get('/today-schedule', requireCapability('evv.read'), async (req, res) => {
+  try {
+    if (!req.auth.caregiverId) {
+      return res.status(403).json({ message: 'Not authorized as caregiver' });
+    }
+    const db = req.app.get('db');
+    const repo = new ScheduleRepository(db);
+    // Use UTC date (YYYY-MM-DD) to match database timestamp comparisons
+    const date = new Date().toISOString().slice(0, 10);
+    const schedule = await repo.getTodaySchedule(req.auth.caregiverId, date);
+    res.json(schedule);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 export default router;
