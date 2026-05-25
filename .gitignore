@@ -12,3 +12,6 @@ ui-screenshots-personas/
 .env
 .env.*
 !.env.example
+
+# Claude Code agent worktrees — never commit (broke actions/checkout before)
+.claude/worktrees/
