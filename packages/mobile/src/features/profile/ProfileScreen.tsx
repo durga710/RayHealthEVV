@@ -3,6 +3,13 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable } from 'rea
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../lib/AuthContext';
 
+type ProfileOption = {
+  label: string;
+  sublabel: string;
+  onPress: () => void;
+  destructive?: boolean;
+};
+
 /**
  * ProfileScreen
  *
@@ -27,7 +34,7 @@ export default function ProfileScreen() {
     router.replace('/login');
   };
 
-  const options: Array<{ label: string; sublabel: string; onPress: () => void; destructive?: boolean }> = [
+  const options: ProfileOption[] = [
     {
       label: 'Notifications',
       sublabel: 'View alerts and reminders',

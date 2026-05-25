@@ -73,7 +73,7 @@ export default function NotificationScreen() {
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No notifications</Text>
               <Text style={styles.emptyBody}>
-                You'll see reminders and updates from your agency here once the notification service is enabled.
+                You will see reminders and updates from your agency here once the notification service is enabled.
               </Text>
             </View>
           }
