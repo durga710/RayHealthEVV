@@ -33,6 +33,7 @@
   "overrides": {
     "postcss": "8.5.14",
     "react": "$react",
-    "react-dom": "$react-dom"
+    "react-dom": "$react-dom",
+    "react-test-renderer": "19.1.0"
   }
 }
