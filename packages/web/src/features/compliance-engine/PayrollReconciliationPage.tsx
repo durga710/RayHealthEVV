@@ -100,7 +100,7 @@ export function PayrollReconciliationPage() {
     <ComplianceModuleLayout
       title="Payroll Reconciliation"
       tagline="Match EVV-verified caregiver hours against payroll using PA’s 15-minute grace window (FLSA de minimis aligned) so every paycheck is auditable to a clocked, geofence-validated visit."
-      status="beta"
+      status="live"
       kpis={kpis}
       dataSources={[
         'EVV visits (verified clock-in/out durations)',

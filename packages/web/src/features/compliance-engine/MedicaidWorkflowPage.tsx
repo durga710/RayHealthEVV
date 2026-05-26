@@ -121,7 +121,7 @@ export function MedicaidWorkflowPage() {
     <ComplianceModuleLayout
       title="Medicaid Workflow"
       tagline="CHC eligibility, prior authorizations, and PA Medicaid service mix readiness — synced to PROMISe MMIS (planned), with the 90-day quarterly review cycle required by 55 Pa. Code Chapter 6000."
-      status="beta"
+      status="live"
       kpis={kpis}
       dataSources={[
         'authorizations (joined to clients for agency scope)',

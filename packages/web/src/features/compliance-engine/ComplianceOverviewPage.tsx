@@ -46,7 +46,7 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Medicaid Workflow',
     blurb: 'CHC eligibility, prior auths, and PA Medicaid service mix readiness across 3 MCOs.',
-    status: 'beta',
+    status: 'live',
     to: '/admin/compliance-engine/medicaid',
     kpiLabel: 'Active MA cases',
     fallbackValue: '—',
@@ -64,7 +64,7 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Payroll Reconciliation',
     blurb: 'Match EVV-verified hours to payroll inside PA’s 15-min grace window (FLSA de minimis).',
-    status: 'beta',
+    status: 'live',
     to: '/admin/compliance-engine/payroll',
     kpiLabel: 'Verified hours (7d)',
     fallbackValue: '—',
@@ -74,7 +74,7 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Claim Matching',
     blurb: 'Pair billable claims to verified EVV visits; route to Sandata for PROMISe MMIS.',
-    status: 'beta',
+    status: 'live',
     to: '/admin/compliance-engine/claims',
     kpiLabel: 'Claim-ready (7d)',
     fallbackValue: '—',
@@ -101,7 +101,7 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Credentials & Background',
     blurb: 'PA PATCH + FBI + Child Abuse + CNA + HHA + RN supervision compliance.',
-    status: 'beta',
+    status: 'live',
     to: '/admin/compliance-engine/credentials',
     kpiLabel: 'Active credentials',
     fallbackValue: '—',

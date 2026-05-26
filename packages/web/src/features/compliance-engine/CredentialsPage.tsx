@@ -136,7 +136,7 @@ export function CredentialsPage() {
     <ComplianceModuleLayout
       title="Credentials & Background"
       tagline="PA caregiver-credential compliance: PATCH + FBI + Child Abuse Clearance + CNA Registry + HHA Training + RN Supervision. Background checks renew on a 5-year cycle per 23 Pa.C.S. §6344."
-      status="beta"
+      status="live"
       kpis={kpis}
       dataSources={[
         'caregiver_credentials (joined to caregivers for agency scope)',

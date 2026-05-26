@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  RayHealth EVV favicon — 2026-05-26 brand: Purple primary + Deep Red accent.
+  Rendered as an "R" mark on a rounded-square purple field with the deep-red
+  accent dot in the lower-right corner. SVG keeps the asset crisp at every
+  density and stays under 1 KB.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RayHealth EVV">
+  <!-- Rounded-square brand chip -->
+  <rect x="0" y="0" width="64" height="64" rx="14" ry="14" fill="#7c3aed"/>
+  <!-- Stylised R mark, inset and bolded for legibility at 16-32 px -->
+  <path
+    d="M19 12 H36 a13 13 0 0 1 0 26 H29 l13 14 H32 L19 38 V12 Z M27 20 V30 H35 a5 5 0 0 0 0 -10 Z"
+    fill="#ffffff"/>
+  <!-- Deep Red accent dot — the brand's secondary color, in the lower right -->
+  <circle cx="50" cy="50" r="6" fill="#b91c1c"/>
+</svg>

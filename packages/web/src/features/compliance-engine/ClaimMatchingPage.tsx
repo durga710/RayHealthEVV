@@ -99,7 +99,7 @@ export function ClaimMatchingPage() {
     <ComplianceModuleLayout
       title="Claim Matching"
       tagline="Pair billable claims to verified EVV visits before submission. Sandata forwards to PROMISe MMIS; PA accepts real-time submission or batch within 7 days of the visit."
-      status="beta"
+      status="live"
       kpis={kpis}
       dataSources={[
         'EVV visits (status = pending / verified / flagged)',
