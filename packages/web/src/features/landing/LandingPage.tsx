@@ -108,9 +108,9 @@ export function LandingPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F8FAFC', fontFamily: 'var(--font-body)' }}>
 
       {/* ── Banner ── */}
-      <div style={{ backgroundColor: '#312E81', color: 'white', padding: '0.625rem 1.5rem', textAlign: 'center', fontSize: '0.8125rem', fontWeight: 600, letterSpacing: '0.01em' }}>
+      <div style={{ backgroundColor: 'var(--color-primary-dark)', color: 'white', padding: '0.625rem 1.5rem', textAlign: 'center', fontSize: '0.8125rem', fontWeight: 600, letterSpacing: '0.01em' }}>
         Now live for Pennsylvania agencies &mdash;{' '}
-        <Link to="/launch" style={{ color: '#C7D2FE', textDecoration: 'underline', textUnderlineOffset: '3px' }}>see what shipped in May 2026 →</Link>
+        <Link to="/launch" style={{ color: 'var(--color-primary-light)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>see what shipped in May 2026 →</Link>
       </div>
 
       {/* ── Nav ── */}
