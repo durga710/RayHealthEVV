@@ -1,6 +1,6 @@
 # RayHealth EVV — Project Status
 
-**Last updated:** 2026-05-18 (rev 5 — operational hygiene: production audit clean, CI hardening, broken-script cleanup)
+**Last updated:** 2026-05-26 (rev 7 — Pennsylvania Compliance Engine (7 modules) live + Purple/Deep Red brand rebrand + token-aligned UI polish)
 **Maintained by:** Durga Ghimeray, Founder
 **Replaces:** `AGENT_HANDOFF_2026-05-08.md`, `HANDOFF.md`, `HANDOFF_CLAUDE_SECURITY_PHASE_1_2026-05-08.md`, `HANDOFF_CODEX.md`, `docs/SESSION_HANDOFF_2026-05-09.md`
 
@@ -212,6 +212,53 @@ What's still required for spots: VO recording, music license (~$15 Artlist/Epide
 ---
 
 ## Changelog
+
+### 2026-05-26 rev 7 (UI polish — Compliance Engine pages aligned with design tokens, Deep Red accent surfaced)
+
+A follow-up polish on rev 6's rebrand. The Compliance Engine pages were initially shipped with hardcoded hex values (a leftover from their dev-shell origin); rev 7 swaps every brand-relevant hex to design tokens so the palette is now centrally controlled.
+
+- **Status chips token-aligned** (`ComplianceModuleLayout.tsx`) — Scaffold uses `--color-primary-bg` + `--color-primary-dark`, Beta uses `--color-accent-bg` + `--color-accent` (the Deep Red brand-attention signal that says "regulator-facing, work in progress"), Live uses `--color-success-bg` + `--color-success`. KPI tones (`warning`, `success`) now also resolve through tokens.
+- **Authorization Oversight urgency badges** — `expired` + `≤14d critical` tiers now use the Deep Red accent (`--color-accent-bg` + `--color-accent-dark`/`--color-accent`). `≤30d` keeps `--color-warning`; `≤90d` uses `--color-primary-bg` (the CHC quarterly review window reads as informational, not alarming). Unit-balance progress bars: ≥90% used → `--color-accent`, ≥70% → `--color-warning`, otherwise `--color-primary`.
+- **Exception Resolution SLA breach** — the age column on rows past the 48-hour DHS SLA now renders in `--color-accent` (the Deep Red regulator signal), not the generic danger red. Reserves `--color-danger` for transient errors.
+- **Audit Defense Download CSV packet button** uses `--color-accent` so the regulator-facing CTA is the strongest brand-color moment in the app.
+- **Compliance Overview module cards** — status badge backgrounds now use the same Scaffold/Beta/Live palette tokens as the layout chips.
+- **Stale fallbacks removed** — `var(--color-primary-dark, #1b3a6f)` and `var(--color-border, #e2e5ea)` had blue-era fallbacks that would have leaked if a token failed to resolve; those fallbacks were dropped now that the tokens always load.
+- **Verification** — `npx turbo run typecheck lint test --filter @rayhealth/core --filter @rayhealth/app --filter @rayhealth/web` 12/12 green, 101 tests passing.
+
+### 2026-05-26 rev 6 (Pennsylvania Compliance Engine + Purple/Deep Red rebrand)
+
+The biggest single release since the original platform extraction. Lands the regulator-facing Compliance Engine into the production repo on top of the polished Inter/JetBrains-Mono UI, and migrates the brand palette from indigo to a true two-color system.
+
+**Pennsylvania Compliance Engine** — new `/admin/compliance-engine` admin nav group with 8 routes. Live (real exports + mutations + drill-downs):
+- **Audit Defense** — `GET /api/compliance-engine/audit-defense/packet.csv?from&to` streams a defensible packet (header row + one row per `audit_event` / `visit_maintenance` / `evv_visit` in window, sorted `(occurred_at ASC, id ASC)`). `X-Manifest-Sha256` header carries a hex SHA-256 over the canonical CSV so PA DHS auditors can re-derive it from the file alone. Each download emits one `phi.export` audit event with the manifest hash + counts. Sized to the 48-hour DHS SLA.
+- **Exception Resolution** — `GET /exceptions/list` (paginated, joined to `evv_visits` so each row carries clock-in time for SLA aging). `POST /exceptions/:id/acknowledge` (transactional UPDATE on `approved_by`/`approved_at` + one `exception.approved` audit event with optional note). Idempotent — returns 409 `not_found_or_already_acknowledged`. UI: row-level queue with checkboxes, type filter, bulk Acknowledge.
+- **Authorization Oversight** — `GET /authorizations/list?asOf&filter&limit&offset` with live `unitsUsed` computed by joining `authorizations → clients → visit_templates → assignments → evv_visits` and summing `EXTRACT(EPOCH FROM (clock_out − clock_in))/3600` for visits inside the authorization window. Filter chips: Active / Expiring 14d / 30d / 90d (CHC review) / Recently expired.
+
+Beta (count-level overviews): Medicaid Workflow, Payroll Reconciliation, Claim Matching, Credentials & Background — each surfaces PA-specific policy context (CHC MCOs, Sandata 7-day window, 15-min grace, PATCH+FBI+CNA+HHA+RN taxonomy).
+
+Capability gates: `audit.read` for engine endpoints (admin-only), `client.read` / `staff.read` where appropriate (admin + coordinator). Caregivers are explicitly excluded — even though they carry `evv.read` here, they should not see regulator-facing analytics.
+
+**Pennsylvania regulatory ground truth** — `docs/compliance/states/pennsylvania.md` is the canonical reference (666 lines). `packages/core/src/config/pennsylvania.ts` extended with ~22 additive constants (geofence/grace/retention/CHC review/credential renewal thresholds) plus `paChcMcos` and `paComplianceCredentials`. All purely additive — existing exports untouched.
+
+**Brand rebrand: Purple primary + Deep Red accent** — replaces the legacy indigo-only palette:
+
+| Token | Old | New |
+|---|---|---|
+| `--color-primary` | `#6366F1` indigo-500 | `#7c3aed` violet-600 |
+| `--color-primary-dark` | `#4F46E5` | `#6d28d9` violet-700 |
+| `--color-primary-light` | `#A5B4FC` | `#c4b5fd` violet-300 |
+| `--color-accent` | `#6366F1` (aliased) | `#b91c1c` red-700 |
+| `--color-accent-dark` | (none) | `#7f1d1d` red-900 (new) |
+| `--color-accent-light` | (none) | `#fecaca` red-200 (new) |
+| `--color-info` | `#6366F1` | `#7c3aed` (tracks primary) |
+| `--color-danger` | `#F43F5E` rose-500 | `#dc2626` red-600 (distinct from accent) |
+| `--shadow-focus` | `rgba(99,102,241,0.25)` | `rgba(124,58,237,0.28)` |
+
+WCAG against `#F8FAFC` main bg: primary 5.61:1 (AA body), primary-dark 6.66:1 (AAA), accent 6.44:1 (AAA). Hardcoded indigo values swept across 30 feature files (landing, login/signup/forgot/reset, accept-invite, dashboard, agency setup, all caregiver pages, learning hub, onboarding, audit, visits, clients, scheduling, staff, profile, shared empty-state / error-retry).
+
+**Deploy** — landed via PR #61 (merged at `1ce5c834`). Manual `vercel build` + `vercel deploy --prebuilt --prod`, then `vercel alias set rayhealthevv.com → new deployment` (overrode the prior rollback pin). Vercel Git integration reconnected to `durga710/rayhealth-evv-platform` so future merges to `main` auto-deploy.
+
+**Verification** — `npx turbo run typecheck lint test build --filter @rayhealth/core --filter @rayhealth/app --filter @rayhealth/web` ✓ 12/12 green. `@rayhealth/app` tests: **101 passing + 2 skipped** (was 65 in baseline — 36 new compliance-engine route tests). `npm run security:scan` ✓. CI on PR #61 ✓ 10/10 (typecheck, lint, test-core/app/web, security-scan, gitleaks, dependency-review, CodeQL, analyze). Mobile build is broken at baseline (React 19.1 vs 19.2 mismatch — pre-existing, not introduced by this PR).
 
 ### 2026-05-18 rev 5 (operational hygiene — CI hardening + ghost cleanup)
 

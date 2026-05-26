@@ -60,12 +60,18 @@ const FILTER_OPTIONS: Array<{ label: string; value: AuthorizationListFilter }> =
   { label: 'Recently expired', value: 'recently-expired' },
 ];
 
+/**
+ * Urgency palette. Uses the Deep Red brand accent for the two most-urgent
+ * tiers (expired + critical ≤14d) so the regulator-facing signal is part of
+ * the brand identity. Warning + info + ok degrade through the semantic
+ * palette so they read distinctly from each other under colorblind viewing.
+ */
 const URGENCY_STYLE: Record<AuthorizationListRow['urgency'], { bg: string; fg: string; label: string }> = {
-  expired: { bg: '#fff1f0', fg: '#b42318', label: 'Expired' },
-  critical: { bg: '#fff1f0', fg: '#b42318', label: '≤14d' },
-  warning: { bg: '#fff6df', fg: '#a15c07', label: '≤30d' },
-  info: { bg: '#e8f2ff', fg: '#1f6f33', label: '≤90d' },
-  ok: { bg: '#eef0f4', fg: '#3b3f4a', label: 'OK' },
+  expired:  { bg: 'var(--color-accent-bg)',  fg: 'var(--color-accent-dark)',   label: 'Expired' },
+  critical: { bg: 'var(--color-accent-bg)',  fg: 'var(--color-accent)',        label: '≤14d' },
+  warning:  { bg: 'var(--color-warning-bg)', fg: 'var(--color-warning)',       label: '≤30d' },
+  info:     { bg: 'var(--color-primary-bg)', fg: 'var(--color-primary-dark)',  label: '≤90d' },
+  ok:       { bg: '#F1F5F9',                  fg: 'var(--color-text-secondary)', label: 'OK' },
 };
 
 function todayIso(): string {
@@ -273,10 +279,10 @@ export function AuthorizationOversightPage() {
         <div
           role="alert"
           style={{
-            backgroundColor: '#fff1f0',
-            border: '1px solid #f4c2bd',
+            backgroundColor: 'var(--color-danger-bg)',
+            border: '1px solid var(--color-danger-border)',
             borderRadius: 10,
-            color: '#b42318',
+            color: 'var(--color-danger)',
             fontSize: '0.9rem',
             fontWeight: 700,
             marginTop: '1rem',
@@ -397,10 +403,10 @@ export function AuthorizationOversightPage() {
           <p
             role="alert"
             style={{
-              backgroundColor: '#fff1f0',
-              border: '1px solid #f4c2bd',
+              backgroundColor: 'var(--color-danger-bg)',
+              border: '1px solid var(--color-danger-border)',
               borderRadius: 8,
-              color: '#b42318',
+              color: 'var(--color-danger)',
               fontSize: '0.85rem',
               margin: '0.75rem 0 0',
               padding: '0.5rem 0.75rem',
@@ -451,7 +457,7 @@ export function AuthorizationOversightPage() {
                     <tr
                       key={row.id}
                       style={{
-                        borderBottom: '1px solid var(--color-border-subtle, #eef0f4)',
+                        borderBottom: '1px solid var(--color-border)',
                         color: 'var(--color-text)',
                       }}
                     >
@@ -465,7 +471,7 @@ export function AuthorizationOversightPage() {
                           <div
                             aria-hidden
                             style={{
-                              backgroundColor: 'var(--color-border, #e2e5ea)',
+                              backgroundColor: 'var(--color-border)',
                               borderRadius: 999,
                               height: 6,
                               overflow: 'hidden',
@@ -476,10 +482,10 @@ export function AuthorizationOversightPage() {
                               style={{
                                 backgroundColor:
                                   pct >= 90
-                                    ? '#b42318'
+                                    ? 'var(--color-accent)'       /* ≥90% used — deep red regulatory signal */
                                     : pct >= 70
-                                    ? '#a15c07'
-                                    : 'var(--color-primary)',
+                                    ? 'var(--color-warning)'      /* ≥70% used — amber attention */
+                                    : 'var(--color-primary)',     /* normal — purple brand */
                                 height: '100%',
                                 width: `${pct}%`,
                               }}

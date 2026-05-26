@@ -30,15 +30,21 @@ interface ComplianceModuleLayoutProps {
 
 const KPI_TONE_COLOR: Record<KpiTone, string> = {
   neutral: 'var(--color-text)',
-  warning: '#a15c07',
-  success: '#087f5b',
+  warning: 'var(--color-warning)',
+  success: 'var(--color-success)',
   accent: 'var(--color-accent)',
 };
 
+/**
+ * Status chip palette. Scaffold = primary-tinted (informational, work-in-
+ * progress); Beta = accent-tinted (the Deep Red brand signal that this is
+ * regulator-facing and demands attention); Live = success-tinted (verified
+ * and shipping).
+ */
 const STATUS_STYLE: Record<ModuleStatus, { bg: string; fg: string; label: string }> = {
-  scaffold: { bg: '#e8f2ff', fg: 'var(--color-primary-dark)', label: 'Scaffold' },
-  beta: { bg: '#fff0e7', fg: 'var(--color-accent)', label: 'Beta' },
-  live: { bg: '#e7f7f0', fg: '#087f5b', label: 'Live' },
+  scaffold: { bg: 'var(--color-primary-bg)', fg: 'var(--color-primary-dark)', label: 'Scaffold' },
+  beta:     { bg: 'var(--color-accent-bg)',  fg: 'var(--color-accent)',      label: 'Beta' },
+  live:     { bg: 'var(--color-success-bg)', fg: 'var(--color-success)',     label: 'Live' },
 };
 
 const eyebrowStyle: React.CSSProperties = {
