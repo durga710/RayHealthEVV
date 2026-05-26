@@ -28,4 +28,7 @@ pnpm-debug.log*
 .claude/
 ad-exports/
 
+# Understand-Anything knowledge-graph artifacts (generated, not committed)
+.understand-anything/
+
 
