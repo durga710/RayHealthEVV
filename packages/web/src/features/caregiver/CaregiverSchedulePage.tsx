@@ -148,7 +148,7 @@ export function CaregiverSchedulePage() {
                   width: '44px',
                   height: '44px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)',
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -187,7 +187,7 @@ export function CaregiverSchedulePage() {
                 <div style={{
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  color: '#6366F1',
+                  color: '#7c3aed',
                   background: '#EEF2FF',
                   border: '1px solid #C7D2FE',
                   borderRadius: '100px',

@@ -322,7 +322,7 @@ export function AuditEventsPage() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.4rem',
-            background: 'rgba(99,102,241,0.2)',
+            background: 'rgba(124, 58, 237,0.2)',
             color: '#C7D2FE',
             borderRadius: '6px',
             padding: '0.3rem 0.75rem',
@@ -344,7 +344,7 @@ export function AuditEventsPage() {
         style={{
           ...card,
           marginBottom: '1rem',
-          borderTop: '3px solid #6366F1'
+          borderTop: '3px solid #7c3aed'
         }}
       >
         <div

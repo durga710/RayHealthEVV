@@ -31,8 +31,8 @@ const quickActions = [
     to: '/admin/clients',
     cta: 'Open clients',
     icon: '👤',
-    tint: '#6366F1',
-    tintBg: 'rgba(99,102,241,0.1)',
+    tint: '#7c3aed',
+    tintBg: 'rgba(124, 58, 237,0.1)',
   },
   {
     title: 'Invite staff',
@@ -149,7 +149,7 @@ export function DashboardPage() {
     {
       label: 'Active clients',
       value: formatCount(counts.clients),
-      tint: '#6366F1',
+      tint: '#7c3aed',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -220,7 +220,7 @@ export function DashboardPage() {
         <div aria-hidden style={{
           position: 'absolute', top: '-30%', right: '-10%',
           width: '50%', height: '200%',
-          background: 'radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(124, 58, 237,0.25) 0%, transparent 65%)',
           pointerEvents: 'none',
         }} />
         <div aria-hidden style={{
@@ -382,7 +382,7 @@ export function DashboardPage() {
         </h2>
         <div style={{
           backgroundColor: '#0F172A',
-          backgroundImage: 'radial-gradient(circle at 90% 10%, rgba(99,102,241,0.18) 0%, transparent 55%), radial-gradient(circle at 5% 90%, rgba(14,165,233,0.12) 0%, transparent 50%)',
+          backgroundImage: 'radial-gradient(circle at 90% 10%, rgba(124, 58, 237,0.18) 0%, transparent 55%), radial-gradient(circle at 5% 90%, rgba(14,165,233,0.12) 0%, transparent 50%)',
           borderRadius: '14px',
           padding: '1.75rem 2rem',
           display: 'grid',

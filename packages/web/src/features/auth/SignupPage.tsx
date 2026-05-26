@@ -81,7 +81,7 @@ export function SignupPage() {
             right: '-20%',
             width: '60%',
             height: '60%',
-            background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(124, 58, 237,0.18) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -102,7 +102,7 @@ export function SignupPage() {
           RayHealth
           <span
             style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)',
+              background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
               color: 'white',
               padding: '3px 8px',
               borderRadius: '5px',
@@ -125,7 +125,7 @@ export function SignupPage() {
           </p>
           {['No setup fee &mdash; cancel any time.', 'PA DHS & 21st Century Cures Act compliant.', 'HIPAA-aware infrastructure, ready on day one.'].map((p, i) => (
             <div key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', color: '#94A3B8', fontSize: '0.9rem', lineHeight: 1.5 }}>
-              <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}>
+              <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}>
                 <polyline points="20 6 9 17 4 12" />
               </svg>
               <span dangerouslySetInnerHTML={{ __html: p }} />
@@ -150,7 +150,7 @@ export function SignupPage() {
                     style={{
                       width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '0.75rem', fontWeight: 700,
-                      backgroundColor: i <= step ? '#6366F1' : '#E2E8F0',
+                      backgroundColor: i <= step ? '#7c3aed' : '#E2E8F0',
                       color: i <= step ? 'white' : '#94A3B8',
                     }}
                   >
@@ -163,7 +163,7 @@ export function SignupPage() {
                   <span style={{ fontSize: '0.8125rem', color: i === step ? '#0F172A' : '#94A3B8', fontWeight: i === step ? 600 : 400 }}>{label}</span>
                 </div>
                 {i < steps.length - 1 && (
-                  <div style={{ flex: 1, height: 1, backgroundColor: i < step ? '#6366F1' : '#E2E8F0' }} />
+                  <div style={{ flex: 1, height: 1, backgroundColor: i < step ? '#7c3aed' : '#E2E8F0' }} />
                 )}
               </React.Fragment>
             ))}
@@ -279,7 +279,7 @@ export function SignupPage() {
 
           <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '1.25rem', textAlign: 'center', fontSize: '0.875rem', color: '#64748B' }}>
             Already have an account?{' '}
-            <Link to="/login" style={{ color: '#6366F1', fontWeight: 500, textDecoration: 'none' }}>Sign in</Link>
+            <Link to="/login" style={{ color: '#7c3aed', fontWeight: 500, textDecoration: 'none' }}>Sign in</Link>
           </div>
         </div>
       </main>

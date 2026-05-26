@@ -189,7 +189,7 @@ export function TemplatesPage() {
                           cursor: 'pointer',
                           padding: '0.45rem 0.6rem',
                           borderRadius: '6px',
-                          backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                          backgroundColor: isSelected ? 'rgba(124, 58, 237, 0.08)' : 'transparent',
                           transition: 'background-color 0.1s ease',
                           fontSize: '0.8125rem',
                           color: '#0F172A',
@@ -199,9 +199,9 @@ export function TemplatesPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleTaskToggle(task.duty)}
-                          style={{ width: 'auto', accentColor: '#6366F1' }}
+                          style={{ width: 'auto', accentColor: '#7c3aed' }}
                         />
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: '#6366F1', fontWeight: 600 }}>{task.id}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: '#7c3aed', fontWeight: 600 }}>{task.id}</span>
                         <span>{task.duty}</span>
                       </label>
                     );

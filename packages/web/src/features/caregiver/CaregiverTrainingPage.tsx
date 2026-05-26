@@ -64,7 +64,7 @@ function ProgressBar({ pct }: { pct: number }) {
       <div style={{
         height: '100%',
         width: `${pct}%`,
-        background: pct === 100 ? '#16A34A' : 'var(--color-primary, #6366F1)',
+        background: pct === 100 ? '#16A34A' : 'var(--color-primary, #7c3aed)',
         borderRadius: '100px',
         transition: 'width 0.3s',
       }} />
@@ -141,7 +141,7 @@ export function CaregiverTrainingPage() {
     borderRadius: '6px',
     border: 'none',
     cursor: 'pointer',
-    background: active ? 'var(--color-primary, #6366F1)' : 'transparent',
+    background: active ? 'var(--color-primary, #7c3aed)' : 'transparent',
     color: active ? '#fff' : '#64748B',
   });
 
@@ -253,7 +253,7 @@ export function CaregiverTrainingPage() {
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       color: isCompleted ? '#64748B' : '#fff',
-                      background: isCompleted ? '#F8FAFC' : 'var(--color-primary, #6366F1)',
+                      background: isCompleted ? '#F8FAFC' : 'var(--color-primary, #7c3aed)',
                       border: isCompleted ? '1px solid #E2E8F0' : 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',

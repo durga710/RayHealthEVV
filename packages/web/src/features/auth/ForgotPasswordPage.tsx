@@ -51,7 +51,7 @@ export function ForgotPasswordPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.4rem',
-              color: '#6366F1',
+              color: '#7c3aed',
               fontSize: '0.875rem',
               fontWeight: 500,
               textDecoration: 'none',

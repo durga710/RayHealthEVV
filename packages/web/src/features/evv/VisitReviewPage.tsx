@@ -198,7 +198,7 @@ export function VisitReviewPage() {
                     <span style={{ fontSize: '0.8125rem', color: '#94A3B8' }}>Closed</span>
                   )}
                   {visit.status === 'corrected' && (
-                    <span style={{ fontSize: '0.8125rem', color: '#4F46E5' }}>Corrected</span>
+                    <span style={{ fontSize: '0.8125rem', color: '#6d28d9' }}>Corrected</span>
                   )}
                 </td>
               </tr>

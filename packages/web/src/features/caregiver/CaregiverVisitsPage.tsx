@@ -69,7 +69,7 @@ export function CaregiverVisitsPage() {
     borderRadius: '6px',
     border: 'none',
     cursor: 'pointer',
-    background: active ? 'var(--color-primary, #6366F1)' : 'transparent',
+    background: active ? 'var(--color-primary, #7c3aed)' : 'transparent',
     color: active ? '#fff' : '#64748B',
   });
 

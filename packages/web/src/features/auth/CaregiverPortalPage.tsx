@@ -30,7 +30,7 @@ export function CaregiverPortalPage() {
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <span style={{ color: 'white', fontWeight: 800, fontSize: '1.125rem', letterSpacing: '-0.02em' }}>RayHealth</span>
-        <span style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)', color: 'white', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: '4px' }}>EVV</span>
+        <span style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', color: 'white', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: '4px' }}>EVV</span>
       </div>
 
       <div
@@ -53,15 +53,15 @@ export function CaregiverPortalPage() {
             width: '52px',
             height: '52px',
             borderRadius: '14px',
-            background: 'rgba(99,102,241,0.15)',
-            border: '1px solid rgba(99,102,241,0.25)',
+            background: 'rgba(124, 58, 237,0.15)',
+            border: '1px solid rgba(124, 58, 237,0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto',
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="5" y="2" width="14" height="20" rx="2" />
             <line x1="12" y1="18" x2="12.01" y2="18" />
           </svg>
@@ -80,8 +80,8 @@ export function CaregiverPortalPage() {
 
         <div
           style={{
-            backgroundColor: 'rgba(99,102,241,0.08)',
-            border: '1px solid rgba(99,102,241,0.15)',
+            backgroundColor: 'rgba(124, 58, 237,0.08)',
+            border: '1px solid rgba(124, 58, 237,0.15)',
             borderRadius: '10px',
             padding: '1rem',
             display: 'flex',
@@ -89,7 +89,7 @@ export function CaregiverPortalPage() {
             gap: '0.35rem',
           }}
         >
-          <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#6366F1', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Signed in as</span>
+          <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#7c3aed', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Signed in as</span>
           <span style={{ color: '#E2E8F0', fontSize: '0.875rem', fontWeight: 500, textTransform: 'capitalize' }}>{user?.role ?? '—'}</span>
           <span style={{ color: '#475569', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>{user?.userId?.slice(0, 12)}…</span>
         </div>

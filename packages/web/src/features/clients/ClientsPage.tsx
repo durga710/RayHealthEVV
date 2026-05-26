@@ -120,7 +120,7 @@ export function ClientsPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 380px) minmax(0, 1fr)', gap: '1.5rem', alignItems: 'start' }}>
-        <div className="form-card" style={{ borderTop: '3px solid #6366F1' }}>
+        <div className="form-card" style={{ borderTop: '3px solid #7c3aed' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
             <h3 className="section-title" style={{ margin: 0 }}>Add new client</h3>
             {(import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV && (
@@ -157,7 +157,7 @@ export function ClientsPage() {
                   cursor: 'pointer',
                   fontSize: '0.8125rem',
                   fontWeight: 500,
-                  color: '#6366F1',
+                  color: '#7c3aed',
                 }}
               >
                 Show optional fields
@@ -201,9 +201,9 @@ export function ClientsPage() {
                 style={{
                   fontSize: '0.7rem',
                   fontWeight: 700,
-                  color: '#6366F1',
-                  background: 'rgba(99,102,241,0.1)',
-                  border: '1px solid rgba(99,102,241,0.2)',
+                  color: '#7c3aed',
+                  background: 'rgba(124, 58, 237,0.1)',
+                  border: '1px solid rgba(124, 58, 237,0.2)',
                   borderRadius: '999px',
                   padding: '0.2rem 0.65rem',
                   letterSpacing: '0.04em',
@@ -252,7 +252,7 @@ export function ClientsPage() {
                                 width: '28px',
                                 height: '28px',
                                 borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)',
+                                background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
                                 color: 'white',
                                 display: 'grid',
                                 placeItems: 'center',

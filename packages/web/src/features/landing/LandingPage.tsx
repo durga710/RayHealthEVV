@@ -117,7 +117,7 @@ export function LandingPage() {
       <header style={{ backgroundColor: '#0F172A', padding: '0 2.5rem', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
         <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ color: 'white', fontWeight: 800, fontSize: '1.0625rem', letterSpacing: '-0.02em' }}>RayHealth</span>
-          <span style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)', color: 'white', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: '4px' }}>EVV</span>
+          <span style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', color: 'white', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: '4px' }}>EVV</span>
         </Link>
         <nav style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
           {[
@@ -129,7 +129,7 @@ export function LandingPage() {
               {label}
             </Link>
           ))}
-          <Link to="/login" style={{ marginLeft: '0.5rem', backgroundColor: '#6366F1', color: 'white', textDecoration: 'none', fontWeight: 600, fontSize: '0.875rem', padding: '0.5rem 1.125rem', borderRadius: '8px', letterSpacing: '-0.01em' }}>
+          <Link to="/login" style={{ marginLeft: '0.5rem', backgroundColor: '#7c3aed', color: 'white', textDecoration: 'none', fontWeight: 600, fontSize: '0.875rem', padding: '0.5rem 1.125rem', borderRadius: '8px', letterSpacing: '-0.01em' }}>
             Log in
           </Link>
         </nav>
@@ -138,17 +138,17 @@ export function LandingPage() {
       {/* ── Hero ── */}
       <section style={{ backgroundColor: '#0F172A', color: 'white', padding: '5rem 2.5rem 4rem', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         {/* Ambient glow */}
-        <div aria-hidden style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '700px', height: '400px', background: 'radial-gradient(ellipse, rgba(99,102,241,0.22) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div aria-hidden style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '700px', height: '400px', background: 'radial-gradient(ellipse, rgba(124, 58, 237,0.22) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
         <div style={{ position: 'relative', maxWidth: '780px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
           {/* Eyebrow */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '999px', padding: '0.3rem 0.875rem', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#A5B4FC' }}>
-            <span aria-hidden style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#818CF8', display: 'inline-block' }} />
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'rgba(124, 58, 237,0.15)', border: '1px solid rgba(124, 58, 237,0.3)', borderRadius: '999px', padding: '0.3rem 0.875rem', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#c4b5fd' }}>
+            <span aria-hidden style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#a78bfa', display: 'inline-block' }} />
             Operations-grade home care — Pennsylvania
           </div>
 
           <h1 style={{ fontSize: 'clamp(2.25rem, 5vw, 3.75rem)', lineHeight: 1.06, fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: 'white' }}>
-            Care, finally on<br />the <span style={{ color: '#818CF8' }}>same page.</span>
+            Care, finally on<br />the <span style={{ color: '#a78bfa' }}>same page.</span>
           </h1>
 
           <p style={{ fontSize: '1.125rem', color: '#94A3B8', lineHeight: 1.65, maxWidth: '600px', margin: 0 }}>
@@ -156,7 +156,7 @@ export function LandingPage() {
           </p>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.5rem' }}>
-            <Link to="/contact" style={{ backgroundColor: '#6366F1', color: 'white', textDecoration: 'none', padding: '0.8125rem 1.75rem', borderRadius: '9px', fontWeight: 700, fontSize: '0.9375rem', boxShadow: '0 4px 20px rgba(99,102,241,0.45)', letterSpacing: '-0.01em' }}>
+            <Link to="/contact" style={{ backgroundColor: '#7c3aed', color: 'white', textDecoration: 'none', padding: '0.8125rem 1.75rem', borderRadius: '9px', fontWeight: 700, fontSize: '0.9375rem', boxShadow: '0 4px 20px rgba(124, 58, 237,0.45)', letterSpacing: '-0.01em' }}>
               Book a demo
             </Link>
             <a href="#features" style={{ backgroundColor: 'rgba(255,255,255,0.07)', color: '#E2E8F0', textDecoration: 'none', padding: '0.8125rem 1.75rem', borderRadius: '9px', fontWeight: 600, fontSize: '0.9375rem', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -179,7 +179,7 @@ export function LandingPage() {
         <div style={{ maxWidth: '860px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
           {stats.map((s) => (
             <div key={s.label} style={{ padding: '1.5rem 1.25rem', textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#818CF8', letterSpacing: '-0.03em', lineHeight: 1, fontFamily: 'var(--font-heading)' }}>{s.value}</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#a78bfa', letterSpacing: '-0.03em', lineHeight: 1, fontFamily: 'var(--font-heading)' }}>{s.value}</div>
               <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.4rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</div>
             </div>
           ))}
@@ -190,7 +190,7 @@ export function LandingPage() {
       <section id="features" style={{ padding: '6rem 2.5rem' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6366F1', margin: '0 0 0.75rem' }}>What's inside</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7c3aed', margin: '0 0 0.75rem' }}>What's inside</p>
             <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 800, color: '#0F172A', margin: '0 0 1rem', letterSpacing: '-0.025em', lineHeight: 1.15 }}>One workspace. Every workflow.</h2>
             <p style={{ color: '#64748B', fontSize: '1.0625rem', maxWidth: '560px', margin: '0 auto', lineHeight: 1.65 }}>Roadmap items tagged honestly — no overclaiming.</p>
           </div>
@@ -198,7 +198,7 @@ export function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
             {features.map((f) => (
               <div key={f.title} style={{ backgroundColor: 'white', borderRadius: '14px', padding: '1.75rem', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '0.875rem', position: 'relative', boxShadow: '0 1px 4px rgba(15,23,42,0.04)' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: f.live ? 'rgba(99,102,241,0.1)' : '#F1F5F9', color: f.live ? '#6366F1' : '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: f.live ? 'rgba(124, 58, 237,0.1)' : '#F1F5F9', color: f.live ? '#7c3aed' : '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {f.icon}
                 </div>
                 <div>
@@ -220,14 +220,14 @@ export function LandingPage() {
       <section id="how" style={{ backgroundColor: '#0F172A', padding: '6rem 2.5rem', color: 'white' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#818CF8', margin: '0 0 0.75rem' }}>How it works</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#a78bfa', margin: '0 0 0.75rem' }}>How it works</p>
             <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 800, color: 'white', margin: 0, letterSpacing: '-0.025em', lineHeight: 1.15 }}>Authorization to audit-ready visit.</h2>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
             {steps.map((step, i) => (
               <div key={step.n} style={{ padding: '2rem 1.75rem', backgroundColor: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ fontSize: '0.6875rem', fontWeight: 800, color: '#6366F1', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>STEP {step.n}</div>
+                <div style={{ fontSize: '0.6875rem', fontWeight: 800, color: '#7c3aed', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>STEP {step.n}</div>
                 <h3 style={{ margin: 0, fontSize: '1.0625rem', fontWeight: 700, color: '#F1F5F9', lineHeight: 1.25 }}>{step.title}</h3>
                 <p style={{ margin: 0, color: '#64748B', fontSize: '0.875rem', lineHeight: 1.6 }}>{step.body}</p>
               </div>
@@ -240,7 +240,7 @@ export function LandingPage() {
       <section id="roles" style={{ padding: '6rem 2.5rem' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6366F1', margin: '0 0 0.75rem' }}>Who it's for</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7c3aed', margin: '0 0 0.75rem' }}>Who it's for</p>
             <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.025em', lineHeight: 1.15 }}>Four roles. One shared source of truth.</h2>
           </div>
 
@@ -251,7 +251,7 @@ export function LandingPage() {
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   {role.points.map((p) => (
                     <li key={p} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', fontSize: '0.875rem', color: '#475569' }}>
-                      <span style={{ color: '#6366F1', fontWeight: 800, fontSize: '1rem', lineHeight: 1.2, flexShrink: 0 }}>›</span>
+                      <span style={{ color: '#7c3aed', fontWeight: 800, fontSize: '1rem', lineHeight: 1.2, flexShrink: 0 }}>›</span>
                       {p}
                     </li>
                   ))}
@@ -266,7 +266,7 @@ export function LandingPage() {
       <section id="compliance" style={{ backgroundColor: '#F1F5F9', padding: '6rem 2.5rem', borderTop: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6366F1', margin: '0 0 0.75rem' }}>Compliance</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7c3aed', margin: '0 0 0.75rem' }}>Compliance</p>
             <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 800, color: '#0F172A', margin: '0 0 1rem', letterSpacing: '-0.025em', lineHeight: 1.15 }}>Built for the frameworks auditors use.</h2>
             <p style={{ color: '#64748B', fontSize: '1.0625rem', maxWidth: '520px', margin: '0 auto', lineHeight: 1.65 }}>Compliance is the schema, the validation layer, and the audit trail — not a checkbox.</p>
           </div>
@@ -274,7 +274,7 @@ export function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem' }}>
             {compliance.map((c) => (
               <div key={c.name} style={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '1.75rem', boxShadow: '0 1px 4px rgba(15,23,42,0.04)' }}>
-                <div style={{ display: 'inline-block', backgroundColor: '#EEF2FF', color: '#4F46E5', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: '6px', marginBottom: '0.875rem' }}>{c.badge}</div>
+                <div style={{ display: 'inline-block', backgroundColor: '#EEF2FF', color: '#6d28d9', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: '6px', marginBottom: '0.875rem' }}>{c.badge}</div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A' }}>{c.name}</h3>
                 <p style={{ margin: 0, color: '#64748B', fontSize: '0.875rem', lineHeight: 1.6 }}>{c.body}</p>
               </div>
@@ -287,7 +287,7 @@ export function LandingPage() {
       <section id="faq" style={{ padding: '6rem 2.5rem' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6366F1', margin: '0 0 0.75rem' }}>FAQ</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7c3aed', margin: '0 0 0.75rem' }}>FAQ</p>
             <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.025em' }}>Common questions.</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -306,14 +306,14 @@ export function LandingPage() {
 
       {/* ── CTA ── */}
       <section style={{ backgroundColor: '#0F172A', padding: '6rem 2.5rem', position: 'relative', overflow: 'hidden' }}>
-        <div aria-hidden style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '300px', background: 'radial-gradient(ellipse, rgba(99,102,241,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div aria-hidden style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '300px', background: 'radial-gradient(ellipse, rgba(124, 58, 237,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', maxWidth: '680px', margin: '0 auto', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
           <h2 style={{ color: 'white', fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', margin: 0, fontWeight: 800, letterSpacing: '-0.025em', lineHeight: 1.15 }}>Ready to retire the spreadsheets?</h2>
           <p style={{ color: '#64748B', fontSize: '1.0625rem', lineHeight: 1.65, maxWidth: '520px', margin: 0 }}>
             Get a live walkthrough of the admin portal and the caregiver mobile flow. Bring your hardest workflow.
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.5rem' }}>
-            <Link to="/contact" style={{ backgroundColor: '#6366F1', color: 'white', textDecoration: 'none', padding: '0.8125rem 1.75rem', borderRadius: '9px', fontWeight: 700, fontSize: '0.9375rem', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
+            <Link to="/contact" style={{ backgroundColor: '#7c3aed', color: 'white', textDecoration: 'none', padding: '0.8125rem 1.75rem', borderRadius: '9px', fontWeight: 700, fontSize: '0.9375rem', boxShadow: '0 4px 20px rgba(124, 58, 237,0.45)' }}>
               Book a demo
             </Link>
             <Link to="/login" style={{ backgroundColor: 'rgba(255,255,255,0.07)', color: '#E2E8F0', textDecoration: 'none', padding: '0.8125rem 1.75rem', borderRadius: '9px', fontWeight: 600, fontSize: '0.9375rem', border: '1px solid rgba(255,255,255,0.1)' }}>

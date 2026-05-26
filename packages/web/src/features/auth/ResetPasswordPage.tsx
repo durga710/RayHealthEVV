@@ -39,7 +39,7 @@ export function ResetPasswordPage() {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <p style={{ color: '#EF4444' }}>
           Invalid reset link.{' '}
-          <Link to="/forgot-password" style={{ color: '#6366F1' }}>Request a new one.</Link>
+          <Link to="/forgot-password" style={{ color: '#7c3aed' }}>Request a new one.</Link>
         </p>
       </div>
     );

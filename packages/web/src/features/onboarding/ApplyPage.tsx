@@ -94,7 +94,7 @@ export function ApplyPage() {
             right: '-20%',
             width: '60%',
             height: '60%',
-            background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(124, 58, 237,0.18) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -116,7 +116,7 @@ export function ApplyPage() {
           RayHealth
           <span
             style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)',
+              background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
               color: 'white',
               padding: '3px 8px',
               borderRadius: '5px',
@@ -188,7 +188,7 @@ export function ApplyPage() {
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#6366F1"
+                  stroke="#7c3aed"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"

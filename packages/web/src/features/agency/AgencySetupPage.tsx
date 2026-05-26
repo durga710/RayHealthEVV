@@ -87,7 +87,7 @@ export function AgencySetupPage() {
       {gradientBanner}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 480px) minmax(0, 1fr)', gap: '1.5rem', alignItems: 'start' }}>
-        <div className="form-card" style={{ borderTop: '3px solid #6366F1' }}>
+        <div className="form-card" style={{ borderTop: '3px solid #7c3aed' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <label htmlFor="agencyName" className="label">Agency Name</label>

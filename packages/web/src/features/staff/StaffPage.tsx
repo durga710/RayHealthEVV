@@ -35,7 +35,7 @@ type ResendState =
   | { status: 'failed'; reason: string };
 
 const ROLE_COLORS: Record<string, string> = {
-  admin:       '#6366F1',
+  admin:       '#7c3aed',
   coordinator: '#0EA5E9',
   caregiver:   '#10B981',
   family:      '#F59E0B',
@@ -47,7 +47,7 @@ function Avatar({ email, active }: { email: string; active: boolean }) {
       aria-hidden
       style={{
         width: 28, height: 28, borderRadius: '50%',
-        background: active ? 'linear-gradient(135deg,#6366F1 0%,#818CF8 100%)' : '#E2E8F0',
+        background: active ? 'linear-gradient(135deg,#7c3aed 0%,#a78bfa 100%)' : '#E2E8F0',
         color: active ? 'white' : '#64748B',
         display: 'grid', placeItems: 'center',
         fontWeight: 600, fontSize: '0.75rem', flexShrink: 0,

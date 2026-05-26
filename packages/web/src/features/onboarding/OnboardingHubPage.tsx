@@ -39,7 +39,7 @@ const TABS: { label: string; value: TabStatus }[] = [
 ];
 
 const statusColors: Record<string, { bg: string; text: string }> = {
-  applied: { bg: '#EEF2FF', text: '#4F46E5' },
+  applied: { bg: '#EEF2FF', text: '#6d28d9' },
   interviewing: { bg: '#FFF7ED', text: '#C2410C' },
   interview_complete: { bg: '#F0FDF4', text: '#15803D' },
   under_review: { bg: '#FEF9C3', text: '#A16207' },
@@ -166,7 +166,7 @@ export function OnboardingHubPage() {
             gap: '0.5rem',
             padding: '0.5rem 1rem',
             backgroundColor: '#EEF2FF',
-            color: '#4F46E5',
+            color: '#6d28d9',
             border: '1px solid #C7D2FE',
             borderRadius: '8px',
             fontWeight: 600,
@@ -248,9 +248,9 @@ export function OnboardingHubPage() {
                 padding: '0.5rem 0.875rem',
                 border: 'none',
                 borderBottom:
-                  activeTab === tab.value ? '2px solid #4F46E5' : '2px solid transparent',
+                  activeTab === tab.value ? '2px solid #6d28d9' : '2px solid transparent',
                 backgroundColor: 'transparent',
-                color: activeTab === tab.value ? '#4F46E5' : '#64748B',
+                color: activeTab === tab.value ? '#6d28d9' : '#64748B',
                 fontWeight: activeTab === tab.value ? 600 : 400,
                 fontSize: '0.875rem',
                 cursor: 'pointer',
@@ -265,7 +265,7 @@ export function OnboardingHubPage() {
                 <span
                   style={{
                     backgroundColor: activeTab === tab.value ? '#EEF2FF' : '#F1F5F9',
-                    color: activeTab === tab.value ? '#4F46E5' : '#64748B',
+                    color: activeTab === tab.value ? '#6d28d9' : '#64748B',
                     borderRadius: '9999px',
                     padding: '0 0.4rem',
                     fontSize: '0.7rem',

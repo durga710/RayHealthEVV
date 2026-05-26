@@ -122,7 +122,7 @@ export function CaregiverLearningHubPage() {
     borderRadius: '6px',
     border: 'none',
     cursor: 'pointer',
-    background: active ? 'var(--color-primary, #6366F1)' : 'transparent',
+    background: active ? 'var(--color-primary, #7c3aed)' : 'transparent',
     color: active ? '#fff' : '#64748B',
   });
 
@@ -139,7 +139,7 @@ export function CaregiverLearningHubPage() {
         </div>
         <Link
           to="/portal/training"
-          style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-primary, #6366F1)', textDecoration: 'none' }}
+          style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-primary, #7c3aed)', textDecoration: 'none' }}
         >
           My Training →
         </Link>
@@ -262,7 +262,7 @@ export function CaregiverLearningHubPage() {
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       color: '#fff',
-                      background: status === 'completed' ? '#64748B' : 'var(--color-primary, #6366F1)',
+                      background: status === 'completed' ? '#64748B' : 'var(--color-primary, #7c3aed)',
                       borderRadius: '8px',
                       textDecoration: 'none',
                       whiteSpace: 'nowrap',

@@ -40,9 +40,9 @@ export function EmptyState({ title, body, cta }: EmptyStateProps) {
 
   const ctaStyle: React.CSSProperties = {
     marginTop: '0.75rem',
-    backgroundColor: '#6366F1',
+    backgroundColor: '#7c3aed',
     color: 'white',
-    border: '1px solid #6366F1',
+    border: '1px solid #7c3aed',
     padding: '0.55rem 1.1rem',
     borderRadius: '8px',
     fontWeight: 500,

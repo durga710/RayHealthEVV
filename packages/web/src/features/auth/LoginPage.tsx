@@ -87,7 +87,7 @@ export function LoginPage() {
             right: '-20%',
             width: '60%',
             height: '60%',
-            background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(124, 58, 237,0.18) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -109,7 +109,7 @@ export function LoginPage() {
           RayHealth
           <span
             style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)',
+              background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
               color: 'white',
               padding: '3px 8px',
               borderRadius: '5px',
@@ -168,7 +168,7 @@ export function LoginPage() {
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#6366F1"
+                  stroke="#7c3aed"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -301,7 +301,7 @@ export function LoginPage() {
             <div style={{ textAlign: 'center' }}>
               <Link
                 to="/forgot-password"
-                style={{ fontSize: '0.875rem', color: '#6366F1', fontWeight: 500 }}
+                style={{ fontSize: '0.875rem', color: '#7c3aed', fontWeight: 500 }}
               >
                 Forgot your password?
               </Link>
@@ -339,11 +339,11 @@ export function LoginPage() {
               HIPAA compliance documentation
             </Link>
             <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
-              Need access? <Link to="/" style={{ color: '#6366F1', fontWeight: 500 }}>Contact your agency admin.</Link>
+              Need access? <Link to="/" style={{ color: '#7c3aed', fontWeight: 500 }}>Contact your agency admin.</Link>
             </span>
             <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
               New agency?{' '}
-              <Link to="/signup" style={{ color: '#6366F1', fontWeight: 500 }}>Create an account.</Link>
+              <Link to="/signup" style={{ color: '#7c3aed', fontWeight: 500 }}>Create an account.</Link>
             </span>
           </div>
         </div>

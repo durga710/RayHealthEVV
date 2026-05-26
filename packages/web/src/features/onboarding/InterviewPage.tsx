@@ -152,7 +152,7 @@ export function InterviewPage() {
         }}
       >
         <p style={{ color: '#BE123C', fontSize: '1rem', textAlign: 'center' }}>{error}</p>
-        <Link to="/" style={{ color: '#6366F1', fontSize: '0.875rem' }}>
+        <Link to="/" style={{ color: '#7c3aed', fontSize: '0.875rem' }}>
           Return home
         </Link>
       </div>
@@ -186,7 +186,7 @@ export function InterviewPage() {
           </span>
           <span
             style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)',
+              background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
               padding: '2px 6px',
               borderRadius: '4px',
               fontSize: '0.6rem',
@@ -228,7 +228,7 @@ export function InterviewPage() {
                 style={{
                   height: '100%',
                   width: `${Math.min(100, (userMessageCount / TOTAL_QUESTIONS) * 100)}%`,
-                  backgroundColor: '#6366F1',
+                  backgroundColor: '#7c3aed',
                   borderRadius: '2px',
                   transition: 'width 0.3s ease',
                 }}
@@ -283,7 +283,7 @@ export function InterviewPage() {
                 maxWidth: '80%',
                 padding: '0.7rem 1rem',
                 borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                backgroundColor: m.role === 'user' ? '#4F46E5' : 'white',
+                backgroundColor: m.role === 'user' ? '#6d28d9' : 'white',
                 color: m.role === 'user' ? 'white' : '#0F172A',
                 fontSize: '0.9375rem',
                 lineHeight: 1.5,
@@ -355,7 +355,7 @@ export function InterviewPage() {
                 width: '56px',
                 height: '56px',
                 borderRadius: '50%',
-                backgroundColor: 'rgba(99,102,241,0.1)',
+                backgroundColor: 'rgba(124, 58, 237,0.1)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -366,7 +366,7 @@ export function InterviewPage() {
                 height="28"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#6366F1"
+                stroke="#7c3aed"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -449,7 +449,7 @@ export function InterviewPage() {
               disabled={sending || !input.trim()}
               style={{
                 flexShrink: 0,
-                backgroundColor: sending || !input.trim() ? '#CBD5E1' : '#4F46E5',
+                backgroundColor: sending || !input.trim() ? '#CBD5E1' : '#6d28d9',
                 color: 'white',
                 border: 'none',
                 borderRadius: '10px',
