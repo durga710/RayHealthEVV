@@ -325,10 +325,10 @@ export function ExceptionResolutionPage() {
         <div
           role="alert"
           style={{
-            backgroundColor: '#fff1f0',
-            border: '1px solid #f4c2bd',
+            backgroundColor: 'var(--color-danger-bg)',
+            border: '1px solid var(--color-danger-border)',
             borderRadius: 10,
-            color: '#b42318',
+            color: 'var(--color-danger)',
             fontSize: '0.9rem',
             fontWeight: 700,
             marginTop: '1rem',
@@ -482,7 +482,7 @@ export function ExceptionResolutionPage() {
               disabled={queueLoading}
               style={{
                 ...primaryButtonStyle,
-                backgroundColor: 'var(--color-primary-dark, #1b3a6f)',
+                backgroundColor: 'var(--color-primary-dark)',
                 opacity: queueLoading ? 0.55 : 1,
                 padding: '0.5rem 0.85rem',
               }}
@@ -510,10 +510,10 @@ export function ExceptionResolutionPage() {
           <p
             role="alert"
             style={{
-              backgroundColor: '#fff1f0',
-              border: '1px solid #f4c2bd',
+              backgroundColor: 'var(--color-danger-bg)',
+              border: '1px solid var(--color-danger-border)',
               borderRadius: 8,
-              color: '#b42318',
+              color: 'var(--color-danger)',
               fontSize: '0.85rem',
               margin: '0.75rem 0 0',
               padding: '0.5rem 0.75rem',
@@ -526,10 +526,10 @@ export function ExceptionResolutionPage() {
           <p
             role="status"
             style={{
-              backgroundColor: '#f0f9f1',
-              border: '1px solid #a9d6ad',
+              backgroundColor: 'var(--color-success-bg)',
+              border: 'var(--color-success-border)',
               borderRadius: 8,
-              color: '#1f6f33',
+              color: 'var(--color-success)',
               fontSize: '0.85rem',
               margin: '0.75rem 0 0',
               padding: '0.5rem 0.75rem',
@@ -582,7 +582,7 @@ export function ExceptionResolutionPage() {
                     <tr
                       key={row.id}
                       style={{
-                        borderBottom: '1px solid var(--color-border-subtle, #eef0f4)',
+                        borderBottom: '1px solid var(--color-border)',
                         color: 'var(--color-text)',
                       }}
                     >
@@ -603,7 +603,9 @@ export function ExceptionResolutionPage() {
                       </td>
                       <td
                         style={{
-                          color: breached ? '#b42318' : 'var(--color-text-muted)',
+                          /* SLA-breached rows use the Deep Red brand accent — this is the
+                             regulator-facing 48h DHS signal, not a transient error. */
+                          color: breached ? 'var(--color-accent)' : 'var(--color-text-muted)',
                           fontWeight: breached ? 800 : 600,
                           padding: '0.55rem 0.4rem',
                           textAlign: 'right',

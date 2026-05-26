@@ -265,7 +265,9 @@ export function AuditDefensePage() {
             disabled={downloading || !from || !to}
             style={{
               ...primaryButtonStyle,
-              backgroundColor: 'var(--color-primary-dark, #1b3a6f)',
+              /* Deep Red accent — the regulator-facing CSV export is the one place we
+                 want the brand's secondary color to land hardest. */
+              backgroundColor: 'var(--color-accent)',
               opacity: downloading || !from || !to ? 0.55 : 1,
             }}
           >
@@ -278,18 +280,18 @@ export function AuditDefensePage() {
         <div
           style={{
             ...sectionCard,
-            backgroundColor: '#f0f9f1',
-            borderColor: '#a9d6ad',
+            backgroundColor: 'var(--color-success-bg)',
+            borderColor: 'var(--color-success-border)',
             marginTop: '1rem',
           }}
           role="status"
         >
-          <h4 style={{ color: '#1f6f33', fontSize: '0.95rem', fontWeight: 800, margin: 0 }}>
+          <h4 style={{ color: 'var(--color-success)', fontSize: '0.95rem', fontWeight: 800, margin: 0 }}>
             Packet downloaded: <code style={{ fontWeight: 700 }}>{lastDownload.filename}</code>
           </h4>
           <p
             style={{
-              color: '#1f6f33',
+              color: 'var(--color-success)',
               fontSize: '0.85rem',
               lineHeight: 1.55,
               margin: '0.45rem 0 0.6rem',
@@ -302,7 +304,7 @@ export function AuditDefensePage() {
           </p>
           <p
             style={{
-              color: '#1f6f33',
+              color: 'var(--color-success)',
               fontSize: '0.78rem',
               margin: 0,
               wordBreak: 'break-all',
@@ -313,7 +315,7 @@ export function AuditDefensePage() {
           </p>
           <p
             style={{
-              color: '#1f6f33',
+              color: 'var(--color-success)',
               fontSize: '0.72rem',
               fontStyle: 'italic',
               margin: '0.5rem 0 0',
@@ -328,10 +330,10 @@ export function AuditDefensePage() {
         <div
           role="alert"
           style={{
-            backgroundColor: '#fff1f0',
-            border: '1px solid #f4c2bd',
+            backgroundColor: 'var(--color-danger-bg)',
+            border: '1px solid var(--color-danger-border)',
             borderRadius: 10,
-            color: '#b42318',
+            color: 'var(--color-danger)',
             fontSize: '0.9rem',
             fontWeight: 700,
             marginTop: '1rem',

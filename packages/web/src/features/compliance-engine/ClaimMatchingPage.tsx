@@ -157,10 +157,10 @@ export function ClaimMatchingPage() {
         <div
           role="alert"
           style={{
-            backgroundColor: '#fff1f0',
-            border: '1px solid #f4c2bd',
+            backgroundColor: 'var(--color-danger-bg)',
+            border: '1px solid var(--color-danger-border)',
             borderRadius: 10,
-            color: '#b42318',
+            color: 'var(--color-danger)',
             fontSize: '0.9rem',
             fontWeight: 700,
             marginTop: '1rem',

@@ -195,8 +195,8 @@ export function ComplianceOverviewPage() {
         <div
           style={{
             alignItems: 'center',
-            backgroundColor: '#fff6df',
-            border: '1px solid #f4d77c',
+            backgroundColor: 'var(--color-warning-bg)',
+            border: '1px solid var(--color-warning-border)',
             borderRadius: 12,
             display: 'flex',
             gap: '0.5rem',
@@ -207,14 +207,14 @@ export function ComplianceOverviewPage() {
         >
           <span
             style={{
-              backgroundColor: '#a15c07',
+              backgroundColor: 'var(--color-warning)',
               borderRadius: 999,
               display: 'inline-block',
               height: 8,
               width: 8,
             }}
           />
-          <p style={{ color: '#7a4607', fontSize: '0.9rem', fontWeight: 700, margin: 0 }}>
+          <p style={{ color: 'var(--color-warning)', fontSize: '0.9rem', fontWeight: 700, margin: 0 }}>
             Live summary unavailable for this role — open a module below for its specific KPIs.
             PA regulatory spec at <code>docs/compliance/states/pennsylvania.md</code>.
             {summaryError ? <> ({summaryError})</> : null}
@@ -271,10 +271,17 @@ export function ComplianceOverviewPage() {
                   </h3>
                   <span
                     style={{
-                      backgroundColor: module.status === 'beta' ? '#fff0e7' : '#e8f2ff',
+                      backgroundColor:
+                        module.status === 'live'
+                          ? 'var(--color-success-bg)'
+                          : module.status === 'beta'
+                          ? 'var(--color-accent-bg)'
+                          : 'var(--color-primary-bg)',
                       borderRadius: 999,
                       color:
-                        module.status === 'beta'
+                        module.status === 'live'
+                          ? 'var(--color-success)'
+                          : module.status === 'beta'
                           ? 'var(--color-accent)'
                           : 'var(--color-primary-dark)',
                       fontSize: '0.65rem',
