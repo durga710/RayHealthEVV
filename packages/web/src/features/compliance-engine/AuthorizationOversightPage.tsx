@@ -419,6 +419,7 @@ export function AuthorizationOversightPage() {
         {list && list.rows.length > 0 ? (
           <div style={{ marginTop: '0.85rem', overflowX: 'auto' }}>
             <table
+              aria-label="Authorizations detail list with live unit balance"
               style={{
                 borderCollapse: 'collapse',
                 fontSize: '0.85rem',
@@ -426,6 +427,23 @@ export function AuthorizationOversightPage() {
                 width: '100%',
               }}
             >
+              <caption
+                style={{
+                  position: 'absolute',
+                  width: 1,
+                  height: 1,
+                  padding: 0,
+                  margin: -1,
+                  overflow: 'hidden',
+                  clip: 'rect(0,0,0,0)',
+                  whiteSpace: 'nowrap',
+                  border: 0,
+                }}
+              >
+                Authorizations sorted by earliest end date. Units used is computed from
+                EVV-verified visit hours; 1 unit equals 1 hour for PA personal-care S5125 and
+                home-health T1019.
+              </caption>
               <thead>
                 <tr
                   style={{
@@ -437,13 +455,13 @@ export function AuthorizationOversightPage() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Client</th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Payer</th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Service</th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>Units used / auth</th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>Remaining</th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>End</th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>Status</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Client</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Payer</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Service</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>Units used / auth</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>Remaining</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>End</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>Status</th>
                 </tr>
               </thead>
               <tbody>

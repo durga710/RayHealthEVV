@@ -542,6 +542,7 @@ export function ExceptionResolutionPage() {
         {queue && queue.rows.length > 0 ? (
           <div style={{ marginTop: '0.85rem', overflowX: 'auto' }}>
             <table
+              aria-label="Open EVV exceptions queue"
               style={{
                 borderCollapse: 'collapse',
                 fontSize: '0.85rem',
@@ -549,6 +550,25 @@ export function ExceptionResolutionPage() {
                 width: '100%',
               }}
             >
+              <caption
+                style={{
+                  /* Screen-reader-only caption: spelled out for assistive tech,
+                     hidden from sighted users because the section heading above
+                     already says "Open exceptions queue". */
+                  position: 'absolute',
+                  width: 1,
+                  height: 1,
+                  padding: 0,
+                  margin: -1,
+                  overflow: 'hidden',
+                  clip: 'rect(0,0,0,0)',
+                  whiteSpace: 'nowrap',
+                  border: 0,
+                }}
+              >
+                Open EVV exceptions, oldest first. Use the checkbox column to select rows for
+                bulk acknowledge.
+              </caption>
               <thead>
                 <tr
                   style={{
@@ -560,7 +580,7 @@ export function ExceptionResolutionPage() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'left', width: 28 }}>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'left', width: 28 }}>
                     <input
                       type="checkbox"
                       aria-label="Select all rows"
@@ -568,10 +588,10 @@ export function ExceptionResolutionPage() {
                       onChange={toggleAll}
                     />
                   </th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Type</th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Reason</th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Visit clock-in</th>
-                  <th style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>Age</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Type</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Reason</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'left' }}>Visit clock-in</th>
+                  <th scope="col" style={{ padding: '0.5rem 0.4rem', textAlign: 'right' }}>Age</th>
                 </tr>
               </thead>
               <tbody>
