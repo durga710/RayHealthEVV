@@ -213,6 +213,35 @@ What's still required for spots: VO recording, music license (~$15 Artlist/Epide
 
 ## Changelog
 
+### 2026-05-26 rev 8 (full-production push — no more Beta + favicon + SEO baseline + table a11y + PWA manifest)
+
+Three PRs landed back-to-back to bring rayhealthevv.com to a production-grade baseline. Owner directive: *"WE CANT BE DOING BETA W GOING HARD FULL PRODUCTION"* + *"MY MY FAVICON IS NOT SET"* + *"WORK IN PARELLEL AND GET SHIT DONE"*.
+
+**PR #64 — Beta → Live + favicon** (merged at `c1535756`)
+- Promoted the four remaining Beta modules (Medicaid Workflow, Payroll Reconciliation, Claim Matching, Credentials & Background) to **Live**. All 7 Compliance Engine modules now ship under the Live status chip; nothing on production is labelled Beta.
+- The `ModuleStatus` type + `'beta'` chip palette stays defined in `ComplianceModuleLayout` so future in-flight work can still use it during development.
+- Added `packages/web/public/favicon.svg` — sub-1KB SVG brand mark (rounded purple chip + white R + deep-red accent dot in the lower right). Wired into `index.html` via `<link rel="icon" type="image/svg+xml">`, `<link rel="mask-icon">` (Safari pinned-tab tint), and `<meta name="theme-color" content="#7c3aed">`. Replaces the generic browser-default tab icon that had been shipping unchanged.
+
+**PR #65 — SEO baseline + Compliance Engine table a11y** (merged at `0f953b35`)
+- `packages/web/public/robots.txt` — explicit `Allow:` for the 9 public marketing surfaces, `Disallow:` for every authenticated path (`/admin*`, `/portal*`, `/login`, `/signup`, `/accept-invite`, `/forgot-password`, `/reset-password`, `/api/`). Points crawlers at the new sitemap. (Note: the live site is fronted by Cloudflare, which currently serves its own AI-scraper-blocking managed robots; this file is the repo fallback if that layer is ever disabled.)
+- `packages/web/public/sitemap.xml` — 9 public URLs with per-route `changefreq` + `priority` (status page `daily`, homepage `weekly`, Privacy + HIPAA `yearly`). Authenticated surfaces stay off the index. Live at `https://rayhealthevv.com/sitemap.xml` as `application/xml`.
+- `index.html` head extended with detailed `<title>`, `<meta name="description">`, `<link rel="canonical">`, Open Graph (`og:type`, `og:site_name`, `og:title`, `og:description`, `og:url`, `og:image`, `og:locale`), and Twitter card meta. Slack/LinkedIn/Discord/X shares now render preview cards.
+- Compliance Engine table a11y: every `<th>` carries `scope="col"`, every `<table>` has an `aria-label`, and each gets a visually-hidden `<caption>` spelling out its purpose for assistive tech. Standard sr-only style — no visual change for sighted users.
+
+**PR #1 (mobile repo) — Mock-GPS detection service** (open at `durga710/rayhealth-evv-mobile#1`)
+- `src/services/locationIntegrity.ts` (+318 lines, new). Heuristic spoofing detector for EVV clock-in: scores a burst of geolocation samples for zero-jitter, implausible accuracy, constant accuracy, and teleportation. Pure browser-free core (testable under `node:test`) plus a lazy `navigator.geolocation` sampler. Signal-only for the audit trail, not a hard gate.
+
+**Operational**
+- Established the `vercel build` + `vercel deploy --prebuilt --prod` + manual `vercel alias set` cadence for each merge because the initial-session rollback pinned `rayhealthevv.com` to a specific deployment. Future cleanup: un-pin the alias so auto-promote works again.
+- Vercel Git integration re-connected to `durga710/rayhealth-evv-platform` — preview deploys + Vercel CI check fire automatically on every PR push.
+- Attempted to unblock the mobile React 19.1↔19.2 baseline mismatch (`packages/mobile/package.json`) but the npm dedup + lockfile interaction needs more careful work; reverted the change rather than ship a half-broken state. Tracked as follow-up.
+
+**Verification across all PRs**
+- `npx turbo run typecheck lint test build --filter @rayhealth/core --filter @rayhealth/app --filter @rayhealth/web`: 12/12 green every commit
+- `@rayhealth/app` test suite: 101 passing + 2 skipped (was 65 pre-Compliance-Engine)
+- All PRs cleared the full 12-check CI matrix (typecheck, lint, test-core/app/web, security-scan, gitleaks, dependency-review, CodeQL, analyze, Vercel preview, Vercel Preview Comments)
+- `npm run security:scan` passed every push
+
 ### 2026-05-26 rev 7 (UI polish — Compliance Engine pages aligned with design tokens, Deep Red accent surfaced)
 
 A follow-up polish on rev 6's rebrand. The Compliance Engine pages were initially shipped with hardcoded hex values (a leftover from their dev-shell origin); rev 7 swaps every brand-relevant hex to design tokens so the palette is now centrally controlled.
