@@ -189,7 +189,7 @@ export function CaregiverSchedulePage() {
                   fontWeight: 600,
                   color: '#7c3aed',
                   background: '#EEF2FF',
-                  border: '1px solid #C7D2FE',
+                  border: '1px solid #ddd6fe',
                   borderRadius: '100px',
                   padding: '0.25rem 0.7rem',
                   whiteSpace: 'nowrap',

@@ -255,7 +255,7 @@ function Quiz({ questions, onPass }: QuizProps) {
                       const isWrongSelection = quizState === 'failed' && isWrong && isSelected && oi !== q.correct;
 
                       let optBg = isSelected ? '#EEF2FF' : 'transparent';
-                      let optBorder = isSelected ? '#C7D2FE' : '#E2E8F0';
+                      let optBorder = isSelected ? '#ddd6fe' : '#E2E8F0';
                       let optColor = isSelected ? '#4338CA' : '#334155';
 
                       if (isCorrectOpt) { optBg = '#F0FDF4'; optBorder = '#BBF7D0'; optColor = '#15803D'; }
@@ -508,7 +508,7 @@ export function CourseDetailPage() {
             {mods.sections.map((section, i) => {
               const isOpen = openSection === i;
               return (
-                <div key={i} style={{ background: '#fff', border: `1px solid ${isOpen ? '#C7D2FE' : '#E2E8F0'}`, borderRadius: '10px', overflow: 'hidden' }}>
+                <div key={i} style={{ background: '#fff', border: `1px solid ${isOpen ? '#ddd6fe' : '#E2E8F0'}`, borderRadius: '10px', overflow: 'hidden' }}>
                   <button
                     type="button"
                     onClick={() => setOpenSection(isOpen ? null : i)}

@@ -600,7 +600,7 @@ export function ApplicantDetailPage() {
                           padding: '0.2rem 0.6rem',
                           backgroundColor: '#EEF2FF',
                           color: '#6d28d9',
-                          border: '1px solid #C7D2FE',
+                          border: '1px solid #ddd6fe',
                           borderRadius: '5px',
                           fontSize: '0.7rem',
                           cursor: docWorking[dt.value] ? 'wait' : 'pointer',
@@ -626,7 +626,7 @@ export function ApplicantDetailPage() {
               style={{
                 backgroundColor: '#EEF2FF',
                 borderRadius: '10px',
-                border: '1px solid #C7D2FE',
+                border: '1px solid #ddd6fe',
                 padding: '1.25rem',
                 display: 'flex',
                 flexDirection: 'column',

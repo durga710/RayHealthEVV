@@ -136,7 +136,7 @@ export function AuditRetentionPage() {
             alignItems: 'center',
             gap: '0.4rem',
             background: 'rgba(124, 58, 237,0.2)',
-            color: '#C7D2FE',
+            color: '#ddd6fe',
             borderRadius: '6px',
             padding: '0.3rem 0.75rem',
             fontSize: '0.72rem',
