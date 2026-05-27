@@ -696,7 +696,7 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   background-color: rgba(124, 58, 237, 0.2);
-  color: #C7D2FE;
+  color: #ddd6fe;
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.08em;

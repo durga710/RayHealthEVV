@@ -167,7 +167,7 @@ export function OnboardingHubPage() {
             padding: '0.5rem 1rem',
             backgroundColor: '#EEF2FF',
             color: '#6d28d9',
-            border: '1px solid #C7D2FE',
+            border: '1px solid #ddd6fe',
             borderRadius: '8px',
             fontWeight: 600,
             fontSize: '0.875rem',
