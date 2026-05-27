@@ -1,0 +1,22 @@
+{
+  "name": "RayHealth EVV",
+  "short_name": "RayHealth",
+  "description": "Pennsylvania-ready electronic visit verification + a Compliance Engine for audit defense, exception resolution, authorization oversight, and credential management.",
+  "id": "/",
+  "scope": "/",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#7c3aed",
+  "background_color": "#F8FAFC",
+  "lang": "en-US",
+  "categories": ["health", "medical", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
