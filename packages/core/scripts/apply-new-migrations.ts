@@ -46,6 +46,7 @@ import * as addInviteAccessCode from '../src/migrations/2026-05-11-add-invite-ac
 import * as addAgencyEvvConfig from '../src/migrations/2026-05-11-add-agency-evv-config.js'
 import * as extendVisitMaintenance from '../src/migrations/2026-05-11-extend-visit-maintenance.js'
 import * as addAgencyHhaexchangeConfig from '../src/migrations/2026-05-11-add-agency-hhaexchange-config.js'
+import * as addAuditTriggerAndFixArchive from '../src/migrations/2026-06-08-add-audit-events-trigger-and-fix-archive.js'
 import type { Knex } from 'knex'
 
 interface MigrationStep {
@@ -63,6 +64,7 @@ const STEPS: MigrationStep[] = [
   { name: '2026-05-11-add-agency-evv-config', up: addAgencyEvvConfig.up },
   { name: '2026-05-11-extend-visit-maintenance', up: extendVisitMaintenance.up },
   { name: '2026-05-11-add-agency-hhaexchange-config', up: addAgencyHhaexchangeConfig.up },
+  { name: '2026-06-08-add-audit-events-trigger-and-fix-archive', up: addAuditTriggerAndFixArchive.up },
 ]
 
 interface StepResult {

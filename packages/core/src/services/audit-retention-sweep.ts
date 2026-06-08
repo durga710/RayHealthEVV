@@ -146,17 +146,21 @@ async function processOneChunk(db: Knex, cutoff: Date, limit: number): Promise<C
     // Insert into archive, preserving original id and timestamps.
     // ON CONFLICT DO NOTHING means a partially-completed previous run
     // (e.g., archived rows but failed to delete from hot) is safely re-runnable.
+    // Column set must match the live audit_events shape (schema.ts:171-189):
+    // actor_id, actor_type, entity_type, entity_id, outcome, correlation_id.
+    // Legacy archive columns (actor_user_id, actor_caregiver_id, resource_*,
+    // user_agent, ip_address) are nullable and remain NULL on new inserts.
     const archived = await trx.raw(
       `
       INSERT INTO audit_events_archive (
-        id, agency_id, actor_user_id, actor_caregiver_id,
-        event_type, resource_type, resource_id, payload,
-        user_agent, ip_address, occurred_at
+        id, agency_id, actor_id, actor_type,
+        event_type, entity_type, entity_id, outcome,
+        correlation_id, payload, occurred_at
       )
       SELECT
-        id, agency_id, actor_user_id, actor_caregiver_id,
-        event_type, resource_type, resource_id, payload,
-        user_agent, ip_address, occurred_at
+        id, agency_id, actor_id, actor_type,
+        event_type, entity_type, entity_id, outcome,
+        correlation_id, payload, occurred_at
       FROM audit_events
       WHERE id = ANY(?::uuid[])
       ON CONFLICT (id) DO NOTHING

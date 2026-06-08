@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createDb } from '../db/knex.js'
 import * as schema from '../migrations/schema.js'
 import * as auditRetentionMigration from '../migrations/2026-05-11-add-audit-retention.js'
+import * as auditTriggerMigration from '../migrations/2026-06-08-add-audit-events-trigger-and-fix-archive.js'
 import { runAuditRetentionSweep } from '../services/audit-retention-sweep.js'
 
 /**
@@ -21,6 +22,7 @@ beforeAll(async () => {
   try {
     await schema.up(db)
     await auditRetentionMigration.up(db)
+    await auditTriggerMigration.up(db)
     // Touch the DB so the catch trips if no connection.
     await db.raw('select 1')
     dbAvailable = true
@@ -67,11 +69,17 @@ interface AuditRow {
 }
 
 async function insertAuditEvent(occurredAt: Date): Promise<AuditRow> {
+  // Required notNullable columns per schema.ts:171-189: actor_id, actor_type
+  // (defaulted), event_type, entity_type, entity_id, outcome (defaulted),
+  // occurred_at (defaulted). Use a synthetic actor + entity for isolation.
   const [row] = (await db('audit_events')
     .insert({
       id: db.raw('gen_random_uuid()'),
       agency_id: TEST_AGENCY_ID,
+      actor_id: TEST_AGENCY_ID,
       event_type: 'TEST_EVENT',
+      entity_type: 'test',
+      entity_id: TEST_AGENCY_ID,
       payload: {},
       occurred_at: occurredAt,
     })

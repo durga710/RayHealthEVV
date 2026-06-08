@@ -84,7 +84,7 @@ AI Copilot action vocabulary (extensible):
 | Repo | Branch | Role |
 |---|---|---|
 | `rayhealth-evv-platform` | `main` (latest `5ec1e56`) | Backend API + web app deploy |
-| `rayhealth-evv-mobile` | `main` (latest `8a74eb0`) | Capacitor iOS/Android caregiver app |
+| `rayhealth-evv-mobile` | `main` (latest `8a74eb0`) | Expo + React Native (SDK 54, RN 0.81.5) iOS/Android caregiver app |
 | `rayhealthevv-fresh/rayhealth-fresh` | `codex/security-phase-1` | This monorepo — docs, security plan, fixture seed script, Sandata mapping, audit retention sweep, BAA templates, risk analysis, app icon |
 
 The three repos diverged when production was extracted from the original monorepo. This worktree is now used for: documentation, ports of code that needs to land in the deployed repos, fixture/seed scripts, and compliance artifacts.
@@ -99,14 +99,14 @@ The three repos diverged when production was extracted from the original monorep
 | `/auth/mobile/me` for session refresh | ✅ live | 2026-05-09 |
 | Today-schedule deduplication (`DISTINCT ON (assignment_id)`) | ✅ live | 2026-05-09 |
 | Bedrock support chat at `/api/support/chat` (Claude Haiku 3.5) | ✅ live | 2026-05-09 |
-| Capacitor CORS preflight | ✅ live | 2026-05-09 |
+| Mobile CORS handling | ✅ live | 2026-05-09 |
 | Geofence enforcement (150 m, `422 GEOFENCE_OUT_OF_BOUNDS`) | ✅ live | 2026-05-09 |
 | Mobile secure storage (Keychain / Keystore) | ✅ live | 2026-05-09 |
 | Web cookie sessions + CSRF | ✅ live | 2026-05-09 |
 | Audit-event durable persistence | ✅ live | 2026-05-09 |
 | Audit retention status endpoint | ✅ live | 2026-05-09 |
 | Sandata CSV export skeleton at `/api/exports/sandata.csv` | ✅ live | 2026-05-09 |
-| Mobile offline visit-action queue | ✅ live | 2026-05-09 |
+| Mobile offline visit-action queue | ⚠️ planned (Tier 2 Wk 7) | — |
 | Notification permission deferred until first clock-in | ✅ live | 2026-05-09 |
 
 ---
@@ -224,7 +224,7 @@ What's still required for spots: VO recording, music license (~$15 Artlist/Epide
 ## Architecture mental model
 
 - **Web auth:** HttpOnly `rayhealth_session` cookie + CSRF token. No bearer tokens in `localStorage`. Security regression scan (`npm run security:scan`) fails CI if `rayhealth_token` or `localStorage.setItem('rayhealth_…')` patterns reappear.
-- **Mobile auth:** JWT from `/auth/mobile/login`, stored in `@aparajita/capacitor-secure-storage` (iOS Keychain / Android Keystore).
+- **Mobile auth:** JWT from `/auth/mobile/login`, stored in `expo-secure-store` (iOS Keychain / Android Keystore).
 - **Server auth context:** session cookies first, then bearer fallback.
 - **Audit persistence:** `audit_events` is append-only via `audit_events_block_mutation_trg` trigger; durable repository in `@rayhealth/core`. Retention sweep (this cycle's work) bypasses the trigger inside a transaction via `SET LOCAL session_replication_role = 'replica'`.
 - **Aggregator transmission:** Sandata + HHAeXchange both implemented. Per-agency config split into three tables: `agency_evv_config` (which aggregator), `agency_sandata_config` (Sandata identity + JSONB mappings), `agency_hhaexchange_config` (HHAeXchange identity + JSONB mappings). The export pipeline resolves the aggregator via `resolveAggregator(stateCode, persistedPreference)` which honours the state registry's `aggregatorChoice` flag (NJ → forced HHAeXchange).

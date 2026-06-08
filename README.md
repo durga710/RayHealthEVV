@@ -13,7 +13,7 @@ This is a Turbo-managed npm monorepo. The four workspaces are:
 | `packages/core` | Shared domain entities (Zod-validated), repositories, migrations, state-strategy registry (PA, NJ, …), and the per-aggregator export contracts (Sandata, HHAeXchange) |
 | `packages/app` | Express backend — REST API, auth, audit middleware, AI Copilot runtime, EVV export endpoints |
 | `packages/web` | React + Vite admin UI for agency owners and coordinators |
-| `packages/mobile-capacitor` | Capacitor iOS/Android caregiver app (subtree from the production mobile repo) |
+| `packages/mobile` | Expo + React Native (SDK 54, RN 0.81.5) iOS/Android caregiver app. The legacy `packages/mobile-capacitor` directory holds dormant source from an earlier Capacitor attempt and is not wired into the build |
 
 Top-level surface:
 
@@ -60,7 +60,7 @@ npm run dev         # if a root-level dev script exists; otherwise per-workspace
 ## Architecture mental model
 
 - **Web auth.** HttpOnly `rayhealth_session` cookie + CSRF token. No bearer tokens in browser storage — `scripts/security-surface-scan.ts` fails CI if any `localStorage.setItem('rayhealth_…')` or `localStorage.setItem('rayhealth.…')` pattern reappears.
-- **Mobile auth.** JWT from `/auth/mobile/login`, stored in `@aparajita/capacitor-secure-storage` (iOS Keychain / Android Keystore).
+- **Mobile auth.** JWT from `/auth/mobile/login`, stored in `expo-secure-store` (iOS Keychain / Android Keystore).
 - **Server auth context.** Session cookies first, bearer fallback. Every protected route uses `requireCapability(...)` middleware.
 - **Audit persistence.** `audit_events` is append-only via the `audit_events_block_mutation_trg` trigger. The retention sweep bypasses the trigger inside a transaction via `SET LOCAL session_replication_role = 'replica'` and writes its own audit row to `audit_retention_runs`.
 - **Aggregator transmission.** Sandata and HHAeXchange both implemented. Per-agency config split into three tables: `agency_evv_config` (which aggregator), `agency_sandata_config` (Sandata identity + JSONB mappings), `agency_hhaexchange_config` (HHAeXchange identity + JSONB mappings). The state registry's `aggregatorChoice` flag decides whether the agency can pick (PA, yes; NJ, no — forced HHAeXchange).
