@@ -1,5 +1,16 @@
-import React, { useEffect, useId, useState, type FormEvent } from 'react';
+import React, { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ShieldCheck, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 /**
  * Caregiver invite acceptance page.
@@ -190,17 +201,17 @@ export function AcceptInvitePage(): React.JSX.Element {
 
   if (loading) {
     return (
-      <Shell>
-        <p style={{ color: 'var(--color-text-muted)' }}>Loading your invitation…</p>
+      <Shell description="Loading your invitation…">
+        <p className="text-center text-sm text-muted-foreground">Loading your invitation…</p>
       </Shell>
     );
   }
 
   if (loadError) {
     return (
-      <Shell>
+      <Shell description="Invitation">
         <ErrorBox>{loadError}</ErrorBox>
-        <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+        <p className="mt-4 text-sm text-muted-foreground">
           If you believe this is wrong, contact your coordinator and ask them to resend the invitation.
         </p>
       </Shell>
@@ -209,7 +220,7 @@ export function AcceptInvitePage(): React.JSX.Element {
 
   if (!info) {
     return (
-      <Shell>
+      <Shell description="Invitation">
         <ErrorBox>Invitation could not be loaded.</ErrorBox>
       </Shell>
     );
@@ -218,8 +229,7 @@ export function AcceptInvitePage(): React.JSX.Element {
   const blockingStatus = statusMessage(info.status);
   if (blockingStatus) {
     return (
-      <Shell>
-        <h1 style={{ marginBottom: '0.5rem' }}>{info.agencyName}</h1>
+      <Shell description={info.agencyName}>
         <ErrorBox>{blockingStatus}</ErrorBox>
       </Shell>
     );
@@ -227,34 +237,39 @@ export function AcceptInvitePage(): React.JSX.Element {
 
   if (success) {
     return (
-      <Shell>
-        <h1 style={{ marginBottom: '0.5rem' }}>Welcome to {info.agencyName}</h1>
-        <p style={{ color: '#059669' }}>
+      <Shell description={`Welcome to ${info.agencyName}`}>
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
           Your account is ready. Redirecting you to sign in…
-        </p>
+        </div>
       </Shell>
     );
   }
 
   return (
-    <Shell>
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ marginBottom: '0.25rem' }}>
-          RayHealth <span className="evv-badge" style={badgeStyle}>EVV</span>
-        </h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-          You've been invited to join <strong>{info.agencyName}</strong> as a {info.role}.
-        </p>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-          Invitation for {info.email}
-        </p>
-      </div>
+    <Shell
+      description={
+        <>
+          You&apos;ve been invited to join <strong>{info.agencyName}</strong> as a {info.role}.
+          <br />
+          <span className="text-xs">Invitation for {info.email}</span>
+        </>
+      }
+    >
+      {submitError && (
+        <div
+          role="alert"
+          className="mb-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>{submitError}</span>
+        </div>
+      )}
 
-      {submitError && <ErrorBox>{submitError}</ErrorBox>}
-
-      <form onSubmit={handleSubmit} noValidate>
-        <Field label="Access code" hint="From the email we sent you (format: XXXX-XXXX).">
-          <input
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="accessCode">Access code</Label>
+          <Input
+            id="accessCode"
             type="text"
             inputMode="text"
             autoComplete="one-time-code"
@@ -262,46 +277,54 @@ export function AcceptInvitePage(): React.JSX.Element {
             onChange={(e) => setAccessCode(e.target.value)}
             placeholder="ABCD-1234"
             required
-            style={{ letterSpacing: '2px', fontFamily: 'SF Mono, Menlo, monospace' }}
+            className="font-mono tracking-[2px]"
           />
-        </Field>
+          <p className="text-xs text-muted-foreground">
+            From the email we sent you (format: XXXX-XXXX).
+          </p>
+        </div>
 
-        <Row>
-          <Field label="First name">
-            <input
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="firstName">First name</Label>
+            <Input
+              id="firstName"
               type="text"
               autoComplete="given-name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
             />
-          </Field>
-          <Field label="Last name">
-            <input
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="lastName">Last name</Label>
+            <Input
+              id="lastName"
               type="text"
               autoComplete="family-name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
             />
-          </Field>
-        </Row>
+          </div>
+        </div>
 
-        <Field label="Phone (optional)">
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="phone">Phone (optional)</Label>
+          <Input
+            id="phone"
             type="tel"
             autoComplete="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+1 555 555 5555"
           />
-        </Field>
+        </div>
 
-        <Field
-          label="Password"
-          hint={`Minimum ${PASSWORD_MIN_LENGTH} characters — mix letters, numbers, and symbols.`}
-        >
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
             type="password"
             autoComplete="new-password"
             value={password}
@@ -309,10 +332,15 @@ export function AcceptInvitePage(): React.JSX.Element {
             minLength={PASSWORD_MIN_LENGTH}
             required
           />
-        </Field>
+          <p className="text-xs text-muted-foreground">
+            Minimum {PASSWORD_MIN_LENGTH} characters — mix letters, numbers, and symbols.
+          </p>
+        </div>
 
-        <Field label="Confirm password">
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="confirmPassword">Confirm password</Label>
+          <Input
+            id="confirmPassword"
             type="password"
             autoComplete="new-password"
             value={confirmPassword}
@@ -320,18 +348,14 @@ export function AcceptInvitePage(): React.JSX.Element {
             minLength={PASSWORD_MIN_LENGTH}
             required
           />
-        </Field>
+        </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{ width: '100%', marginTop: '1.5rem', opacity: submitting ? 0.7 : 1 }}
-        >
+        <Button type="submit" size="lg" disabled={submitting} className="w-full">
           {submitting ? 'Setting up your account…' : 'Accept invitation & create account'}
-        </button>
+        </Button>
       </form>
 
-      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '1.25rem', textAlign: 'center' }}>
+      <p className="mt-5 text-center text-xs text-muted-foreground">
         By accepting you agree to the RayHealth EVV terms of service and acknowledge that this
         platform is designed to support HIPAA-grade privacy and EVV compliance for participating agencies.
       </p>
@@ -341,82 +365,43 @@ export function AcceptInvitePage(): React.JSX.Element {
 
 // ----- Sub-components (kept local — this page is the only consumer) -----
 
-const badgeStyle: React.CSSProperties = {
-  backgroundColor: 'var(--color-accent)',
-  color: 'white',
-  padding: '2px 10px',
-  borderRadius: '12px',
-  fontSize: '0.75rem',
-  letterSpacing: '2px',
-  fontWeight: 800,
-};
-
 interface ShellProps {
-  children: React.ReactNode;
+  description: ReactNode;
+  children: ReactNode;
 }
-function Shell({ children }: ShellProps): React.JSX.Element {
+function Shell({ description, children }: ShellProps): React.JSX.Element {
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--color-bg)',
-      }}
-    >
-      <div className="card" style={{ width: '100%', maxWidth: '460px', margin: '2rem' }}>
-        {children}
-      </div>
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_12%_8%,rgba(249,115,22,0.10),transparent_28rem),linear-gradient(180deg,#f6fbff_0%,#eef5fb_40%,#f8fbfd_100%)] p-4">
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+            <ShieldCheck className="size-6" aria-hidden />
+          </div>
+          <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+            RayHealth
+            <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-extrabold tracking-[0.18em] text-accent-foreground">
+              EVV
+            </span>
+          </CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent>{children}</CardContent>
+      </Card>
     </div>
-  );
-}
-
-interface FieldProps {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}
-function Field({ label, hint, children }: FieldProps): React.JSX.Element {
-  const id = useId();
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.75rem' }}>
-      <label htmlFor={id} style={{ fontSize: '0.875rem', fontWeight: 600 }}>{label}</label>
-      {React.isValidElement(children)
-        ? React.cloneElement(children as React.ReactElement<Record<string, unknown>>, { id })
-        : children}
-      {hint && (
-        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{hint}</span>
-      )}
-    </div>
-  );
-}
-
-interface RowProps {
-  children: React.ReactNode;
-}
-function Row({ children }: RowProps): React.JSX.Element {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>{children}</div>
   );
 }
 
 interface ErrorBoxProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 function ErrorBox({ children }: ErrorBoxProps): React.JSX.Element {
   return (
     <div
-      style={{
-        backgroundColor: '#fef2f2',
-        border: '1px solid #fca5a5',
-        borderRadius: '6px',
-        padding: '0.75rem 1rem',
-        color: '#b91c1c',
-        fontSize: '0.875rem',
-      }}
+      role="alert"
+      className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
-      {children}
+      <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <span>{children}</span>
     </div>
   );
 }

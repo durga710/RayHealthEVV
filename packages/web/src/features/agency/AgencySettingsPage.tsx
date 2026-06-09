@@ -1,6 +1,64 @@
 import { useEffect, useState, type ReactElement } from 'react';
+import {
+  Sparkles,
+  Bell,
+  Network,
+  Building2,
+  Users,
+} from 'lucide-react';
 import { getJson, postJson, HttpError } from '../../lib/api-client.js';
 import { useAuth } from '../../lib/AuthContext.js';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+
+const optionCard = (active: boolean): string =>
+  cn(
+    'flex flex-1 min-w-[200px] cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors',
+    active
+      ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+      : 'border-border hover:bg-muted/50',
+  );
+
+const toggleRowClass =
+  'flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-muted/40 p-3 text-sm';
+
+const successMessageClass =
+  'rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800';
+
+const errorMessageClass =
+  'rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive';
+
+const readOnlyNoticeClass =
+  'rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800';
+
+function EmptyState({ message }: { message: string }): ReactElement {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
+      <Users className="size-8 text-muted-foreground/60" aria-hidden />
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  );
+}
 
 /**
  * Agency Settings — admin-only configuration surface. Currently houses the
@@ -142,114 +200,116 @@ export function AgencySettingsPage(): ReactElement {
 
   return (
     <div>
-      <header style={{ marginBottom: '2rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Agency settings</h2>
-        <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, #64748b)', fontSize: '0.9rem' }}>
-          Per-agency configuration. Add-on entitlements visible only to admins.
-        </p>
-      </header>
+      <PageHeader
+        title="Agency Settings"
+        description="Per-agency configuration. Add-on entitlements visible only to admins."
+      />
 
-      {loading && <p>Loading settings…</p>}
+      <div className="space-y-6">
+        {loading && <p className="text-sm text-muted-foreground">Loading settings…</p>}
 
-      {error && (
-        <div role="alert" style={errorBoxStyle}>
-          <strong>Could not save.</strong> {error}
-        </div>
-      )}
-
-      {features && (
-        <section style={sectionCardStyle}>
-          <div style={sectionHeaderStyle}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 500 }}>
-                AI Workflow Copilot
-              </h3>
-              <p style={sectionSubtitleStyle}>
-                Per-role assistants (caregiver, coordinator, owner) backed by Google Gemini.
-                Every action proposed by the copilot requires admin confirmation before executing.
-              </p>
-            </div>
-            <span style={features.aiCopilot.enabled ? activeBadgeStyle : inactiveBadgeStyle}>
-              {features.aiCopilot.enabled ? 'Active' : 'Off'}
-            </span>
+        {error && (
+          <div role="alert" className={errorMessageClass}>
+            <strong>Could not save.</strong> {error}
           </div>
+        )}
 
-          {!isAdmin && (
-            <div style={readOnlyNoticeStyle}>
-              <strong>Owner-only setting.</strong> Only an agency admin can enable or change this add-on.
-            </div>
-          )}
-
-          {isAdmin && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <label style={toggleRowStyle}>
-                <input
-                  type="checkbox"
-                  checked={features.aiCopilot.enabled}
-                  onChange={toggleCopilot}
-                  disabled={saving}
-                  style={{ width: '18px', height: '18px' }}
-                />
-                <span>
-                  <strong>Enable AI Copilot for this agency</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.15rem' }}>
-                    When off, the panel is visible on the Learning Hub but locked.
-                  </div>
-                </span>
-              </label>
-
-              <fieldset style={planFieldsetStyle} disabled={!features.aiCopilot.enabled || saving}>
-                <legend style={{ fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>Plan</legend>
-                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                  {(['starter', 'pro'] as AiCopilotPlan[]).map((p) => (
-                    <label
-                      key={p}
-                      style={planOptionStyle(features.aiCopilot.plan === p)}
-                    >
-                      <input
-                        type="radio"
-                        name="copilot-plan"
-                        value={p}
-                        checked={features.aiCopilot.plan === p}
-                        onChange={() => setPlan(p)}
-                        disabled={!features.aiCopilot.enabled || saving}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      <span>
-                        <strong>{p === 'pro' ? 'Pro' : 'Starter'}</strong>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                          {p === 'starter'
-                            ? 'Compliance copilot + per-role suggestions'
-                            : 'Adds workflow agents that propose multi-step actions'}
-                        </div>
-                      </span>
-                    </label>
-                  ))}
+        {features && (
+          <Card>
+            <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1.5">
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="size-5 text-primary" aria-hidden />
+                  AI Workflow Copilot
+                </CardTitle>
+                <CardDescription className="max-w-[480px]">
+                  Per-role assistants (caregiver, coordinator, owner) backed by Google Gemini.
+                  Every action proposed by the copilot requires admin confirmation before executing.
+                </CardDescription>
+              </div>
+              <Badge variant={features.aiCopilot.enabled ? 'success' : 'secondary'}>
+                {features.aiCopilot.enabled ? 'Active' : 'Off'}
+              </Badge>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!isAdmin && (
+                <div className={readOnlyNoticeClass}>
+                  <strong>Owner-only setting.</strong> Only an agency admin can enable or change this add-on.
                 </div>
-              </fieldset>
-            </div>
-          )}
+              )}
 
-          {savedAt && (
-            <p style={savedAtStyle}>
-              Saved {savedAt.toLocaleTimeString()}.
-            </p>
-          )}
-        </section>
-      )}
+              {isAdmin && (
+                <div className="flex flex-col gap-4">
+                  <label className={toggleRowClass}>
+                    <input
+                      type="checkbox"
+                      checked={features.aiCopilot.enabled}
+                      onChange={toggleCopilot}
+                      disabled={saving}
+                      className="mt-0.5 size-[18px]"
+                    />
+                    <span>
+                      <strong>Enable AI Copilot for this agency</strong>
+                      <div className="mt-0.5 text-sm text-muted-foreground">
+                        When off, the panel is visible on the Learning Hub but locked.
+                      </div>
+                    </span>
+                  </label>
 
-      {features && (
-        <NotificationsSection
-          features={features}
-          isAdmin={isAdmin}
-          saving={saving}
-          onChange={saveFeatures}
-        />
-      )}
+                  <fieldset
+                    className="rounded-lg border border-border p-4 disabled:opacity-60"
+                    disabled={!features.aiCopilot.enabled || saving}
+                  >
+                    <legend className="px-1 text-sm font-medium text-muted-foreground">Plan</legend>
+                    <div className="mt-2 flex flex-wrap gap-3">
+                      {(['starter', 'pro'] as AiCopilotPlan[]).map((p) => (
+                        <label key={p} className={optionCard(features.aiCopilot.plan === p)}>
+                          <input
+                            type="radio"
+                            name="copilot-plan"
+                            value={p}
+                            checked={features.aiCopilot.plan === p}
+                            onChange={() => setPlan(p)}
+                            disabled={!features.aiCopilot.enabled || saving}
+                            className="mt-0.5"
+                          />
+                          <span>
+                            <strong>{p === 'pro' ? 'Pro' : 'Starter'}</strong>
+                            <div className="text-xs text-muted-foreground">
+                              {p === 'starter'
+                                ? 'Compliance copilot + per-role suggestions'
+                                : 'Adds workflow agents that propose multi-step actions'}
+                            </div>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+              )}
 
-      <EvvAggregatorSection isAdmin={isAdmin} />
-      <SandataConfigSection isAdmin={isAdmin} />
-      <HhaexchangeConfigSection isAdmin={isAdmin} />
+              {savedAt && (
+                <p className="text-right text-xs text-muted-foreground">
+                  Saved {savedAt.toLocaleTimeString()}.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {features && (
+          <NotificationsSection
+            features={features}
+            isAdmin={isAdmin}
+            saving={saving}
+            onChange={saveFeatures}
+          />
+        )}
+
+        <EvvAggregatorSection isAdmin={isAdmin} />
+        <SandataConfigSection isAdmin={isAdmin} />
+        <HhaexchangeConfigSection isAdmin={isAdmin} />
+      </div>
     </div>
   );
 }
@@ -357,132 +417,140 @@ function SandataConfigSection({ isAdmin }: SandataConfigSectionProps): ReactElem
 
   if (loading) {
     return (
-      <section style={sectionCardStyle}>
-        <p>Loading Sandata configuration…</p>
-      </section>
+      <Card>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Loading Sandata configuration…</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!config) {
     return (
-      <section style={sectionCardStyle}>
-        {error && <div role="alert" style={errorBoxStyle}>{error}</div>}
-      </section>
+      <Card>
+        <CardContent>
+          {error && <div role="alert" className={errorMessageClass}>{error}</div>}
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <section style={sectionCardStyle}>
-      <div style={sectionHeaderStyle}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 500 }}>
+    <Card>
+      <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle className="flex items-center gap-2">
+            <Network className="size-5 text-primary" aria-hidden />
             Sandata identity & mappings
-          </h3>
-          <p style={sectionSubtitleStyle}>
+          </CardTitle>
+          <CardDescription className="max-w-[480px]">
             Sandata Provider ID is a 9-digit numeric identifier assigned by Sandata when your
             agency registers with the PA Aggregator (or your state's Sandata-backed program).
             Per-caregiver external worker IDs and HCPCS service mappings drive the visit export.
-          </p>
+          </CardDescription>
         </div>
-        <span style={config.enabled ? activeBadgeStyle : inactiveBadgeStyle}>
+        <Badge variant={config.enabled ? 'success' : 'secondary'}>
           {config.enabled ? 'Enabled' : 'Disabled'}
-        </span>
-      </div>
-
-      {error && (
-        <div role="alert" style={errorBoxStyle}>
-          <strong>Could not save.</strong> {error}
-        </div>
-      )}
-
-      {!isAdmin && (
-        <div style={readOnlyNoticeStyle}>
-          <strong>Owner-only setting.</strong> Only an agency admin can change Sandata config.
-        </div>
-      )}
-
-      <form onSubmit={submitIdentity} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-        <fieldset style={planFieldsetStyle} disabled={!isAdmin || saving}>
-          <legend style={{ fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>Identity</legend>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>Provider ID (9 digits)</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="\d{9}"
-                maxLength={9}
-                value={providerId}
-                onChange={(e) => setProviderId(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456789"
-                style={{ fontFamily: 'SF Mono, Menlo, monospace' }}
-              />
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>Timezone</span>
-              <input
-                type="text"
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                placeholder="America/New_York"
-              />
-            </label>
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <div role="alert" className={errorMessageClass}>
+            <strong>Could not save.</strong> {error}
           </div>
-          <div style={{ marginTop: '0.75rem' }}>
-            <button type="submit" disabled={!isAdmin || saving} style={{ padding: '0.5rem 1rem' }}>
-              {saving ? 'Saving…' : 'Save identity'}
-            </button>
-          </div>
-        </fieldset>
-      </form>
+        )}
 
-      {isAdmin && (
-        <label style={{ ...toggleRowStyle, marginTop: '1rem' }}>
-          <input
-            type="checkbox"
-            checked={config.enabled}
-            onChange={(e) => void save({ enabled: e.target.checked })}
-            disabled={saving || (!config.providerId && !config.enabled)}
-            style={{ width: '18px', height: '18px' }}
-          />
-          <span>
-            <strong>Enable Sandata export</strong>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.15rem' }}>
-              When off, the export pipeline emits no rows to Sandata. Toggling on requires
-              Provider ID to be populated above.
+        {!isAdmin && (
+          <div className={readOnlyNoticeClass}>
+            <strong>Owner-only setting.</strong> Only an agency admin can change Sandata config.
+          </div>
+        )}
+
+        <form onSubmit={submitIdentity} className="flex flex-col gap-3.5">
+          <fieldset className="rounded-lg border border-border p-4 disabled:opacity-60" disabled={!isAdmin || saving}>
+            <legend className="px-1 text-sm font-medium text-muted-foreground">Identity</legend>
+            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="sandata-provider-id">Provider ID (9 digits)</Label>
+                <Input
+                  id="sandata-provider-id"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d{9}"
+                  maxLength={9}
+                  value={providerId}
+                  onChange={(e) => setProviderId(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456789"
+                  className="font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sandata-timezone">Timezone</Label>
+                <Input
+                  id="sandata-timezone"
+                  type="text"
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  placeholder="America/New_York"
+                />
+              </div>
             </div>
-          </span>
-        </label>
-      )}
+            <div className="mt-3">
+              <Button type="submit" disabled={!isAdmin || saving}>
+                {saving ? 'Saving…' : 'Save identity'}
+              </Button>
+            </div>
+          </fieldset>
+        </form>
 
-      <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.75rem' }}>
-        <strong>{config.caregivers.length}</strong> caregiver mapping{config.caregivers.length === 1 ? '' : 's'}
-        {' · '}
-        <strong>{config.services.length}</strong> service mapping{config.services.length === 1 ? '' : 's'}
-      </p>
+        {isAdmin && (
+          <label className={toggleRowClass}>
+            <input
+              type="checkbox"
+              checked={config.enabled}
+              onChange={(e) => void save({ enabled: e.target.checked })}
+              disabled={saving || (!config.providerId && !config.enabled)}
+              className="mt-0.5 size-[18px]"
+            />
+            <span>
+              <strong>Enable Sandata export</strong>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                When off, the export pipeline emits no rows to Sandata. Toggling on requires
+                Provider ID to be populated above.
+              </div>
+            </span>
+          </label>
+        )}
 
-      {isAdmin && (
-        <SandataCaregiverMappingsEditor
-          mappings={config.caregivers}
-          saving={saving}
-          onCommit={(next) => save({ caregivers: next })}
-        />
-      )}
-
-      {isAdmin && (
-        <SandataServiceMappingsEditor
-          mappings={config.services}
-          saving={saving}
-          onCommit={(next) => save({ services: next })}
-        />
-      )}
-
-      {savedAt && (
-        <p style={savedAtStyle}>
-          Saved {savedAt.toLocaleTimeString()}.
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Badge variant="outline">{config.caregivers.length}</Badge> caregiver mapping{config.caregivers.length === 1 ? '' : 's'}
+          {' · '}
+          <Badge variant="outline">{config.services.length}</Badge> service mapping{config.services.length === 1 ? '' : 's'}
         </p>
-      )}
-    </section>
+
+        {isAdmin && (
+          <SandataCaregiverMappingsEditor
+            mappings={config.caregivers}
+            saving={saving}
+            onCommit={(next) => save({ caregivers: next })}
+          />
+        )}
+
+        {isAdmin && (
+          <SandataServiceMappingsEditor
+            mappings={config.services}
+            saving={saving}
+            onCommit={(next) => save({ services: next })}
+          />
+        )}
+
+        {savedAt && (
+          <p className="text-right text-xs text-muted-foreground">
+            Saved {savedAt.toLocaleTimeString()}.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -556,60 +624,62 @@ function SandataCaregiverMappingsEditor({
   );
 
   return (
-    <div style={{ marginTop: '1.25rem' }}>
-      <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem', fontWeight: 600 }}>
-        Caregiver mappings
-      </h4>
-      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.6rem' }}>
+    <div className="mt-5">
+      <h4 className="mb-2 text-sm font-semibold">Caregiver mappings</h4>
+      <p className="mb-2.5 text-xs text-muted-foreground">
         Map each RayHealth caregiver to their Sandata External Worker ID. Visits for unmapped
         caregivers are skipped at export time.
       </p>
 
       {localError && (
-        <div role="alert" style={{ ...errorBoxStyle, marginBottom: '0.5rem' }}>{localError}</div>
+        <div role="alert" className={cn(errorMessageClass, 'mb-2')}>{localError}</div>
       )}
 
       {mappings.length > 0 ? (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '0.75rem' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Caregiver</th>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>External Worker ID</th>
-              <th style={{ padding: '0.4rem 0.5rem' }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {mappings.map((m) => (
-              <tr key={m.caregiverId} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem' }}>{nameFor(m.caregiverId)}</td>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem', fontFamily: 'SF Mono, Menlo, monospace' }}>{m.externalWorkerId}</td>
-                <td style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>
-                  <button
-                    onClick={() => void removeMapping(m.caregiverId)}
-                    disabled={saving}
-                    style={{ background: 'transparent', border: 'none', color: '#b91c1c', cursor: 'pointer', fontSize: '0.85rem' }}
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mb-3 overflow-hidden rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead>Caregiver</TableHead>
+                <TableHead>External Worker ID</TableHead>
+                <TableHead className="text-right" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mappings.map((m) => (
+                <TableRow key={m.caregiverId}>
+                  <TableCell className="font-medium">{nameFor(m.caregiverId)}</TableCell>
+                  <TableCell className="font-mono text-muted-foreground">{m.externalWorkerId}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void removeMapping(m.caregiverId)}
+                      disabled={saving}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
-        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
-          No caregiver mappings yet.
-        </p>
+        <div className="mb-3">
+          <EmptyState message="No caregiver mappings yet." />
+        </div>
       )}
 
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-        <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Caregiver</span>
-          <select
+      <div className="flex items-end gap-2">
+        <div className="flex-1 space-y-1.5">
+          <Label htmlFor="sandata-cg-pick">Caregiver</Label>
+          <Select
+            id="sandata-cg-pick"
             value={pickedCaregiverId}
             onChange={(e) => setPickedCaregiverId(e.target.value)}
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
           >
             <option value="">— pick a caregiver —</option>
             {unmappedCaregivers.map((c) => (
@@ -617,27 +687,27 @@ function SandataCaregiverMappingsEditor({
                 {c.firstName} {c.lastName}
               </option>
             ))}
-          </select>
-        </label>
-        <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>External Worker ID</span>
-          <input
+          </Select>
+        </div>
+        <div className="flex-1 space-y-1.5">
+          <Label htmlFor="sandata-cg-worker">External Worker ID</Label>
+          <Input
+            id="sandata-cg-worker"
             type="text"
             value={newWorkerId}
             onChange={(e) => setNewWorkerId(e.target.value)}
             placeholder="EW-1234"
             maxLength={32}
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontFamily: 'SF Mono, Menlo, monospace' }}
+            className="font-mono"
           />
-        </label>
-        <button
+        </div>
+        <Button
           onClick={() => void addMapping()}
           disabled={saving || !pickedCaregiverId || !newWorkerId.trim()}
-          style={{ padding: '0.5rem 0.9rem', border: 'none', backgroundColor: '#0B5FB1', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}
         >
           Add mapping
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -699,111 +769,114 @@ function SandataServiceMappingsEditor({
   };
 
   return (
-    <div style={{ marginTop: '1.25rem' }}>
-      <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem', fontWeight: 600 }}>
-        Service mappings
-      </h4>
-      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.6rem' }}>
+    <div className="mt-5">
+      <h4 className="mb-2 text-sm font-semibold">Service mappings</h4>
+      <p className="mb-2.5 text-xs text-muted-foreground">
         Map each RayHealth internal service code to a Sandata HCPCS code + modifier.
         PA typically uses T1019 + U4 (personal care), U5 (respite), U7 (companion).
       </p>
 
       {localError && (
-        <div role="alert" style={{ ...errorBoxStyle, marginBottom: '0.5rem' }}>{localError}</div>
+        <div role="alert" className={cn(errorMessageClass, 'mb-2')}>{localError}</div>
       )}
 
       {mappings.length > 0 ? (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '0.75rem' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Internal</th>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>HCPCS</th>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Modifier</th>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Label</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {mappings.map((m) => (
-              <tr key={m.internalServiceCode} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem', fontFamily: 'SF Mono, Menlo, monospace' }}>{m.internalServiceCode}</td>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem', fontFamily: 'SF Mono, Menlo, monospace' }}>{m.hcpcsCode}</td>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem', fontFamily: 'SF Mono, Menlo, monospace' }}>{m.hcpcsModifier}</td>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem' }}>{m.label}</td>
-                <td style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>
-                  <button
-                    onClick={() => void removeMapping(m.internalServiceCode)}
-                    disabled={saving}
-                    style={{ background: 'transparent', border: 'none', color: '#b91c1c', cursor: 'pointer', fontSize: '0.85rem' }}
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mb-3 overflow-hidden rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead>Internal</TableHead>
+                <TableHead>HCPCS</TableHead>
+                <TableHead>Modifier</TableHead>
+                <TableHead>Label</TableHead>
+                <TableHead className="text-right" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mappings.map((m) => (
+                <TableRow key={m.internalServiceCode}>
+                  <TableCell className="font-mono">{m.internalServiceCode}</TableCell>
+                  <TableCell className="font-mono">{m.hcpcsCode}</TableCell>
+                  <TableCell className="font-mono">{m.hcpcsModifier}</TableCell>
+                  <TableCell>{m.label}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void removeMapping(m.internalServiceCode)}
+                      disabled={saving}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
-        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
-          No service mappings yet.
-        </p>
+        <div className="mb-3">
+          <EmptyState message="No service mappings yet." />
+        </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: '0.5rem', alignItems: 'end' }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Internal code</span>
-          <input
+      <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+        <div className="space-y-1.5">
+          <Label htmlFor="sandata-svc-internal">Internal code</Label>
+          <Input
+            id="sandata-svc-internal"
             type="text"
             value={internalCode}
             onChange={(e) => setInternalCode(e.target.value)}
             placeholder="PERSONAL_CARE"
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontFamily: 'SF Mono, Menlo, monospace' }}
+            className="font-mono"
           />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>HCPCS code</span>
-          <input
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="sandata-svc-hcpcs">HCPCS code</Label>
+          <Input
+            id="sandata-svc-hcpcs"
             type="text"
             value={hcpcsCode}
             onChange={(e) => setHcpcsCode(e.target.value.toUpperCase())}
             placeholder="T1019"
             maxLength={5}
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontFamily: 'SF Mono, Menlo, monospace' }}
+            className="font-mono"
           />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Modifier</span>
-          <select
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="sandata-svc-modifier">Modifier</Label>
+          <Select
+            id="sandata-svc-modifier"
             value={hcpcsModifier}
             onChange={(e) => setHcpcsModifier(e.target.value as typeof HCPCS_MODIFIERS[number])}
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
           >
             {HCPCS_MODIFIERS.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
-          </select>
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Label</span>
-          <input
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="sandata-svc-label">Label</Label>
+          <Input
+            id="sandata-svc-label"
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Personal Care"
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
           />
-        </label>
-        <button
+        </div>
+        <Button
           onClick={() => void addMapping()}
           disabled={saving || !internalCode.trim() || !hcpcsCode.trim() || !label.trim()}
-          style={{ padding: '0.5rem 0.9rem', border: 'none', backgroundColor: '#0B5FB1', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}
         >
           Add
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -880,17 +953,21 @@ function EvvAggregatorSection({ isAdmin }: EvvAggregatorSectionProps): ReactElem
 
   if (loading) {
     return (
-      <section style={sectionCardStyle}>
-        <p>Loading EVV configuration…</p>
-      </section>
+      <Card>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Loading EVV configuration…</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!config) {
     return (
-      <section style={sectionCardStyle}>
-        {error && <div role="alert" style={errorBoxStyle}>{error}</div>}
-      </section>
+      <Card>
+        <CardContent>
+          {error && <div role="alert" className={errorMessageClass}>{error}</div>}
+        </CardContent>
+      </Card>
     );
   }
 
@@ -901,95 +978,97 @@ function EvvAggregatorSection({ isAdmin }: EvvAggregatorSectionProps): ReactElem
   ];
 
   return (
-    <section style={sectionCardStyle}>
-      <div style={sectionHeaderStyle}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 500 }}>
+    <Card>
+      <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle className="flex items-center gap-2">
+            <Network className="size-5 text-primary" aria-hidden />
             EVV aggregator
-          </h3>
-          <p style={sectionSubtitleStyle}>
+          </CardTitle>
+          <CardDescription className="max-w-[480px]">
             Selects which state-mandated EVV aggregator the visit export pipeline routes
             to for this agency. Mappings and Provider IDs live in their own sections.
             State: <strong>{config.stateCode}</strong>
             {!config.choiceAvailable && (
               <> — your state forces <strong>{config.stateDefaultAggregator}</strong>.</>
             )}
-          </p>
+          </CardDescription>
         </div>
-        <span style={config.productionReady ? activeBadgeStyle : inactiveBadgeStyle}>
+        <Badge variant={config.productionReady ? 'success' : 'secondary'}>
           {config.productionReady ? 'Production' : 'Dry-run'}
-        </span>
-      </div>
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <div role="alert" className={errorMessageClass}>
+            <strong>Could not save.</strong> {error}
+          </div>
+        )}
 
-      {error && (
-        <div role="alert" style={errorBoxStyle}>
-          <strong>Could not save.</strong> {error}
-        </div>
-      )}
+        {!isAdmin && (
+          <div className={readOnlyNoticeClass}>
+            <strong>Owner-only setting.</strong> Only an agency admin can change the EVV aggregator.
+          </div>
+        )}
 
-      {!isAdmin && (
-        <div style={readOnlyNoticeStyle}>
-          <strong>Owner-only setting.</strong> Only an agency admin can change the EVV aggregator.
-        </div>
-      )}
+        <fieldset
+          className="rounded-lg border border-border p-4 disabled:opacity-60"
+          disabled={!isAdmin || saving || !config.choiceAvailable}
+        >
+          <legend className="px-1 text-sm font-medium text-muted-foreground">
+            Aggregator
+          </legend>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {choices.map((c) => (
+              <label key={c.value} className={optionCard(config.aggregator === c.value)}>
+                <input
+                  type="radio"
+                  name="evv-aggregator"
+                  value={c.value}
+                  checked={config.aggregator === c.value}
+                  onChange={() => void save({ aggregator: c.value })}
+                  disabled={!isAdmin || saving || !config.choiceAvailable}
+                  className="mt-0.5"
+                />
+                <span>
+                  <strong>{c.label}</strong>
+                  <div className="text-xs text-muted-foreground">{c.sub}</div>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
-      <fieldset
-        style={planFieldsetStyle}
-        disabled={!isAdmin || saving || !config.choiceAvailable}
-      >
-        <legend style={{ fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>
-          Aggregator
-        </legend>
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-          {choices.map((c) => (
-            <label key={c.value} style={planOptionStyle(config.aggregator === c.value)}>
-              <input
-                type="radio"
-                name="evv-aggregator"
-                value={c.value}
-                checked={config.aggregator === c.value}
-                onChange={() => void save({ aggregator: c.value })}
-                disabled={!isAdmin || saving || !config.choiceAvailable}
-                style={{ marginRight: '0.5rem' }}
-              />
-              <span>
-                <strong>{c.label}</strong>
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{c.sub}</div>
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+        {isAdmin && config.aggregator !== 'none' && (
+          <label className={toggleRowClass}>
+            <input
+              type="checkbox"
+              checked={config.productionReady}
+              onChange={(e) => void save({
+                aggregator: config.aggregator,
+                productionReady: e.target.checked,
+              })}
+              disabled={saving}
+              className="mt-0.5 size-[18px]"
+            />
+            <span>
+              <strong>Production-ready</strong>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                When off, the export pipeline runs in dry-run — visits are validated against
+                the aggregator's spec but no submission file is generated. Flip on once your
+                Provider ID is registered and mappings are populated.
+              </div>
+            </span>
+          </label>
+        )}
 
-      {isAdmin && config.aggregator !== 'none' && (
-        <label style={{ ...toggleRowStyle, marginTop: '1rem' }}>
-          <input
-            type="checkbox"
-            checked={config.productionReady}
-            onChange={(e) => void save({
-              aggregator: config.aggregator,
-              productionReady: e.target.checked,
-            })}
-            disabled={saving}
-            style={{ width: '18px', height: '18px' }}
-          />
-          <span>
-            <strong>Production-ready</strong>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.15rem' }}>
-              When off, the export pipeline runs in dry-run — visits are validated against
-              the aggregator's spec but no submission file is generated. Flip on once your
-              Provider ID is registered and mappings are populated.
-            </div>
-          </span>
-        </label>
-      )}
-
-      {savedAt && (
-        <p style={savedAtStyle}>
-          Saved {savedAt.toLocaleTimeString()}.
-        </p>
-      )}
-    </section>
+        {savedAt && (
+          <p className="text-right text-xs text-muted-foreground">
+            Saved {savedAt.toLocaleTimeString()}.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1013,94 +1092,96 @@ function NotificationsSection({ features, isAdmin, saving, onChange }: Notificat
   };
 
   return (
-    <section style={sectionCardStyle}>
-      <div style={sectionHeaderStyle}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 500 }}>Notifications</h3>
-          <p style={sectionSubtitleStyle}>
-            Coordinator digests, caregiver push, family email. v2 stub — preferences persist but
-            delivery wires up when the notification service ships.
-          </p>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bell className="size-5 text-primary" aria-hidden />
+          Notifications
+        </CardTitle>
+        <CardDescription className="max-w-[480px]">
+          Coordinator digests, caregiver push, family email. v2 stub — preferences persist but
+          delivery wires up when the notification service ships.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!isAdmin && (
+          <div className={readOnlyNoticeClass}>
+            <strong>Owner-only setting.</strong> Only agency admins can change notification preferences.
+          </div>
+        )}
+
+        <fieldset className="rounded-lg border border-border p-4 disabled:opacity-60" disabled={!isAdmin || saving}>
+          <legend className="px-1 text-sm font-medium text-muted-foreground">Coordinator digest</legend>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {(['off', 'daily', 'weekly'] as NotificationDigest[]).map((d) => (
+              <label key={d} className={optionCard(n.coordinatorDigest === d)}>
+                <input
+                  type="radio"
+                  name="coordinator-digest"
+                  value={d}
+                  checked={n.coordinatorDigest === d}
+                  onChange={() => update({ coordinatorDigest: d })}
+                  disabled={!isAdmin || saving}
+                  className="mt-0.5"
+                />
+                <strong>{d === 'off' ? 'Off' : d === 'daily' ? 'Daily' : 'Weekly'}</strong>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="flex flex-col gap-2.5">
+          <label className={toggleRowClass}>
+            <input
+              type="checkbox"
+              checked={n.caregiverPush}
+              onChange={(e) => update({ caregiverPush: e.target.checked })}
+              disabled={!isAdmin || saving}
+              className="mt-0.5 size-[18px]"
+            />
+            <span>
+              <strong>Caregiver push notifications</strong>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                Visit reminders, training due-soon, schedule changes — pushed to the caregiver mobile app.
+              </div>
+            </span>
+          </label>
+
+          <label className={toggleRowClass}>
+            <input
+              type="checkbox"
+              checked={n.caregiverEmail}
+              onChange={(e) => update({ caregiverEmail: e.target.checked })}
+              disabled={!isAdmin || saving}
+              className="mt-0.5 size-[18px]"
+            />
+            <span>
+              <strong>Caregiver email</strong>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                Same content as push, delivered by email for caregivers who prefer email.
+              </div>
+            </span>
+          </label>
+
+          <label className={toggleRowClass}>
+            <input
+              type="checkbox"
+              checked={n.familyEmail}
+              onChange={(e) => update({ familyEmail: e.target.checked })}
+              disabled={!isAdmin || saving}
+              className="mt-0.5 size-[18px]"
+            />
+            <span>
+              <strong>Family email</strong>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                Daily visit summary emails to family members on the client's authorized contact list.
+                Requires family-portal opt-in per client.
+              </div>
+            </span>
+          </label>
         </div>
-      </div>
-
-      {!isAdmin && (
-        <div style={readOnlyNoticeStyle}>
-          <strong>Owner-only setting.</strong> Only agency admins can change notification preferences.
-        </div>
-      )}
-
-      <fieldset style={planFieldsetStyle} disabled={!isAdmin || saving}>
-        <legend style={{ fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>Coordinator digest</legend>
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-          {(['off', 'daily', 'weekly'] as NotificationDigest[]).map((d) => (
-            <label key={d} style={planOptionStyle(n.coordinatorDigest === d)}>
-              <input
-                type="radio"
-                name="coordinator-digest"
-                value={d}
-                checked={n.coordinatorDigest === d}
-                onChange={() => update({ coordinatorDigest: d })}
-                disabled={!isAdmin || saving}
-                style={{ marginRight: '0.5rem' }}
-              />
-              <strong>{d === 'off' ? 'Off' : d === 'daily' ? 'Daily' : 'Weekly'}</strong>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-        <label style={toggleRowStyle}>
-          <input
-            type="checkbox"
-            checked={n.caregiverPush}
-            onChange={(e) => update({ caregiverPush: e.target.checked })}
-            disabled={!isAdmin || saving}
-            style={{ width: '18px', height: '18px' }}
-          />
-          <span>
-            <strong>Caregiver push notifications</strong>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.15rem' }}>
-              Visit reminders, training due-soon, schedule changes — pushed to the caregiver mobile app.
-            </div>
-          </span>
-        </label>
-
-        <label style={toggleRowStyle}>
-          <input
-            type="checkbox"
-            checked={n.caregiverEmail}
-            onChange={(e) => update({ caregiverEmail: e.target.checked })}
-            disabled={!isAdmin || saving}
-            style={{ width: '18px', height: '18px' }}
-          />
-          <span>
-            <strong>Caregiver email</strong>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.15rem' }}>
-              Same content as push, delivered by email for caregivers who prefer email.
-            </div>
-          </span>
-        </label>
-
-        <label style={toggleRowStyle}>
-          <input
-            type="checkbox"
-            checked={n.familyEmail}
-            onChange={(e) => update({ familyEmail: e.target.checked })}
-            disabled={!isAdmin || saving}
-            style={{ width: '18px', height: '18px' }}
-          />
-          <span>
-            <strong>Family email</strong>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.15rem' }}>
-              Daily visit summary emails to family members on the client's authorized contact list.
-              Requires family-portal opt-in per client.
-            </div>
-          </span>
-        </label>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1215,127 +1296,135 @@ function HhaexchangeConfigSection({ isAdmin }: HhaexchangeConfigSectionProps): R
 
   if (loading) {
     return (
-      <section style={sectionCardStyle}>
-        <p>Loading HHAeXchange configuration…</p>
-      </section>
+      <Card>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Loading HHAeXchange configuration…</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!config) {
     return (
-      <section style={sectionCardStyle}>
-        {error && <div role="alert" style={errorBoxStyle}>{error}</div>}
-      </section>
+      <Card>
+        <CardContent>
+          {error && <div role="alert" className={errorMessageClass}>{error}</div>}
+        </CardContent>
+      </Card>
     );
   }
 
   const identityComplete = Boolean(config.agencyTaxId && config.hhaProviderId);
 
   return (
-    <section style={sectionCardStyle}>
-      <div style={sectionHeaderStyle}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 500 }}>
+    <Card>
+      <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="size-5 text-primary" aria-hidden />
             HHAeXchange identity & mappings
-          </h3>
-          <p style={sectionSubtitleStyle}>
+          </CardTitle>
+          <CardDescription className="max-w-[480px]">
             Required for NJ and any PA agency that picks HHAeXchange. The agency Tax ID
             (EIN, 9 digits no dash) and HHAeXchange Provider ID are issued by HHAeXchange
             when your agency registers. Caregiver and service mappings are managed
             elsewhere — this section covers identity and the master enable switch.
-          </p>
+          </CardDescription>
         </div>
-        <span style={config.enabled ? activeBadgeStyle : inactiveBadgeStyle}>
+        <Badge variant={config.enabled ? 'success' : 'secondary'}>
           {config.enabled ? 'Enabled' : 'Disabled'}
-        </span>
-      </div>
-
-      {error && (
-        <div role="alert" style={errorBoxStyle}>
-          <strong>Could not save.</strong> {error}
-        </div>
-      )}
-
-      {!isAdmin && (
-        <div style={readOnlyNoticeStyle}>
-          <strong>Owner-only setting.</strong> Only an agency admin can change HHAeXchange config.
-        </div>
-      )}
-
-      <form onSubmit={submitIdentity} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-        <fieldset style={planFieldsetStyle} disabled={!isAdmin || saving}>
-          <legend style={{ fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>Identity</legend>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>Agency Tax ID (EIN, 9 digits)</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="\d{9}"
-                maxLength={9}
-                value={taxId}
-                onChange={(e) => setTaxId(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456789"
-                style={{ fontFamily: 'SF Mono, Menlo, monospace' }}
-              />
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>HHAeXchange Provider ID</span>
-              <input
-                type="text"
-                maxLength={32}
-                value={providerId}
-                onChange={(e) => setProviderId(e.target.value)}
-                placeholder="P-100"
-                style={{ fontFamily: 'SF Mono, Menlo, monospace' }}
-              />
-            </label>
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <div role="alert" className={errorMessageClass}>
+            <strong>Could not save.</strong> {error}
           </div>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>Timezone</span>
-            <input
-              type="text"
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              placeholder="America/New_York"
-            />
-          </label>
-          <div style={{ marginTop: '0.75rem' }}>
-            <button type="submit" disabled={!isAdmin || saving} style={{ padding: '0.5rem 1rem' }}>
-              {saving ? 'Saving…' : 'Save identity'}
-            </button>
-          </div>
-        </fieldset>
-      </form>
+        )}
 
-      {isAdmin && (
-        <label style={{ ...toggleRowStyle, marginTop: '1rem' }}>
-          <input
-            type="checkbox"
-            checked={config.enabled}
-            onChange={(e) => void save({ enabled: e.target.checked })}
-            disabled={saving || (!identityComplete && !config.enabled)}
-            style={{ width: '18px', height: '18px' }}
-          />
-          <span>
-            <strong>Enable HHAeXchange export</strong>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.15rem' }}>
-              When off, the export pipeline emits no rows to HHAeXchange even if the EVV
-              aggregator picker is set to HHAeXchange. Toggling on requires Tax ID and
-              Provider ID to be populated above.
+        {!isAdmin && (
+          <div className={readOnlyNoticeClass}>
+            <strong>Owner-only setting.</strong> Only an agency admin can change HHAeXchange config.
+          </div>
+        )}
+
+        <form onSubmit={submitIdentity} className="flex flex-col gap-3.5">
+          <fieldset className="rounded-lg border border-border p-4 disabled:opacity-60" disabled={!isAdmin || saving}>
+            <legend className="px-1 text-sm font-medium text-muted-foreground">Identity</legend>
+            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="hha-tax-id">Agency Tax ID (EIN, 9 digits)</Label>
+                <Input
+                  id="hha-tax-id"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d{9}"
+                  maxLength={9}
+                  value={taxId}
+                  onChange={(e) => setTaxId(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456789"
+                  className="font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="hha-provider-id">HHAeXchange Provider ID</Label>
+                <Input
+                  id="hha-provider-id"
+                  type="text"
+                  maxLength={32}
+                  value={providerId}
+                  onChange={(e) => setProviderId(e.target.value)}
+                  placeholder="P-100"
+                  className="font-mono"
+                />
+              </div>
             </div>
-          </span>
-        </label>
-      )}
+            <div className="mt-3 space-y-1.5">
+              <Label htmlFor="hha-timezone">Timezone</Label>
+              <Input
+                id="hha-timezone"
+                type="text"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                placeholder="America/New_York"
+              />
+            </div>
+            <div className="mt-3">
+              <Button type="submit" disabled={!isAdmin || saving}>
+                {saving ? 'Saving…' : 'Save identity'}
+              </Button>
+            </div>
+          </fieldset>
+        </form>
 
-      <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.75rem' }}>
-        <strong>{config.caregivers.length}</strong> caregiver mapping{config.caregivers.length === 1 ? '' : 's'}
-        {' · '}
-        <strong>{config.services.length}</strong> service mapping{config.services.length === 1 ? '' : 's'}
-      </p>
+        {isAdmin && (
+          <label className={toggleRowClass}>
+            <input
+              type="checkbox"
+              checked={config.enabled}
+              onChange={(e) => void save({ enabled: e.target.checked })}
+              disabled={saving || (!identityComplete && !config.enabled)}
+              className="mt-0.5 size-[18px]"
+            />
+            <span>
+              <strong>Enable HHAeXchange export</strong>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                When off, the export pipeline emits no rows to HHAeXchange even if the EVV
+                aggregator picker is set to HHAeXchange. Toggling on requires Tax ID and
+                Provider ID to be populated above.
+              </div>
+            </span>
+          </label>
+        )}
 
-      {isAdmin && (
-        <HhaexchangeCaregiverMappingsEditor
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Badge variant="outline">{config.caregivers.length}</Badge> caregiver mapping{config.caregivers.length === 1 ? '' : 's'}
+          {' · '}
+          <Badge variant="outline">{config.services.length}</Badge> service mapping{config.services.length === 1 ? '' : 's'}
+        </p>
+
+        {isAdmin && (
+          <HhaexchangeCaregiverMappingsEditor
           mappings={config.caregivers}
           saving={saving}
           onCommit={async (nextCaregivers) => {
@@ -1398,12 +1487,13 @@ function HhaexchangeConfigSection({ isAdmin }: HhaexchangeConfigSectionProps): R
         />
       )}
 
-      {savedAt && (
-        <p style={savedAtStyle}>
-          Saved {savedAt.toLocaleTimeString()}.
-        </p>
-      )}
-    </section>
+        {savedAt && (
+          <p className="text-right text-xs text-muted-foreground">
+            Saved {savedAt.toLocaleTimeString()}.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1484,60 +1574,62 @@ function HhaexchangeCaregiverMappingsEditor({
   );
 
   return (
-    <div style={{ marginTop: '1.25rem' }}>
-      <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem', fontWeight: 600 }}>
-        Caregiver mappings
-      </h4>
-      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.6rem' }}>
+    <div className="mt-5">
+      <h4 className="mb-2 text-sm font-semibold">Caregiver mappings</h4>
+      <p className="mb-2.5 text-xs text-muted-foreground">
         Map each RayHealth caregiver to their HHAeXchange Employee ID. Without these,
         the export pipeline can't emit rows for that caregiver.
       </p>
 
       {localError && (
-        <div role="alert" style={{ ...errorBoxStyle, marginBottom: '0.5rem' }}>{localError}</div>
+        <div role="alert" className={cn(errorMessageClass, 'mb-2')}>{localError}</div>
       )}
 
       {mappings.length > 0 ? (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '0.75rem' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Caregiver</th>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Employee ID</th>
-              <th style={{ padding: '0.4rem 0.5rem' }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {mappings.map((m) => (
-              <tr key={m.caregiverId} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem' }}>{nameFor(m.caregiverId)}</td>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem', fontFamily: 'SF Mono, Menlo, monospace' }}>{m.employeeId}</td>
-                <td style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>
-                  <button
-                    onClick={() => void removeMapping(m.caregiverId)}
-                    disabled={saving}
-                    style={{ background: 'transparent', border: 'none', color: '#b91c1c', cursor: 'pointer', fontSize: '0.85rem' }}
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mb-3 overflow-hidden rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead>Caregiver</TableHead>
+                <TableHead>Employee ID</TableHead>
+                <TableHead className="text-right" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mappings.map((m) => (
+                <TableRow key={m.caregiverId}>
+                  <TableCell className="font-medium">{nameFor(m.caregiverId)}</TableCell>
+                  <TableCell className="font-mono text-muted-foreground">{m.employeeId}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void removeMapping(m.caregiverId)}
+                      disabled={saving}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
-        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
-          No caregiver mappings yet.
-        </p>
+        <div className="mb-3">
+          <EmptyState message="No caregiver mappings yet." />
+        </div>
       )}
 
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-        <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Caregiver</span>
-          <select
+      <div className="flex items-end gap-2">
+        <div className="flex-1 space-y-1.5">
+          <Label htmlFor="hha-cg-pick">Caregiver</Label>
+          <Select
+            id="hha-cg-pick"
             value={pickedCaregiverId}
             onChange={(e) => setPickedCaregiverId(e.target.value)}
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
           >
             <option value="">— pick a caregiver —</option>
             {unmappedCaregivers.map((c) => (
@@ -1545,27 +1637,27 @@ function HhaexchangeCaregiverMappingsEditor({
                 {c.firstName} {c.lastName}
               </option>
             ))}
-          </select>
-        </label>
-        <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>HHAeXchange Employee ID</span>
-          <input
+          </Select>
+        </div>
+        <div className="flex-1 space-y-1.5">
+          <Label htmlFor="hha-cg-employee">HHAeXchange Employee ID</Label>
+          <Input
+            id="hha-cg-employee"
             type="text"
             value={newEmployeeId}
             onChange={(e) => setNewEmployeeId(e.target.value)}
             placeholder="E-1234"
             maxLength={32}
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontFamily: 'SF Mono, Menlo, monospace' }}
+            className="font-mono"
           />
-        </label>
-        <button
+        </div>
+        <Button
           onClick={() => void addMapping()}
           disabled={saving || !pickedCaregiverId || !newEmployeeId.trim()}
-          style={{ padding: '0.5rem 0.9rem', border: 'none', backgroundColor: '#0B5FB1', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}
         >
           Add mapping
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -1620,202 +1712,104 @@ function HhaexchangeServiceMappingsEditor({
   };
 
   return (
-    <div style={{ marginTop: '1.25rem' }}>
-      <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem', fontWeight: 600 }}>
-        Service mappings
-      </h4>
-      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.6rem' }}>
+    <div className="mt-5">
+      <h4 className="mb-2 text-sm font-semibold">Service mappings</h4>
+      <p className="mb-2.5 text-xs text-muted-foreground">
         Map each RayHealth internal service code to the HHAeXchange service code your
         state Medicaid program assigned for that service. Visits with unmapped service
         codes are skipped at export time.
       </p>
 
       {localError && (
-        <div role="alert" style={{ ...errorBoxStyle, marginBottom: '0.5rem' }}>{localError}</div>
+        <div role="alert" className={cn(errorMessageClass, 'mb-2')}>{localError}</div>
       )}
 
       {mappings.length > 0 ? (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '0.75rem' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Internal code</th>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>HHA code</th>
-              <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Label</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {mappings.map((m) => (
-              <tr key={m.internalServiceCode} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem', fontFamily: 'SF Mono, Menlo, monospace' }}>{m.internalServiceCode}</td>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem', fontFamily: 'SF Mono, Menlo, monospace' }}>{m.hhaServiceCode}</td>
-                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.85rem' }}>{m.label}</td>
-                <td style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>
-                  <button
-                    onClick={() => void removeMapping(m.internalServiceCode)}
-                    disabled={saving}
-                    style={{ background: 'transparent', border: 'none', color: '#b91c1c', cursor: 'pointer', fontSize: '0.85rem' }}
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mb-3 overflow-hidden rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead>Internal code</TableHead>
+                <TableHead>HHA code</TableHead>
+                <TableHead>Label</TableHead>
+                <TableHead className="text-right" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mappings.map((m) => (
+                <TableRow key={m.internalServiceCode}>
+                  <TableCell className="font-mono">{m.internalServiceCode}</TableCell>
+                  <TableCell className="font-mono">{m.hhaServiceCode}</TableCell>
+                  <TableCell>{m.label}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void removeMapping(m.internalServiceCode)}
+                      disabled={saving}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
-        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
-          No service mappings yet.
-        </p>
+        <div className="mb-3">
+          <EmptyState message="No service mappings yet." />
+        </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '0.5rem', alignItems: 'end' }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Internal code</span>
-          <input
+      <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
+        <div className="space-y-1.5">
+          <Label htmlFor="hha-svc-internal">Internal code</Label>
+          <Input
+            id="hha-svc-internal"
             type="text"
             value={internalCode}
             onChange={(e) => setInternalCode(e.target.value)}
             placeholder="PERSONAL_CARE"
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontFamily: 'SF Mono, Menlo, monospace' }}
+            className="font-mono"
           />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>HHAeXchange code</span>
-          <input
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="hha-svc-code">HHAeXchange code</Label>
+          <Input
+            id="hha-svc-code"
             type="text"
             value={hhaServiceCode}
             onChange={(e) => setHhaServiceCode(e.target.value)}
             placeholder="1051"
             maxLength={16}
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontFamily: 'SF Mono, Menlo, monospace' }}
+            className="font-mono"
           />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Label</span>
-          <input
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="hha-svc-label">Label</Label>
+          <Input
+            id="hha-svc-label"
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Personal Care"
             disabled={saving}
-            style={{ padding: '0.4rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
           />
-        </label>
-        <button
+        </div>
+        <Button
           onClick={() => void addMapping()}
           disabled={saving || !internalCode.trim() || !hhaServiceCode.trim() || !label.trim()}
-          style={{ padding: '0.5rem 0.9rem', border: 'none', backgroundColor: '#0B5FB1', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}
         >
           Add
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
-
-// ---------- Styles ----------
-
-const sectionCardStyle: React.CSSProperties = {
-  padding: '1.25rem 1.5rem',
-  backgroundColor: '#ffffff',
-  border: '1px solid #e2e8f0',
-  borderRadius: '12px',
-  marginBottom: '1rem',
-};
-
-const sectionHeaderStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'space-between',
-  gap: '0.75rem',
-  marginBottom: '1rem',
-};
-
-const sectionSubtitleStyle: React.CSSProperties = {
-  margin: '0.25rem 0 0',
-  fontSize: '0.85rem',
-  color: '#64748b',
-  lineHeight: 1.5,
-  maxWidth: '480px',
-};
-
-const activeBadgeStyle: React.CSSProperties = {
-  fontSize: '0.7rem',
-  padding: '0.2rem 0.6rem',
-  borderRadius: '999px',
-  backgroundColor: '#E1F5EE',
-  color: '#085041',
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-};
-
-const inactiveBadgeStyle: React.CSSProperties = {
-  fontSize: '0.7rem',
-  padding: '0.2rem 0.6rem',
-  borderRadius: '999px',
-  backgroundColor: '#F1EFE8',
-  color: '#5F5E5A',
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-};
-
-const toggleRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: '0.75rem',
-  cursor: 'pointer',
-  padding: '0.75rem',
-  backgroundColor: '#f8fafc',
-  borderRadius: '8px',
-};
-
-const planFieldsetStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '8px',
-  padding: '0.75rem 1rem',
-  margin: 0,
-};
-
-const planOptionStyle = (selected: boolean): React.CSSProperties => ({
-  flex: 1,
-  minWidth: '200px',
-  padding: '0.75rem 0.9rem',
-  border: selected ? '2px solid #534AB7' : '1px solid #e2e8f0',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  backgroundColor: selected ? '#EEEDFE' : '#ffffff',
-  display: 'flex',
-  alignItems: 'flex-start',
-});
-
-const readOnlyNoticeStyle: React.CSSProperties = {
-  padding: '0.75rem 1rem',
-  backgroundColor: '#FAEEDA',
-  borderLeft: '4px solid #BA7517',
-  color: '#633806',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-};
-
-const savedAtStyle: React.CSSProperties = {
-  marginTop: '1rem',
-  fontSize: '0.75rem',
-  color: 'var(--color-text-muted, #94a3b8)',
-  textAlign: 'right',
-};
-
-const errorBoxStyle: React.CSSProperties = {
-  padding: '0.75rem 1rem',
-  backgroundColor: '#fef2f2',
-  color: '#991b1b',
-  borderRadius: '6px',
-  marginBottom: '1rem',
-};
 
 // Silence unused-import warning — postJson stays imported in case the
 // settings page grows to need a non-PUT mutation later.
