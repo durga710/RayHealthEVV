@@ -1,6 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowLeft, Clock, GraduationCap, Search } from 'lucide-react';
 import { getJson } from '../../lib/api-client.js';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
 
@@ -33,6 +46,7 @@ export function CourseCatalogPage() {
   const [courses, setCourses] = useState<LearningCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -55,124 +69,105 @@ export function CourseCatalogPage() {
     return () => { cancelled = true; };
   }, []);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return courses;
+    return courses.filter((c) =>
+      `${c.title} ${c.code}`.toLowerCase().includes(q),
+    );
+  }, [courses, query]);
+
   return (
     <div>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Course catalog</h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, #64748b)', fontSize: '0.9rem' }}>
-            Training courses available to assign to caregivers.
-          </p>
-        </div>
-        <Link to="/admin/learning" style={linkButtonStyle}>← Back to Learning Hub</Link>
-      </header>
+      <PageHeader
+        title="Course catalog"
+        description="Training courses available to assign to caregivers."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/learning">
+              <ArrowLeft className="size-4" aria-hidden />
+              Back to Learning Hub
+            </Link>
+          </Button>
+        }
+      />
 
-      {loading && <p>Loading courses…</p>}
       {error && (
-        <div style={errorBoxStyle}>
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
           <strong>Could not load courses.</strong> {error}
         </div>
       )}
 
-      {!loading && courses.length === 0 && !error && (
-        <div style={emptyStateStyle}>
-          <p style={{ margin: 0 }}>
-            No courses in the catalog yet. Seed the PA-required baseline with:
-          </p>
-          <pre style={codeBlockStyle}>npx tsx packages/core/scripts/seed-learning-catalog.ts</pre>
-        </div>
-      )}
+      {loading && <p className="text-sm text-muted-foreground">Loading courses…</p>}
 
-      {courses.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {courses.map((course) => (
-            <article key={course.id} style={cardStyle}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{course.title}</h3>
-                {course.required && <span style={requiredBadgeStyle}>Required</span>}
-                {course.agencyId === null && <span style={globalBadgeStyle}>Global</span>}
-              </div>
-              <p style={{ margin: '0 0 0.75rem', color: 'var(--color-text-muted, #475569)', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                {course.description}
-              </p>
-              <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.85rem', color: 'var(--color-text-muted, #64748b)', flexWrap: 'wrap' }}>
-                <span><strong>Code:</strong> {course.code}</span>
-                <span><strong>Cadence:</strong> {CADENCE_LABEL[course.cadence]}</span>
-                <span><strong>Duration:</strong> {course.durationMinutes} min</span>
-                {course.expiresAfterDays !== null && (
-                  <span><strong>Expires after:</strong> {course.expiresAfterDays} days</span>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
+      {!loading && !error && (
+        <>
+          {courses.length > 0 && (
+            <div className="relative mb-6 w-full sm:w-72">
+              <Search
+                className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2"
+                aria-hidden
+              />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search courses…"
+                className="pl-9"
+                aria-label="Search courses"
+              />
+            </div>
+          )}
+
+          {courses.length === 0 ? (
+            <EmptyState message="No courses in the catalog yet. Seed the PA-required baseline with: npx tsx packages/core/scripts/seed-learning-catalog.ts" />
+          ) : filtered.length === 0 ? (
+            <EmptyState message={`No courses match “${query}”.`} />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filtered.map((course) => (
+                <Card key={course.id} className="flex flex-col">
+                  <CardHeader>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {course.required && <Badge variant="warning">Required</Badge>}
+                      {course.agencyId === null && <Badge variant="accent">Global</Badge>}
+                      <Badge variant="secondary">{CADENCE_LABEL[course.cadence]}</Badge>
+                    </div>
+                    <CardTitle>{course.title}</CardTitle>
+                    <CardDescription>{course.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="size-4" aria-hidden />
+                      {course.durationMinutes} min
+                    </span>
+                    {course.expiresAfterDays !== null && (
+                      <span>Expires after {course.expiresAfterDays} days</span>
+                    )}
+                  </CardContent>
+                  <CardFooter className="mt-auto justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">{course.code}</span>
+                    <Button asChild size="sm" variant="secondary">
+                      <Link to={`/admin/learning/courses/${course.id}`}>View course</Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
 
-// ---------- Styles ----------
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
-  border: '1px solid #e2e8f0',
-  borderRadius: '8px',
-  padding: '1rem 1.25rem',
-};
-
-const requiredBadgeStyle: React.CSSProperties = {
-  fontSize: '0.7rem',
-  padding: '0.15rem 0.5rem',
-  borderRadius: '12px',
-  backgroundColor: '#fef3c7',
-  color: '#7c2d12',
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-};
-
-const globalBadgeStyle: React.CSSProperties = {
-  fontSize: '0.7rem',
-  padding: '0.15rem 0.5rem',
-  borderRadius: '12px',
-  backgroundColor: '#e6f1fb',
-  color: '#0c447c',
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-};
-
-const linkButtonStyle: React.CSSProperties = {
-  textDecoration: 'none',
-  color: '#185FA5',
-  fontSize: '0.9rem',
-  border: '1px solid #185FA5',
-  padding: '0.4rem 0.85rem',
-  borderRadius: '6px',
-};
-
-const errorBoxStyle: React.CSSProperties = {
-  padding: '0.75rem 1rem',
-  backgroundColor: '#fef2f2',
-  color: '#991b1b',
-  borderRadius: '6px',
-  marginBottom: '1rem',
-};
-
-const emptyStateStyle: React.CSSProperties = {
-  padding: '1.5rem',
-  backgroundColor: '#f8fafc',
-  borderRadius: '8px',
-  border: '1px dashed #cbd5e1',
-};
-
-const codeBlockStyle: React.CSSProperties = {
-  marginTop: '0.5rem',
-  padding: '0.5rem 0.75rem',
-  backgroundColor: '#0f172a',
-  color: '#e2e8f0',
-  borderRadius: '4px',
-  fontSize: '0.85rem',
-  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-  overflowX: 'auto',
-};
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
+      <GraduationCap className="size-8 text-muted-foreground/60" aria-hidden />
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  );
+}

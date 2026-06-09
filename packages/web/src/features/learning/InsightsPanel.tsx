@@ -1,6 +1,16 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
+import { Sparkles, AlertTriangle, Clock, Info, CheckCircle2 } from 'lucide-react';
 import { getJson } from '../../lib/api-client.js';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 type InsightSeverity = 'critical' | 'warning' | 'info';
 
@@ -44,25 +54,15 @@ interface InsightsPanelProps {
   refreshKey?: number;
 }
 
-const SEVERITY_STYLES: Record<InsightSeverity, { bg: string; border: string; fg: string; icon: string }> = {
-  critical: {
-    bg: '#FCEBEB',
-    border: '#E24B4A',
-    fg: '#791F1F',
-    icon: '⚠',
-  },
-  warning: {
-    bg: '#FAEEDA',
-    border: '#BA7517',
-    fg: '#633806',
-    icon: '◷',
-  },
-  info: {
-    bg: '#E6F1FB',
-    border: '#185FA5',
-    fg: '#0C447C',
-    icon: 'ⓘ',
-  },
+type SeverityVariant = 'destructive' | 'warning' | 'secondary';
+
+const SEVERITY_META: Record<
+  InsightSeverity,
+  { variant: SeverityVariant; Icon: typeof AlertTriangle; iconClass: string }
+> = {
+  critical: { variant: 'destructive', Icon: AlertTriangle, iconClass: 'text-destructive' },
+  warning: { variant: 'warning', Icon: Clock, iconClass: 'text-amber-600' },
+  info: { variant: 'secondary', Icon: Info, iconClass: 'text-primary' },
 };
 
 export function InsightsPanel({ refreshKey = 0 }: InsightsPanelProps): ReactElement | null {
@@ -94,107 +94,125 @@ export function InsightsPanel({ refreshKey = 0 }: InsightsPanelProps): ReactElem
 
   if (loading) {
     return (
-      <section style={{ marginTop: '2rem' }}>
-        <SectionHeader />
-        <p style={{ color: 'var(--color-text-muted, #64748b)', fontSize: '0.9rem' }}>Loading insights…</p>
-      </section>
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="size-5 text-primary" aria-hidden />
+            Compliance signals
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Loading insights…</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <section style={{ marginTop: '2rem' }}>
-        <SectionHeader />
-        <div style={errorBoxStyle}>
-          <strong>Could not load insights.</strong> {error}
-        </div>
-      </section>
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="size-5 text-primary" aria-hidden />
+            Compliance signals
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            <strong>Could not load insights.</strong> {error}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!envelope || envelope.insights.length === 0) {
     return (
-      <section style={{ marginTop: '2rem' }}>
-        <SectionHeader />
-        <div style={emptyStyle}>
-          <p style={{ margin: 0 }}>
-            <strong>All clear.</strong> No actionable training items right now.
-          </p>
-          <p style={{ margin: '0.5rem 0 0', color: 'var(--color-text-muted, #64748b)', fontSize: '0.85rem' }}>
-            Compliance signals refresh on every page load. Last checked {formatTime(envelope?.generatedAt ?? new Date().toISOString())}.
-          </p>
-        </div>
-      </section>
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="size-5 text-primary" aria-hidden />
+            Compliance signals
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <div>
+              <p className="m-0">
+                <strong>All clear.</strong> No actionable training items right now.
+              </p>
+              <p className="mt-1 text-xs text-emerald-700">
+                Compliance signals refresh on every page load. Last checked {formatTime(envelope?.generatedAt ?? new Date().toISOString())}.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <section style={{ marginTop: '2rem' }}>
-      <SectionHeader subtitle={`${envelope.insights.length} signal${envelope.insights.length === 1 ? '' : 's'} need attention`} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-        {envelope.insights.map((insight) => (
-          <InsightCard key={insight.kind} insight={insight} />
-        ))}
-      </div>
-    </section>
+    <Card className="mt-8">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="size-5 text-primary" aria-hidden />
+          Compliance signals
+        </CardTitle>
+        <CardDescription>
+          {envelope.insights.length} signal{envelope.insights.length === 1 ? '' : 's'} need attention
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-3">
+          {envelope.insights.map((insight) => (
+            <InsightCard key={insight.kind} insight={insight} />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 // ---------- Subcomponents ----------
 
-function SectionHeader({ subtitle }: { subtitle?: string }): ReactElement {
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.85rem' }}>
-      <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-muted, #475569)' }}>
-        Compliance signals
-      </h3>
-      {subtitle && (
-        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #94a3b8)' }}>
-          {subtitle}
-        </span>
-      )}
-    </div>
-  );
-}
-
 function InsightCard({ insight }: { insight: LearningInsight }): ReactElement {
-  const styles = SEVERITY_STYLES[insight.severity];
+  const meta = SEVERITY_META[insight.severity];
+  const { Icon } = meta;
 
   return (
-    <article
-      style={{
-        backgroundColor: styles.bg,
-        border: `1px solid ${styles.border}`,
-        borderLeft: `4px solid ${styles.border}`,
-        borderRadius: '8px',
-        padding: '1rem 1.25rem',
-      }}
-    >
-      <header style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-        <span aria-hidden style={{ color: styles.fg, fontSize: '1.1rem' }}>{styles.icon}</span>
-        <h4 style={{ margin: 0, fontSize: '1rem', color: styles.fg, fontWeight: 500 }}>
-          {insight.title}
-        </h4>
+    <article className="rounded-lg border border-border bg-muted/30 p-4">
+      <header className="mb-2 flex items-center gap-2">
+        <Icon className={`size-4 ${meta.iconClass}`} aria-hidden />
+        <h4 className="m-0 text-sm font-medium text-foreground">{insight.title}</h4>
+        <Badge variant={meta.variant} className="ml-auto capitalize">
+          {insight.severity}
+        </Badge>
       </header>
-      <p style={{ margin: '0 0 0.75rem', color: styles.fg, fontSize: '0.9rem', lineHeight: 1.5 }}>
-        {insight.summary}
-      </p>
+      <p className="mb-3 text-sm text-muted-foreground">{insight.summary}</p>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.75rem' }}>
+      <div className="flex flex-wrap items-center gap-2">
         {insight.caregivers.map((cg) => (
-          <Link
+          <Button
             key={cg.caregiverId}
-            to={`/admin/learning/caregivers/${cg.caregiverId}`}
-            style={chipStyle(styles.fg)}
+            asChild
+            variant="outline"
+            size="sm"
             title={cg.context}
           >
-            {cg.firstName} {cg.lastName} <span style={{ opacity: 0.65, marginLeft: '0.35rem' }}>· {cg.context}</span>
-          </Link>
+            <Link to={`/admin/learning/caregivers/${cg.caregiverId}`}>
+              {cg.firstName} {cg.lastName}
+              <span className="text-muted-foreground">· {cg.context}</span>
+            </Link>
+          </Button>
         ))}
         {insight.totalCount > insight.caregivers.length && (
-          <span style={{ ...chipStyle(styles.fg), opacity: 0.7, cursor: 'default' }}>
+          <Badge variant="secondary">
             +{insight.totalCount - insight.caregivers.length} more
-          </span>
+          </Badge>
         )}
       </div>
     </article>
@@ -206,32 +224,3 @@ function InsightCard({ insight }: { insight: LearningInsight }): ReactElement {
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
-
-function chipStyle(color: string): React.CSSProperties {
-  return {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '0.25rem 0.6rem',
-    backgroundColor: '#ffffff',
-    color,
-    fontSize: '0.8rem',
-    borderRadius: '12px',
-    textDecoration: 'none',
-    border: `1px solid ${color}33`,
-  };
-}
-
-const errorBoxStyle: React.CSSProperties = {
-  padding: '0.75rem 1rem',
-  backgroundColor: '#fef2f2',
-  color: '#991b1b',
-  borderRadius: '6px',
-};
-
-const emptyStyle: React.CSSProperties = {
-  padding: '1rem 1.25rem',
-  backgroundColor: '#E1F5EE',
-  borderRadius: '8px',
-  borderLeft: '4px solid #10A4A4',
-  color: '#085041',
-};

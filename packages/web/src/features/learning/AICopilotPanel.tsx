@@ -1,5 +1,15 @@
 import { useEffect, useState, type ReactElement } from 'react';
+import { Lock, Sparkles } from 'lucide-react';
 import { getJson } from '../../lib/api-client.js';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * AICopilotPanel — the visible-but-locked surface on the Learning Hub.
@@ -76,43 +86,44 @@ function LockedPanel({ userRole }: { userRole?: string }): ReactElement {
   const isAdmin = userRole === 'admin';
 
   return (
-    <section style={lockedSectionStyle}>
-      <div style={lockedInnerStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
-          <span aria-hidden style={{ fontSize: '1.1rem' }}>🔒</span>
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 500 }}>AI Workflow Copilot</h3>
-          <span style={addonBadgeStyle}>Add-on</span>
-        </div>
-        <p style={{ margin: '0 0 0.85rem', color: '#475569', fontSize: '0.9rem', lineHeight: 1.5 }}>
+    <Card className="mt-8 border-dashed">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Lock className="size-5 text-primary" aria-hidden />
+          AI Workflow Copilot
+          <Badge variant="secondary" className="ml-1 uppercase">Add-on</Badge>
+        </CardTitle>
+        <CardDescription>
           Ask plain-English questions about your training compliance. "Who's due for
           HIPAA refresh next week?" "Why is Roberto stuck on dementia care?"
           Coordinator-level decisions stay in your hands — the copilot proposes,
           you confirm.
-        </p>
-
-        <ul style={featureListStyle}>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="max-w-2xl space-y-4">
+        <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           <li>Per-role assistant: caregiver, coordinator, owner</li>
           <li>Smart enrollment suggestions based on visit history</li>
           <li>Automatic reminders before due dates and expiry</li>
           <li>Every action requires your confirmation — nothing automated silently</li>
         </ul>
 
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+        <div className="flex flex-wrap items-center gap-3">
           {isAdmin ? (
-            <a href="/admin/billing/ai-copilot" style={primaryCtaStyle}>
-              Enable Copilot →
-            </a>
+            <Button asChild>
+              <a href="/admin/billing/ai-copilot">Enable Copilot</a>
+            </Button>
           ) : (
-            <span style={mutedNoteStyle}>
+            <span className="text-sm text-muted-foreground">
               Only your agency owner can enable this add-on.
             </span>
           )}
-          <a href="/admin/learning/copilot-preview" style={secondaryLinkStyle}>
-            See a demo
-          </a>
+          <Button asChild variant="link">
+            <a href="/admin/learning/copilot-preview">See a demo</a>
+          </Button>
         </div>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -120,98 +131,23 @@ function LockedPanel({ userRole }: { userRole?: string }): ReactElement {
 
 function UnlockedPanel({ plan }: { plan: 'starter' | 'pro' | 'off' }): ReactElement {
   return (
-    <section style={unlockedSectionStyle}>
-      <div style={lockedInnerStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.6rem' }}>
-          <span aria-hidden style={{ fontSize: '1.1rem' }}>✦</span>
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 500 }}>AI Workflow Copilot</h3>
-          <span style={planBadgeStyle}>{plan === 'pro' ? 'Pro' : 'Starter'}</span>
-        </div>
-        <p style={{ margin: '0 0 0.85rem', color: '#475569', fontSize: '0.9rem' }}>
+    <Card className="mt-8 border-primary/30 bg-primary/5">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="size-5 text-primary" aria-hidden />
+          AI Workflow Copilot
+          <Badge variant="accent" className="ml-1 uppercase">{plan === 'pro' ? 'Pro' : 'Starter'}</Badge>
+        </CardTitle>
+        <CardDescription>
           Copilot is active. The chat surface and per-role assistants land in the next release.
           For now, the deterministic insights above cover most coordinator needs.
-        </p>
-        <a href="/admin/learning/copilot" style={primaryCtaStyle}>
-          Open Copilot →
-        </a>
-      </div>
-    </section>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button asChild>
+          <a href="/admin/learning/copilot">Open Copilot</a>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
-
-// ---------- Styles ----------
-
-const lockedSectionStyle: React.CSSProperties = {
-  marginTop: '2rem',
-  padding: '1.25rem',
-  backgroundColor: '#f8fafc',
-  border: '1px dashed #cbd5e1',
-  borderRadius: '12px',
-  position: 'relative',
-};
-
-const unlockedSectionStyle: React.CSSProperties = {
-  marginTop: '2rem',
-  padding: '1.25rem',
-  backgroundColor: '#EEEDFE',
-  border: '1px solid #AFA9EC',
-  borderRadius: '12px',
-};
-
-const lockedInnerStyle: React.CSSProperties = {
-  maxWidth: '640px',
-};
-
-const featureListStyle: React.CSSProperties = {
-  margin: '0 0 0.5rem',
-  padding: '0 0 0 1.25rem',
-  color: '#475569',
-  fontSize: '0.85rem',
-  lineHeight: 1.7,
-};
-
-const addonBadgeStyle: React.CSSProperties = {
-  fontSize: '0.65rem',
-  padding: '0.15rem 0.5rem',
-  borderRadius: '999px',
-  backgroundColor: '#E6F1FB',
-  color: '#0C447C',
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-};
-
-const planBadgeStyle: React.CSSProperties = {
-  fontSize: '0.65rem',
-  padding: '0.15rem 0.5rem',
-  borderRadius: '999px',
-  backgroundColor: '#CECBF6',
-  color: '#3C3489',
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-};
-
-const primaryCtaStyle: React.CSSProperties = {
-  textDecoration: 'none',
-  backgroundColor: '#534AB7',
-  color: '#ffffff',
-  padding: '0.55rem 1rem',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-  fontWeight: 500,
-};
-
-const secondaryLinkStyle: React.CSSProperties = {
-  textDecoration: 'none',
-  color: '#534AB7',
-  fontSize: '0.85rem',
-  alignSelf: 'center',
-  fontWeight: 500,
-};
-
-const mutedNoteStyle: React.CSSProperties = {
-  color: 'var(--color-text-muted, #64748b)',
-  fontSize: '0.85rem',
-  alignSelf: 'center',
-};

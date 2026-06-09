@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getJson, postJson } from '../../lib/api-client.js';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 
 type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
 
@@ -169,42 +181,36 @@ export function EnrollCaregiverModal({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div
-      style={overlayStyle}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="enroll-modal-title"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div style={modalStyle}>
-        <header style={headerStyle}>
-          <h2 id="enroll-modal-title" style={{ margin: 0, fontSize: '1.25rem' }}>
-            Enroll caregivers in a course
-          </h2>
-          <button onClick={onClose} aria-label="Close" style={closeBtnStyle}>×</button>
-        </header>
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <DialogContent className="max-h-[90vh] gap-0 overflow-hidden p-0 sm:max-w-xl">
+        <DialogHeader className="border-b border-border px-6 py-4">
+          <DialogTitle>Enroll caregivers in a course</DialogTitle>
+          <DialogDescription>
+            Select a course and the caregivers who should be enrolled.
+          </DialogDescription>
+        </DialogHeader>
 
-        {loading && <p style={{ padding: '1rem 1.5rem' }}>Loading…</p>}
+        {loading && <p className="px-6 py-4 text-sm text-muted-foreground">Loading…</p>}
 
         {loadError && (
-          <div style={errorBoxStyle}>
+          <div
+            role="alert"
+            className="mx-6 mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
             <strong>Could not load modal data.</strong> {loadError}
           </div>
         )}
 
         {!loading && !loadError && (
-          <div style={bodyStyle}>
+          <div className="max-h-[60vh] space-y-4 overflow-y-auto px-6 py-4">
             {/* Course picker */}
-            <section style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle} htmlFor="enroll-course">Course</label>
-              <select
+            <div className="space-y-1.5">
+              <Label htmlFor="enroll-course">Course</Label>
+              <Select
                 id="enroll-course"
                 value={selectedCourseId}
                 onChange={(e) => setSelectedCourseId(e.target.value)}
-                style={inputStyle}
               >
                 <option value="">— Select a course —</option>
                 {courses.map((c) => (
@@ -212,40 +218,44 @@ export function EnrollCaregiverModal({
                     {c.title} {c.required ? '(required)' : ''}
                   </option>
                 ))}
-              </select>
-            </section>
+              </Select>
+            </div>
 
             {/* Due date */}
-            <section style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle} htmlFor="enroll-due">
-                Due date <span style={mutedStyle}>(smart default; override if needed)</span>
-              </label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="enroll-due">
+                Due date{' '}
+                <span className="text-xs font-normal text-muted-foreground">
+                  (smart default; override if needed)
+                </span>
+              </Label>
+              <Input
                 id="enroll-due"
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                style={inputStyle}
               />
-            </section>
+            </div>
 
             {/* Caregiver picker */}
-            <section>
-              <label style={labelStyle}>
-                Caregivers <span style={mutedStyle}>({selectedCaregiverIds.size} selected of {caregivers.length})</span>
-              </label>
+            <div className="space-y-1.5">
+              <Label>
+                Caregivers{' '}
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({selectedCaregiverIds.size} selected of {caregivers.length})
+                </span>
+              </Label>
               {!lockedCaregiverId && (
-                <input
+                <Input
                   type="search"
                   placeholder="Search by name or email…"
                   value={caregiverSearch}
                   onChange={(e) => setCaregiverSearch(e.target.value)}
-                  style={{ ...inputStyle, marginBottom: '0.5rem' }}
                 />
               )}
-              <div style={caregiverListStyle}>
+              <div className="max-h-60 overflow-y-auto rounded-md border border-border">
                 {filteredCaregivers.length === 0 && (
-                  <p style={{ padding: '0.75rem', margin: 0, color: 'var(--color-text-muted, #64748b)', fontSize: '0.9rem' }}>
+                  <p className="m-0 px-3 py-3 text-sm text-muted-foreground">
                     No active caregivers match.
                   </p>
                 )}
@@ -255,172 +265,54 @@ export function EnrollCaregiverModal({
                   return (
                     <label
                       key={c.id}
-                      style={{ ...caregiverRowStyle, backgroundColor: isSelected ? '#E6F1FB' : 'transparent' }}
+                      className={`flex cursor-pointer items-center border-b border-border px-3 py-2 last:border-b-0 ${
+                        isSelected ? 'bg-primary/5' : ''
+                      }`}
                     >
                       <input
                         type="checkbox"
                         checked={isSelected}
                         disabled={isLocked || submitting}
                         onChange={() => toggleCaregiver(c.id)}
+                        className="size-4 accent-primary"
                       />
-                      <span style={{ flex: 1, marginLeft: '0.6rem' }}>
+                      <span className="ml-3 flex-1 text-sm">
                         <strong>{c.firstName} {c.lastName}</strong>
-                        <span style={{ color: 'var(--color-text-muted, #64748b)', marginLeft: '0.5rem', fontSize: '0.85rem' }}>
-                          {c.email}
-                        </span>
+                        <span className="ml-2 text-muted-foreground">{c.email}</span>
                       </span>
                     </label>
                   );
                 })}
               </div>
-            </section>
+            </div>
 
             {submitError && (
-              <div style={{ ...errorBoxStyle, margin: '1rem 0 0' }}>{submitError}</div>
+              <div
+                role="alert"
+                className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {submitError}
+              </div>
             )}
           </div>
         )}
 
-        <footer style={footerStyle}>
-          <button onClick={onClose} disabled={submitting} style={secondaryButtonStyle}>Cancel</button>
-          <button
+        <DialogFooter className="border-t border-border px-6 py-4">
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button
             onClick={() => void handleSubmit()}
             disabled={submitting || !selectedCourseId || selectedCaregiverIds.size === 0}
-            style={primaryButtonStyle}
           >
             {submitting
               ? 'Enrolling…'
               : selectedCaregiverIds.size > 1
                 ? `Enroll ${selectedCaregiverIds.size} caregivers`
                 : 'Enroll'}
-          </button>
-        </footer>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
-
-// ---------- Styles ----------
-
-const overlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  backgroundColor: 'rgba(15, 23, 42, 0.55)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 50,
-  padding: '1rem',
-};
-
-const modalStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
-  borderRadius: '12px',
-  width: '100%',
-  maxWidth: '560px',
-  maxHeight: '90vh',
-  display: 'flex',
-  flexDirection: 'column',
-};
-
-const headerStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '1rem 1.5rem',
-  borderBottom: '1px solid #e2e8f0',
-};
-
-const bodyStyle: React.CSSProperties = {
-  padding: '1.5rem',
-  overflowY: 'auto',
-  flex: 1,
-};
-
-const footerStyle: React.CSSProperties = {
-  padding: '1rem 1.5rem',
-  borderTop: '1px solid #e2e8f0',
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: '0.75rem',
-};
-
-const labelStyle: React.CSSProperties = {
-  display: 'block',
-  fontSize: '0.85rem',
-  color: 'var(--color-text-muted, #475569)',
-  marginBottom: '0.4rem',
-  fontWeight: 500,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '0.5rem 0.75rem',
-  border: '1px solid #cbd5e1',
-  borderRadius: '6px',
-  fontSize: '0.95rem',
-  boxSizing: 'border-box',
-};
-
-const mutedStyle: React.CSSProperties = {
-  color: 'var(--color-text-muted, #94a3b8)',
-  fontWeight: 400,
-  fontSize: '0.8rem',
-};
-
-const caregiverListStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '6px',
-  maxHeight: '240px',
-  overflowY: 'auto',
-};
-
-const caregiverRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  padding: '0.55rem 0.75rem',
-  borderBottom: '1px solid #f1f5f9',
-  cursor: 'pointer',
-};
-
-const closeBtnStyle: React.CSSProperties = {
-  background: 'transparent',
-  border: 'none',
-  fontSize: '1.5rem',
-  cursor: 'pointer',
-  color: 'var(--color-text-muted, #64748b)',
-  padding: 0,
-  lineHeight: 1,
-  width: '32px',
-  height: '32px',
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  backgroundColor: '#185FA5',
-  color: '#ffffff',
-  border: 'none',
-  padding: '0.55rem 1.1rem',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-  cursor: 'pointer',
-  fontWeight: 500,
-};
-
-const secondaryButtonStyle: React.CSSProperties = {
-  backgroundColor: 'transparent',
-  color: '#475569',
-  border: '1px solid #cbd5e1',
-  padding: '0.55rem 1.1rem',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-  cursor: 'pointer',
-};
-
-const errorBoxStyle: React.CSSProperties = {
-  padding: '0.75rem 1rem',
-  margin: '0 1.5rem',
-  backgroundColor: '#fef2f2',
-  color: '#991b1b',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-};

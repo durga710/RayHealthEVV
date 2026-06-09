@@ -1,7 +1,26 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { GraduationCap, BookOpen, ArrowLeft, Plus } from 'lucide-react';
 import { getJson, postJson } from '../../lib/api-client.js';
 import { EnrollCaregiverModal } from './EnrollCaregiverModal.js';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
 type EnrollmentStatus = 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'expired';
@@ -53,13 +72,14 @@ const STATUS_LABEL: Record<EnrollmentStatus, string> = {
   expired: 'Expired',
 };
 
-const STATUS_COLOR: Record<EnrollmentStatus, { fg: string; bg: string }> = {
-  not_started: { fg: '#5F5E5A', bg: '#F1EFE8' },
-  in_progress: { fg: '#0C447C', bg: '#E6F1FB' },
-  completed: { fg: '#085041', bg: '#E1F5EE' },
-  overdue: { fg: '#633806', bg: '#FAEEDA' },
-  expired: { fg: '#791F1F', bg: '#FCEBEB' },
-};
+function statusVariant(
+  status: EnrollmentStatus,
+): 'success' | 'warning' | 'destructive' | 'secondary' {
+  if (status === 'completed') return 'success';
+  if (status === 'in_progress') return 'warning';
+  if (status === 'overdue' || status === 'expired') return 'destructive';
+  return 'secondary';
+}
 
 export function CaregiverLearningPage() {
   const params = useParams<{ id: string }>();
@@ -119,99 +139,129 @@ export function CaregiverLearningPage() {
   };
 
   if (!caregiverId) {
-    return <p>Missing caregiver id.</p>;
+    return <p className="text-sm text-muted-foreground">Missing caregiver id.</p>;
   }
 
   return (
     <div>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Caregiver learning</h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, #64748b)', fontSize: '0.9rem' }}>
-            Caregiver <code style={codeStyle}>{caregiverId}</code>
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={() => setEnrollOpen(true)} style={primaryActionStyle}>+ Assign course</button>
-          <Link to="/admin/learning" style={linkButtonStyle}>← Learning Hub</Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Caregiver Learning"
+        description={`Training progress for caregiver ${caregiverId}.`}
+        actions={
+          <>
+            <Button onClick={() => setEnrollOpen(true)}>
+              <Plus className="size-4" aria-hidden />
+              Assign course
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/admin/learning">
+                <ArrowLeft className="size-4" aria-hidden />
+                Learning Hub
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-      {loading && <p>Loading…</p>}
       {error && (
-        <div style={errorBoxStyle}>
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
           <strong>Could not load progress.</strong> {error}
         </div>
       )}
 
-      {progress && (
-        <>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <span style={progress.isCompliant ? compliantBadgeStyle : nonCompliantBadgeStyle}>
-              {progress.isCompliant ? 'Compliant' : 'Non-compliant'}
-            </span>
-            <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: 'var(--color-text-muted, #64748b)' }}>
-              {progress.enrollments.length} enrollment{progress.enrollments.length === 1 ? '' : 's'}
-            </span>
+      <Card>
+        <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1.5">
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="size-5 text-primary" aria-hidden />
+              Course Enrollments
+            </CardTitle>
+            <CardDescription>
+              {progress
+                ? `${progress.enrollments.length} ${
+                    progress.enrollments.length === 1 ? 'enrollment' : 'enrollments'
+                  }`
+                : 'Training records for this caregiver'}
+            </CardDescription>
           </div>
-
-          {progress.enrollments.length === 0 && (
-            <div style={emptyStateStyle}>
-              <p style={{ margin: 0 }}>No courses assigned yet.</p>
-              <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--color-text-muted, #64748b)' }}>
-                Use the Enroll button on the Learning Hub to assign training.
-              </p>
+          {progress && (
+            <Badge variant={progress.isCompliant ? 'success' : 'destructive'}>
+              {progress.isCompliant ? 'Compliant' : 'Non-compliant'}
+            </Badge>
+          )}
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : !progress ? (
+            <EmptyState message="No progress available." />
+          ) : progress.enrollments.length === 0 ? (
+            <EmptyState message="No courses assigned yet. Use Assign course to add training." />
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>Course</TableHead>
+                    <TableHead>Assigned</TableHead>
+                    <TableHead>Due</TableHead>
+                    <TableHead>Completed</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {progress.enrollments.map(({ enrollment, course }) => (
+                    <TableRow key={enrollment.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>{course.title}</span>
+                          {course.required && <Badge variant="outline">Required</Badge>}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{course.code}</span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(enrollment.assignedAt)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {enrollment.dueAt ? formatDate(enrollment.dueAt) : '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {enrollment.lastCompletedAt ? formatDate(enrollment.lastCompletedAt) : '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {enrollment.expiresAt ? formatDate(enrollment.expiresAt) : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusVariant(enrollment.status)}>
+                          {STATUS_LABEL[enrollment.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {enrollment.status !== 'completed' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void recordCompletion(enrollment)}
+                            disabled={completingId === enrollment.id}
+                            aria-busy={completingId === enrollment.id}
+                          >
+                            {completingId === enrollment.id ? 'Recording…' : 'Mark complete'}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {progress.enrollments.map(({ enrollment, course }) => {
-              const colors = STATUS_COLOR[enrollment.status];
-              return (
-                <article key={enrollment.id} style={cardStyle}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
-                      <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{course.title}</h3>
-                      {course.required && <span style={requiredBadgeStyle}>Required</span>}
-                    </div>
-                    <span style={{ ...statusBadgeStyle, color: colors.fg, backgroundColor: colors.bg }}>
-                      {STATUS_LABEL[enrollment.status]}
-                    </span>
-                  </div>
-
-                  <div style={metaRowStyle}>
-                    <span><strong>Code:</strong> {course.code}</span>
-                    <span><strong>Assigned:</strong> {formatDate(enrollment.assignedAt)}</span>
-                    {enrollment.dueAt && (
-                      <span><strong>Due:</strong> {formatDate(enrollment.dueAt)}</span>
-                    )}
-                    {enrollment.lastCompletedAt && (
-                      <span><strong>Completed:</strong> {formatDate(enrollment.lastCompletedAt)}</span>
-                    )}
-                    {enrollment.expiresAt && (
-                      <span><strong>Expires:</strong> {formatDate(enrollment.expiresAt)}</span>
-                    )}
-                  </div>
-
-                  {(enrollment.status === 'not_started' || enrollment.status === 'in_progress' ||
-                    enrollment.status === 'overdue' || enrollment.status === 'expired') && (
-                    <div style={{ marginTop: '0.75rem' }}>
-                      <button
-                        onClick={() => void recordCompletion(enrollment)}
-                        disabled={completingId === enrollment.id}
-                        aria-busy={completingId === enrollment.id}
-                        style={actionButtonStyle}
-                      >
-                        {completingId === enrollment.id ? 'Recording…' : 'Mark complete'}
-                      </button>
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        </>
-      )}
+        </CardContent>
+      </Card>
 
       <EnrollCaregiverModal
         open={enrollOpen}
@@ -223,7 +273,14 @@ export function CaregiverLearningPage() {
   );
 }
 
-// ---------- Helpers ----------
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
+      <BookOpen className="size-8 text-muted-foreground/60" aria-hidden />
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  );
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -232,108 +289,3 @@ function formatDate(iso: string): string {
     day: 'numeric',
   });
 }
-
-// ---------- Styles ----------
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
-  border: '1px solid #e2e8f0',
-  borderRadius: '8px',
-  padding: '1rem 1.25rem',
-};
-
-const metaRowStyle: React.CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '1.25rem',
-  fontSize: '0.85rem',
-  color: 'var(--color-text-muted, #64748b)',
-};
-
-const codeStyle: React.CSSProperties = {
-  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-  fontSize: '0.8rem',
-};
-
-const statusBadgeStyle: React.CSSProperties = {
-  fontSize: '0.75rem',
-  padding: '0.25rem 0.6rem',
-  borderRadius: '12px',
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-};
-
-const requiredBadgeStyle: React.CSSProperties = {
-  fontSize: '0.7rem',
-  padding: '0.15rem 0.5rem',
-  borderRadius: '12px',
-  backgroundColor: '#fef3c7',
-  color: '#7c2d12',
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-};
-
-const compliantBadgeStyle: React.CSSProperties = {
-  fontSize: '0.85rem',
-  padding: '0.3rem 0.75rem',
-  borderRadius: '6px',
-  backgroundColor: '#E1F5EE',
-  color: '#085041',
-  fontWeight: 500,
-};
-
-const nonCompliantBadgeStyle: React.CSSProperties = {
-  fontSize: '0.85rem',
-  padding: '0.3rem 0.75rem',
-  borderRadius: '6px',
-  backgroundColor: '#FCEBEB',
-  color: '#791F1F',
-  fontWeight: 500,
-};
-
-const linkButtonStyle: React.CSSProperties = {
-  textDecoration: 'none',
-  color: '#185FA5',
-  fontSize: '0.9rem',
-  border: '1px solid #185FA5',
-  padding: '0.4rem 0.85rem',
-  borderRadius: '6px',
-};
-
-const actionButtonStyle: React.CSSProperties = {
-  backgroundColor: '#185FA5',
-  color: '#ffffff',
-  border: 'none',
-  padding: '0.45rem 0.9rem',
-  borderRadius: '6px',
-  fontSize: '0.85rem',
-  cursor: 'pointer',
-};
-
-const primaryActionStyle: React.CSSProperties = {
-  backgroundColor: '#185FA5',
-  color: '#ffffff',
-  border: 'none',
-  padding: '0.5rem 1rem',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-  cursor: 'pointer',
-  fontWeight: 500,
-};
-
-const errorBoxStyle: React.CSSProperties = {
-  padding: '0.75rem 1rem',
-  backgroundColor: '#fef2f2',
-  color: '#991b1b',
-  borderRadius: '6px',
-  marginBottom: '1rem',
-};
-
-const emptyStateStyle: React.CSSProperties = {
-  padding: '1.5rem',
-  backgroundColor: '#f8fafc',
-  borderRadius: '8px',
-  border: '1px dashed #cbd5e1',
-};

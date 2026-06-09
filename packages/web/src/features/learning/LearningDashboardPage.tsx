@@ -1,10 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { UserPlus, BarChart3, BookOpen, GraduationCap, AlertTriangle } from 'lucide-react';
 import { getJson } from '../../lib/api-client.js';
 import { EnrollCaregiverModal } from './EnrollCaregiverModal.js';
 import { InsightsPanel } from './InsightsPanel.js';
 import { AICopilotPanel } from './AICopilotPanel.js';
 import { useAuth } from '../../lib/AuthContext.js';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 interface LearningAgencyRollup {
   totalCaregivers: number;
@@ -54,32 +63,44 @@ export function LearningDashboardPage() {
   }, [refreshTick]);
 
   const compliancePercent = rollup ? Math.round(rollup.complianceRate * 100) : 0;
-  const complianceColor =
-    compliancePercent >= 95 ? '#10A4A4' :
-    compliancePercent >= 80 ? '#BA7517' :
-    '#E24B4A';
+  const complianceClass =
+    compliancePercent >= 95 ? 'text-emerald-600' :
+    compliancePercent >= 80 ? 'text-amber-600' :
+    'text-destructive';
 
   return (
     <div>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Learning Hub</h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, #64748b)', fontSize: '0.9rem' }}>
-            Caregiver training compliance — at-a-glance and per-person.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={() => setEnrollOpen(true)} style={primaryActionStyle}>
-            + Enroll caregivers
-          </button>
-          <Link to="/admin/learning/analytics" style={linkButtonStyle}>Analytics →</Link>
-          <Link to="/admin/learning/courses" style={linkButtonStyle}>Course catalog →</Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Learning Hub"
+        description="Caregiver training compliance — at-a-glance and per-person."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => setEnrollOpen(true)}>
+              <UserPlus className="size-4" aria-hidden />
+              Enroll caregivers
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/admin/learning/analytics">
+                <BarChart3 className="size-4" aria-hidden />
+                Analytics
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/admin/learning/courses">
+                <BookOpen className="size-4" aria-hidden />
+                Course catalog
+              </Link>
+            </Button>
+          </div>
+        }
+      />
 
-      {loading && <p>Loading dashboard…</p>}
+      {loading && <p className="text-sm text-muted-foreground">Loading dashboard…</p>}
       {error && (
-        <div style={errorBoxStyle}>
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
           <strong>Could not load dashboard.</strong> {error}
         </div>
       )}
@@ -90,39 +111,59 @@ export function LearningDashboardPage() {
           <InsightsPanel refreshKey={refreshTick} />
 
           {/* Top KPI row */}
-          <div style={{ ...kpiGridStyle, marginTop: '2rem' }}>
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <KpiCard label="Active caregivers" value={rollup.totalCaregivers} />
             <KpiCard label="Total enrollments" value={rollup.totalEnrollments} />
             <KpiCard
               label="Agency compliance"
               value={`${compliancePercent}%`}
-              accent={complianceColor}
+              valueClassName={complianceClass}
             />
           </div>
 
           {/* Status breakdown */}
-          <section style={{ marginTop: '2rem' }}>
-            <h3 style={sectionHeadingStyle}>Enrollments by status</h3>
-            <div style={statusGridStyle}>
-              <StatusCard label="Completed" value={rollup.completed} color="#10A4A4" />
-              <StatusCard label="In progress" value={rollup.inProgress} color="#185FA5" />
-              <StatusCard label="Not started" value={rollup.notStarted} color="#888780" />
-              <StatusCard label="Overdue" value={rollup.overdue} color="#BA7517" />
-              <StatusCard label="Expired" value={rollup.expired} color="#E24B4A" />
-            </div>
-          </section>
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="size-5 text-primary" aria-hidden />
+                Enrollments by status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                <StatusCard label="Completed" value={rollup.completed} accentClass="border-l-emerald-500" />
+                <StatusCard label="In progress" value={rollup.inProgress} accentClass="border-l-primary" />
+                <StatusCard label="Not started" value={rollup.notStarted} accentClass="border-l-muted-foreground" />
+                <StatusCard label="Overdue" value={rollup.overdue} accentClass="border-l-amber-500" />
+                <StatusCard label="Expired" value={rollup.expired} accentClass="border-l-destructive" />
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Compliance bar */}
-          <section style={{ marginTop: '2rem' }}>
-            <h3 style={sectionHeadingStyle}>Compliance breakdown</h3>
-            <ComplianceBar rollup={rollup} />
-          </section>
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="size-5 text-primary" aria-hidden />
+                Compliance breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ComplianceBar rollup={rollup} />
+            </CardContent>
+          </Card>
 
           {rollup.overdue + rollup.expired > 0 && (
-            <div style={alertBoxStyle}>
-              <strong>{rollup.overdue + rollup.expired} enrollment{rollup.overdue + rollup.expired === 1 ? '' : 's'} need attention.</strong>{' '}
-              {rollup.overdue > 0 && `${rollup.overdue} overdue`}{rollup.overdue > 0 && rollup.expired > 0 && ', '}{rollup.expired > 0 && `${rollup.expired} expired`}.
-              {' '}Open per-caregiver detail from the Staff page.
+            <div
+              role="status"
+              className="mt-8 flex items-start gap-2 rounded-md border border-amber-200 border-l-4 border-l-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                <strong>{rollup.overdue + rollup.expired} enrollment{rollup.overdue + rollup.expired === 1 ? '' : 's'} need attention.</strong>{' '}
+                {rollup.overdue > 0 && `${rollup.overdue} overdue`}{rollup.overdue > 0 && rollup.expired > 0 && ', '}{rollup.expired > 0 && `${rollup.expired} expired`}.
+                {' '}Open per-caregiver detail from the Staff page.
+              </span>
             </div>
           )}
         </>
@@ -144,29 +185,31 @@ export function LearningDashboardPage() {
 interface KpiCardProps {
   label: string;
   value: number | string;
-  accent?: string;
+  valueClassName?: string;
 }
 
-function KpiCard({ label, value, accent }: KpiCardProps) {
+function KpiCard({ label, value, valueClassName }: KpiCardProps) {
   return (
-    <div style={kpiCardStyle}>
-      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #64748b)', marginBottom: '0.4rem' }}>{label}</div>
-      <div style={{ fontSize: '1.75rem', fontWeight: 500, color: accent ?? '#0b1220' }}>{value}</div>
-    </div>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="text-sm text-muted-foreground">{label}</div>
+        <div className={`mt-1 text-3xl font-medium ${valueClassName ?? ''}`}>{value}</div>
+      </CardContent>
+    </Card>
   );
 }
 
 interface StatusCardProps {
   label: string;
   value: number;
-  color: string;
+  accentClass: string;
 }
 
-function StatusCard({ label, value, color }: StatusCardProps) {
+function StatusCard({ label, value, accentClass }: StatusCardProps) {
   return (
-    <div style={{ ...kpiCardStyle, borderLeft: `4px solid ${color}` }}>
-      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #64748b)', marginBottom: '0.4rem' }}>{label}</div>
-      <div style={{ fontSize: '1.5rem', fontWeight: 500 }}>{value}</div>
+    <div className={`rounded-lg border border-border border-l-4 ${accentClass} bg-card px-4 py-3`}>
+      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="mt-1 text-2xl font-medium">{value}</div>
     </div>
   );
 }
@@ -187,22 +230,25 @@ function ComplianceBar({ rollup }: ComplianceBarProps) {
 
   return (
     <>
-      <div style={{ display: 'flex', height: '32px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+      <div className="flex h-8 overflow-hidden rounded-md border border-border">
         {segments.map((seg) => (
           <div
             key={seg.label}
             style={{
               width: `${(seg.value / total) * 100}%`,
-              backgroundColor: seg.color
+              backgroundColor: seg.color,
             }}
             title={`${seg.label}: ${seg.value}`}
           />
         ))}
       </div>
-      <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.5rem', fontSize: '0.85rem', flexWrap: 'wrap' }}>
+      <div className="mt-2 flex flex-wrap gap-5 text-sm">
         {segments.map((seg) => (
-          <span key={seg.label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: seg.color, display: 'inline-block' }} />
+          <span key={seg.label} className="flex items-center gap-1.5">
+            <span
+              className="inline-block size-2.5 rounded-sm"
+              style={{ backgroundColor: seg.color }}
+            />
             {seg.label} <strong>{seg.value}</strong>
           </span>
         ))}
@@ -210,69 +256,3 @@ function ComplianceBar({ rollup }: ComplianceBarProps) {
     </>
   );
 }
-
-// ---------- Styles ----------
-
-const kpiGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  gap: '1rem',
-  marginBottom: '0.5rem',
-};
-
-const statusGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-  gap: '1rem',
-};
-
-const kpiCardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
-  border: '1px solid #e2e8f0',
-  borderRadius: '8px',
-  padding: '1rem 1.25rem',
-};
-
-const sectionHeadingStyle: React.CSSProperties = {
-  margin: '0 0 0.75rem',
-  fontSize: '1rem',
-  fontWeight: 500,
-  color: 'var(--color-text-muted, #475569)',
-};
-
-const linkButtonStyle: React.CSSProperties = {
-  textDecoration: 'none',
-  color: '#185FA5',
-  fontSize: '0.9rem',
-  border: '1px solid #185FA5',
-  padding: '0.4rem 0.85rem',
-  borderRadius: '6px',
-};
-
-const primaryActionStyle: React.CSSProperties = {
-  backgroundColor: '#185FA5',
-  color: '#ffffff',
-  border: 'none',
-  padding: '0.5rem 1rem',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-  cursor: 'pointer',
-  fontWeight: 500,
-};
-
-const errorBoxStyle: React.CSSProperties = {
-  padding: '0.75rem 1rem',
-  backgroundColor: '#fef2f2',
-  color: '#991b1b',
-  borderRadius: '6px',
-  marginBottom: '1rem',
-};
-
-const alertBoxStyle: React.CSSProperties = {
-  marginTop: '2rem',
-  padding: '0.85rem 1rem',
-  backgroundColor: '#fef3c7',
-  color: '#7c2d12',
-  borderRadius: '6px',
-  borderLeft: '4px solid #BA7517',
-};

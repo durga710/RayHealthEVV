@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
+import { Bot, Send, Sparkles } from 'lucide-react';
 import { getJson, postJson, HttpError } from '../../lib/api-client.js';
 import { useAuth } from '../../lib/AuthContext.js';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * CopilotChatPage — conversational Q&A surface at /admin/learning/copilot.
@@ -234,31 +239,35 @@ export function CopilotChatPage(): ReactElement {
 
   return (
     <div>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1.5rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem' }}>AI Workflow Copilot</h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, #64748b)', fontSize: '0.9rem' }}>
-            Conversational copilot scoped to your role. Every proposed action requires your confirmation.
-          </p>
-        </div>
-        <Link to="/admin/learning" style={linkButtonStyle}>← Learning Hub</Link>
-      </header>
+      <PageHeader
+        title="AI Workflow Copilot"
+        description="Conversational copilot scoped to your role. Every proposed action requires your confirmation."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/learning">← Learning Hub</Link>
+          </Button>
+        }
+      />
 
-      {statusLoading && <p style={{ color: '#64748b' }}>Checking Copilot status…</p>}
+      {statusLoading && <p className="text-sm text-muted-foreground">Checking Copilot status…</p>}
 
       {!statusLoading && status && !status.enabled && (
-        <div style={lockedBoxStyle}>
+        <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-foreground">
           <strong>Copilot is not enabled for this agency.</strong>
-          <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
-            An agency admin can enable the add-on in <Link to="/admin/settings" style={{ color: '#185FA5' }}>Settings</Link>.
+          <p className="mt-1 text-muted-foreground">
+            An agency admin can enable the add-on in{' '}
+            <Link to="/admin/settings" className="font-medium text-primary underline-offset-4 hover:underline">
+              Settings
+            </Link>
+            .
           </p>
         </div>
       )}
 
       {!statusLoading && status && status.enabled && !status.geminiConfigured && (
-        <div style={warningBoxStyle}>
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <strong>Copilot infrastructure is offline.</strong>
-          <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
+          <p className="mt-1">
             The add-on is enabled but the Gemini key isn\'t configured on the backend. Operations team has been notified.
           </p>
         </div>
@@ -266,53 +275,83 @@ export function CopilotChatPage(): ReactElement {
 
       {!statusLoading && status && status.enabled && status.geminiConfigured && (
         <>
-          {turns.length === 0 && (
-            <div style={suggestionsCardStyle}>
-              <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', color: '#64748b' }}>Suggested prompts:</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                {suggestions.map((s) => (
-                  <button key={s} onClick={() => void submit(s)} style={suggestionBtnStyle} disabled={submitting}>
-                    {s}
-                  </button>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="size-5 text-primary" aria-hidden />
+                Copilot Conversation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {turns.length === 0 && (
+                <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-4">
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Sparkles className="size-4" aria-hidden />
+                    Suggested prompts
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {suggestions.map((s) => (
+                      <Button
+                        key={s}
+                        variant="outline"
+                        size="sm"
+                        className="h-auto justify-start whitespace-normal py-2 text-left"
+                        onClick={() => void submit(s)}
+                        disabled={submitting}
+                      >
+                        {s}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div
+                ref={scrollRef}
+                className="flex max-h-[60vh] min-h-[420px] flex-col gap-3 overflow-y-auto"
+              >
+                {turns.map((turn, idx) => (
+                  <TurnView
+                    key={idx}
+                    turn={turn}
+                    onConfirm={() => void confirmAction(idx)}
+                    onDecline={() => declineAction(idx)}
+                  />
                 ))}
+                {submitting && (
+                  <div className="mr-auto text-sm italic text-muted-foreground">Copilot is thinking…</div>
+                )}
               </div>
-            </div>
-          )}
 
-          <div ref={scrollRef} style={chatScrollStyle}>
-            {turns.map((turn, idx) => (
-              <TurnView
-                key={idx}
-                turn={turn}
-                onConfirm={() => void confirmAction(idx)}
-                onDecline={() => declineAction(idx)}
-              />
-            ))}
-            {submitting && <div style={typingStyle}>Copilot is thinking…</div>}
-          </div>
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  {error}
+                </div>
+              )}
 
-          {error && (
-            <div role="alert" style={errorBoxStyle}>
-              {error}
-            </div>
-          )}
+              <form onSubmit={handleSubmit} className="flex items-end gap-2">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Ask Copilot anything about training, schedules, or compliance…"
+                  rows={2}
+                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  disabled={submitting}
+                />
+                <Button type="submit" disabled={submitting || !prompt.trim()}>
+                  <Send className="size-4" aria-hidden />
+                  {submitting ? 'Sending…' : 'Send'}
+                </Button>
+              </form>
 
-          <form onSubmit={handleSubmit} style={formStyle}>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Ask Copilot anything about training, schedules, or compliance…"
-              rows={2}
-              style={textareaStyle}
-              disabled={submitting}
-            />
-            <button type="submit" disabled={submitting || !prompt.trim()} style={sendBtnStyle}>
-              {submitting ? 'Sending…' : 'Send'}
-            </button>
-          </form>
-          <p style={attestationStyle}>
-            Copilot reasoning is not a substitute for clinical or legal judgment. Confirm every action before relying on it.
-          </p>
+              <p className="text-center text-xs text-muted-foreground">
+                Copilot reasoning is not a substitute for clinical or legal judgment. Confirm every action before relying on it.
+              </p>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
@@ -332,219 +371,39 @@ function TurnView({
 }): ReactElement {
   if (turn.kind === 'user') {
     return (
-      <div style={userBubbleWrapStyle}>
-        <div style={userBubbleStyle}>{turn.text}</div>
+      <div className="ml-auto max-w-[80%] rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground">
+        {turn.text}
       </div>
     );
   }
   const resolved = turn.resolution !== undefined;
   return (
-    <div style={assistantBubbleWrapStyle}>
-      <div style={assistantBubbleStyle}>
-        <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{turn.text}</p>
-        {turn.proposedAction && (
-          <div style={proposedActionStyle}>
-            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#3C3489', marginBottom: '0.4rem' }}>
-              {resolved ? `Action ${turn.resolution}` : 'Proposed action'}
-              {turn.proposedActionData && !resolved && <span style={executableBadgeStyle}>Executable</span>}
-            </div>
-            <p style={{ margin: '0 0 0.6rem', fontWeight: 500 }}>{turn.proposedAction}</p>
-            {!resolved && (
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={onConfirm} style={confirmBtnStyle}>
-                  Confirm{turn.proposedActionData ? ' & run' : ''}
-                </button>
-                <button onClick={onDecline} style={declineBtnStyle}>Decline</button>
-              </div>
+    <div className="mr-auto max-w-[80%] rounded-2xl bg-muted px-4 py-2 text-sm text-foreground">
+      <p className="whitespace-pre-wrap">{turn.text}</p>
+      {turn.proposedAction && (
+        <div className="mt-3 space-y-2 rounded-lg border border-border bg-card p-3">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {resolved ? `Action ${turn.resolution}` : 'Proposed action'}
+            {turn.proposedActionData && !resolved && (
+              <Badge variant="accent" className="text-[0.65rem]">
+                Executable
+              </Badge>
             )}
           </div>
-        )}
-        <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.5rem' }}>
-          {turn.model}
+          <p className="font-medium">{turn.proposedAction}</p>
+          {!resolved && (
+            <div className="flex gap-2">
+              <Button size="sm" onClick={onConfirm}>
+                Confirm{turn.proposedActionData ? ' & run' : ''}
+              </Button>
+              <Button size="sm" variant="outline" onClick={onDecline}>
+                Decline
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
+      <div className="mt-2 text-xs text-muted-foreground">{turn.model}</div>
     </div>
   );
 }
-
-// ---------- Styles ----------
-
-const linkButtonStyle: React.CSSProperties = {
-  textDecoration: 'none',
-  color: '#185FA5',
-  fontSize: '0.9rem',
-  border: '1px solid #185FA5',
-  padding: '0.4rem 0.85rem',
-  borderRadius: '6px',
-};
-
-const lockedBoxStyle: React.CSSProperties = {
-  padding: '1rem 1.25rem',
-  backgroundColor: '#FAEEDA',
-  borderLeft: '4px solid #BA7517',
-  color: '#633806',
-  borderRadius: '8px',
-};
-
-const warningBoxStyle: React.CSSProperties = {
-  padding: '1rem 1.25rem',
-  backgroundColor: '#FCEBEB',
-  borderLeft: '4px solid #E24B4A',
-  color: '#791F1F',
-  borderRadius: '8px',
-};
-
-const suggestionsCardStyle: React.CSSProperties = {
-  marginBottom: '1rem',
-  padding: '1rem 1.25rem',
-  backgroundColor: '#f8fafc',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-};
-
-const suggestionBtnStyle: React.CSSProperties = {
-  textAlign: 'left',
-  padding: '0.5rem 0.75rem',
-  backgroundColor: '#ffffff',
-  border: '1px solid #e2e8f0',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontSize: '0.9rem',
-  color: '#0b1220',
-};
-
-const chatScrollStyle: React.CSSProperties = {
-  maxHeight: '440px',
-  overflowY: 'auto',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.6rem',
-  padding: '0.5rem',
-  backgroundColor: '#fbfcfd',
-  border: '1px solid #e2e8f0',
-  borderRadius: '8px',
-};
-
-const userBubbleWrapStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-};
-
-const userBubbleStyle: React.CSSProperties = {
-  maxWidth: '80%',
-  padding: '0.6rem 0.85rem',
-  backgroundColor: '#185FA5',
-  color: '#ffffff',
-  borderRadius: '12px 12px 4px 12px',
-  fontSize: '0.92rem',
-  lineHeight: 1.5,
-};
-
-const assistantBubbleWrapStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-start',
-};
-
-const assistantBubbleStyle: React.CSSProperties = {
-  maxWidth: '80%',
-  padding: '0.75rem 1rem',
-  backgroundColor: '#ffffff',
-  border: '1px solid #e2e8f0',
-  borderRadius: '12px 12px 12px 4px',
-  fontSize: '0.92rem',
-  lineHeight: 1.55,
-  color: '#0b1220',
-};
-
-const proposedActionStyle: React.CSSProperties = {
-  marginTop: '0.75rem',
-  padding: '0.75rem 0.85rem',
-  backgroundColor: '#EEEDFE',
-  borderRadius: '8px',
-  border: '1px solid #AFA9EC',
-};
-
-const confirmBtnStyle: React.CSSProperties = {
-  backgroundColor: '#534AB7',
-  color: '#ffffff',
-  border: 'none',
-  padding: '0.45rem 0.9rem',
-  borderRadius: '6px',
-  fontSize: '0.85rem',
-  cursor: 'pointer',
-  fontWeight: 500,
-};
-
-const declineBtnStyle: React.CSSProperties = {
-  backgroundColor: 'transparent',
-  color: '#3C3489',
-  border: '1px solid #AFA9EC',
-  padding: '0.45rem 0.9rem',
-  borderRadius: '6px',
-  fontSize: '0.85rem',
-  cursor: 'pointer',
-};
-
-const executableBadgeStyle: React.CSSProperties = {
-  marginLeft: '0.5rem',
-  fontSize: '0.65rem',
-  padding: '0.1rem 0.45rem',
-  backgroundColor: '#534AB7',
-  color: '#ffffff',
-  borderRadius: '999px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-  fontWeight: 500,
-};
-
-const typingStyle: React.CSSProperties = {
-  alignSelf: 'flex-start',
-  fontSize: '0.85rem',
-  color: '#64748b',
-  fontStyle: 'italic',
-  padding: '0.4rem 0.85rem',
-};
-
-const formStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '0.5rem',
-  marginTop: '1rem',
-};
-
-const textareaStyle: React.CSSProperties = {
-  flex: 1,
-  padding: '0.6rem 0.85rem',
-  border: '1px solid #cbd5e1',
-  borderRadius: '8px',
-  fontFamily: 'inherit',
-  fontSize: '0.95rem',
-  resize: 'vertical',
-};
-
-const sendBtnStyle: React.CSSProperties = {
-  alignSelf: 'flex-end',
-  backgroundColor: '#185FA5',
-  color: '#ffffff',
-  border: 'none',
-  padding: '0.6rem 1.1rem',
-  borderRadius: '8px',
-  fontSize: '0.95rem',
-  cursor: 'pointer',
-  fontWeight: 500,
-};
-
-const attestationStyle: React.CSSProperties = {
-  margin: '0.75rem 0 0',
-  fontSize: '0.75rem',
-  color: 'var(--color-text-muted, #94a3b8)',
-  textAlign: 'center',
-};
-
-const errorBoxStyle: React.CSSProperties = {
-  marginTop: '0.75rem',
-  padding: '0.6rem 0.85rem',
-  backgroundColor: '#fef2f2',
-  color: '#991b1b',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-};
