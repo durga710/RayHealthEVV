@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import { Building2 } from 'lucide-react';
 import { getJson, putJson } from '../../lib/api-client.js';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Agency {
   id: string;
@@ -10,7 +22,7 @@ interface Agency {
 export function AgencySetupPage() {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [name, setName] = useState('');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,14 +41,14 @@ export function AgencySetupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage('');
+    setMessage(null);
     try {
       const updated = await putJson<Agency>('/api/agencies/current', { name });
       setAgency(updated);
       setName(updated.name);
-      setMessage('Agency updated successfully');
+      setMessage({ kind: 'ok', text: 'Agency updated successfully' });
     } catch (err) {
-      setMessage('Failed to update agency');
+      setMessage({ kind: 'error', text: 'Failed to update agency' });
     }
   };
 
@@ -44,34 +56,56 @@ export function AgencySetupPage() {
 
   return (
     <div>
-      <h2>Agency Setup</h2>
-      <p style={{ marginBottom: '2rem', color: 'var(--color-text-muted)' }}>Configure your Pennsylvania agency details and operating tracks.</p>
-      
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="name">Agency Name</label>
-          <input 
-            id="name" 
-            value={name} 
-            onChange={e => setName(e.target.value)} 
-            placeholder="Enter agency name"
-            required
-          />
-        </div>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
-          <label htmlFor="state">State</label>
-          <input 
-            id="state" 
-            value={agency?.state || 'PA'} 
-            disabled 
-            style={{ backgroundColor: '#f8fafc', color: '#94a3b8' }}
-          />
-        </div>
-        
-        <button type="submit">Save Changes</button>
-      </form>
-      {message && <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#ecfdf5', color: '#065f46', borderRadius: '8px' }}>{message}</div>}
+      <PageHeader
+        title="Agency Setup"
+        description="Configure your Pennsylvania agency details and operating tracks."
+      />
+
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="size-5 text-primary" aria-hidden />
+            Agency Details
+          </CardTitle>
+          <CardDescription>Update your agency name and review your operating state.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="name">Agency Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter agency name"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="state">State</Label>
+              <Input id="state" value={agency?.state || 'PA'} disabled />
+            </div>
+
+            <Button type="submit" className="w-full sm:w-auto">
+              Save Changes
+            </Button>
+          </form>
+
+          {message && (
+            <div
+              role="status"
+              className={
+                message.kind === 'ok'
+                  ? 'mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800'
+                  : 'mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive'
+              }
+            >
+              {message.text}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
