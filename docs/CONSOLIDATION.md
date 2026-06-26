@@ -25,8 +25,7 @@ rayhealth-evv-platform/
 │   ├── core/                 # domain schemas + services (from base)
 │   ├── app/                  # backend API (from base; see Backend divergence)
 │   ├── web/                  # React 19 + shadcn/ui SPA (from base — the redesign)
-│   ├── mobile/               # Vite + Capacitor native app (from standalone repo)
-│   └── mobile-expo-legacy/   # prior Expo Router app — preserved, see Mobile fork
+│   └── mobile/               # Vite + Capacitor native app (from standalone repo)
 ├── api/                      # Vercel serverless entry
 ├── docs/                     # docs, ops/, compliance/
 ├── scripts/
@@ -47,19 +46,16 @@ rayhealth-evv-platform/
    stays gitignored and `.env.example` documents required vars.
 4. **Dead code removed.** `packages/mobile-capacitor` (an abandoned stub) deleted.
 
-## Mobile architecture fork (NEEDS A DECISION)
+## Mobile architecture — RESOLVED (Capacitor)
 
-There are two mobile implementations and they use **different stacks**:
+`packages/mobile` is the **Vite + Capacitor** app (from the standalone repo): most
+developed (mock-GPS/location-integrity, offline visit queue, full auth/visit
+screens) and the one the consolidation request pointed at. **This is the canonical
+and only mobile package.**
 
-- `packages/mobile` — **Vite + Capacitor** (from the standalone repo). Most
-  developed (mock-GPS/location-integrity, offline visit queue, full auth/visit
-  screens) and the one the consolidation request pointed at. **Set as canonical.**
-- `packages/mobile-expo-legacy` — **Expo Router**. Preserved, not deleted, because
-  a prior project note claimed "mobile is Expo, not Capacitor." Whichever stack is
-  the real future, the other should eventually be removed.
-
-**Action for maintainer:** confirm Capacitor vs Expo as the mobile platform, then
-delete the loser.
+The prior Expo Router app (`packages/mobile-expo-legacy`) was **removed** per the
+maintainer's decision (2026-06-26). It remains recoverable from git history
+(commit `427eaba`) and the `source-monorepo` origin if ever needed.
 
 ## Backend divergence (app) — NOT auto-merged
 
