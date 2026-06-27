@@ -52,9 +52,11 @@ function StatCard({
       </div>
 
       <div className="flex items-end justify-between gap-2">
-        <p className="font-display text-3xl font-bold tracking-tight tabular-nums text-foreground">
+        {/* div, not p: `value` may be a block element (e.g. a loading Skeleton),
+            which is invalid inside <p> and triggers a hydration error. */}
+        <div className="font-display text-3xl font-bold tracking-tight tabular-nums text-foreground">
           {value}
-        </p>
+        </div>
         {hasDelta ? (
           <span
             className={cn(

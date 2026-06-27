@@ -61,19 +61,24 @@ export function DataTable<T>({
   const [sort, setSort] = React.useState<SortState>(null);
   const [page, setPage] = React.useState(0);
 
+  // Guard against a non-array `rows` (e.g. a `{ success, data }` envelope passed
+  // by mistake): coerce to [] so a shape mismatch degrades to an empty table
+  // instead of throwing `.slice is not a function` and blanking the page.
+  const safeRows = Array.isArray(rows) ? rows : [];
+
   const sortedRows = React.useMemo(() => {
-    if (!sort) return rows;
+    if (!sort) return safeRows;
     const col = columns.find((c) => c.id === sort.columnId);
-    if (!col?.sortValue) return rows;
+    if (!col?.sortValue) return safeRows;
     const factor = sort.dir === 'asc' ? 1 : -1;
-    return [...rows].sort((a, b) => {
+    return [...safeRows].sort((a, b) => {
       const av = col.sortValue!(a);
       const bv = col.sortValue!(b);
       if (av < bv) return -1 * factor;
       if (av > bv) return 1 * factor;
       return 0;
     });
-  }, [rows, sort, columns]);
+  }, [safeRows, sort, columns]);
 
   const pageCount = pageSize ? Math.max(1, Math.ceil(sortedRows.length / pageSize)) : 1;
   const safePage = Math.min(page, pageCount - 1);
