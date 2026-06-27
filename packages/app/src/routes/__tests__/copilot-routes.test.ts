@@ -8,6 +8,9 @@ import { makeToken, setTestJwtSecret } from './test-helpers.js';
 vi.mock('../../services/gemini-client.js', () => ({
   isGeminiConfigured: vi.fn(),
   askGemini: vi.fn(),
+  GEMINI_MODELS: ['gemini-2.5-flash', 'gemini-2.5-pro'],
+  isGeminiModel: (value: unknown) =>
+    value === 'gemini-2.5-flash' || value === 'gemini-2.5-pro',
   GeminiNotConfiguredError: class GeminiNotConfiguredError extends Error {
     constructor() {
       super('GOOGLE_AI_API_KEY is not set');
@@ -236,6 +239,27 @@ describe('POST /copilot/ask', () => {
 
     const args = vi.mocked(gemini.askGemini).mock.calls[0]?.[0];
     expect(args?.model).toBe('gemini-2.5-pro');
+  });
+
+  it('ignores a non-allowlisted client model and uses the plan default', async () => {
+    vi.mocked(gemini.isGeminiConfigured).mockReturnValue(true);
+    vi.mocked(gemini.askGemini).mockResolvedValue({
+      text: 'Safe response.',
+      usageTokens: 100,
+      model: 'gemini-2.5-flash',
+    });
+    mockAuditCreate();
+    const app = createApp();
+    app.set('db', makeMockDb({ aiCopilot: { enabled: true, plan: 'starter' } }));
+
+    await request(app)
+      .post('/copilot/ask')
+      .set('Authorization', `Bearer ${makeToken('admin')}`)
+      // Attempt to inject a path-traversal value into the request URL via `model`.
+      .send({ prompt: 'hi', model: '../../models/evil:generateContent?key=x' });
+
+    const args = vi.mocked(gemini.askGemini).mock.calls[0]?.[0];
+    expect(args?.model).toBe('gemini-2.5-flash');
   });
 
   it('returns 502 when Gemini upstream fails', async () => {

@@ -1,0 +1,21 @@
+# gitleaks configuration — extends the bundled default ruleset and adds a
+# narrow allowlist for confirmed false positives in the current working tree.
+# Anything not listed here still fails the secret-scan CI job.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Confirmed non-secret matches reviewed by hand"
+
+paths = [
+  # Firebase Web app config. The apiKey here is a public client identifier,
+  # not a secret — Google ships it in client bundles and enforces access via
+  # Firebase Security Rules / App Check, not key secrecy.
+  '''packages/mobile/firebase-applet-config\.json''',
+]
+
+regexes = [
+  # A deliberately forged `alg=none` JWT used as a negative test fixture in
+  # deploy docs ("a token forged with alg=none should be rejected with 401").
+  '''eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0\.eyJzdWIiOiJoYWNrZXIifQ\.''',
+]

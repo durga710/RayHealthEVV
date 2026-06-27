@@ -13,7 +13,16 @@
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta'
 
-export type GeminiModel = 'gemini-2.5-flash' | 'gemini-2.5-pro'
+/** Runtime allowlist of accepted models. The TS union below is erased at
+ * runtime, so callers that pass request-derived values MUST be validated
+ * against this list before the value reaches the request URL. */
+export const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'] as const
+
+export type GeminiModel = (typeof GEMINI_MODELS)[number]
+
+export function isGeminiModel(value: unknown): value is GeminiModel {
+  return typeof value === 'string' && (GEMINI_MODELS as readonly string[]).includes(value)
+}
 
 export interface GeminiAskInput {
   /** The user's question. */
@@ -85,10 +94,13 @@ export async function askGemini(input: GeminiAskInput): Promise<GeminiAskOutput>
     throw new GeminiNotConfiguredError()
   }
 
-  const model: GeminiModel = input.model ?? 'gemini-2.5-flash'
+  // Sanitize at the sink: `model` is interpolated into the request URL, so
+  // reject anything outside the allowlist even though the type says it is a
+  // GeminiModel (types are erased and callers may pass request-derived input).
+  const model: GeminiModel = isGeminiModel(input.model) ? input.model : 'gemini-2.5-flash'
   const maxOutputTokens = input.maxOutputTokens ?? 800
 
-  const url = `${GEMINI_API_BASE}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
+  const url = `${GEMINI_API_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`
   const body = {
     contents: [
       {

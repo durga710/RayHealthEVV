@@ -24,7 +24,7 @@ import {
   type AgencyFeatures,
   type AppRole,
 } from '@rayhealth/core'
-import { GeminiApiError, GeminiNotConfiguredError, askGemini, isGeminiConfigured, type GeminiModel } from '../services/gemini-client.js'
+import { GeminiApiError, GeminiNotConfiguredError, askGemini, isGeminiConfigured, isGeminiModel, type GeminiModel } from '../services/gemini-client.js'
 import {
   ActionAuthorizationError,
   ActionExecutionError,
@@ -154,7 +154,11 @@ router.post('/ask', async (req: Request, res: Response) => {
 
     const role = req.auth.role as AppRole
     const systemInstruction = SYSTEM_PROMPTS[role] ?? SYSTEM_PROMPTS.coordinator
-    const model: GeminiModel = body.model ?? (features.aiCopilot.plan === 'pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash')
+    // Only honor a client-supplied model if it is in the allowlist; any
+    // other value (request-controlled input) falls back to the plan default
+    // rather than flowing into the Gemini request URL.
+    const planDefault: GeminiModel = features.aiCopilot.plan === 'pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash'
+    const model: GeminiModel = isGeminiModel(body.model) ? body.model : planDefault
 
     // Build the per-request context blob so the model has real UUIDs to
     // reference when emitting PROPOSE_ACTION_DATA. Failures degrade to an
