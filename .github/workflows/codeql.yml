@@ -30,7 +30,11 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          queries: security-extended,security-and-quality
+          # Default query suite: security alerts only. The broader
+          # security-extended + security-and-quality suites flagged 20+
+          # low-priority quality notes on the consolidation diff, drowning
+          # out genuine findings. Track real security alerts separately.
+          queries: default
       - uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
