@@ -30,6 +30,11 @@ interface StaffMember {
   lastName?: string;
 }
 
+interface StaffResponse {
+  success: boolean;
+  data: StaffMember[];
+}
+
 interface InvitePublic {
   id: string;
   agencyId: string;
@@ -62,11 +67,11 @@ const QUERY_KEY = ['staff'];
 
 export function StaffPage(): React.ReactElement {
   const queryClient = useQueryClient();
-  const { data, isLoading, isError, refetch } = useApiResource<StaffMember[]>(
+  const { data, isLoading, isError, refetch } = useApiResource<StaffResponse>(
     QUERY_KEY,
     '/api/staff',
   );
-  const staff = data ?? [];
+  const staff = data?.data ?? [];
 
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');

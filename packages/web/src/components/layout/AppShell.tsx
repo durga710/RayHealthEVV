@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useTheme } from '@/lib/theme';
 import { Button } from '@/components/ui/button';
+import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 
 interface NavItem {
   to: string;
@@ -295,7 +296,10 @@ export function AppShell() {
         <AppHeader onOpenSidebar={() => setMobileOpen(true)} />
         <main className="flex-1">
           <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-10 lg:py-10 animate-(--animate-fade-in)">
-            <Outlet />
+            {/* Keyed by pathname so a crash on one route clears when navigating away. */}
+            <RouteErrorBoundary key={location.pathname}>
+              <Outlet />
+            </RouteErrorBoundary>
           </div>
         </main>
       </div>

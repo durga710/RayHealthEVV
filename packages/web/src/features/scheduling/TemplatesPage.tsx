@@ -21,11 +21,18 @@ import { FormField } from '@/components/patterns/form-field';
 import { SearchInput } from '@/components/patterns/search-input';
 import { DataTable, type DataTableColumn } from '@/components/patterns/data-table';
 
+/**
+ * Template tasks are stored as loose JSONB: templates created in-app store
+ * task duty ids (`string`), while seeded/imported templates may store
+ * `{ id, label }` objects. The display tolerates both shapes.
+ */
+type TemplateTask = string | { id: string; label: string };
+
 interface Template {
   id: string;
   clientId: string;
   name: string;
-  tasks: string[];
+  tasks: TemplateTask[];
 }
 
 interface PATask {
@@ -133,11 +140,15 @@ export function TemplatesPage() {
       header: 'Tasks',
       cell: (t) => (
         <div className="flex flex-wrap gap-1">
-          {t.tasks.map((task) => (
-            <Badge key={task} variant="secondary">
-              {task}
-            </Badge>
-          ))}
+          {t.tasks.map((task) => {
+            const id = typeof task === 'string' ? task : task.id;
+            const label = typeof task === 'string' ? task : task.label;
+            return (
+              <Badge key={id} variant="secondary">
+                {label}
+              </Badge>
+            );
+          })}
         </div>
       ),
     },
