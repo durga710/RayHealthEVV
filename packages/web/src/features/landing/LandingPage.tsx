@@ -194,7 +194,7 @@ function SectionEyebrow({
   className?: string;
 }) {
   return (
-    <p className={`text-sm font-bold uppercase tracking-[0.25em] text-accent ${className}`}>
+    <p className={`text-sm font-bold uppercase tracking-[0.25em] text-primary${className}`}>
       {children}
     </p>
   );
@@ -220,7 +220,7 @@ function BrandWordmark() {
   return (
     <span className="inline-flex items-center gap-2 font-display text-2xl font-black tracking-tight text-primary">
       RayHealth
-      <span className="rounded-full bg-accent px-2 py-0.5 text-[0.6rem] font-black uppercase tracking-[0.2em] text-white">
+      <span className="rounded-full bg-primary px-2 py-0.5 text-[0.6rem] font-black uppercase tracking-[0.2em] text-white">
         EVV
       </span>
     </span>
@@ -273,7 +273,7 @@ function Hero() {
             RayHealth EVV turns scheduling, authorization units, caregiver credentials, GPS capture, and visit exceptions into one audit-ready workflow for Pennsylvania agencies.
           </p>
           <div className="mt-2 flex flex-wrap gap-3">
-            <Button asChild size="lg" variant="accent">
+            <Button asChild size="lg" variant="default">
               <Link to="/login">
                 Access admin portal
                 <ArrowRight className="ml-1" />
@@ -318,7 +318,7 @@ function ProductPreview() {
           </p>
           <strong className="mt-1 block text-xl font-display">Wednesday field operations</strong>
         </div>
-        <span className="whitespace-nowrap rounded-full bg-accent px-3 py-1.5 text-xs font-black text-white">
+        <span className="whitespace-nowrap rounded-full bg-primary px-3 py-1.5 text-xs font-black text-white">
           PA DHS mode
         </span>
       </div>
@@ -361,7 +361,7 @@ function ProductPreview() {
 
       <div className="relative z-10 mt-4 flex items-center justify-between gap-4 rounded-2xl bg-[#f8fbff] p-4 text-primary">
         <div>
-          <span className="text-xs font-black uppercase tracking-[0.14em] text-accent">
+          <span className="text-xs font-black uppercase tracking-[0.14em] text-primary">
             Caregiver mobile
           </span>
           <strong className="mt-1 block text-base font-display">Clock-in packet ready</strong>
@@ -369,7 +369,7 @@ function ProductPreview() {
             Client, service code, GPS accuracy, task checklist, and offline retry state.
           </p>
         </div>
-        <span className="whitespace-nowrap rounded-full bg-accent px-3 py-1.5 text-xs font-black text-white">
+        <span className="whitespace-nowrap rounded-full bg-primary px-3 py-1.5 text-xs font-black text-white">
           Ready
         </span>
       </div>
@@ -419,7 +419,7 @@ function HowItWorks() {
               key={step.n}
               className="relative rounded-2xl bg-card p-7 pt-10 shadow-md transition-transform hover:-translate-y-1"
             >
-              <div className="absolute -top-4 left-6 rounded-full bg-accent px-3 py-1 font-display text-xs font-black tracking-widest text-white">
+              <div className="absolute -top-4 left-6 rounded-full bg-primary px-3 py-1 font-display text-xs font-black tracking-widest text-white">
                 STEP {step.n}
               </div>
               <h3 className="mb-2 font-display text-xl font-semibold text-primary">{step.title}</h3>
@@ -454,7 +454,7 @@ function Roles() {
               <ul className="mt-2 flex flex-col gap-2">
                 {role.points.map((p) => (
                   <li key={p} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <ArrowRight className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden="true" />
+                    <ArrowRight className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                     <span>{p}</span>
                   </li>
                 ))}
@@ -484,7 +484,7 @@ function Compliance() {
               key={c.name}
               className="flex gap-4 rounded-2xl bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
             >
-              <div aria-hidden="true" className="w-2 shrink-0 rounded-full bg-accent" />
+              <div aria-hidden="true" className="w-2 shrink-0 rounded-full bg-primary" />
               <div>
                 <h3 className="font-display text-base font-semibold text-primary">{c.name}</h3>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{c.detail}</p>
@@ -523,7 +523,7 @@ function Resources() {
                   rel={isExternal ? 'noreferrer' : undefined}
                   className="group flex h-full flex-col rounded-2xl border border-primary/10 bg-card/80 p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md focus-visible:outline-2 focus-visible:outline-ring"
                 >
-                  <span className="text-xs font-black uppercase tracking-[0.14em] text-accent">
+                  <span className="text-xs font-black uppercase tracking-[0.14em] text-primary">
                     {resource.type}
                   </span>
                   <strong className="mt-3 inline-flex items-center gap-1.5 font-display text-lg text-primary">
@@ -561,7 +561,7 @@ function Operations() {
           {operations.map((item) => (
             <article
               key={item.title}
-              className="rounded-2xl border border-border bg-background p-6 transition-colors hover:border-accent/30"
+              className="rounded-2xl border border-border bg-background p-6 transition-colors hover:border-primary/30"
             >
               <h3 className="mb-2 font-display text-lg font-semibold text-primary">{item.title}</h3>
               <p className="text-sm leading-relaxed text-muted-foreground">{item.body}</p>
@@ -707,7 +707,7 @@ function FinalCTA() {
           Get a live walkthrough of the admin portal and the caregiver mobile flow. We'll bring sample data — bring your hardest workflow.
         </p>
         <div className="mt-2 flex flex-wrap justify-center gap-3">
-          <Button asChild size="lg" variant="accent">
+          <Button asChild size="lg" variant="default">
             <Link to="/login">Access admin portal</Link>
           </Button>
           <Button
