@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { UserPlus, Search, Users } from 'lucide-react';
-import { getJson, postJson } from '../../lib/api-client.js';
+import React, { useMemo, useState } from 'react';
+import { UserPlus, Users } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { postJson, HttpError } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,16 +14,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FormField } from '@/components/patterns/form-field';
+import { SearchInput } from '@/components/patterns/search-input';
+import { DataTable, type DataTableColumn } from '@/components/patterns/data-table';
 
 interface Client {
   id: string;
@@ -30,21 +28,49 @@ interface Client {
   medicaidNumber?: string;
 }
 
+interface NewClientInput {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  medicaidNumber: string;
+}
+
+/** Render only the last 4 digits of a Medicaid ID; the rest is PHI. */
+function maskMedicaid(value: string): string {
+  const digits = value.replace(/\s+/g, '');
+  if (digits.length <= 4) return '••••';
+  return `•••• ${digits.slice(-4)}`;
+}
+
+const QUERY_KEY = ['clients'];
+
 export function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([]);
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, refetch } = useApiResource<Client[]>(QUERY_KEY, '/api/clients');
+  const clients = data ?? [];
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [medicaidNumber, setMedicaidNumber] = useState('');
-  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [query, setQuery] = useState('');
 
-  useEffect(() => {
-    getJson<Client[]>('/api/clients')
-      .then((data) => setClients(data || []))
-      .catch(() => setClients([]));
-  }, []);
+  const createClient = useMutation({
+    mutationFn: (input: NewClientInput) => postJson<Client>('/api/clients', input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      setFirstName('');
+      setLastName('');
+      setDateOfBirth('');
+      setMedicaidNumber('');
+      toast.success('Client added successfully.');
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof HttpError ? error.message : 'Failed to add client. Please try again.',
+      );
+    },
+  });
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -54,32 +80,45 @@ export function ClientsPage() {
     );
   }, [clients, query]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
-    setSubmitting(true);
-    try {
-      const newClient = await postJson<Client>('/api/clients', {
-        firstName,
-        lastName,
-        dateOfBirth,
-        medicaidNumber,
-      });
-      setClients((prev) => [...prev, newClient]);
-      setFirstName('');
-      setLastName('');
-      setDateOfBirth('');
-      setMedicaidNumber('');
-      setMessage({ kind: 'ok', text: 'Client added successfully.' });
-    } catch {
-      setMessage({ kind: 'error', text: 'Failed to add client. Please try again.' });
-    } finally {
-      setSubmitting(false);
-    }
+    createClient.mutate({ firstName, lastName, dateOfBirth, medicaidNumber });
   };
 
+  const columns: DataTableColumn<Client>[] = [
+    {
+      id: 'name',
+      header: 'Name',
+      sortValue: (c) => `${c.lastName} ${c.firstName}`.toLowerCase(),
+      cell: (c) => (
+        <span className="font-medium text-foreground">
+          {c.firstName} {c.lastName}
+        </span>
+      ),
+    },
+    {
+      id: 'dob',
+      header: 'Date of Birth',
+      sortValue: (c) => c.dateOfBirth,
+      cell: (c) => <span className="tabular-nums text-muted-foreground">{c.dateOfBirth}</span>,
+    },
+    {
+      id: 'medicaid',
+      header: 'Medicaid',
+      align: 'right',
+      cell: (c) =>
+        c.medicaidNumber ? (
+          <Badge variant="secondary" className="font-mono tabular-nums">
+            {maskMedicaid(c.medicaidNumber)}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+  ];
+
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="Client Management"
         description="Manage your clients and their demographic information."
@@ -95,68 +134,41 @@ export function ClientsPage() {
             <CardDescription>Create a client record for scheduling and EVV.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                  />
-                </div>
+                <FormField label="First Name" required>
+                  <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                </FormField>
+                <FormField label="Last Name" required>
+                  <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                </FormField>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="dob">Date of Birth</Label>
+              <FormField label="Date of Birth" required>
                 <Input
-                  id="dob"
                   type="date"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
                   required
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="medicaid">Medicaid Number (optional)</Label>
+              </FormField>
+              <FormField label="Medicaid Number" hint="Stored securely; shown masked in the roster.">
                 <Input
-                  id="medicaid"
                   value={medicaidNumber}
                   onChange={(e) => setMedicaidNumber(e.target.value)}
+                  inputMode="numeric"
+                  autoComplete="off"
                 />
-              </div>
-              <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
-                {submitting ? 'Adding…' : 'Add Client'}
+              </FormField>
+              <Button type="submit" disabled={createClient.isPending} className="w-full sm:w-auto">
+                {createClient.isPending ? 'Adding…' : 'Add Client'}
               </Button>
             </form>
-
-            {message && (
-              <div
-                role="status"
-                className={
-                  message.kind === 'ok'
-                    ? 'mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800'
-                    : 'mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive'
-                }
-              >
-                {message.text}
-              </div>
-            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <CardTitle className="flex items-center gap-2">
                 <Users className="size-5 text-primary" aria-hidden />
                 Client Roster
@@ -165,67 +177,43 @@ export function ClientsPage() {
                 {clients.length} {clients.length === 1 ? 'client' : 'clients'} on record
               </CardDescription>
             </div>
-            <div className="relative w-full sm:w-56">
-              <Search
-                className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2"
-                aria-hidden
-              />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search clients…"
-                className="pl-9"
-                aria-label="Search clients"
-              />
-            </div>
+            <SearchInput
+              value={query}
+              onValueChange={setQuery}
+              placeholder="Search clients…"
+              aria-label="Search clients"
+              className="w-full sm:w-56"
+            />
           </CardHeader>
           <CardContent>
-            {clients.length === 0 ? (
-              <EmptyState message="No clients found. Add one to get started." />
-            ) : filtered.length === 0 ? (
-              <EmptyState message={`No clients match “${query}”.`} />
+            {isError ? (
+              <Alert variant="destructive">
+                <AlertDescription className="flex items-center justify-between gap-3">
+                  Couldn’t load clients.
+                  <Button variant="outline" size="sm" onClick={() => void refetch()}>
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
             ) : (
-              <div className="overflow-hidden rounded-lg border border-border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Date of Birth</TableHead>
-                      <TableHead className="text-right">Medicaid</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((c) => (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-medium">
-                          {c.firstName} {c.lastName}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{c.dateOfBirth}</TableCell>
-                        <TableCell className="text-right">
-                          {c.medicaidNumber ? (
-                            <Badge variant="secondary">{c.medicaidNumber}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <DataTable
+                columns={columns}
+                rows={filtered}
+                rowKey={(c) => c.id}
+                isLoading={isLoading}
+                pageSize={10}
+                empty={{
+                  icon: Users,
+                  title: query ? 'No matching clients' : 'No clients yet',
+                  description: query
+                    ? `No clients match “${query}”.`
+                    : 'Add your first client to get started.',
+                }}
+              />
             )}
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-      <Users className="size-8 text-muted-foreground/60" aria-hidden />
-      <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }
