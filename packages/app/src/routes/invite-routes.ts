@@ -18,7 +18,7 @@
  */
 
 import { Router, type Request, type Response } from 'express'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomInt } from 'node:crypto'
 import type { Knex } from 'knex'
 import { AuditEventRepository } from '@rayhealth/core'
 import { requireCapability } from '../middleware/require-capability.js'
@@ -42,10 +42,12 @@ function generateToken(): string {
 /** Short human-friendly access code: 8 chars, A-Z + 2-9 (no 0/O/1/I confusion). */
 function generateAccessCode(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const bytes = randomBytes(8)
   let code = ''
   for (let i = 0; i < 8; i++) {
-    code += alphabet[bytes[i] % alphabet.length]
+    // randomInt draws from a cryptographically secure source with rejection
+    // sampling, so the distribution stays uniform regardless of alphabet size
+    // (plain `byte % len` biases toward lower indices unless len divides 256).
+    code += alphabet[randomInt(alphabet.length)]
   }
   // Insert a dash for legibility: XXXX-XXXX
   return `${code.slice(0, 4)}-${code.slice(4)}`
@@ -221,7 +223,9 @@ router.post('/', requireCapability('staff.write'), async (req: Request, res: Res
     }
     const email = (body.email ?? '').trim().toLowerCase()
     const role = body.role ?? 'caregiver'
-    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    // Bound the length before the regex: 254 is the RFC 5321 maximum, and the
+    // cap keeps the validation pattern from backtracking on pathological input.
+    if (!email || email.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       res.status(400).json({ success: false, error: 'valid email is required' })
       return
     }
