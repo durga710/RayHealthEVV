@@ -25,7 +25,7 @@ describe('admin app shell', () => {
     // Hero h1 uses a <br />, so match by role to avoid text-node split issues.
     const h1 = await screen.findByRole('heading', { level: 1 });
     expect(h1).toBeInTheDocument();
-    expect(h1).toHaveTextContent(/Care, finally on/i);
+    expect(h1).toHaveTextContent(/Home care, run like operations/i);
     // Log-in nav link confirms the full marketing shell rendered.
     expect(screen.getByRole('link', { name: /log in/i })).toBeInTheDocument();
     // Old hero copy must not be present.
