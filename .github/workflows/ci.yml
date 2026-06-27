@@ -161,10 +161,10 @@ jobs:
           path: packages/web/playwright-report/
           retention-days: 7
 
-  mobile-e2e:
-    name: mobile-e2e-smoke
+  mobile-smoke:
+    name: mobile-smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     needs: [typecheck, lint]
     steps:
       - uses: actions/checkout@v4
@@ -176,15 +176,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
-      - name: Install Playwright browsers (Chromium only)
-        run: npx playwright install --with-deps chromium
-        working-directory: packages/mobile
-      - name: Run mobile Expo web smoke
-        run: npm run e2e --workspace=@rayhealth/mobile
-      - name: Upload mobile Playwright report on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mobile-playwright-report
-          path: packages/mobile/playwright-report/
-          retention-days: 7
+      # The mobile app is Capacitor + Vite (the Expo app was retired), so
+      # the smoke is its unit tests plus a production web-bundle build —
+      # the same bundle `cap sync` ships into the native shells.
+      - name: Run mobile unit tests
+        run: npm run test --workspace=@rayhealth/mobile
+      - name: Build mobile web bundle
+        run: npm run build --workspace=@rayhealth/mobile

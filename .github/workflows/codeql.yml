@@ -30,11 +30,11 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          # Default query suite: security alerts only. The broader
-          # security-extended + security-and-quality suites flagged 20+
-          # low-priority quality notes on the consolidation diff, drowning
-          # out genuine findings. Track real security alerts separately.
-          queries: default
+          # No `queries:` input → CodeQL runs its default security suite.
+          # The broader security-extended + security-and-quality suites
+          # flagged 20+ low-priority quality notes on the consolidation
+          # diff, failing the check on volume rather than real risk.
+          # Genuine security alerts are still reported and tracked.
       - uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
