@@ -1,7 +1,16 @@
+import type { ReactElement } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { VisitCorrectionsQueuePage } from './VisitCorrectionsQueuePage.js';
+
+function renderWithClient(ui: ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 interface VmurFixture {
   id: string;
@@ -76,7 +85,7 @@ describe('VisitCorrectionsQueuePage', () => {
   it('renders pending corrections with reason code, correction code, and signature status', async () => {
     global.fetch = makeFetch([fixture]);
 
-    render(<VisitCorrectionsQueuePage />);
+    renderWithClient(<VisitCorrectionsQueuePage />);
 
     await screen.findByText((content) => content.includes('MFLB'));
     expect(screen.getByText(/Manual entry — late/i)).toBeInTheDocument();
@@ -92,7 +101,7 @@ describe('VisitCorrectionsQueuePage', () => {
     const fetchFn = makeFetch([fixture]);
     global.fetch = fetchFn;
 
-    render(<VisitCorrectionsQueuePage />);
+    renderWithClient(<VisitCorrectionsQueuePage />);
 
     await screen.findByRole('button', { name: /approve correction/i });
     fireEvent.click(screen.getByRole('button', { name: /approve correction/i }));
@@ -111,7 +120,7 @@ describe('VisitCorrectionsQueuePage', () => {
     const fetchFn = makeFetch([fixture]);
     global.fetch = fetchFn;
 
-    render(<VisitCorrectionsQueuePage />);
+    renderWithClient(<VisitCorrectionsQueuePage />);
 
     await screen.findByRole('button', { name: /reject…|reject/i });
     fireEvent.click(screen.getByRole('button', { name: 'Reject…' }));
@@ -135,7 +144,7 @@ describe('VisitCorrectionsQueuePage', () => {
   it('shows the empty state when the queue is clear', async () => {
     global.fetch = makeFetch([]);
 
-    render(<VisitCorrectionsQueuePage />);
+    renderWithClient(<VisitCorrectionsQueuePage />);
 
     await screen.findByText(/Queue is clear/i);
   });
@@ -164,7 +173,7 @@ describe('VisitCorrectionsQueuePage', () => {
       return Promise.resolve({ ok: false, status: 404, headers: { get: () => null }, json: () => Promise.resolve({}) });
     })) as unknown as typeof global.fetch;
 
-    render(<VisitCorrectionsQueuePage />);
+    renderWithClient(<VisitCorrectionsQueuePage />);
     await screen.findByRole('button', { name: /approve correction/i });
     fireEvent.click(screen.getByRole('button', { name: /approve correction/i }));
 

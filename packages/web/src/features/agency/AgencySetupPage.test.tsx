@@ -38,7 +38,7 @@ describe('AgencySetupPage', () => {
 
     render(<AgencySetupPage />);
 
-    const nameInput = await screen.findByLabelText('Agency Name');
+    const nameInput = await screen.findByLabelText(/Agency Name/);
     fireEvent.change(nameInput, { target: { value: 'New Keystone Care' } });
     fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
 

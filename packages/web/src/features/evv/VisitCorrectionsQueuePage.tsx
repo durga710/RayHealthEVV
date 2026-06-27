@@ -12,9 +12,12 @@
  * enforce four-eyes; that's a policy decision the backend would gate.
  */
 
-import React, { useCallback, useEffect, useState, type FormEvent } from 'react';
+import React, { useState, type FormEvent } from 'react';
 import { ClipboardCheck, Inbox } from 'lucide-react';
-import { getJson, postJson, HttpError } from '../../lib/api-client.js';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { postJson, HttpError } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,8 +28,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { EmptyState } from '@/components/patterns/empty-state';
+import { FormField } from '@/components/patterns/form-field';
 
 type VmurStatus = 'pending' | 'approved' | 'rejected';
 type VmurOriginator = 'caregiver' | 'coordinator' | 'admin';
@@ -58,6 +65,18 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+interface ApproveVars {
+  id: string;
+  args: { adjustedStartTime?: string; adjustedEndTime?: string };
+}
+
+interface RejectVars {
+  id: string;
+  reason: string;
+}
+
+const QUEUE_KEY = ['maintenance-queue'];
+
 const REASON_CODE_LABELS: Record<string, string> = {
   MTLB: 'Mobile — no internet at start',
   DCDB: 'Device damaged / broken',
@@ -84,105 +103,86 @@ const CORRECTION_CODE_LABELS: Record<string, string> = {
   OTHER: 'Other',
 };
 
+function extractActionError(err: unknown, fallback: string): string {
+  if (err instanceof HttpError) {
+    const body = err.body as { error?: string } | null;
+    return body?.error ?? `${fallback} (HTTP ${err.status})`;
+  }
+  return err instanceof Error ? err.message : fallback;
+}
+
+/** Convert a stored ISO instant to the `YYYY-MM-DDThh:mm` value a
+ * `datetime-local` input expects (local time). Returns '' when absent/invalid. */
+function isoToLocalInput(iso?: string): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** Convert a `datetime-local` value back to an ISO instant for the API, or
+ * `undefined` when the field is empty — preserving the original payload shape. */
+function localInputToIso(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString();
+}
+
 export function VisitCorrectionsQueuePage(): React.JSX.Element {
-  const [items, setItems] = useState<VmurItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actingId, setActingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, refetch } =
+    useApiResource<ApiResponse<VmurItem[]>>(QUEUE_KEY, '/api/maintenance/queue');
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const refresh = useCallback(async (): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await getJson<ApiResponse<VmurItem[]>>('/api/maintenance/queue');
-      if (response.success && response.data) {
-        setItems(response.data);
-      } else {
-        setError(response.error ?? 'Failed to load corrections queue');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load corrections queue');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const serverError =
+    data && !data.success ? data.error ?? 'Failed to load corrections queue' : null;
+  const showLoadError = isError || Boolean(serverError);
+  const loadErrorMessage = serverError ?? 'Failed to load corrections queue';
+  const items = data?.data ?? [];
 
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  const approveMutation = useMutation({
+    mutationFn: ({ id, args }: ApproveVars) =>
+      postJson<ApiResponse<VmurItem>>(`/api/maintenance/approve-unlock/${id}`, args),
+    onMutate: () => setActionError(null),
+    onSuccess: () => {
+      toast.success('Correction approved.');
+      queryClient.invalidateQueries({ queryKey: QUEUE_KEY });
+    },
+    onError: (err) => setActionError(extractActionError(err, 'Approve failed')),
+  });
 
-  const flashToast = (message: string): void => {
-    setToast(message);
-    setTimeout(() => {
-      setToast((current) => (current === message ? null : current));
-    }, 3500);
-  };
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, reason }: RejectVars) =>
+      postJson<ApiResponse<VmurItem>>(`/api/maintenance/reject-unlock/${id}`, { reason }),
+    onMutate: () => setActionError(null),
+    onSuccess: () => {
+      toast.success('Correction rejected.');
+      queryClient.invalidateQueries({ queryKey: QUEUE_KEY });
+    },
+    onError: (err) => setActionError(extractActionError(err, 'Reject failed')),
+  });
 
-  const handleApprove = async (
-    id: string,
-    args: { adjustedStartTime?: string; adjustedEndTime?: string },
-  ): Promise<void> => {
-    setActingId(id);
-    setError(null);
-    try {
-      await postJson<ApiResponse<VmurItem>>(`/api/maintenance/approve-unlock/${id}`, args);
-      flashToast('Correction approved.');
-      await refresh();
-    } catch (err) {
-      if (err instanceof HttpError) {
-        const body = err.body as { error?: string } | null;
-        setError(body?.error ?? `Approve failed (HTTP ${err.status})`);
-      } else {
-        setError(err instanceof Error ? err.message : 'Approve failed');
-      }
-    } finally {
-      setActingId(null);
-    }
-  };
-
-  const handleReject = async (id: string, reason: string): Promise<void> => {
-    setActingId(id);
-    setError(null);
-    try {
-      await postJson<ApiResponse<VmurItem>>(`/api/maintenance/reject-unlock/${id}`, { reason });
-      flashToast('Correction rejected.');
-      await refresh();
-    } catch (err) {
-      if (err instanceof HttpError) {
-        const body = err.body as { error?: string } | null;
-        setError(body?.error ?? `Reject failed (HTTP ${err.status})`);
-      } else {
-        setError(err instanceof Error ? err.message : 'Reject failed');
-      }
-    } finally {
-      setActingId(null);
-    }
-  };
+  const isActing = (id?: string): boolean =>
+    Boolean(id) &&
+    ((approveMutation.isPending && approveMutation.variables?.id === id) ||
+      (rejectMutation.isPending && rejectMutation.variables?.id === id));
 
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="Visit corrections review"
         description="Pending VMUR submissions awaiting coordinator review. Caregiver-filed corrections from the mobile app land here alongside coordinator-filed ones."
       />
 
-      {error && (
-        <div
-          role="alert"
-          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          <strong>Could not complete the request.</strong> {error}
-        </div>
-      )}
-
-      {toast && (
-        <div
-          role="status"
-          className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
-        >
-          {toast}
-        </div>
+      {actionError && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            <strong>Could not complete the request.</strong> {actionError}
+          </AlertDescription>
+        </Alert>
       )}
 
       <Card>
@@ -196,19 +196,34 @@ export function VisitCorrectionsQueuePage(): React.JSX.Element {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading queue…</p>
+          {showLoadError ? (
+            <Alert variant="destructive">
+              <AlertDescription className="flex items-center justify-between gap-3">
+                {loadErrorMessage}
+                <Button variant="outline" size="sm" onClick={() => void refetch()}>
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner label="Loading queue" />
+            </div>
           ) : items.length === 0 ? (
-            <EmptyState message="Queue is clear. No pending visit corrections for your agency right now." />
+            <EmptyState
+              icon={Inbox}
+              title="Queue is clear"
+              description="No pending visit corrections for your agency right now."
+            />
           ) : (
             <div className="flex flex-col gap-4">
               {items.map((item) => (
                 <CorrectionRow
                   key={item.id ?? item.visitId}
                   item={item}
-                  acting={actingId === item.id}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
+                  acting={isActing(item.id)}
+                  onApprove={(id, args) => approveMutation.mutate({ id, args })}
+                  onReject={(id, reason) => rejectMutation.mutate({ id, reason })}
                 />
               ))}
             </div>
@@ -219,34 +234,22 @@ export function VisitCorrectionsQueuePage(): React.JSX.Element {
   );
 }
 
-function EmptyState({ message }: { message: string }): React.JSX.Element {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-      <Inbox className="size-8 text-muted-foreground/60" aria-hidden />
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
-}
-
 // ----- Row -----
 
 interface CorrectionRowProps {
   item: VmurItem;
   acting: boolean;
-  onApprove: (id: string, args: { adjustedStartTime?: string; adjustedEndTime?: string }) => Promise<void>;
-  onReject: (id: string, reason: string) => Promise<void>;
+  onApprove: (id: string, args: { adjustedStartTime?: string; adjustedEndTime?: string }) => void;
+  onReject: (id: string, reason: string) => void;
 }
 
 function CorrectionRow({ item, acting, onApprove, onReject }: CorrectionRowProps): React.JSX.Element {
-  const [adjustedStart, setAdjustedStart] = useState(item.adjustedStartTime ?? '');
-  const [adjustedEnd, setAdjustedEnd] = useState(item.adjustedEndTime ?? '');
+  const [adjustedStart, setAdjustedStart] = useState(isoToLocalInput(item.adjustedStartTime));
+  const [adjustedEnd, setAdjustedEnd] = useState(isoToLocalInput(item.adjustedEndTime));
   const [rejectMode, setRejectMode] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
   const id = item.id ?? '';
-  const startInputId = `adjusted-start-${id || item.visitId}`;
-  const endInputId = `adjusted-end-${id || item.visitId}`;
-  const reasonInputId = `reject-reason-${id || item.visitId}`;
   const reasonLabel = item.reasonCategoryCode
     ? `${item.reasonCategoryCode} — ${REASON_CODE_LABELS[item.reasonCategoryCode] ?? 'unknown reason code'}`
     : 'No reason code on file';
@@ -257,9 +260,9 @@ function CorrectionRow({ item, acting, onApprove, onReject }: CorrectionRowProps
   const submitApprove = (e: FormEvent): void => {
     e.preventDefault();
     if (!id) return;
-    void onApprove(id, {
-      adjustedStartTime: adjustedStart.trim() || undefined,
-      adjustedEndTime: adjustedEnd.trim() || undefined,
+    onApprove(id, {
+      adjustedStartTime: localInputToIso(adjustedStart),
+      adjustedEndTime: localInputToIso(adjustedEnd),
     });
   };
 
@@ -267,7 +270,7 @@ function CorrectionRow({ item, acting, onApprove, onReject }: CorrectionRowProps
     e.preventDefault();
     if (!id) return;
     if (!rejectReason.trim()) return;
-    void onReject(id, rejectReason.trim());
+    onReject(id, rejectReason.trim());
   };
 
   return (
@@ -313,28 +316,20 @@ function CorrectionRow({ item, acting, onApprove, onReject }: CorrectionRowProps
         {!rejectMode ? (
           <form onSubmit={submitApprove} className="mt-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor={startInputId}>Adjusted start (ISO, optional)</Label>
+              <FormField label="Adjusted start (optional)">
                 <Input
-                  id={startInputId}
-                  type="text"
+                  type="datetime-local"
                   value={adjustedStart}
                   onChange={(e) => setAdjustedStart(e.target.value)}
-                  placeholder="2026-05-10T09:00:00.000Z"
-                  className="font-mono"
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor={endInputId}>Adjusted end (ISO, optional)</Label>
+              </FormField>
+              <FormField label="Adjusted end (optional)">
                 <Input
-                  id={endInputId}
-                  type="text"
+                  type="datetime-local"
                   value={adjustedEnd}
                   onChange={(e) => setAdjustedEnd(e.target.value)}
-                  placeholder="2026-05-10T17:30:00.000Z"
-                  className="font-mono"
                 />
-              </div>
+              </FormField>
             </div>
             <div className="mt-4 flex gap-2">
               <Button type="submit" disabled={acting} aria-busy={acting}>
@@ -352,18 +347,15 @@ function CorrectionRow({ item, acting, onApprove, onReject }: CorrectionRowProps
           </form>
         ) : (
           <form onSubmit={submitReject} className="mt-4">
-            <div className="space-y-1.5">
-              <Label htmlFor={reasonInputId}>Rejection reason (required)</Label>
-              <textarea
-                id={reasonInputId}
+            <FormField label="Rejection reason" required>
+              <Textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={2}
                 placeholder="e.g. insufficient documentation — please re-file with the visit logs attached."
-                className="flex w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 required
               />
-            </div>
+            </FormField>
             <div className="mt-3 flex gap-2">
               <Button type="submit" variant="destructive" disabled={acting || !rejectReason.trim()} aria-busy={acting}>
                 {acting ? 'Rejecting…' : 'Confirm rejection'}

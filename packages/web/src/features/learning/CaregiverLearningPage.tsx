@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { GraduationCap, BookOpen, ArrowLeft, Plus } from 'lucide-react';
-import { getJson, postJson } from '../../lib/api-client.js';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { postJson, HttpError } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { EnrollCaregiverModal } from './EnrollCaregiverModal.js';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -13,14 +16,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { DataTable, type DataTableColumn } from '@/components/patterns/data-table';
 
 type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
 type EnrollmentStatus = 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'expired';
@@ -49,12 +46,14 @@ interface CourseEnrollment {
   status: EnrollmentStatus;
 }
 
+interface EnrollmentRow {
+  enrollment: CourseEnrollment;
+  course: LearningCourse;
+}
+
 interface CaregiverLearningProgress {
   caregiverId: string;
-  enrollments: Array<{
-    enrollment: CourseEnrollment;
-    course: LearningCourse;
-  }>;
+  enrollments: EnrollmentRow[];
   isCompliant: boolean;
 }
 
@@ -84,63 +83,127 @@ function statusVariant(
 export function CaregiverLearningPage() {
   const params = useParams<{ id: string }>();
   const caregiverId = params.id ?? '';
+  const queryClient = useQueryClient();
+  const queryKey = ['caregiver-learning', caregiverId];
 
-  const [progress, setProgress] = useState<CaregiverLearningProgress | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [completingId, setCompletingId] = useState<string | null>(null);
   const [enrollOpen, setEnrollOpen] = useState(false);
 
-  const refresh = async (): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await getJson<ApiResponse<CaregiverLearningProgress>>(
-        `/api/learning/caregivers/${caregiverId}`,
-      );
-      if (response.success && response.data) {
-        setProgress(response.data);
-      } else {
-        setError(response.error ?? 'Failed to load progress');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load progress');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: envelope, isLoading, isError, refetch } = useApiResource<
+    ApiResponse<CaregiverLearningProgress>
+  >(queryKey, `/api/learning/caregivers/${caregiverId}`, { enabled: Boolean(caregiverId) });
 
-  useEffect(() => {
-    if (!caregiverId) return;
-    void refresh();
-    // refresh is a stable closure over set-state functions — eslint
-    // doesn't have react-hooks/exhaustive-deps configured here so we leave
-    // it out of the dep array; the function captures the current caregiverId
-    // via outer scope.
-  }, [caregiverId]);
+  const progress = envelope?.success ? envelope.data ?? null : null;
+  const loadFailed = isError || (envelope !== undefined && !envelope.success);
+  const errorMessage =
+    envelope && !envelope.success ? envelope.error : undefined;
 
-  const recordCompletion = async (enrollment: CourseEnrollment): Promise<void> => {
-    setCompletingId(enrollment.id);
-    try {
-      await postJson('/api/learning/complete', {
+  const completeMutation = useMutation({
+    mutationFn: (enrollment: CourseEnrollment) =>
+      postJson('/api/learning/complete', {
         enrollmentId: enrollment.id,
         caregiverId: enrollment.caregiverId,
         courseId: enrollment.courseId,
         completedAt: new Date().toISOString(),
         score: null,
         notes: 'Marked complete by coordinator from caregiver detail page',
-      });
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to record completion');
-    } finally {
-      setCompletingId(null);
-    }
-  };
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success('Completion recorded.');
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof HttpError ? error.message : 'Failed to record completion.',
+      );
+    },
+  });
 
   if (!caregiverId) {
     return <p className="text-sm text-muted-foreground">Missing caregiver id.</p>;
   }
+
+  const columns: DataTableColumn<EnrollmentRow>[] = [
+    {
+      id: 'course',
+      header: 'Course',
+      sortValue: ({ course }) => course.title.toLowerCase(),
+      cell: ({ course }) => (
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground">{course.title}</span>
+            {course.required && <Badge variant="outline">Required</Badge>}
+          </div>
+          <span className="text-xs text-muted-foreground">{course.code}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'assigned',
+      header: 'Assigned',
+      sortValue: ({ enrollment }) => enrollment.assignedAt,
+      cell: ({ enrollment }) => (
+        <span className="text-muted-foreground">{formatDate(enrollment.assignedAt)}</span>
+      ),
+    },
+    {
+      id: 'due',
+      header: 'Due',
+      cell: ({ enrollment }) => (
+        <span className="text-muted-foreground">
+          {enrollment.dueAt ? formatDate(enrollment.dueAt) : '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'completed',
+      header: 'Completed',
+      cell: ({ enrollment }) => (
+        <span className="text-muted-foreground">
+          {enrollment.lastCompletedAt ? formatDate(enrollment.lastCompletedAt) : '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'expires',
+      header: 'Expires',
+      cell: ({ enrollment }) => (
+        <span className="text-muted-foreground">
+          {enrollment.expiresAt ? formatDate(enrollment.expiresAt) : '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      sortValue: ({ enrollment }) => enrollment.status,
+      cell: ({ enrollment }) => (
+        <Badge variant={statusVariant(enrollment.status)}>
+          {STATUS_LABEL[enrollment.status]}
+        </Badge>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      align: 'right',
+      cell: ({ enrollment }) => {
+        if (enrollment.status === 'completed') return null;
+        const pending =
+          completeMutation.isPending && completeMutation.variables?.id === enrollment.id;
+        return (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => completeMutation.mutate(enrollment)}
+            disabled={pending}
+            aria-busy={pending}
+          >
+            {pending ? 'Recording…' : 'Mark complete'}
+          </Button>
+        );
+      },
+    },
+  ];
 
   return (
     <div>
@@ -163,13 +226,16 @@ export function CaregiverLearningPage() {
         }
       />
 
-      {error && (
-        <div
-          role="alert"
-          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          <strong>Could not load progress.</strong> {error}
-        </div>
+      {loadFailed && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Could not load progress.</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            {errorMessage ?? 'Something went wrong while loading training progress.'}
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
       <Card>
@@ -194,71 +260,18 @@ export function CaregiverLearningPage() {
           )}
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : !progress ? (
-            <EmptyState message="No progress available." />
-          ) : progress.enrollments.length === 0 ? (
-            <EmptyState message="No courses assigned yet. Use Assign course to add training." />
-          ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Course</TableHead>
-                    <TableHead>Assigned</TableHead>
-                    <TableHead>Due</TableHead>
-                    <TableHead>Completed</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {progress.enrollments.map(({ enrollment, course }) => (
-                    <TableRow key={enrollment.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <span>{course.title}</span>
-                          {course.required && <Badge variant="outline">Required</Badge>}
-                        </div>
-                        <span className="text-xs text-muted-foreground">{course.code}</span>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDate(enrollment.assignedAt)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {enrollment.dueAt ? formatDate(enrollment.dueAt) : '—'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {enrollment.lastCompletedAt ? formatDate(enrollment.lastCompletedAt) : '—'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {enrollment.expiresAt ? formatDate(enrollment.expiresAt) : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={statusVariant(enrollment.status)}>
-                          {STATUS_LABEL[enrollment.status]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {enrollment.status !== 'completed' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void recordCompletion(enrollment)}
-                            disabled={completingId === enrollment.id}
-                            aria-busy={completingId === enrollment.id}
-                          >
-                            {completingId === enrollment.id ? 'Recording…' : 'Mark complete'}
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+          {loadFailed ? null : (
+            <DataTable
+              columns={columns}
+              rows={progress?.enrollments ?? []}
+              rowKey={({ enrollment }) => enrollment.id}
+              isLoading={isLoading}
+              empty={{
+                icon: BookOpen,
+                title: 'No courses assigned yet',
+                description: 'Use Assign course to add training.',
+              }}
+            />
           )}
         </CardContent>
       </Card>
@@ -266,18 +279,9 @@ export function CaregiverLearningPage() {
       <EnrollCaregiverModal
         open={enrollOpen}
         onClose={() => setEnrollOpen(false)}
-        onSuccess={() => void refresh()}
+        onSuccess={() => void refetch()}
         lockedCaregiverId={caregiverId}
       />
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-      <BookOpen className="size-8 text-muted-foreground/60" aria-hidden />
-      <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }

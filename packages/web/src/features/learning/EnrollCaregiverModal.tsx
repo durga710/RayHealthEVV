@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getJson, postJson } from '../../lib/api-client.js';
+import { postJson } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,6 +13,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { FormField } from '@/components/patterns/form-field';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Spinner } from '@/components/ui/spinner';
 
 type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
 
@@ -63,10 +67,35 @@ export function EnrollCaregiverModal({
   onSuccess,
   lockedCaregiverId = null,
 }: EnrollCaregiverModalProps) {
-  const [courses, setCourses] = useState<LearningCourse[]>([]);
-  const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const coursesQuery = useApiResource<ApiResponse<LearningCourse[]>>(
+    ['learning', 'courses'],
+    '/api/learning/courses',
+    { enabled: open },
+  );
+  const staffQuery = useApiResource<ApiResponse<Caregiver[]>>(['staff'], '/api/staff', {
+    enabled: open,
+  });
+
+  const courses = useMemo(
+    () => (coursesQuery.data?.success ? coursesQuery.data.data ?? [] : []),
+    [coursesQuery.data],
+  );
+  const caregivers = useMemo(() => {
+    const list = staffQuery.data?.success ? staffQuery.data.data ?? [] : [];
+    return list.filter((c) => c.status === 'active');
+  }, [staffQuery.data]);
+
+  const loading = open && (coursesQuery.isLoading || staffQuery.isLoading);
+  const loadErrorMessage =
+    coursesQuery.isError || (coursesQuery.data && !coursesQuery.data.success)
+      ? coursesQuery.data?.error ?? 'Failed to load courses'
+      : staffQuery.isError || (staffQuery.data && !staffQuery.data.success)
+        ? staffQuery.data?.error ?? 'Failed to load caregivers'
+        : null;
+  const retryLoad = (): void => {
+    void coursesQuery.refetch();
+    void staffQuery.refetch();
+  };
 
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [selectedCaregiverIds, setSelectedCaregiverIds] = useState<Set<string>>(new Set());
@@ -74,36 +103,6 @@ export function EnrollCaregiverModal({
   const [caregiverSearch, setCaregiverSearch] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // Load courses + caregivers when the modal opens.
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    setLoading(true);
-    setLoadError(null);
-
-    (async () => {
-      try {
-        const [coursesResp, staffResp] = await Promise.all([
-          getJson<ApiResponse<LearningCourse[]>>('/api/learning/courses'),
-          getJson<ApiResponse<Caregiver[]>>('/api/staff'),
-        ]);
-        if (cancelled) return;
-        if (coursesResp.success && coursesResp.data) setCourses(coursesResp.data);
-        if (staffResp.success && staffResp.data) {
-          setCaregivers(staffResp.data.filter((c) => c.status === 'active'));
-        }
-        if (!coursesResp.success) setLoadError(coursesResp.error ?? 'Failed to load courses');
-        else if (!staffResp.success) setLoadError(staffResp.error ?? 'Failed to load caregivers');
-      } catch (err) {
-        if (cancelled) return;
-        setLoadError(err instanceof Error ? err.message : 'Failed to load');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [open]);
 
   // Pre-fill the locked caregiver when modal opens.
   useEffect(() => {
@@ -191,24 +190,31 @@ export function EnrollCaregiverModal({
           </DialogDescription>
         </DialogHeader>
 
-        {loading && <p className="px-6 py-4 text-sm text-muted-foreground">Loading…</p>}
-
-        {loadError && (
-          <div
-            role="alert"
-            className="mx-6 mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            <strong>Could not load modal data.</strong> {loadError}
+        {loading && (
+          <div className="flex items-center gap-2 px-6 py-4 text-sm text-muted-foreground">
+            <Spinner size="sm" />
+            Loading courses and caregivers…
           </div>
         )}
 
-        {!loading && !loadError && (
+        {!loading && loadErrorMessage && (
+          <div className="px-6 py-4">
+            <Alert variant="destructive">
+              <AlertTitle>Could not load modal data</AlertTitle>
+              <AlertDescription className="flex items-center justify-between gap-3">
+                {loadErrorMessage}
+                <Button variant="outline" size="sm" onClick={retryLoad}>
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {!loading && !loadErrorMessage && (
           <div className="max-h-[60vh] space-y-4 overflow-y-auto px-6 py-4">
-            {/* Course picker */}
-            <div className="space-y-1.5">
-              <Label htmlFor="enroll-course">Course</Label>
+            <FormField label="Course">
               <Select
-                id="enroll-course"
                 value={selectedCourseId}
                 onChange={(e) => setSelectedCourseId(e.target.value)}
               >
@@ -219,27 +225,19 @@ export function EnrollCaregiverModal({
                   </option>
                 ))}
               </Select>
-            </div>
+            </FormField>
 
-            {/* Due date */}
-            <div className="space-y-1.5">
-              <Label htmlFor="enroll-due">
-                Due date{' '}
-                <span className="text-xs font-normal text-muted-foreground">
-                  (smart default; override if needed)
-                </span>
-              </Label>
+            <FormField label="Due date" hint="Smart default; override if needed">
               <Input
-                id="enroll-due"
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
               />
-            </div>
+            </FormField>
 
-            {/* Caregiver picker */}
-            <div className="space-y-1.5">
-              <Label>
+            {/* Caregiver multi-select — not a single labelable control, so wired with a plain Label. */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="enroll-caregiver-search">
                 Caregivers{' '}
                 <span className="text-xs font-normal text-muted-foreground">
                   ({selectedCaregiverIds.size} selected of {caregivers.length})
@@ -247,6 +245,7 @@ export function EnrollCaregiverModal({
               </Label>
               {!lockedCaregiverId && (
                 <Input
+                  id="enroll-caregiver-search"
                   type="search"
                   placeholder="Search by name or email…"
                   value={caregiverSearch}
@@ -287,12 +286,9 @@ export function EnrollCaregiverModal({
             </div>
 
             {submitError && (
-              <div
-                role="alert"
-                className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-              >
-                {submitError}
-              </div>
+              <Alert variant="destructive">
+                <AlertDescription>{submitError}</AlertDescription>
+              </Alert>
             )}
           </div>
         )}

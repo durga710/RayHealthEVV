@@ -1,7 +1,16 @@
+import type { ReactElement } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { VisitReviewPage } from './VisitReviewPage.js';
+
+function renderWithClient(ui: ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 describe('VisitReviewPage', () => {
   it('creates a maintenance request when a visit needs correction', async () => {
@@ -32,7 +41,7 @@ describe('VisitReviewPage', () => {
     });
     global.fetch = mockFetch;
 
-    render(<VisitReviewPage />);
+    renderWithClient(<VisitReviewPage />);
 
     await screen.findByText('11111111...');
     fireEvent.click(screen.getByRole('button', { name: /request correction/i }));

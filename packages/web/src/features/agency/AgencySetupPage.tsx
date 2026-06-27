@@ -11,7 +11,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { FormField } from '@/components/patterns/form-field';
+import { Spinner } from '@/components/ui/spinner';
 
 interface Agency {
   id: string;
@@ -19,19 +21,21 @@ interface Agency {
   state: string;
 }
 
+type SaveMessage = { kind: 'ok' | 'error'; text: string };
+
 export function AgencySetupPage() {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [name, setName] = useState('');
-  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<SaveMessage | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getJson<Agency>('/api/agencies/current')
-      .then(data => {
+      .then((data) => {
         setAgency(data);
         setName(data.name);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Failed to load agency', err);
       })
       .finally(() => {
@@ -47,12 +51,19 @@ export function AgencySetupPage() {
       setAgency(updated);
       setName(updated.name);
       setMessage({ kind: 'ok', text: 'Agency updated successfully' });
-    } catch (err) {
+    } catch {
       setMessage({ kind: 'error', text: 'Failed to update agency' });
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner size="sm" />
+        Loading…
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -71,21 +82,18 @@ export function AgencySetupPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Agency Name</Label>
+            <FormField label="Agency Name" required>
               <Input
-                id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter agency name"
                 required
               />
-            </div>
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="state">State</Label>
-              <Input id="state" value={agency?.state || 'PA'} disabled />
-            </div>
+            <FormField label="State">
+              <Input value={agency?.state || 'PA'} disabled />
+            </FormField>
 
             <Button type="submit" className="w-full sm:w-auto">
               Save Changes
@@ -93,16 +101,19 @@ export function AgencySetupPage() {
           </form>
 
           {message && (
-            <div
-              role="status"
-              className={
-                message.kind === 'ok'
-                  ? 'mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800'
-                  : 'mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive'
-              }
+            <Alert
+              variant={message.kind === 'ok' ? 'success' : 'destructive'}
+              className="mt-4"
             >
-              {message.text}
-            </div>
+              {message.kind === 'ok' ? (
+                <AlertDescription>{message.text}</AlertDescription>
+              ) : (
+                <>
+                  <AlertTitle>Could not save.</AlertTitle>
+                  <AlertDescription>{message.text}</AlertDescription>
+                </>
+              )}
+            </Alert>
           )}
         </CardContent>
       </Card>

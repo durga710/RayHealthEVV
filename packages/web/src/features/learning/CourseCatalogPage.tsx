@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Clock, GraduationCap, Search } from 'lucide-react';
-import { getJson } from '../../lib/api-client.js';
+import { ArrowLeft, Clock, GraduationCap } from 'lucide-react';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,8 +12,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { EmptyState } from '@/components/patterns/empty-state';
+import { SearchInput } from '@/components/patterns/search-input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
 
@@ -43,38 +46,21 @@ const CADENCE_LABEL: Record<CourseCadence, string> = {
 };
 
 export function CourseCatalogPage() {
-  const [courses, setCourses] = useState<LearningCourse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await getJson<ApiResponse<LearningCourse[]>>('/api/learning/courses');
-        if (cancelled) return;
-        if (response.success && response.data) {
-          setCourses(response.data);
-        } else {
-          setError(response.error ?? 'Failed to load courses');
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Failed to load courses');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const { data: envelope, isLoading, isError, refetch } = useApiResource<
+    ApiResponse<LearningCourse[]>
+  >(['learning-courses'], '/api/learning/courses');
+
+  const courses = envelope?.success ? envelope.data ?? [] : [];
+  const loadFailed = isError || (envelope !== undefined && !envelope.success);
+  const errorMessage =
+    envelope && !envelope.success ? envelope.error : undefined;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return courses;
-    return courses.filter((c) =>
-      `${c.title} ${c.code}`.toLowerCase().includes(q),
-    );
+    return courses.filter((c) => `${c.title} ${c.code}`.toLowerCase().includes(q));
   }, [courses, query]);
 
   return (
@@ -92,39 +78,46 @@ export function CourseCatalogPage() {
         }
       />
 
-      {error && (
-        <div
-          role="alert"
-          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          <strong>Could not load courses.</strong> {error}
+      {loadFailed ? (
+        <Alert variant="destructive">
+          <AlertTitle>Could not load courses.</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            {errorMessage ?? 'Something went wrong while loading the catalog.'}
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={`course-skeleton-${i}`} className="h-48 rounded-xl" />
+          ))}
         </div>
-      )}
-
-      {loading && <p className="text-sm text-muted-foreground">Loading courses…</p>}
-
-      {!loading && !error && (
+      ) : (
         <>
           {courses.length > 0 && (
-            <div className="relative mb-6 w-full sm:w-72">
-              <Search
-                className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2"
-                aria-hidden
-              />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search courses…"
-                className="pl-9"
-                aria-label="Search courses"
-              />
-            </div>
+            <SearchInput
+              value={query}
+              onValueChange={setQuery}
+              placeholder="Search courses…"
+              aria-label="Search courses"
+              className="mb-6 w-full sm:w-72"
+            />
           )}
 
           {courses.length === 0 ? (
-            <EmptyState message="No courses in the catalog yet. Seed the PA-required baseline with: npx tsx packages/core/scripts/seed-learning-catalog.ts" />
+            <EmptyState
+              icon={GraduationCap}
+              title="No courses in the catalog yet"
+              description="Seed the PA-required baseline with: npx tsx packages/core/scripts/seed-learning-catalog.ts"
+            />
           ) : filtered.length === 0 ? (
-            <EmptyState message={`No courses match “${query}”.`} />
+            <EmptyState
+              icon={GraduationCap}
+              title="No matching courses"
+              description={`No courses match “${query}”.`}
+            />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((course) => (
@@ -159,15 +152,6 @@ export function CourseCatalogPage() {
           )}
         </>
       )}
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-      <GraduationCap className="size-8 text-muted-foreground/60" aria-hidden />
-      <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Users } from 'lucide-react';
-import { getJson } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,14 +12,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { EmptyState } from '@/components/patterns/empty-state';
+import { DataTable, type DataTableColumn } from '@/components/patterns/data-table';
 
 type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
 type EnrollmentStatus = 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'expired';
@@ -80,37 +75,73 @@ const STATUS_VARIANT: Record<EnrollmentStatus, BadgeVariant> = {
   expired: 'destructive',
 };
 
+const CAREGIVER_COLUMNS: DataTableColumn<CourseCaregiverRow>[] = [
+  {
+    id: 'caregiver',
+    header: 'Caregiver',
+    cell: (row) => (
+      <Link
+        to={`/admin/learning/caregivers/${row.caregiver.id}`}
+        className="font-medium text-foreground hover:underline"
+      >
+        {row.caregiver.lastName}, {row.caregiver.firstName}
+      </Link>
+    ),
+  },
+  {
+    id: 'email',
+    header: 'Email',
+    cell: (row) => <span className="text-muted-foreground">{row.caregiver.email}</span>,
+  },
+  {
+    id: 'due',
+    header: 'Due',
+    cell: (row) => (
+      <span className="text-muted-foreground">
+        {row.enrollment.dueAt ? formatDate(row.enrollment.dueAt) : '—'}
+      </span>
+    ),
+  },
+  {
+    id: 'completed',
+    header: 'Completed',
+    cell: (row) => (
+      <span className="text-muted-foreground">
+        {row.enrollment.lastCompletedAt ? formatDate(row.enrollment.lastCompletedAt) : '—'}
+      </span>
+    ),
+  },
+  {
+    id: 'expires',
+    header: 'Expires',
+    cell: (row) => (
+      <span className="text-muted-foreground">
+        {row.enrollment.expiresAt ? formatDate(row.enrollment.expiresAt) : '—'}
+      </span>
+    ),
+  },
+];
+
 export function CourseDetailPage(): ReactElement {
   const { id } = useParams<{ id: string }>();
-  const [envelope, setEnvelope] = useState<CourseCaregiverEnvelope | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, isError, refetch } = useApiResource<ApiResponse<CourseCaregiverEnvelope>>(
+    ['learning', 'course', id ?? ''],
+    `/api/learning/courses/${id}/caregivers`,
+    { enabled: Boolean(id) },
+  );
 
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await getJson<ApiResponse<CourseCaregiverEnvelope>>(`/api/learning/courses/${id}/caregivers`);
-        if (cancelled) return;
-        if (response.success && response.data) {
-          setEnvelope(response.data);
-        } else {
-          setError(response.error ?? 'Failed to load course');
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Failed to load course');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [id]);
+  const envelope = data?.success ? data.data ?? null : null;
+  const errorMessage = isError
+    ? 'Failed to load course'
+    : data && !data.success
+      ? data.error ?? 'Failed to load course'
+      : null;
 
-  // Group caregivers by status, sorted by STATUS_ORDER (worst first)
+  const caregivers = envelope?.caregivers ?? [];
+
+  // Group caregivers by status, sorted by STATUS_ORDER (worst first).
   const grouped: Partial<Record<EnrollmentStatus, CourseCaregiverRow[]>> = {};
-  for (const row of envelope?.caregivers ?? []) {
+  for (const row of caregivers) {
     const list = grouped[row.effectiveStatus] ?? [];
     list.push(row);
     grouped[row.effectiveStatus] = list;
@@ -121,7 +152,7 @@ export function CourseDetailPage(): ReactElement {
     : 'Course enrollment and caregiver progress.';
 
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       <PageHeader
         title={envelope?.course.title ?? 'Course detail'}
         description={description}
@@ -135,20 +166,19 @@ export function CourseDetailPage(): ReactElement {
         }
       />
 
-      {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
-
-      {error && (
-        <div
-          role="alert"
-          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {error}
-        </div>
-      )}
-
-      {envelope && (
+      {errorMessage ? (
+        <Alert variant="destructive">
+          <AlertTitle>Could not load course</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            {errorMessage}
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : (
         <div className="space-y-6">
-          {envelope.course.description && (
+          {envelope?.course.description && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -171,13 +201,23 @@ export function CourseDetailPage(): ReactElement {
                 Enrolled Caregivers
               </CardTitle>
               <CardDescription>
-                {envelope.caregivers.length}{' '}
-                {envelope.caregivers.length === 1 ? 'caregiver' : 'caregivers'} enrolled
+                {caregivers.length} {caregivers.length === 1 ? 'caregiver' : 'caregivers'} enrolled
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {envelope.caregivers.length === 0 ? (
-                <EmptyState message="No caregivers enrolled in this course yet." />
+              {isLoading ? (
+                <DataTable
+                  columns={CAREGIVER_COLUMNS}
+                  rows={[]}
+                  rowKey={(row) => row.enrollment.id}
+                  isLoading
+                />
+              ) : caregivers.length === 0 ? (
+                <EmptyState
+                  icon={Users}
+                  title="No caregivers enrolled"
+                  description="No caregivers enrolled in this course yet."
+                />
               ) : (
                 STATUS_ORDER.map((status) => {
                   const rows = grouped[status];
@@ -190,49 +230,11 @@ export function CourseDetailPage(): ReactElement {
                           {rows.length} caregiver{rows.length === 1 ? '' : 's'}
                         </span>
                       </div>
-                      <div className="overflow-hidden rounded-lg border border-border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50">
-                              <TableHead>Caregiver</TableHead>
-                              <TableHead>Email</TableHead>
-                              <TableHead>Due</TableHead>
-                              <TableHead>Completed</TableHead>
-                              <TableHead>Expires</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {rows.map((row) => (
-                              <TableRow key={row.enrollment.id}>
-                                <TableCell className="font-medium">
-                                  <Link
-                                    to={`/admin/learning/caregivers/${row.caregiver.id}`}
-                                    className="hover:underline"
-                                  >
-                                    {row.caregiver.lastName}, {row.caregiver.firstName}
-                                  </Link>
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {row.caregiver.email}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {row.enrollment.dueAt ? formatDate(row.enrollment.dueAt) : '—'}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {row.enrollment.lastCompletedAt
-                                    ? formatDate(row.enrollment.lastCompletedAt)
-                                    : '—'}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {row.enrollment.expiresAt
-                                    ? formatDate(row.enrollment.expiresAt)
-                                    : '—'}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+                      <DataTable
+                        columns={CAREGIVER_COLUMNS}
+                        rows={rows}
+                        rowKey={(row) => row.enrollment.id}
+                      />
                     </div>
                   );
                 })
@@ -256,13 +258,4 @@ function cadenceLabel(cadence: CourseCadence): string {
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-      <Users className="size-8 text-muted-foreground/60" aria-hidden />
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
 }

@@ -1,7 +1,7 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, AlertTriangle, Clock, Info, CheckCircle2 } from 'lucide-react';
-import { getJson } from '../../lib/api-client.js';
+import { Sparkles, AlertTriangle, Clock, Info } from 'lucide-react';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import {
   Card,
   CardContent,
@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type InsightSeverity = 'critical' | 'warning' | 'info';
 
@@ -61,97 +63,73 @@ const SEVERITY_META: Record<
   { variant: SeverityVariant; Icon: typeof AlertTriangle; iconClass: string }
 > = {
   critical: { variant: 'destructive', Icon: AlertTriangle, iconClass: 'text-destructive' },
-  warning: { variant: 'warning', Icon: Clock, iconClass: 'text-amber-600' },
+  warning: { variant: 'warning', Icon: Clock, iconClass: 'text-warning' },
   info: { variant: 'secondary', Icon: Info, iconClass: 'text-primary' },
 };
 
+function PanelShell({ children }: { children: ReactElement | ReactElement[] }): ReactElement {
+  return (
+    <Card className="mt-8">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="size-5 text-primary" aria-hidden />
+          Compliance signals
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
 export function InsightsPanel({ refreshKey = 0 }: InsightsPanelProps): ReactElement | null {
-  const [envelope, setEnvelope] = useState<LearningInsightsEnvelope | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: envelope, isLoading, isError, refetch } = useApiResource<
+    ApiResponse<LearningInsightsEnvelope>
+  >(['learning-insights', refreshKey], '/api/learning/insights');
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const response = await getJson<ApiResponse<LearningInsightsEnvelope>>('/api/learning/insights');
-        if (cancelled) return;
-        if (response.success && response.data) {
-          setEnvelope(response.data);
-        } else {
-          setError(response.error ?? 'Failed to load insights');
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Failed to load insights');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [refreshKey]);
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="size-5 text-primary" aria-hidden />
-            Compliance signals
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Loading insights…</p>
-        </CardContent>
-      </Card>
+      <PanelShell>
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={`insight-skeleton-${i}`} className="h-24 rounded-lg" />
+          ))}
+        </div>
+      </PanelShell>
     );
   }
 
-  if (error) {
+  const data = envelope?.success ? envelope.data ?? null : null;
+  const loadFailed = isError || (envelope !== undefined && !envelope.success);
+  const errorMessage =
+    envelope && !envelope.success ? envelope.error : undefined;
+
+  if (loadFailed) {
     return (
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="size-5 text-primary" aria-hidden />
-            Compliance signals
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div
-            role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            <strong>Could not load insights.</strong> {error}
-          </div>
-        </CardContent>
-      </Card>
+      <PanelShell>
+        <Alert variant="destructive">
+          <AlertTitle>Could not load insights.</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            {errorMessage ?? 'Something went wrong while loading compliance signals.'}
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </PanelShell>
     );
   }
 
-  if (!envelope || envelope.insights.length === 0) {
+  if (!data || data.insights.length === 0) {
     return (
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="size-5 text-primary" aria-hidden />
-            Compliance signals
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <div>
-              <p className="m-0">
-                <strong>All clear.</strong> No actionable training items right now.
-              </p>
-              <p className="mt-1 text-xs text-emerald-700">
-                Compliance signals refresh on every page load. Last checked {formatTime(envelope?.generatedAt ?? new Date().toISOString())}.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <PanelShell>
+        <Alert variant="success">
+          <AlertTitle>All clear.</AlertTitle>
+          <AlertDescription>
+            No actionable training items right now. Compliance signals refresh on every page load.
+            Last checked {formatTime(data?.generatedAt ?? new Date().toISOString())}.
+          </AlertDescription>
+        </Alert>
+      </PanelShell>
     );
   }
 
@@ -163,12 +141,12 @@ export function InsightsPanel({ refreshKey = 0 }: InsightsPanelProps): ReactElem
           Compliance signals
         </CardTitle>
         <CardDescription>
-          {envelope.insights.length} signal{envelope.insights.length === 1 ? '' : 's'} need attention
+          {data.insights.length} signal{data.insights.length === 1 ? '' : 's'} need attention
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-3">
-          {envelope.insights.map((insight) => (
+          {data.insights.map((insight) => (
             <InsightCard key={insight.kind} insight={insight} />
           ))}
         </div>

@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { Lock, Sparkles } from 'lucide-react';
-import { getJson } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 /**
  * AICopilotPanel — the visible-but-locked surface on the Learning Hub.
@@ -44,35 +45,32 @@ interface AICopilotPanelProps {
 }
 
 export function AICopilotPanel({ userRole }: AICopilotPanelProps): ReactElement | null {
-  const [features, setFeatures] = useState<AgencyFeatures | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await getJson<ApiResponse<AgencyFeatures>>('/api/agencies/me/features');
-        if (cancelled) return;
-        if (response.success && response.data) {
-          setFeatures(response.data);
-        } else {
-          // Failed to load — assume off (safe default).
-          setFeatures({ aiCopilot: { enabled: false, plan: 'off' } });
-        }
-      } catch {
-        if (!cancelled) {
-          setFeatures({ aiCopilot: { enabled: false, plan: 'off' } });
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const { data, isLoading, isError, refetch } = useApiResource<ApiResponse<AgencyFeatures>>(
+    ['agencies', 'me', 'features'],
+    '/api/agencies/me/features',
+  );
 
   // While we don't know yet, render nothing. Avoids flashing locked-then-unlocked.
-  if (loading) return null;
+  if (isLoading) return null;
 
+  // Surface real network failures instead of silently swallowing them.
+  if (isError) {
+    return (
+      <Alert variant="destructive" className="mt-8">
+        <AlertTitle>Could not load add-on status</AlertTitle>
+        <AlertDescription className="flex items-center justify-between gap-3">
+          The AI Workflow Copilot status is unavailable right now.
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Envelope-level failure (HTTP 200 with success:false) fails closed to OFF —
+  // a billing-gated feature should never appear unlocked on ambiguous data.
+  const features = data?.success ? data.data : undefined;
   const enabled = features?.aiCopilot.enabled ?? false;
 
   return enabled

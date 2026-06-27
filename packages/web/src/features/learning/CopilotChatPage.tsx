@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { Bot, Send, Sparkles } from 'lucide-react';
-import { getJson, postJson, HttpError } from '../../lib/api-client.js';
+import { postJson, HttpError } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { useAuth } from '../../lib/AuthContext.js';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import { Spinner } from '@/components/ui/spinner';
 
 /**
  * CopilotChatPage — conversational Q&A surface at /admin/learning/copilot.
@@ -95,8 +99,13 @@ export function CopilotChatPage(): ReactElement {
   const { user } = useAuth();
   const role = user?.role ?? 'coordinator';
 
-  const [status, setStatus] = useState<CopilotStatus | null>(null);
-  const [statusLoading, setStatusLoading] = useState(true);
+  const {
+    data: statusData,
+    isLoading: statusLoading,
+    isError: statusError,
+    refetch: refetchStatus,
+  } = useApiResource<ApiResponse<CopilotStatus>>(['copilot', 'status'], '/api/copilot/status');
+  const status = statusData?.success ? statusData.data ?? null : null;
 
   const [turns, setTurns] = useState<Turn[]>([]);
   const [prompt, setPrompt] = useState('');
@@ -111,26 +120,6 @@ export function CopilotChatPage(): ReactElement {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [turns]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await getJson<ApiResponse<CopilotStatus>>('/api/copilot/status');
-        if (cancelled) return;
-        if (response.success && response.data) {
-          setStatus(response.data);
-        }
-      } catch {
-        if (!cancelled) {
-          setStatus({ enabled: false, plan: 'off', geminiConfigured: false });
-        }
-      } finally {
-        if (!cancelled) setStatusLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
 
   const submit = async (question: string): Promise<void> => {
     const trimmed = question.trim();
@@ -238,7 +227,7 @@ export function CopilotChatPage(): ReactElement {
   const suggestions = SUGGESTED_PROMPTS_BY_ROLE[role] ?? SUGGESTED_PROMPTS_BY_ROLE.coordinator;
 
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="AI Workflow Copilot"
         description="Conversational copilot scoped to your role. Every proposed action requires your confirmation."
@@ -249,110 +238,124 @@ export function CopilotChatPage(): ReactElement {
         }
       />
 
-      {statusLoading && <p className="text-sm text-muted-foreground">Checking Copilot status…</p>}
+      {statusLoading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Spinner size="sm" />
+          Checking Copilot status…
+        </div>
+      )}
 
-      {!statusLoading && status && !status.enabled && (
-        <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-foreground">
-          <strong>Copilot is not enabled for this agency.</strong>
-          <p className="mt-1 text-muted-foreground">
+      {!statusLoading && statusError && (
+        <Alert variant="destructive">
+          <AlertTitle>Could not load Copilot status</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            We couldn’t check whether Copilot is available right now.
+            <Button variant="outline" size="sm" onClick={() => void refetchStatus()}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!statusLoading && !statusError && status && !status.enabled && (
+        <Alert variant="warning">
+          <AlertTitle>Copilot is not enabled for this agency.</AlertTitle>
+          <AlertDescription>
             An agency admin can enable the add-on in{' '}
             <Link to="/admin/settings" className="font-medium text-primary underline-offset-4 hover:underline">
               Settings
             </Link>
             .
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
-      {!statusLoading && status && status.enabled && !status.geminiConfigured && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          <strong>Copilot infrastructure is offline.</strong>
-          <p className="mt-1">
-            The add-on is enabled but the Gemini key isn\'t configured on the backend. Operations team has been notified.
-          </p>
-        </div>
+      {!statusLoading && !statusError && status && status.enabled && !status.geminiConfigured && (
+        <Alert variant="destructive">
+          <AlertTitle>Copilot infrastructure is offline.</AlertTitle>
+          <AlertDescription>
+            The add-on is enabled but the Gemini key isn’t configured on the backend. Operations
+            team has been notified.
+          </AlertDescription>
+        </Alert>
       )}
 
-      {!statusLoading && status && status.enabled && status.geminiConfigured && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="size-5 text-primary" aria-hidden />
-                Copilot Conversation
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {turns.length === 0 && (
-                <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-4">
-                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Sparkles className="size-4" aria-hidden />
-                    Suggested prompts
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {suggestions.map((s) => (
-                      <Button
-                        key={s}
-                        variant="outline"
-                        size="sm"
-                        className="h-auto justify-start whitespace-normal py-2 text-left"
-                        onClick={() => void submit(s)}
-                        disabled={submitting}
-                      >
-                        {s}
-                      </Button>
-                    ))}
-                  </div>
+      {!statusLoading && !statusError && status && status.enabled && status.geminiConfigured && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="size-5 text-primary" aria-hidden />
+              Copilot Conversation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {turns.length === 0 && (
+              <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-4">
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles className="size-4" aria-hidden />
+                  Suggested prompts
+                </p>
+                <div className="flex flex-col gap-2">
+                  {suggestions.map((s) => (
+                    <Button
+                      key={s}
+                      variant="outline"
+                      size="sm"
+                      className="h-auto justify-start whitespace-normal py-2 text-left"
+                      onClick={() => void submit(s)}
+                      disabled={submitting}
+                    >
+                      {s}
+                    </Button>
+                  ))}
                 </div>
-              )}
-
-              <div
-                ref={scrollRef}
-                className="flex max-h-[60vh] min-h-[420px] flex-col gap-3 overflow-y-auto"
-              >
-                {turns.map((turn, idx) => (
-                  <TurnView
-                    key={idx}
-                    turn={turn}
-                    onConfirm={() => void confirmAction(idx)}
-                    onDecline={() => declineAction(idx)}
-                  />
-                ))}
-                {submitting && (
-                  <div className="mr-auto text-sm italic text-muted-foreground">Copilot is thinking…</div>
-                )}
               </div>
+            )}
 
-              {error && (
-                <div
-                  role="alert"
-                  className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-                >
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="flex items-end gap-2">
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Ask Copilot anything about training, schedules, or compliance…"
-                  rows={2}
-                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                  disabled={submitting}
+            <div
+              ref={scrollRef}
+              className="flex max-h-[60vh] min-h-[420px] flex-col gap-3 overflow-y-auto"
+            >
+              {turns.map((turn, idx) => (
+                <TurnView
+                  key={idx}
+                  turn={turn}
+                  onConfirm={() => void confirmAction(idx)}
+                  onDecline={() => declineAction(idx)}
                 />
-                <Button type="submit" disabled={submitting || !prompt.trim()}>
-                  <Send className="size-4" aria-hidden />
-                  {submitting ? 'Sending…' : 'Send'}
-                </Button>
-              </form>
+              ))}
+              {submitting && (
+                <div className="mr-auto text-sm italic text-muted-foreground">Copilot is thinking…</div>
+              )}
+            </div>
 
-              <p className="text-center text-xs text-muted-foreground">
-                Copilot reasoning is not a substitute for clinical or legal judgment. Confirm every action before relying on it.
-              </p>
-            </CardContent>
-          </Card>
-        </>
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit} className="flex items-end gap-2">
+              <Textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Ask Copilot anything about training, schedules, or compliance…"
+                aria-label="Ask Copilot a question"
+                rows={2}
+                className="min-h-0"
+                disabled={submitting}
+              />
+              <Button type="submit" disabled={submitting || !prompt.trim()}>
+                <Send className="size-4" aria-hidden />
+                {submitting ? 'Sending…' : 'Send'}
+              </Button>
+            </form>
+
+            <p className="text-center text-xs text-muted-foreground">
+              Copilot reasoning is not a substitute for clinical or legal judgment. Confirm every action before relying on it.
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

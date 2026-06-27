@@ -1,7 +1,7 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, BarChart3, BookOpen, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { getJson } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,14 +12,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { StatCard } from '@/components/patterns/stat-card';
+import { DataTable, type DataTableColumn } from '@/components/patterns/data-table';
 
 type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
 
@@ -49,31 +45,20 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-export function LearningAnalyticsPage(): ReactElement {
-  const [envelope, setEnvelope] = useState<CourseAnalyticsEnvelope | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const QUERY_KEY = ['learning', 'analytics'];
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await getJson<ApiResponse<CourseAnalyticsEnvelope>>('/api/learning/analytics');
-        if (cancelled) return;
-        if (response.success && response.data) {
-          setEnvelope(response.data);
-        } else {
-          setError(response.error ?? 'Failed to load analytics');
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Failed to load analytics');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+export function LearningAnalyticsPage(): ReactElement {
+  const { data, isLoading, isError, refetch } = useApiResource<ApiResponse<CourseAnalyticsEnvelope>>(
+    QUERY_KEY,
+    '/api/learning/analytics',
+  );
+
+  const envelope = data?.success ? data.data ?? null : null;
+  const errorMessage = isError
+    ? 'Failed to load analytics'
+    : data && !data.success
+      ? data.error ?? 'Failed to load analytics'
+      : null;
 
   const rows = envelope?.rows ?? [];
   const totalCourses = rows.length;
@@ -87,8 +72,80 @@ export function LearningAnalyticsPage(): ReactElement {
     ? Math.round((totalCompleted / totalEnrollments) * 100)
     : 0;
 
+  const statValue = (value: string | number): ReactElement | string | number =>
+    isLoading ? <Skeleton className="h-8 w-16" /> : value;
+
+  const columns: DataTableColumn<CourseAnalyticsRow>[] = [
+    {
+      id: 'course',
+      header: 'Course',
+      sortValue: (r) => r.courseTitle.toLowerCase(),
+      cell: (r) => (
+        <div>
+          <Link
+            to={`/admin/learning/courses/${r.courseId}`}
+            className="font-medium text-foreground hover:underline"
+          >
+            {r.courseTitle}
+          </Link>
+          {r.required && (
+            <Badge variant="warning" className="ml-2 align-middle">
+              Required
+            </Badge>
+          )}
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            {r.courseCode} · {cadenceLabel(r.cadence)}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'enrolled',
+      header: 'Enrolled',
+      align: 'right',
+      sortValue: (r) => r.totalEnrollments,
+      cell: (r) => <span className="tabular-nums">{r.totalEnrollments}</span>,
+    },
+    {
+      id: 'completion',
+      header: 'Completion rate',
+      sortValue: (r) => r.completionRate,
+      cell: (r) => (
+        <CompletionBar
+          rate={r.completionRate}
+          completed={r.completedCount}
+          total={r.totalEnrollments}
+        />
+      ),
+    },
+    {
+      id: 'avgDays',
+      header: 'Avg. days to complete',
+      align: 'right',
+      sortValue: (r) => r.averageDaysToComplete ?? Number.POSITIVE_INFINITY,
+      cell: (r) => (
+        <span className="text-muted-foreground tabular-nums">
+          {r.averageDaysToComplete === null ? '—' : `${Math.round(r.averageDaysToComplete)} d`}
+        </span>
+      ),
+    },
+    {
+      id: 'action',
+      header: 'Action needed',
+      align: 'right',
+      sortValue: (r) => r.overdueCount + r.expiredCount + r.pendingCount,
+      cell: (r) => (
+        <ActionCount
+          overdue={r.overdueCount}
+          expired={r.expiredCount}
+          pending={r.pendingCount}
+        />
+      ),
+    },
+  ];
+
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="Course analytics"
         description="Per-course completion rates and bottleneck signal. Sorted by completion rate ascending — worst-performing courses first."
@@ -102,39 +159,34 @@ export function LearningAnalyticsPage(): ReactElement {
         }
       />
 
-      {error && (
-        <div
-          role="alert"
-          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          <strong>Could not load analytics.</strong> {error}
-        </div>
-      )}
-
-      {loading && <p className="text-sm text-muted-foreground">Loading analytics…</p>}
-
-      {!loading && envelope && (
+      {errorMessage ? (
+        <Alert variant="destructive">
+          <AlertTitle>Could not load analytics</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            {errorMessage}
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : (
         <>
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard
-              label="Courses"
-              value={totalCourses}
-              icon={<BookOpen className="size-5 text-primary" aria-hidden />}
-            />
-            <MetricCard
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Courses" value={statValue(totalCourses)} icon={BookOpen} />
+            <StatCard
               label="Total enrollments"
-              value={totalEnrollments}
-              icon={<BarChart3 className="size-5 text-primary" aria-hidden />}
+              value={statValue(totalEnrollments)}
+              icon={BarChart3}
             />
-            <MetricCard
+            <StatCard
               label="Overall completion"
-              value={`${overallCompletion}%`}
-              icon={<CheckCircle2 className="size-5 text-primary" aria-hidden />}
+              value={statValue(`${overallCompletion}%`)}
+              icon={CheckCircle2}
             />
-            <MetricCard
+            <StatCard
               label="Action needed"
-              value={totalActionNeeded}
-              icon={<AlertTriangle className="size-5 text-primary" aria-hidden />}
+              value={statValue(totalActionNeeded)}
+              icon={AlertTriangle}
             />
           </div>
 
@@ -146,71 +198,25 @@ export function LearningAnalyticsPage(): ReactElement {
               </CardTitle>
               <CardDescription>
                 {totalCourses} {totalCourses === 1 ? 'course' : 'courses'} in the catalog
-                {envelope.generatedAt
+                {envelope?.generatedAt
                   ? ` · generated ${new Date(envelope.generatedAt).toLocaleString()}`
                   : ''}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {rows.length === 0 ? (
-                <EmptyState message="No courses in the catalog yet. Seed the PA-required baseline, then come back when caregivers have enrollments." />
-              ) : (
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead>Course</TableHead>
-                        <TableHead className="text-right">Enrolled</TableHead>
-                        <TableHead>Completion rate</TableHead>
-                        <TableHead className="text-right">Avg. days to complete</TableHead>
-                        <TableHead className="text-right">Action needed</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rows.map((row) => (
-                        <TableRow key={row.courseId}>
-                          <TableCell>
-                            <Link
-                              to={`/admin/learning/courses/${row.courseId}`}
-                              className="font-medium text-foreground hover:underline"
-                            >
-                              {row.courseTitle}
-                            </Link>
-                            {row.required && (
-                              <Badge variant="warning" className="ml-2 align-middle">
-                                Required
-                              </Badge>
-                            )}
-                            <div className="mt-0.5 text-xs text-muted-foreground">
-                              {row.courseCode} · {cadenceLabel(row.cadence)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">{row.totalEnrollments}</TableCell>
-                          <TableCell>
-                            <CompletionBar
-                              rate={row.completionRate}
-                              completed={row.completedCount}
-                              total={row.totalEnrollments}
-                            />
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {row.averageDaysToComplete === null
-                              ? <span className="text-muted-foreground">—</span>
-                              : `${Math.round(row.averageDaysToComplete)} d`}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <ActionCount
-                              overdue={row.overdueCount}
-                              expired={row.expiredCount}
-                              pending={row.pendingCount}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              <DataTable
+                columns={columns}
+                rows={rows}
+                rowKey={(r) => r.courseId}
+                isLoading={isLoading}
+                pageSize={10}
+                empty={{
+                  icon: BookOpen,
+                  title: 'No courses in the catalog yet',
+                  description:
+                    'Seed the PA-required baseline, then come back when caregivers have enrollments.',
+                }}
+              />
             </CardContent>
           </Card>
         </>
@@ -220,26 +226,6 @@ export function LearningAnalyticsPage(): ReactElement {
 }
 
 // ---------- Subcomponents ----------
-
-interface MetricCardProps {
-  label: string;
-  value: string | number;
-  icon: ReactElement;
-}
-
-function MetricCard({ label, value, icon }: MetricCardProps): ReactElement {
-  return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-        <CardDescription>{label}</CardDescription>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold text-foreground">{value}</div>
-      </CardContent>
-    </Card>
-  );
-}
 
 interface CompletionBarProps {
   rate: number;
@@ -307,13 +293,4 @@ function cadenceLabel(cadence: CourseCadence): string {
     case 'biennial': return 'Biennial';
     case 'certification': return 'Certification';
   }
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-      <BookOpen className="size-8 text-muted-foreground/60" aria-hidden />
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
 }

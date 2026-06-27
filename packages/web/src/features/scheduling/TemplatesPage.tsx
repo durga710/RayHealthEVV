@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ClipboardList, LayoutTemplate, Search, ListChecks } from 'lucide-react';
-import { getJson, postJson } from '../../lib/api-client.js';
+import React, { useMemo, useState } from 'react';
+import { ClipboardList, LayoutTemplate, ListChecks } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { postJson, HttpError } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,16 +14,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FormField } from '@/components/patterns/form-field';
+import { SearchInput } from '@/components/patterns/search-input';
+import { DataTable, type DataTableColumn } from '@/components/patterns/data-table';
 
 interface Template {
   id: string;
@@ -34,24 +33,56 @@ interface PATask {
   duty: string;
 }
 
+interface NewTemplateInput {
+  clientId: string;
+  name: string;
+  tasks: string[];
+}
+
+const TEMPLATES_KEY = ['templates'];
+const TASKS_KEY = ['tasks'];
+
 export function TemplatesPage() {
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [availableTasks, setAvailableTasks] = useState<PATask[]>([]);
+  const queryClient = useQueryClient();
+
+  const {
+    data: templatesData,
+    isLoading: templatesLoading,
+    isError: templatesError,
+    refetch: refetchTemplates,
+  } = useApiResource<Template[]>(TEMPLATES_KEY, '/api/templates');
+  const templates = templatesData ?? [];
+
+  const {
+    data: tasksData,
+    isLoading: tasksLoading,
+    isError: tasksError,
+    refetch: refetchTasks,
+  } = useApiResource<PATask[]>(TASKS_KEY, '/api/tasks');
+  const availableTasks = tasksData ?? [];
+
   const [clientId, setClientId] = useState('');
   const [name, setName] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
-  const [message, setMessage] = useState('');
+  const [taskError, setTaskError] = useState('');
   const [query, setQuery] = useState('');
 
-  useEffect(() => {
-    getJson<Template[]>('/api/templates')
-      .then((data) => setTemplates(data || []))
-      .catch(console.error);
-
-    getJson<PATask[]>('/api/tasks')
-      .then((data) => setAvailableTasks(data || []))
-      .catch(console.error);
-  }, []);
+  const createTemplate = useMutation({
+    mutationFn: (input: NewTemplateInput) => postJson<Template>('/api/templates', input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TEMPLATES_KEY });
+      setClientId('');
+      setName('');
+      setSelectedTasks(new Set());
+      setTaskError('');
+      toast.success('Template created successfully.');
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof HttpError ? error.message : 'Failed to create template. Please try again.',
+      );
+    },
+  });
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -60,39 +91,60 @@ export function TemplatesPage() {
   }, [templates, query]);
 
   const handleTaskToggle = (duty: string) => {
-    const newSelected = new Set(selectedTasks);
-    if (newSelected.has(duty)) {
-      newSelected.delete(duty);
-    } else {
-      newSelected.add(duty);
-    }
-    setSelectedTasks(newSelected);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage('');
-    try {
-      const tasks = Array.from(selectedTasks);
-      if (tasks.length === 0) {
-        setMessage('Please select at least one task');
-        return;
+    setTaskError('');
+    setSelectedTasks((prev) => {
+      const next = new Set(prev);
+      if (next.has(duty)) {
+        next.delete(duty);
+      } else {
+        next.add(duty);
       }
-      const newTemplate = await postJson<Template>('/api/templates', { clientId, name, tasks });
-      setTemplates((prev) => [...prev, newTemplate]);
-      setClientId('');
-      setName('');
-      setSelectedTasks(new Set());
-      setMessage('Template created successfully');
-    } catch (err) {
-      setMessage('Failed to create template');
-    }
+      return next;
+    });
   };
 
-  const isError = message === 'Please select at least one task' || message === 'Failed to create template';
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const tasks = Array.from(selectedTasks);
+    if (tasks.length === 0) {
+      setTaskError('Please select at least one task.');
+      return;
+    }
+    createTemplate.mutate({ clientId, name, tasks });
+  };
+
+  const columns: DataTableColumn<Template>[] = [
+    {
+      id: 'name',
+      header: 'Name',
+      sortValue: (t) => t.name.toLowerCase(),
+      cell: (t) => <span className="font-medium text-foreground">{t.name}</span>,
+    },
+    {
+      id: 'client',
+      header: 'Client',
+      sortValue: (t) => t.clientId,
+      cell: (t) => (
+        <span className="tabular-nums text-muted-foreground">{t.clientId.slice(0, 6)}…</span>
+      ),
+    },
+    {
+      id: 'tasks',
+      header: 'Tasks',
+      cell: (t) => (
+        <div className="flex flex-wrap gap-1">
+          {t.tasks.map((task) => (
+            <Badge key={task} variant="secondary">
+              {task}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="Visit Templates"
         description="Create and manage plan-of-care visit templates."
@@ -108,33 +160,39 @@ export function TemplatesPage() {
             <CardDescription>Build a reusable plan-of-care visit template.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="clientId">Client ID</Label>
-                <Input
-                  id="clientId"
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  required
-                />
-              </div>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <FormField label="Client ID" required>
+                <Input value={clientId} onChange={(e) => setClientId(e.target.value)} required />
+              </FormField>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="name">Template Name</Label>
+              <FormField label="Template Name" required>
                 <Input
-                  id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Morning Routine"
                   required
                 />
-              </div>
+              </FormField>
 
-              <div className="space-y-1.5">
-                <Label>Select Tasks</Label>
+              <FormField label="Select Tasks" error={taskError || undefined}>
                 <div className="flex max-h-[300px] flex-col gap-1 overflow-y-auto rounded-md border border-border p-2">
-                  {availableTasks.length === 0 ? (
-                    <span className="px-2 py-1 text-sm text-muted-foreground">Loading tasks…</span>
+                  {tasksLoading ? (
+                    <span className="flex items-center gap-2 px-2 py-1 text-sm text-muted-foreground">
+                      <Spinner size="sm" /> Loading tasks…
+                    </span>
+                  ) : tasksError ? (
+                    <Alert variant="destructive">
+                      <AlertDescription className="flex items-center justify-between gap-3">
+                        Couldn’t load tasks.
+                        <Button variant="outline" size="sm" onClick={() => void refetchTasks()}>
+                          Retry
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
+                  ) : availableTasks.length === 0 ? (
+                    <span className="px-2 py-1 text-sm text-muted-foreground">
+                      No tasks available.
+                    </span>
                   ) : (
                     availableTasks.map((task) => (
                       <label
@@ -154,31 +212,18 @@ export function TemplatesPage() {
                     ))
                   )}
                 </div>
-              </div>
+              </FormField>
 
-              <Button type="submit" className="w-full sm:w-auto">
-                Create Template
+              <Button type="submit" disabled={createTemplate.isPending} className="w-full sm:w-auto">
+                {createTemplate.isPending ? 'Creating…' : 'Create Template'}
               </Button>
             </form>
-
-            {message && (
-              <div
-                role="status"
-                className={
-                  isError
-                    ? 'mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive'
-                    : 'mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800'
-                }
-              >
-                {message}
-              </div>
-            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <CardTitle className="flex items-center gap-2">
                 <LayoutTemplate className="size-5 text-primary" aria-hidden />
                 Template Library
@@ -187,69 +232,43 @@ export function TemplatesPage() {
                 {templates.length} {templates.length === 1 ? 'template' : 'templates'}
               </CardDescription>
             </div>
-            <div className="relative w-full sm:w-56">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                aria-hidden
-              />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search templates…"
-                className="pl-9"
-                aria-label="Search templates"
-              />
-            </div>
+            <SearchInput
+              value={query}
+              onValueChange={setQuery}
+              placeholder="Search templates…"
+              aria-label="Search templates"
+              className="w-full sm:w-56"
+            />
           </CardHeader>
           <CardContent>
-            {templates.length === 0 ? (
-              <EmptyState message="No templates found. Create one to get started." />
-            ) : filtered.length === 0 ? (
-              <EmptyState message={`No templates match “${query}”.`} />
+            {templatesError ? (
+              <Alert variant="destructive">
+                <AlertDescription className="flex items-center justify-between gap-3">
+                  Couldn’t load templates.
+                  <Button variant="outline" size="sm" onClick={() => void refetchTemplates()}>
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
             ) : (
-              <div className="overflow-hidden rounded-lg border border-border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Tasks</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((t) => (
-                      <TableRow key={t.id}>
-                        <TableCell className="font-medium">{t.name}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {t.clientId.slice(0, 6)}…
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {t.tasks.map((task, i) => (
-                              <Badge key={i} variant="secondary">
-                                {task}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <DataTable
+                columns={columns}
+                rows={filtered}
+                rowKey={(t) => t.id}
+                isLoading={templatesLoading}
+                pageSize={10}
+                empty={{
+                  icon: ListChecks,
+                  title: query ? 'No matching templates' : 'No templates yet',
+                  description: query
+                    ? `No templates match “${query}”.`
+                    : 'Create your first template to get started.',
+                }}
+              />
             )}
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-      <ListChecks className="size-8 text-muted-foreground/60" aria-hidden />
-      <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }

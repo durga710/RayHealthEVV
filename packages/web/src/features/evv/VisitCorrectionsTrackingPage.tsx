@@ -11,10 +11,11 @@
  *   - Drives off `GET /api/maintenance/history` (new endpoint, capped at 500 rows).
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { History, Filter } from 'lucide-react';
-import { getJson } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -25,14 +26,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DataTable, type DataTableColumn } from '@/components/patterns/data-table';
 
 type VmurStatus = 'pending' | 'approved' | 'rejected';
 type VmurOriginator = 'caregiver' | 'coordinator' | 'admin';
@@ -75,60 +70,107 @@ const REASON_CODES = [
   'AGRS', 'WKAP', 'CNCL', 'HOLI', 'WKLI', 'OTHR',
 ];
 
+function buildHistoryPath(filters: Filters): string {
+  const params = new URLSearchParams();
+  if (filters.status) params.set('status', filters.status);
+  if (filters.originator) params.set('originator', filters.originator);
+  if (filters.reasonCode) params.set('reasonCode', filters.reasonCode);
+  const qs = params.toString();
+  return qs ? `/api/maintenance/history?${qs}` : '/api/maintenance/history';
+}
+
 export function VisitCorrectionsTrackingPage(): React.JSX.Element {
-  const [items, setItems] = useState<VmurItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({ status: '', originator: '', reasonCode: '' });
 
-  const refresh = useCallback(async (active: Filters): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (active.status) params.set('status', active.status);
-      if (active.originator) params.set('originator', active.originator);
-      if (active.reasonCode) params.set('reasonCode', active.reasonCode);
-      const qs = params.toString();
-      const url = qs ? `/api/maintenance/history?${qs}` : '/api/maintenance/history';
-      const response = await getJson<ApiResponse<VmurItem[]>>(url);
-      if (response.success && response.data) {
-        setItems(response.data);
-      } else {
-        setError(response.error ?? 'Failed to load corrections history');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load corrections history');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const path = useMemo(() => buildHistoryPath(filters), [filters]);
+  const { data, isLoading, isError, refetch } = useApiResource<ApiResponse<VmurItem[]>>(
+    ['maintenance-history', filters],
+    path,
+  );
 
-  useEffect(() => {
-    void refresh(filters);
-  }, [refresh, filters]);
+  const serverError =
+    data && !data.success ? data.error ?? 'Failed to load corrections history' : null;
+  const showError = isError || Boolean(serverError);
+  const errorMessage = serverError ?? 'Failed to load corrections history';
+  const items = data?.data ?? [];
 
   const updateFilter = <K extends keyof Filters>(key: K, value: Filters[K]): void => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  const columns: DataTableColumn<VmurItem>[] = [
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (item) => <StatusBadge status={item.status} />,
+    },
+    {
+      id: 'originator',
+      header: 'Originator',
+      cell: (item) => (
+        <span className="text-muted-foreground">{item.originatorRole ?? '—'}</span>
+      ),
+    },
+    {
+      id: 'visit',
+      header: 'Visit',
+      cell: (item) => (
+        <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+          {item.visitId.slice(0, 8)}…
+        </code>
+      ),
+    },
+    {
+      id: 'reason',
+      header: 'Reason',
+      cell: (item) => item.reasonCategoryCode ?? '—',
+    },
+    {
+      id: 'correction',
+      header: 'Correction',
+      cell: (item) => item.correctionCode ?? '—',
+    },
+    {
+      id: 'signatures',
+      header: 'Signatures',
+      cell: (item) => (
+        <SignaturePair
+          caregiver={item.caregiverSignaturePresent}
+          client={item.clientSignaturePresent}
+        />
+      ),
+    },
+    {
+      id: 'filedBy',
+      header: 'Filed by',
+      cell: (item) => (
+        <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+          {item.requesterId.slice(0, 8)}…
+        </code>
+      ),
+    },
+    {
+      id: 'approvedBy',
+      header: 'Approved by',
+      cell: (item) =>
+        item.approverId ? (
+          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+            {item.approverId.slice(0, 8)}…
+          </code>
+        ) : (
+          '—'
+        ),
+    },
+  ];
+
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="Visit corrections tracking"
         description="Full history of VMUR corrections for your agency — every status, every originator. Read-only. Pending items can be approved or rejected from the Corrections Queue page."
       />
 
       <FilterBar filters={filters} onChange={updateFilter} />
-
-      {error && (
-        <div
-          role="alert"
-          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          <strong>Could not load history.</strong> {error}
-        </div>
-      )}
 
       <Card>
         <CardHeader>
@@ -141,32 +183,28 @@ export function VisitCorrectionsTrackingPage(): React.JSX.Element {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading history…</p>
-          ) : items.length === 0 ? (
-            <EmptyState message="No corrections match the current filters." />
+          {showError ? (
+            <Alert variant="destructive">
+              <AlertDescription className="flex items-center justify-between gap-3">
+                {errorMessage}
+                <Button variant="outline" size="sm" onClick={() => void refetch()}>
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Status</TableHead>
-                    <TableHead>Originator</TableHead>
-                    <TableHead>Visit</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Correction</TableHead>
-                    <TableHead>Signatures</TableHead>
-                    <TableHead>Filed by</TableHead>
-                    <TableHead>Approved by</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <Row key={item.id ?? item.visitId} item={item} />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <DataTable
+              columns={columns}
+              rows={items}
+              rowKey={(item) => item.id ?? item.visitId}
+              isLoading={isLoading}
+              pageSize={10}
+              empty={{
+                icon: History,
+                title: 'No corrections found',
+                description: 'No corrections match the current filters.',
+              }}
+            />
           )}
         </CardContent>
       </Card>
@@ -182,7 +220,7 @@ interface FilterBarProps {
 }
 function FilterBar({ filters, onChange }: FilterBarProps): React.JSX.Element {
   return (
-    <Card className="mb-6">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Filter className="size-5 text-primary" aria-hidden />
@@ -237,42 +275,7 @@ function FilterBar({ filters, onChange }: FilterBarProps): React.JSX.Element {
   );
 }
 
-// ----- Row -----
-
-interface RowProps {
-  item: VmurItem;
-}
-function Row({ item }: RowProps): React.JSX.Element {
-  return (
-    <TableRow>
-      <TableCell>
-        <StatusBadge status={item.status} />
-      </TableCell>
-      <TableCell className="text-muted-foreground">{item.originatorRole ?? '—'}</TableCell>
-      <TableCell>
-        <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{item.visitId.slice(0, 8)}…</code>
-      </TableCell>
-      <TableCell>{item.reasonCategoryCode ?? '—'}</TableCell>
-      <TableCell>{item.correctionCode ?? '—'}</TableCell>
-      <TableCell>
-        <SignaturePair
-          caregiver={item.caregiverSignaturePresent}
-          client={item.clientSignaturePresent}
-        />
-      </TableCell>
-      <TableCell>
-        <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{item.requesterId.slice(0, 8)}…</code>
-      </TableCell>
-      <TableCell>
-        {item.approverId ? (
-          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{item.approverId.slice(0, 8)}…</code>
-        ) : (
-          '—'
-        )}
-      </TableCell>
-    </TableRow>
-  );
-}
+// ----- Cell helpers -----
 
 interface StatusBadgeProps {
   status: VmurStatus;
@@ -306,15 +309,4 @@ function SigDot({ label, present }: SigDotProps): React.JSX.Element {
   }
   if (present) return <Badge variant="success">{label} ✓</Badge>;
   return <Badge variant="destructive">{label} ✗</Badge>;
-}
-
-// ----- Empty state -----
-
-function EmptyState({ message }: { message: string }): React.JSX.Element {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-      <History className="size-8 text-muted-foreground/60" aria-hidden />
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
 }

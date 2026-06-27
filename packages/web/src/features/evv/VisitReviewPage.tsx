@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
 import { ClipboardCheck } from 'lucide-react';
-import { getJson, postJson } from '../../lib/api-client.js';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { postJson, HttpError } from '../../lib/api-client.js';
+import { useApiResource } from '../../lib/use-api-resource.js';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,14 +13,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DataTable, type DataTableColumn } from '@/components/patterns/data-table';
 
 interface EvvVisit {
   id: string;
@@ -29,6 +25,8 @@ interface EvvVisit {
   status: 'pending' | 'verified' | 'flagged';
 }
 
+const QUERY_KEY = ['evv-visits'];
+
 function statusVariant(status: EvvVisit['status']): 'warning' | 'success' | 'secondary' {
   if (status === 'pending') return 'warning';
   if (status === 'verified') return 'success';
@@ -36,63 +34,96 @@ function statusVariant(status: EvvVisit['status']): 'warning' | 'success' | 'sec
 }
 
 export function VisitReviewPage() {
-  const [visits, setVisits] = useState<EvvVisit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, refetch } = useApiResource<EvvVisit[]>(
+    QUERY_KEY,
+    '/api/evv/visits',
+  );
+  const visits = data ?? [];
 
-  useEffect(() => {
-    fetchVisits();
-  }, []);
-
-  const fetchVisits = async () => {
-    try {
-      setLoading(true);
-      const data = await getJson<EvvVisit[]>('/api/evv/visits');
-      setVisits(data || []);
-    } catch (err) {
-      console.error('Failed to fetch visits', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const [pendingVisitId, setPendingVisitId] = useState<string | null>(null);
-
-  const handleRequestCorrection = async (visitId: string) => {
-    setMessage('');
-    setPendingVisitId(visitId);
-    try {
-      await postJson('/api/maintenance/request-unlock', {
+  const requestCorrection = useMutation({
+    mutationFn: (visitId: string) =>
+      postJson('/api/maintenance/request-unlock', {
         visitId,
-        reason: 'Coordinator requested EVV correction review from Visit Review'
-      });
-      setMessage('Correction request created successfully');
-      fetchVisits();
-      // Auto-clear success message after 4s so the row's hover state isn't masked.
-      setTimeout(() => setMessage((current) => (current === 'Correction request created successfully' ? '' : current)), 4000);
-    } catch (err) {
-      console.error('Failed to create correction request', err);
-      setMessage('Failed to create correction request');
-    } finally {
-      setPendingVisitId(null);
-    }
-  };
+        reason: 'Coordinator requested EVV correction review from Visit Review',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast.success('Correction request created successfully');
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof HttpError ? error.message : 'Failed to create correction request',
+      );
+    },
+  });
+
+  const columns: DataTableColumn<EvvVisit>[] = [
+    {
+      id: 'caregiver',
+      header: 'Caregiver',
+      cell: (visit) => (
+        <span className="font-medium text-foreground">{visit.caregiverId.slice(0, 8)}...</span>
+      ),
+    },
+    {
+      id: 'clockIn',
+      header: 'Clock In',
+      sortValue: (visit) => visit.clockInTime,
+      cell: (visit) => (
+        <span className="text-muted-foreground">
+          {new Date(visit.clockInTime).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: 'clockOut',
+      header: 'Clock Out',
+      cell: (visit) => (
+        <span className="text-muted-foreground">
+          {visit.clockOutTime ? new Date(visit.clockOutTime).toLocaleString() : 'N/A'}
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      sortValue: (visit) => visit.status,
+      cell: (visit) => (
+        <Badge variant={statusVariant(visit.status)} className="capitalize">
+          {visit.status}
+        </Badge>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      align: 'right',
+      cell: (visit) => {
+        if (visit.status !== 'pending') return null;
+        const pending =
+          requestCorrection.isPending && requestCorrection.variables === visit.id;
+        return (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => requestCorrection.mutate(visit.id)}
+            disabled={pending}
+            aria-busy={pending}
+          >
+            {pending ? 'Requesting…' : 'Request Correction'}
+          </Button>
+        );
+      },
+    },
+  ];
 
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="EVV Visit Review"
         description="Review electronically verified visits and open maintenance requests when corrections are needed."
       />
-
-      {message && (
-        <div
-          role="status"
-          className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
-        >
-          {message}
-        </div>
-      )}
 
       <Card>
         <CardHeader>
@@ -105,67 +136,30 @@ export function VisitReviewPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading visits...</p>
-          ) : visits.length === 0 ? (
-            <EmptyState message="No visits to review." />
+          {isError ? (
+            <Alert variant="destructive">
+              <AlertDescription className="flex items-center justify-between gap-3">
+                Couldn’t load visits.
+                <Button variant="outline" size="sm" onClick={() => void refetch()}>
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Caregiver</TableHead>
-                    <TableHead>Clock In</TableHead>
-                    <TableHead>Clock Out</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visits.map((visit) => (
-                    <TableRow key={visit.id}>
-                      <TableCell className="font-medium">{visit.caregiverId.slice(0, 8)}...</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(visit.clockInTime).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {visit.clockOutTime ? new Date(visit.clockOutTime).toLocaleString() : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={statusVariant(visit.status)} className="capitalize">
-                          {visit.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {visit.status === 'pending' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRequestCorrection(visit.id)}
-                            disabled={pendingVisitId === visit.id}
-                            aria-busy={pendingVisitId === visit.id}
-                          >
-                            {pendingVisitId === visit.id ? 'Requesting…' : 'Request Correction'}
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <DataTable
+              columns={columns}
+              rows={visits}
+              rowKey={(visit) => visit.id}
+              isLoading={isLoading}
+              pageSize={10}
+              empty={{
+                icon: ClipboardCheck,
+                title: 'No visits to review.',
+              }}
+            />
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-      <ClipboardCheck className="size-8 text-muted-foreground/60" aria-hidden />
-      <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }

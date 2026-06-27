@@ -2,13 +2,22 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AssignmentsPage } from './AssignmentsPage.js';
 
 function renderWithRouter() {
+  // Reads now flow through TanStack Query (useApiResource), so a client is
+  // required. Disable retries so the test isn't slowed by transient-failure
+  // backoff and so errors surface immediately.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <MemoryRouter>
-      <AssignmentsPage />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <AssignmentsPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

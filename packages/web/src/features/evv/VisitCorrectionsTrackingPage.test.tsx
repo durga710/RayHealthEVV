@@ -1,7 +1,16 @@
+import type { ReactElement } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { VisitCorrectionsTrackingPage } from './VisitCorrectionsTrackingPage.js';
+
+function renderWithClient(ui: ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 interface VmurFixture {
   id: string;
@@ -58,12 +67,16 @@ describe('VisitCorrectionsTrackingPage', () => {
       { ...baseRow, id: 'vm-3', status: 'pending', originatorRole: 'coordinator' },
     ]);
 
-    const { container } = render(<VisitCorrectionsTrackingPage />);
+    const { container } = renderWithClient(<VisitCorrectionsTrackingPage />);
 
-    // Wait for table to populate, then scope status assertions to <span> badges
-    // (the words "Approved" / "Rejected" / "Pending" also appear as <option>s
-    // in the filter bar, so unscoped getByText is ambiguous).
-    await screen.findByRole('table');
+    // Wait for the table to populate, then scope status assertions to <span>
+    // badges (the words "Approved" / "Rejected" / "Pending" also appear as
+    // <option>s in the filter bar, so unscoped getByText is ambiguous).
+    // DataTable renders a <table> while loading (skeleton rows), so wait on
+    // real row content rather than the table element itself.
+    await waitFor(() => {
+      expect(container.querySelector('tbody')?.textContent).toContain('Approved');
+    });
     const tbody = container.querySelector('tbody');
     expect(tbody).not.toBeNull();
     const tbodyEl = tbody as HTMLTableSectionElement;
@@ -79,7 +92,7 @@ describe('VisitCorrectionsTrackingPage', () => {
 
   it('shows the empty state when there is no history', async () => {
     global.fetch = makeFetch([]);
-    render(<VisitCorrectionsTrackingPage />);
+    renderWithClient(<VisitCorrectionsTrackingPage />);
     await screen.findByText(/No corrections match the current filters/i);
   });
 
@@ -87,7 +100,7 @@ describe('VisitCorrectionsTrackingPage', () => {
     const fetchFn = makeFetch([]);
     global.fetch = fetchFn;
 
-    render(<VisitCorrectionsTrackingPage />);
+    renderWithClient(<VisitCorrectionsTrackingPage />);
 
     await screen.findByText(/No corrections match/i);
 
@@ -103,7 +116,7 @@ describe('VisitCorrectionsTrackingPage', () => {
 
   it('renders signature pills correctly for missing caregiver / present client', async () => {
     global.fetch = makeFetch([baseRow]);
-    render(<VisitCorrectionsTrackingPage />);
+    renderWithClient(<VisitCorrectionsTrackingPage />);
 
     await screen.findByText(/CG ✗/);
     expect(screen.getByText(/CL ✓/)).toBeInTheDocument();
