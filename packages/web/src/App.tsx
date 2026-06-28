@@ -20,6 +20,7 @@ const ImportPage = lazy(() => import('./features/import/ImportPage.js').then((m)
 const TemplatesPage = lazy(() => import('./features/scheduling/TemplatesPage.js').then((m) => ({ default: m.TemplatesPage })));
 const AssignmentsPage = lazy(() => import('./features/scheduling/AssignmentsPage.js').then((m) => ({ default: m.AssignmentsPage })));
 const RecurringSchedulesPage = lazy(() => import('./features/scheduling/RecurringSchedulesPage.js').then((m) => ({ default: m.RecurringSchedulesPage })));
+const SuperAdminPage = lazy(() => import('./features/superadmin/SuperAdminPage.js').then((m) => ({ default: m.SuperAdminPage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage.js').then((m) => ({ default: m.LoginPage })));
 const SignupPage = lazy(() => import('./features/auth/SignupPage.js').then((m) => ({ default: m.SignupPage })));
 const AcceptInvitePage = lazy(() => import('./features/auth/AcceptInvitePage.js').then((m) => ({ default: m.AcceptInvitePage })));
@@ -467,6 +468,8 @@ export function App() {
       <Route path="/compliance/hipaa" element={<HipaaCompliancePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      {/* Hidden platform super-admin console — intentionally not in any nav. */}
+      <Route path="/superadmin" element={<SuperAdminPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />

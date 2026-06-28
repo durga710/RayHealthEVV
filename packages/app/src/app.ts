@@ -41,6 +41,7 @@ import complianceEngineRoutes from './routes/compliance-engine-routes.js';
 import exportRoutes from './routes/export-routes.js';
 import importRoutes from './routes/import-routes.js';
 import recurringScheduleRoutes from './routes/recurring-schedule-routes.js';
+import superadminRoutes from './routes/superadmin-routes.js';
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 
@@ -201,6 +202,12 @@ export function createApp() {
     // authContext so the anonymous widget reaches it without a session; behind
     // its own tighter rate limit since each turn calls a paid model.
     app.use(`${prefix}/support`, supportChatLimiter, supportRoutes);
+    // Platform super-admin console. Mounted BEFORE authContext: it carries its
+    // own platform bearer token (scope:'platform'), not an agency session. Only
+    // the login endpoint is brute-force rate-limited; the token-gated actions
+    // are protected by requirePlatformAdmin.
+    app.use(`${prefix}/superadmin/login`, authLimiter);
+    app.use(`${prefix}/superadmin`, superadminRoutes);
   }
 
   // ---------- Authenticated surface ----------

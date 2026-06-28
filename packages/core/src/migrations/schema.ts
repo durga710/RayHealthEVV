@@ -440,7 +440,10 @@ export async function up(knex: Knex): Promise<void> {
             'evv.sandata.submitted','evv.sandata.reconciled',
             'evv.hhaexchange.submitted','evv.hhaexchange.reconciled',
             'data.imported','claim.remittance.posted',
-            'schedule.recurring.materialized'
+            'schedule.recurring.materialized',
+            'platform.login.success','platform.login.failure',
+            'agency.review.approved','agency.review.rejected',
+            'account.suspended','account.reactivated'
           ));
       END IF;
     END$$;
@@ -1273,6 +1276,54 @@ export async function up(knex: Knex): Promise<void> {
         END IF;
       END$$;
     `);
+  }
+
+  // ── R21 — Platform super-admin: agency review gate + account suspension ────
+  // The platform owner ("super admin", outside the agency tenancy) reviews
+  // every new agency signup to confirm it's a real homecare agency before it
+  // can operate, and can suspend any user account. `agencies.review_status`
+  // gates login: 'pending' (default for NEW signups) and 'rejected' block the
+  // agency's users; only 'approved' may operate. CRITICAL: every agency that
+  // already exists at migration time is backfilled to 'approved' so no live
+  // tenant is locked out. `users.suspended_at` (set = account terminated) is
+  // checked at login and in auth-context so a suspension takes effect at once.
+  if (await knex.schema.hasTable('agencies')) {
+    if (!(await knex.schema.hasColumn('agencies', 'review_status'))) {
+      await knex.schema.alterTable('agencies', (t) => {
+        t.string('review_status', 12).notNullable().defaultTo('pending');
+        t.timestamp('reviewed_at', { useTz: true }).nullable();
+        t.string('reviewed_by', 100).nullable();
+        t.text('review_notes').nullable();
+      });
+      // Backfill: all pre-existing agencies are legitimately operating, so
+      // grandfather them in as approved. New signups insert 'pending' via the
+      // column default. This UPDATE runs ONLY in the column-creation branch, so
+      // it never re-approves an agency a super-admin later set to pending.
+      await knex('agencies').update({ review_status: 'approved' });
+    }
+    await knex.raw(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+          WHERE table_schema='public' AND table_name='agencies'
+            AND constraint_name='agencies_review_status_check'
+        ) THEN
+          ALTER TABLE agencies
+            ADD CONSTRAINT agencies_review_status_check
+            CHECK (review_status IN ('pending','approved','rejected'));
+        END IF;
+      END$$;
+    `);
+  }
+
+  if (
+    (await knex.schema.hasTable('users')) &&
+    !(await knex.schema.hasColumn('users', 'suspended_at'))
+  ) {
+    await knex.schema.alterTable('users', (t) => {
+      t.timestamp('suspended_at', { useTz: true }).nullable();
+    });
   }
 }
 

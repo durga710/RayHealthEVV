@@ -49,6 +49,13 @@ export const auditEventTypes = [
   'claim.remittance.posted',
   // Recurring schedule materialized into concrete assignments for a horizon.
   'schedule.recurring.materialized',
+  // Platform super-admin (outside agency tenancy). `platform.login.*` track the
+  // super-admin's own auth; `agency.review.*` record the manual approval gate on
+  // new agency signups; `account.suspended` / `account.reactivated` record the
+  // super-admin terminating or restoring a user account.
+  'platform.login.success', 'platform.login.failure',
+  'agency.review.approved', 'agency.review.rejected',
+  'account.suspended', 'account.reactivated',
 ] as const;
 
 export const auditOutcomes = ['success', 'failure', 'denied'] as const;

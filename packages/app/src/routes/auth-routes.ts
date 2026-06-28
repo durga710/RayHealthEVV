@@ -19,6 +19,30 @@ function jwtSecret(): string {
   return secret;
 }
 
+/**
+ * Login gate enforced after the password check: a suspended account or an
+ * agency that the platform super-admin hasn't approved cannot sign in. The
+ * fields come from UserRepository.findByEmail (R21+); when they're undefined
+ * (older data / mocked tests) the login is not gated.
+ */
+function loginGate(user: { suspendedAt?: string | null; agencyReviewStatus?: string }):
+  | { code: string; message: string }
+  | null {
+  if (user.suspendedAt) {
+    return { code: 'ACCOUNT_SUSPENDED', message: 'This account has been suspended. Contact your administrator.' };
+  }
+  if (user.agencyReviewStatus === 'pending') {
+    return {
+      code: 'AGENCY_PENDING_REVIEW',
+      message: 'Your agency is awaiting review and approval. You will be able to sign in once approved.',
+    };
+  }
+  if (user.agencyReviewStatus === 'rejected') {
+    return { code: 'AGENCY_REJECTED', message: 'Your agency registration was not approved. Contact support.' };
+  }
+  return null;
+}
+
 async function recordAuditEvent(db: AuditEventDb, event: NewAuditEvent): Promise<void> {
   try {
     await new AuditEventRepository(db).create(event);
@@ -48,6 +72,12 @@ router.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       res.status(401).json({ message: 'Invalid credentials' });
+      return;
+    }
+
+    const gate = loginGate(user);
+    if (gate) {
+      res.status(403).json({ code: gate.code, message: gate.message });
       return;
     }
 
@@ -109,6 +139,12 @@ router.post('/mobile/login', async (req, res) => {
     const user = await new UserRepository(db).findByEmail(email);
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       res.status(401).json({ message: 'Invalid credentials' });
+      return;
+    }
+
+    const gate = loginGate(user);
+    if (gate) {
+      res.status(403).json({ code: gate.code, message: gate.message });
       return;
     }
 

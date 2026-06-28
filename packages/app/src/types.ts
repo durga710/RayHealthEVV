@@ -12,10 +12,16 @@ export interface AuthContext {
   tokenJti?: string;
 }
 
+/** Platform super-admin context — set only by requirePlatformAdmin. */
+export interface PlatformAdminContext {
+  username: string;
+}
+
 declare global {
   namespace Express {
     interface Request {
       auth: AuthContext;
+      platformAdmin?: PlatformAdminContext;
     }
   }
 }
