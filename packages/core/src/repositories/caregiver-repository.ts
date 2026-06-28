@@ -42,6 +42,18 @@ export class CaregiverRepository {
     if (updated === 0) throw new Error('caregiver not found in agency');
   }
 
+  /**
+   * Set a caregiver's NPI (rendering-provider id for the 837 service line).
+   * Stored encrypted via the cell cipher. Returns false if the caregiver is
+   * not in the agency.
+   */
+  async updateNpi(id: string, agencyId: string, npi: string): Promise<boolean> {
+    const updated = await this.db('caregivers')
+      .where({ id, agency_id: agencyId })
+      .update({ npi: encryptCell(npi) });
+    return updated > 0;
+  }
+
   async saveCredential(credential: Omit<CaregiverCredential, 'id'>): Promise<CaregiverCredential> {
     const [row] = await this.db('caregiver_credentials').insert({
       id: this.db.raw('gen_random_uuid()'),

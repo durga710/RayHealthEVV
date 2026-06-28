@@ -8,6 +8,12 @@ export declare class CaregiverRepository {
     findByAgency(agencyId: string): Promise<Caregiver[]>;
     findByEmail(email: string, agencyId: string): Promise<Caregiver | undefined>;
     updateStatus(id: string, agencyId: string, status: 'active' | 'inactive' | 'terminated'): Promise<void>;
+    /**
+     * Set a caregiver's NPI (rendering-provider id for the 837 service line).
+     * Stored encrypted via the cell cipher. Returns false if the caregiver is
+     * not in the agency.
+     */
+    updateNpi(id: string, agencyId: string, npi: string): Promise<boolean>;
     saveCredential(credential: Omit<CaregiverCredential, 'id'>): Promise<CaregiverCredential>;
     getCredentials(caregiverId: string, agencyId: string): Promise<CaregiverCredential[]>;
     expireCredential(id: string, agencyId: string): Promise<void>;

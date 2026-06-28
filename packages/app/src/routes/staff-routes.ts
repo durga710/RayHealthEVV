@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { CaregiverRepository } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 import { safeError } from '../security/safe-log.js';
 import { z } from 'zod';
@@ -7,6 +8,7 @@ const router = Router();
 
 const CHANGEABLE_ROLES = ['admin', 'coordinator'] as const;
 const patchSchema = z.object({ role: z.enum(CHANGEABLE_ROLES) });
+const npiSchema = z.object({ npi: z.string().regex(/^\d{10}$/, 'NPI must be exactly 10 digits') });
 
 /**
  * GET /staff — lists all staff for the caller's agency.
@@ -27,7 +29,7 @@ router.get('/', requireCapability('staff.read'), async (req, res) => {
     const [caregiverRows, userRows, inviteRows] = await Promise.all([
       db('caregivers')
         .where({ agency_id: agencyId, status: 'active' })
-        .select('id', 'email', 'status')
+        .select('id', 'email', 'status', db.raw('(npi IS NOT NULL) as has_npi'))
         .orderBy('first_name'),
 
       db('users')
@@ -42,7 +44,7 @@ router.get('/', requireCapability('staff.read'), async (req, res) => {
         .select('id', 'email', 'role'),
     ]);
 
-    type CaregiverRow = { id: string; email: string; status: string };
+    type CaregiverRow = { id: string; email: string; status: string; has_npi: boolean };
     type UserRow = { id: string; email: string; role: string };
     type InviteRow = { id: string; email: string; role: string };
 
@@ -52,6 +54,7 @@ router.get('/', requireCapability('staff.read'), async (req, res) => {
         email: r.email,
         role: 'caregiver',
         status: r.status,
+        hasNpi: Boolean(r.has_npi),
       })),
       ...(userRows as UserRow[]).map((r) => ({
         id: r.id,
@@ -70,6 +73,30 @@ router.get('/', requireCapability('staff.read'), async (req, res) => {
     res.json(staff);
   } catch (error) {
     safeError('GET /staff failed', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// PATCH /staff/caregivers/:id — set a caregiver's NPI (rendering provider).
+// Mounted before /:id so the literal segment wins over the param route.
+router.patch('/caregivers/:id', requireCapability('staff.write'), async (req, res) => {
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  const parse = npiSchema.safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ message: parse.error.issues[0]?.message ?? 'Invalid NPI' });
+    return;
+  }
+  try {
+    const db = req.app.get('db');
+    const ok = await new CaregiverRepository(db).updateNpi(id, req.auth.agencyId, parse.data.npi);
+    if (!ok) {
+      res.status(404).json({ message: 'caregiver not found' });
+      return;
+    }
+    res.json({ id, hasNpi: true });
+  } catch (error) {
+    safeError('PATCH /staff/caregivers/:id failed', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });

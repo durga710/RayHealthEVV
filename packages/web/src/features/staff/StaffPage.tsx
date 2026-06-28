@@ -7,6 +7,7 @@ interface StaffMember {
   email: string;
   role: string;
   status: string;
+  hasNpi?: boolean;
 }
 
 type EmailDeliveryStatus = 'sent' | 'failed' | 'not_configured';
@@ -89,6 +90,8 @@ export function StaffPage() {
   const [removing, setRemoving]       = useState<Record<string, boolean>>({});
   const [revoking, setRevoking]       = useState<Record<string, boolean>>({});
   const [revokingAll, setRevokingAll] = useState(false);
+  const [npiInput, setNpiInput]       = useState<Record<string, string>>({});
+  const [savingNpi, setSavingNpi]     = useState<Record<string, boolean>>({});
 
   const loadStaff = useCallback(() => {
     setLoading(true);
@@ -183,6 +186,25 @@ export function StaffPage() {
       alert(err instanceof Error ? err.message : 'Failed to update role');
     } finally {
       setSavingRole(prev => { const n = { ...prev }; delete n[memberId]; return n; });
+    }
+  };
+
+  // ── Set caregiver NPI (rendering provider for 837 claims) ─────────
+  const handleSaveNpi = async (memberId: string) => {
+    const npi = (npiInput[memberId] ?? '').trim();
+    if (!/^\d{10}$/.test(npi)) {
+      alert('NPI must be exactly 10 digits.');
+      return;
+    }
+    setSavingNpi(prev => ({ ...prev, [memberId]: true }));
+    try {
+      await patchJson(`/api/staff/caregivers/${encodeURIComponent(memberId)}`, { npi });
+      setStaff(prev => prev.map(s => s.id === memberId ? { ...s, hasNpi: true } : s));
+      setNpiInput(prev => { const n = { ...prev }; delete n[memberId]; return n; });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to save NPI');
+    } finally {
+      setSavingNpi(prev => { const n = { ...prev }; delete n[memberId]; return n; });
     }
   };
 
@@ -328,6 +350,37 @@ export function StaffPage() {
                                  <div style={{ fontWeight: 600 }}>Role</div>
                                  <div><RoleBadge role={s.role} /></div>
                                </div>
+
+                               {!isUser && (
+                                 <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8 }}>
+                                   <div style={{ fontWeight: 600, fontSize: '0.8125rem', color: '#0F172A', marginBottom: '0.4rem' }}>
+                                     Rendering NPI{' '}
+                                     {s.hasNpi
+                                       ? <span style={{ color: '#059669', fontWeight: 500 }}>· on file</span>
+                                       : <span style={{ color: '#BE123C', fontWeight: 500 }}>· not set (blocks clean 837 claims)</span>}
+                                   </div>
+                                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                     <input
+                                       value={npiInput[s.id] ?? ''}
+                                       onChange={e => setNpiInput(prev => ({ ...prev, [s.id]: e.target.value }))}
+                                       placeholder={s.hasNpi ? 'Update 10-digit NPI' : '10-digit NPI'}
+                                       inputMode="numeric"
+                                       maxLength={10}
+                                       className="input-field"
+                                       style={{ fontSize: '0.8125rem', padding: '0.3rem 0.6rem', maxWidth: 200 }}
+                                       onClick={e => e.stopPropagation()}
+                                     />
+                                     <button
+                                       type="button"
+                                       className="btn-secondary btn-sm"
+                                       disabled={(savingNpi[s.id] ?? false) || !(npiInput[s.id] ?? '').trim()}
+                                       onClick={() => handleSaveNpi(s.id)}
+                                     >
+                                       {savingNpi[s.id] ? 'Saving…' : 'Save NPI'}
+                                     </button>
+                                   </div>
+                                 </div>
+                               )}
 
                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                                  {isUser && (
