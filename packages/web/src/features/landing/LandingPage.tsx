@@ -87,6 +87,51 @@ const testimonials = [
   },
 ];
 
+const audiences = [
+  { role: 'Agency owners & administrators', body: 'Real-time visibility into visits, compliance posture, and cash flow — without waiting on a coordinator to assemble a report.', points: ['Live operational dashboard', 'Denial and exception trends', 'Per-agency audit trail'] },
+  { role: 'Schedulers & coordinators', body: 'Build the week in minutes and let the platform catch the conflicts. Spend the day on people, not paperwork.', points: ['Conflict-aware scheduling', 'One exception queue', 'Credential & authorization guardrails'] },
+  { role: 'Caregivers in the field', body: 'A phone app that takes seconds: clock in by GPS, read the care plan at the door, and finish training on the go.', points: ['GPS clock-in / clock-out', 'Care plan & PA task codes', 'In-app EVV Academy'] },
+];
+
+const moduleGroups = [
+  { group: 'Operations', items: ['Visual weekly scheduling', 'Client & caregiver records', 'Authorization tracking', 'Open-shift management'] },
+  { group: 'EVV & Compliance', items: ['Six-element GPS verification', 'Telephony & offline fallback', 'Tamper-evident audit log', 'Task codes 106–256'] },
+  { group: 'Billing & Payroll', items: ['Visit-to-claim reconciliation', 'Unit & rate validation', 'Payroll-ready exports', 'Denial-risk flags'] },
+  { group: 'Workforce & Training', items: ['Credential & screening tracking', 'Expiry & renewal alerts', 'EVV Academy lessons', 'Certificate management'] },
+];
+
+const workflow = [
+  { n: '01', t: 'Import authorizations', b: 'Pull from Sandata or PROMISe into reusable, PA-coded visit templates.' },
+  { n: '02', t: 'Schedule credentialed staff', b: 'Assign caregivers with live eligibility, credential, and authorization checks.' },
+  { n: '03', t: 'Verify at the door', b: 'GPS clock-in captures all six federal EVV elements automatically.' },
+  { n: '04', t: 'Reconcile billing & payroll', b: 'Turn verified visits into clean claims and payroll runs in one queue.' },
+  { n: '05', t: 'File & defend the audit', b: 'Every action is logged and keyed per agency — audits become an afternoon.' },
+];
+
+const integrations = ['Sandata aggregator', 'PA PROMISe', 'Telephony / IVR', 'Payroll export', 'iOS & Android', 'Secure messaging'];
+
+const resources = [
+  { tag: 'Guide', t: 'Everything PA agencies need to know about EVV', b: 'The six federal elements, aggregator submission, and the mistakes that trigger denials.' },
+  { tag: 'Reference', t: 'PA DHS task codes 106–256, explained', b: 'A plain-English map of personal-assistance duty codes and how to use them in care plans.' },
+  { tag: 'Checklist', t: 'Preparing for a DHS audit', b: 'What auditors actually ask for — and how an immutable trail answers it in minutes.' },
+];
+
+const missionStats = [
+  { v: '100%', l: 'PA DHS & Cures Act aligned' },
+  { v: '6/6', l: 'EVV elements per visit' },
+  { v: '1 wk', l: 'Typical time to first visits' },
+  { v: '24/7', l: 'Tamper-evident audit trail' },
+];
+
+const faqs = [
+  { q: 'Does RayHealth submit to the Pennsylvania EVV aggregator?', a: 'Visits are captured against the federal six-element schema and mapped for downstream submission to the Sandata aggregator used by PA DHS.' },
+  { q: 'What if a caregiver has no signal in the home?', a: 'The app captures the visit offline and retries automatically; a telephony (IVR) fallback covers devices without data.' },
+  { q: 'How long does implementation take?', a: 'Most agencies import authorizations and onboard their first caregivers within a week. We handle the data migration with you.' },
+  { q: 'Is RayHealth only for Pennsylvania?', a: 'Today we are purpose-built for Pennsylvania personal-assistance and home-health programs. The compliance core is designed to extend to additional states.' },
+  { q: 'How is our data protected?', a: 'PHI is scoped per agency with HttpOnly sessions, bcrypt hashing, CSRF protection, and a tamper-evident audit log of every action.' },
+  { q: 'Can caregivers be trained inside the platform?', a: 'The EVV Academy delivers lessons, quizzes, and certificate renewals so training and compliance live in one place. (Rolling out.)' },
+];
+
 const Logo = () => (
   <span className="rh-logo">
     <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden>
@@ -259,13 +304,75 @@ const CSS = `
 
 /* footer */
 .rh-foot{border-top:1px solid var(--line); background:var(--warm); padding:64px 0 40px;}
-.rh-footgrid{max-width:var(--maxw); margin:0 auto; padding:0 24px; display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr; gap:32px;}
+.rh-footgrid{max-width:var(--maxw); margin:0 auto; padding:0 24px; display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr 1fr; gap:32px;}
 .rh-foot .blurb{margin-top:16px; font-size:.9rem; line-height:1.6; color:var(--muted); max-width:30ch;}
 .rh-footcol h4{font-size:.78rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:14px;}
 .rh-footcol a{display:block; padding:.3rem 0; font-size:.9rem; color:var(--ink-soft);}
 .rh-footcol a:hover{color:var(--ink);}
 .rh-footbar{max-width:var(--maxw); margin:48px auto 0; padding:24px 24px 0; border-top:1px solid var(--line); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:.82rem; color:var(--muted);}
 @media(max-width:760px){ .rh-footgrid{grid-template-columns:1fr 1fr;} }
+
+/* audiences */
+.rh-aud{max-width:var(--maxw); margin:44px auto 0; padding:0 24px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.rh-audcard{border:1px solid var(--line); border-radius:16px; padding:28px; background:var(--paper);}
+.rh-audcard h3{font-size:1.0625rem; letter-spacing:-.02em;}
+.rh-audcard p{margin-top:8px; font-size:.92rem; line-height:1.6; color:var(--body);}
+.rh-audlist{margin:16px 0 0; padding:16px 0 0; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:11px;}
+.rh-audlist li{list-style:none; display:flex; gap:.55rem; align-items:center; font-size:.9rem; color:var(--ink-soft);}
+.rh-audlist .ck{width:18px; height:18px; border-radius:5px; background:var(--accent-tint); color:var(--accent-deep); display:grid; place-items:center; flex-shrink:0;}
+.rh-audlist .ck svg{width:12px; height:12px;}
+@media(max-width:880px){.rh-aud{grid-template-columns:1fr;}}
+
+/* module deep-dive */
+.rh-mods{max-width:var(--maxw); margin:44px auto 0; padding:0 24px; display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--paper);}
+.rh-mod{padding:26px 24px; border-right:1px solid var(--line);}
+.rh-mod:last-child{border-right:none;}
+.rh-mod h3{font-size:.74rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-deep);}
+.rh-mod ul{margin:14px 0 0; padding:0;}
+.rh-mod li{list-style:none; font-size:.9rem; color:var(--ink-soft); padding:9px 0; border-top:1px solid var(--line);}
+@media(max-width:880px){.rh-mods{grid-template-columns:1fr 1fr;} .rh-mod:nth-child(2){border-right:none;} .rh-mod:nth-child(1),.rh-mod:nth-child(2){border-bottom:1px solid var(--line);}}
+@media(max-width:520px){.rh-mods{grid-template-columns:1fr;} .rh-mod{border-right:none; border-bottom:1px solid var(--line);} .rh-mod:last-child{border-bottom:none;}}
+
+/* workflow */
+.rh-flow{max-width:var(--maxw); margin:44px auto 0; padding:0 24px; display:grid; grid-template-columns:repeat(5,1fr); gap:16px;}
+.rh-step{border-top:2px solid var(--accent); padding-top:16px;}
+.rh-step .sn{font-size:.8rem; font-weight:650; color:var(--accent-deep); font-variant-numeric:tabular-nums;}
+.rh-step h3{margin-top:8px; font-size:1rem; letter-spacing:-.01em;}
+.rh-step p{margin-top:6px; font-size:.875rem; line-height:1.55; color:var(--body);}
+@media(max-width:880px){.rh-flow{grid-template-columns:1fr 1fr;}}
+@media(max-width:520px){.rh-flow{grid-template-columns:1fr;}}
+
+/* integrations */
+.rh-intg{max-width:var(--maxw); margin:28px auto 0; padding:0 24px; display:flex; flex-wrap:wrap; gap:10px;}
+.rh-intg span{border:1px solid var(--line-2); border-radius:999px; padding:.55rem 1.05rem; font-size:.9rem; font-weight:500; color:var(--ink-soft); background:var(--paper);}
+
+/* resources */
+.rh-res{max-width:var(--maxw); margin:44px auto 0; padding:0 24px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.rh-rescard{border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--paper); display:flex; flex-direction:column; transition:box-shadow .2s ease, transform .2s ease;}
+.rh-rescard:hover{box-shadow:0 18px 40px -28px rgba(10,30,20,.4); transform:translateY(-3px);}
+.rh-restop{height:8px; background:linear-gradient(90deg,var(--accent),#7fd9b5);}
+.rh-resbody{padding:24px; display:flex; flex-direction:column; flex:1;}
+.rh-restag{font-size:.7rem; font-weight:650; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-deep);}
+.rh-rescard h3{margin-top:10px; font-size:1.05rem; line-height:1.3; letter-spacing:-.01em; color:var(--ink);}
+.rh-rescard p{margin-top:8px; font-size:.9rem; line-height:1.55; color:var(--body); flex:1;}
+.rh-reslink{margin-top:16px; font-size:.875rem; font-weight:600; color:var(--accent-deep);}
+@media(max-width:880px){.rh-res{grid-template-columns:1fr;}}
+
+/* mission */
+.rh-mission{background:var(--ink); color:#cfd6d2;}
+.rh-missionin{max-width:var(--maxw); margin:0 auto; padding:80px 24px; display:grid; grid-template-columns:1.15fr 1fr; gap:56px; align-items:center;}
+.rh-mission h2{color:#fff; font-size:clamp(1.6rem,3vw,2.2rem); letter-spacing:-.025em; line-height:1.15;}
+.rh-mission .md{margin-top:14px; color:#9fa8a3; font-size:1.05rem; line-height:1.65;}
+.rh-mstats{display:grid; grid-template-columns:1fr 1fr; gap:28px 24px;}
+.rh-mstats .v{font-size:2rem; font-weight:600; color:#fff; letter-spacing:-.03em; font-variant-numeric:tabular-nums;}
+.rh-mstats .l{font-size:.85rem; color:#9fa8a3; margin-top:4px; line-height:1.4;}
+@media(max-width:760px){.rh-missionin{grid-template-columns:1fr; gap:36px;}}
+
+/* faq */
+.rh-faqs{max-width:820px; margin:36px auto 0; padding:0 24px;}
+.rh-faq{border-bottom:1px solid var(--line); padding:22px 2px;}
+.rh-faq h3{font-size:1.0625rem; letter-spacing:-.01em;}
+.rh-faq p{margin-top:8px; font-size:.95rem; line-height:1.6; color:var(--body); max-width:72ch;}
 
 /* reveal */
 .rh-rv{opacity:0; transform:translateY(16px); transition:opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1);}
@@ -362,6 +469,28 @@ export function LandingPage() {
         </div>
       </div>
 
+      {/* Audiences */}
+      <section className="rh-sec">
+        <div className="rh-sechead">
+          <p className="rh-eyelabel rh-rv">Who it&rsquo;s for</p>
+          <h2 className="rh-h2 rh-rv">Built for everyone in the agency.</h2>
+          <p className="rh-deck rh-rv">One platform that works the way owners, coordinators, and caregivers actually work.</p>
+        </div>
+        <div className="rh-aud">
+          {audiences.map((a) => (
+            <div className="rh-audcard rh-rv" key={a.role}>
+              <h3>{a.role}</h3>
+              <p>{a.body}</p>
+              <ul className="rh-audlist">
+                {a.points.map((p) => (
+                  <li key={p}><span className="ck">{ic(<path d="M20 6 9 17l-5-5" />)}</span><span>{p}</span></li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Platform / bento */}
       <section id="platform" className="rh-sec">
         <div className="rh-sechead">
@@ -397,6 +526,40 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Module deep-dive */}
+      <section className="rh-sec tight" style={{ background: 'var(--warm)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+        <div className="rh-sechead">
+          <p className="rh-eyelabel rh-rv">A closer look</p>
+          <h2 className="rh-h2 rh-rv">Four toolsets, one operational core.</h2>
+          <p className="rh-deck rh-rv">The capabilities an agency touches every day — grouped the way you actually work.</p>
+        </div>
+        <div className="rh-mods">
+          {moduleGroups.map((m) => (
+            <div className="rh-mod rh-rv" key={m.group}>
+              <h3>{m.group}</h3>
+              <ul>{m.items.map((it) => <li key={it}>{it}</li>)}</ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Workflow */}
+      <section className="rh-sec">
+        <div className="rh-sechead">
+          <p className="rh-eyelabel rh-rv">End to end</p>
+          <h2 className="rh-h2 rh-rv">From authorization to paid, audit-ready claim.</h2>
+        </div>
+        <div className="rh-flow">
+          {workflow.map((s) => (
+            <div className="rh-step rh-rv" key={s.n}>
+              <div className="sn">{s.n}</div>
+              <h3>{s.t}</h3>
+              <p>{s.b}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* AI automation — dark band */}
       <section id="automation" className="rh-dark">
         <div className="rh-darkin">
@@ -414,6 +577,18 @@ export function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Integrations */}
+      <section className="rh-sec tight">
+        <div className="rh-sechead">
+          <p className="rh-eyelabel rh-rv">Connected</p>
+          <h2 className="rh-h2 rh-rv">Fits the systems your agency already runs.</h2>
+          <p className="rh-deck rh-rv">RayHealth maps to Pennsylvania&rsquo;s EVV ecosystem and exports cleanly to the tools you use downstream.</p>
+        </div>
+        <div className="rh-intg">
+          {integrations.map((i) => <span className="rh-rv" key={i}>{i}</span>)}
         </div>
       </section>
 
@@ -458,6 +633,60 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Resources */}
+      <section className="rh-sec">
+        <div className="rh-sechead">
+          <p className="rh-eyelabel rh-rv">Resources</p>
+          <h2 className="rh-h2 rh-rv">Guides for running a compliant agency.</h2>
+          <p className="rh-deck rh-rv">Practical, Pennsylvania-specific reading on EVV, task codes, and audits.</p>
+        </div>
+        <div className="rh-res">
+          {resources.map((r) => (
+            <Link to="/launch" className="rh-rescard rh-rv" key={r.t}>
+              <div className="rh-restop" />
+              <div className="rh-resbody">
+                <span className="rh-restag">{r.tag}</span>
+                <h3>{r.t}</h3>
+                <p>{r.b}</p>
+                <span className="rh-reslink">Read more →</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Mission */}
+      <section className="rh-mission">
+        <div className="rh-missionin">
+          <div className="rh-rv">
+            <p className="rh-eyelabel" style={{ color: '#5fd6a6' }}>Our mission</p>
+            <h2>Make verified, compliant care the easiest way to run an agency.</h2>
+            <p className="md">RayHealth is built in Pennsylvania for Pennsylvania providers — so every visit is proven, every claim is defensible, and coordinators get their time back for the people who need it.</p>
+          </div>
+          <div className="rh-mstats rh-rv">
+            {missionStats.map((s) => (
+              <div key={s.l}><div className="v">{s.v}</div><div className="l">{s.l}</div></div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="rh-sec">
+        <div className="rh-sechead center">
+          <p className="rh-eyelabel rh-rv">FAQ</p>
+          <h2 className="rh-h2 rh-rv">Questions, answered.</h2>
+        </div>
+        <div className="rh-faqs">
+          {faqs.map((f) => (
+            <div className="rh-faq rh-rv" key={f.q}>
+              <h3>{f.q}</h3>
+              <p>{f.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="rh-sec">
         <div className="rh-final">
@@ -487,14 +716,24 @@ export function LandingPage() {
             <Link to="/pricing">Pricing</Link>
           </div>
           <div className="rh-footcol">
+            <h4>Solutions</h4>
+            <a href="#platform">Scheduling</a>
+            <a href="#platform">Electronic visit verification</a>
+            <a href="#platform">Billing &amp; payroll</a>
+            <a href="#platform">Workforce &amp; training</a>
+          </div>
+          <div className="rh-footcol">
+            <h4>Resources</h4>
+            <Link to="/launch">EVV guide</Link>
+            <Link to="/launch">Task code reference</Link>
+            <Link to="/launch">Audit checklist</Link>
+            <Link to="/launch">What’s new</Link>
+          </div>
+          <div className="rh-footcol">
             <h4>Company</h4>
             <Link to="/contact">Contact</Link>
             <Link to="/demo">Request a demo</Link>
-            <Link to="/launch">What’s new</Link>
             <Link to="/login">Sign in</Link>
-          </div>
-          <div className="rh-footcol">
-            <h4>Legal</h4>
             <Link to="/compliance/hipaa">HIPAA</Link>
             <Link to="/privacy">Privacy</Link>
           </div>
