@@ -42,6 +42,8 @@ export const auditEventTypes = [
   'evv.sandata.submitted', 'evv.sandata.reconciled',
   // Bulk migration import (clients / caregivers / authorizations CSV load).
   'data.imported',
+  // ERA / 835 remittance posting (payer payment file matched back onto claims).
+  'claim.remittance.posted',
 ] as const;
 
 export const auditOutcomes = ['success', 'failure', 'denied'] as const;

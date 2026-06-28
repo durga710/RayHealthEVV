@@ -15,10 +15,14 @@
  * would send once configured.
  */
 import { Router } from 'express';
+import express from 'express';
 import { z } from 'zod';
-import { AgencyRepository, AuditEventRepository, ClaimRepository, buildPayrollExport, canTransitionClaim, claimStatuses, generate837P, generateClaims, paServiceCodeDescriptions, } from '@rayhealth/core';
+import { AgencyRepository, AuditEventRepository, ClaimRepository, buildPayrollExport, canTransitionClaim, claimStatuses, generate837P, generateClaims, parse835, paServiceCodeDescriptions, } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
+import { safeError } from '../security/safe-log.js';
 const router = Router();
+// 835 ERA files are sent as a raw text body (bypasses the global JSON limit).
+const eraText = express.text({ type: ['text/plain', 'text/csv', 'application/edi-x12'], limit: '10mb' });
 const datePattern = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD');
 const generateBodySchema = z.object({
     periodStart: datePattern,
@@ -411,5 +415,110 @@ function toClaimDetailResponse(claim) {
         })),
     };
 }
+// ── ERA / 835 remittance posting ────────────────────────────────────────────
+/** GET /billing/remittances — recent remittance postings. */
+router.get('/remittances', requireCapability('billing.read'), async (req, res) => {
+    try {
+        const db = req.app.get('db');
+        const list = await new ClaimRepository(db).listRemittances(req.auth.agencyId);
+        res.json(list);
+    }
+    catch (err) {
+        safeError('list remittances failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+/**
+ * POST /billing/remittances/preview — parse an 835 and report, per claim,
+ * whether its control number matches one of our claims. No writes.
+ */
+router.post('/remittances/preview', requireCapability('billing.write'), eraText, async (req, res) => {
+    const text = typeof req.body === 'string' ? req.body : '';
+    if (!text.trim()) {
+        res.status(400).json({ message: 'request body must be an 835 file (content-type text/plain)' });
+        return;
+    }
+    let era;
+    try {
+        era = parse835(text);
+    }
+    catch (err) {
+        res.status(400).json({ message: err instanceof Error ? err.message : 'Could not parse 835' });
+        return;
+    }
+    try {
+        const db = req.app.get('db');
+        const matchedSet = await new ClaimRepository(db).matchControlNumbers(req.auth.agencyId, era.claims.map((c) => c.controlNumber));
+        res.json({
+            traceNumber: era.traceNumber,
+            totalPaidCents: era.totalPaidCents,
+            total: era.claims.length,
+            matchedCount: era.claims.filter((c) => matchedSet.has(c.controlNumber)).length,
+            claims: era.claims.map((c) => ({
+                controlNumber: c.controlNumber,
+                matched: matchedSet.has(c.controlNumber),
+                derivedStatus: c.derivedStatus,
+                chargeCents: c.chargeCents,
+                paidCents: c.paidCents,
+                patientResponsibilityCents: c.patientResponsibilityCents,
+                adjustments: c.adjustments,
+            })),
+        });
+    }
+    catch (err) {
+        safeError('remittance preview failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+/**
+ * POST /billing/remittances/post — parse an 835 and post it: record each
+ * remittance and advance matched claims (paid / denied / rejected).
+ */
+router.post('/remittances/post', requireCapability('billing.write'), eraText, async (req, res) => {
+    const text = typeof req.body === 'string' ? req.body : '';
+    if (!text.trim()) {
+        res.status(400).json({ message: 'request body must be an 835 file (content-type text/plain)' });
+        return;
+    }
+    let era;
+    try {
+        era = parse835(text);
+    }
+    catch (err) {
+        res.status(400).json({ message: err instanceof Error ? err.message : 'Could not parse 835' });
+        return;
+    }
+    try {
+        const db = req.app.get('db');
+        const result = await new ClaimRepository(db).postEra(req.auth.agencyId, era);
+        try {
+            await new AuditEventRepository(db).create({
+                agencyId: req.auth.agencyId,
+                actorId: req.auth.userId,
+                actorType: 'user',
+                eventType: 'claim.remittance.posted',
+                entityType: 'remittance',
+                entityId: req.auth.agencyId,
+                outcome: 'success',
+                payload: {
+                    posted: result.posted,
+                    matched: result.matched,
+                    unmatched: result.unmatched.length,
+                    traceNumber: era.traceNumber,
+                    totalPaidCents: era.totalPaidCents,
+                },
+                occurredAt: new Date().toISOString(),
+            });
+        }
+        catch (err) {
+            safeError('Failed to audit claim.remittance.posted', err);
+        }
+        res.json({ ...result, totalPaidCents: era.totalPaidCents, traceNumber: era.traceNumber });
+    }
+    catch (err) {
+        safeError('remittance post failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 export default router;
 //# sourceMappingURL=billing-claims-routes.js.map

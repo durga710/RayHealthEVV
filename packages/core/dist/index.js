@@ -54,4 +54,5 @@ export * from './services/sandata-mapping.js';
 export * from './services/hhaexchange-mapping.js';
 export * from './services/audit-retention-sweep.js';
 export * from './services/import-service.js';
+export * from './services/edi-835.js';
 //# sourceMappingURL=index.js.map

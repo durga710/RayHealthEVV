@@ -11,7 +11,15 @@ import type {
 } from '../services/claim-generation-service.js';
 import type { PayrollVisit } from '../services/payroll-export-service.js';
 import type { PaServiceCode } from '../config/pennsylvania.js';
+import type { Era835 } from '../services/edi-835.js';
+import { eraStatusToClaimStatus, summarizeAdjustments } from '../services/edi-835.js';
 import { decryptCell } from '../security/cell-cipher.js';
+
+export interface EraPostResult {
+  posted: number;
+  matched: number;
+  unmatched: string[];
+}
 
 /**
  * Persistence for generated Medicaid claims (`claims` + `claim_lines`).
@@ -261,6 +269,118 @@ export class ClaimRepository {
       .update(update);
     if (affected === 0) return null;
     return this.getClaim(agencyId, id);
+  }
+
+  /**
+   * Which of these patient-control-numbers match an existing claim for the
+   * agency. Read-only — used to preview an 835 before posting it.
+   */
+  async matchControlNumbers(agencyId: string, controlNumbers: string[]): Promise<Set<string>> {
+    const unique = [...new Set(controlNumbers.filter(Boolean))];
+    if (unique.length === 0) return new Set();
+    const rows = (await this.db('claims')
+      .where('agency_id', agencyId)
+      .whereIn('control_number', unique)
+      .select('control_number')) as Array<{ control_number: string }>;
+    return new Set(rows.map((r) => r.control_number));
+  }
+
+  /** Recent remittance postings for the agency (newest first), for the UI list. */
+  async listRemittances(
+    agencyId: string,
+    limit = 100,
+  ): Promise<Array<{
+    id: string;
+    claimId: string | null;
+    controlNumber: string;
+    matched: boolean;
+    statusCode: string | null;
+    chargeCents: number;
+    paidCents: number;
+    adjustmentCents: number;
+    patientResponsibilityCents: number;
+    traceNumber: string | null;
+    postedAt: string | null;
+  }>> {
+    const rows = (await this.db('claim_remittances')
+      .where('agency_id', agencyId)
+      .orderBy('posted_at', 'desc')
+      .limit(Math.min(limit, 500))) as Array<Record<string, unknown>>;
+    return rows.map((r) => ({
+      id: r.id as string,
+      claimId: (r.claim_id as string | null) ?? null,
+      controlNumber: r.control_number as string,
+      matched: Boolean(r.matched),
+      statusCode: (r.status_code as string | null) ?? null,
+      chargeCents: Number(r.charge_cents ?? 0),
+      paidCents: Number(r.paid_cents ?? 0),
+      adjustmentCents: Number(r.adjustment_cents ?? 0),
+      patientResponsibilityCents: Number(r.patient_responsibility_cents ?? 0),
+      traceNumber: (r.trace_number as string | null) ?? null,
+      postedAt:
+        r.posted_at instanceof Date
+          ? r.posted_at.toISOString()
+          : (r.posted_at as string | null) ?? null,
+    }));
+  }
+
+  /**
+   * Post an 835 remittance: for every CLP claim in the file, record a
+   * `claim_remittances` row and — when its control_number matches one of our
+   * claims — advance that claim's status (paid / denied / rejected), paid_cents,
+   * payer_claim_id, and a CAS-derived status_reason. Unmatched postings are
+   * kept with claim_id NULL so nothing in the file is silently dropped. Runs in
+   * one transaction (all-or-nothing).
+   */
+  async postEra(agencyId: string, era: Era835): Promise<EraPostResult> {
+    return this.db.transaction(async (trx) => {
+      let matched = 0;
+      const unmatched: string[] = [];
+
+      for (const c of era.claims) {
+        const claim = (await trx('claims')
+          .where({ agency_id: agencyId, control_number: c.controlNumber })
+          .first('id')) as { id: string } | undefined;
+        const claimId = claim?.id ?? null;
+        if (claimId) matched += 1;
+        else unmatched.push(c.controlNumber);
+
+        const adjustmentCents = Math.max(
+          0,
+          c.chargeCents - c.paidCents - c.patientResponsibilityCents,
+        );
+
+        await trx('claim_remittances').insert({
+          id: trx.raw('gen_random_uuid()'),
+          agency_id: agencyId,
+          claim_id: claimId,
+          control_number: c.controlNumber,
+          payer_claim_control_number: c.payerClaimControlNumber,
+          status_code: c.statusCode || null,
+          charge_cents: c.chargeCents,
+          paid_cents: c.paidCents,
+          patient_responsibility_cents: c.patientResponsibilityCents,
+          adjustment_cents: adjustmentCents,
+          adjustment_codes: JSON.stringify(c.adjustments),
+          trace_number: era.traceNumber,
+          matched: Boolean(claimId),
+        });
+
+        if (claimId) {
+          await trx('claims')
+            .where({ id: claimId, agency_id: agencyId })
+            .update({
+              status: eraStatusToClaimStatus(c.derivedStatus),
+              paid_cents: c.paidCents,
+              payer_claim_id: c.payerClaimControlNumber ?? null,
+              status_reason: summarizeAdjustments(c.adjustments),
+              updated_at: trx.fn.now(),
+            });
+        }
+      }
+
+      return { posted: era.claims.length, matched, unmatched };
+    });
   }
 
   /**

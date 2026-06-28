@@ -65,6 +65,7 @@ const AuthorizationOversightPage = lazy(() => import('./features/compliance-engi
 const MedicaidWorkflowPage = lazy(() => import('./features/compliance-engine/MedicaidWorkflowPage.js').then((m) => ({ default: m.MedicaidWorkflowPage })));
 const PayrollReconciliationPage = lazy(() => import('./features/compliance-engine/PayrollReconciliationPage.js').then((m) => ({ default: m.PayrollReconciliationPage })));
 const ClaimMatchingPage = lazy(() => import('./features/compliance-engine/ClaimMatchingPage.js').then((m) => ({ default: m.ClaimMatchingPage })));
+const RemittancePage = lazy(() => import('./features/compliance-engine/RemittancePage.js').then((m) => ({ default: m.RemittancePage })));
 const CredentialsPage = lazy(() => import('./features/compliance-engine/CredentialsPage.js').then((m) => ({ default: m.CredentialsPage })));
 
 const ADMIN_ROLES = new Set(['admin', 'coordinator']);
@@ -314,6 +315,7 @@ const navGroupDefs: NavGroupDef[] = [
       { to: '/admin/compliance-engine/medicaid', label: 'Medicaid', icon: icons.clients },
       { to: '/admin/compliance-engine/payroll', label: 'Payroll', icon: icons.archive },
       { to: '/admin/compliance-engine/claims', label: 'Claims', icon: icons.templates },
+      { to: '/admin/compliance-engine/remittances', label: 'Remittance (ERA)', icon: icons.archive },
       { to: '/admin/compliance-engine/credentials', label: 'Credentials', icon: icons.staff },
     ],
   },
@@ -507,6 +509,7 @@ export function App() {
           <Route path="compliance-engine/medicaid" element={<MedicaidWorkflowPage />} />
           <Route path="compliance-engine/payroll" element={<PayrollReconciliationPage />} />
           <Route path="compliance-engine/claims" element={<ClaimMatchingPage />} />
+          <Route path="compliance-engine/remittances" element={<RemittancePage />} />
           <Route path="compliance-engine/credentials" element={<CredentialsPage />} />
           <Route index element={<DashboardPage />} />
         </Route>

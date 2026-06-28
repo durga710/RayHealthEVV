@@ -438,7 +438,7 @@ export async function up(knex: Knex): Promise<void> {
             'claim.generated','claim.validated','claim.submitted','claim.status-changed',
             'payroll.exported',
             'evv.sandata.submitted','evv.sandata.reconciled',
-            'data.imported'
+            'data.imported','claim.remittance.posted'
           ));
       END IF;
     END$$;
@@ -1154,6 +1154,41 @@ export async function up(knex: Knex): Promise<void> {
       `create unique index if not exists ${tbl}_external_id_uniq
        on ${tbl} (${scope}, external_id)`,
     );
+  }
+
+  // ── R18 — ERA / 835 remittance posting ─────────────────────────────────────
+  // The back half of the billing loop: a payer returns an 835 electronic
+  // remittance advice (ERA) telling us what each claim was paid / adjusted /
+  // denied. `claim_remittances` records every posting (one row per CLP claim in
+  // the file); a posting matched to one of our claims (by control_number) also
+  // advances that claim's status + paid_cents. Unmatched postings are kept with
+  // claim_id NULL so nothing in the file is silently dropped.
+  if ((await knex.schema.hasTable('claims')) && !(await knex.schema.hasColumn('claims', 'paid_cents'))) {
+    await knex.schema.alterTable('claims', (t) => {
+      t.integer('paid_cents').notNullable().defaultTo(0);
+    });
+  }
+
+  if (!(await knex.schema.hasTable('claim_remittances'))) {
+    await knex.schema.createTable('claim_remittances', (table) => {
+      table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+      table.uuid('agency_id').references('id').inTable('agencies').notNullable().onDelete('CASCADE');
+      table.uuid('claim_id').references('id').inTable('claims').nullable().onDelete('SET NULL');
+      table.string('control_number', 40).notNullable(); // CLP01 — our patient control number
+      table.text('payer_claim_control_number'); // CLP07
+      table.string('status_code', 4); // CLP02 (1=paid, 4=denied, 22=reversal, …)
+      table.integer('charge_cents').notNullable().defaultTo(0); // CLP03
+      table.integer('paid_cents').notNullable().defaultTo(0); // CLP04
+      table.integer('patient_responsibility_cents').notNullable().defaultTo(0); // CLP05
+      table.integer('adjustment_cents').notNullable().defaultTo(0);
+      table.jsonb('adjustment_codes').notNullable().defaultTo('[]'); // [{group,reasonCode,amountCents}]
+      table.string('trace_number', 60); // TRN02 — EFT / check trace
+      table.boolean('matched').notNullable().defaultTo(false);
+      table.timestamp('posted_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+      table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+      table.index(['agency_id']);
+      table.index(['claim_id']);
+    });
   }
 }
 

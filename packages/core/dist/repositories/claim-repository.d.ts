@@ -2,6 +2,12 @@ import type { Knex } from 'knex';
 import type { Claim, ClaimStatus } from '../domain/billing.js';
 import type { AuthorizationContext, BillableVisit } from '../services/claim-generation-service.js';
 import type { PayrollVisit } from '../services/payroll-export-service.js';
+import type { Era835 } from '../services/edi-835.js';
+export interface EraPostResult {
+    posted: number;
+    matched: number;
+    unmatched: string[];
+}
 /**
  * Persistence for generated Medicaid claims (`claims` + `claim_lines`).
  *
@@ -72,6 +78,34 @@ export declare class ClaimRepository {
     private getClaimInTrx;
     /** Update a claim's status. Returns the updated claim, or null if not found. */
     updateStatus(agencyId: string, id: string, patch: ClaimStatusPatch): Promise<Claim | null>;
+    /**
+     * Which of these patient-control-numbers match an existing claim for the
+     * agency. Read-only — used to preview an 835 before posting it.
+     */
+    matchControlNumbers(agencyId: string, controlNumbers: string[]): Promise<Set<string>>;
+    /** Recent remittance postings for the agency (newest first), for the UI list. */
+    listRemittances(agencyId: string, limit?: number): Promise<Array<{
+        id: string;
+        claimId: string | null;
+        controlNumber: string;
+        matched: boolean;
+        statusCode: string | null;
+        chargeCents: number;
+        paidCents: number;
+        adjustmentCents: number;
+        patientResponsibilityCents: number;
+        traceNumber: string | null;
+        postedAt: string | null;
+    }>>;
+    /**
+     * Post an 835 remittance: for every CLP claim in the file, record a
+     * `claim_remittances` row and — when its control_number matches one of our
+     * claims — advance that claim's status (paid / denied / rejected), paid_cents,
+     * payer_claim_id, and a CAS-derived status_reason. Unmatched postings are
+     * kept with claim_id NULL so nothing in the file is silently dropped. Runs in
+     * one transaction (all-or-nothing).
+     */
+    postEra(agencyId: string, era: Era835): Promise<EraPostResult>;
     /**
      * Visit ids already carried by a non-void claim for this agency. The
      * generation path excludes these so a visit is never billed twice.
