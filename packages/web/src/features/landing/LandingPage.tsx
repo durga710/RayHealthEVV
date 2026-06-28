@@ -22,9 +22,9 @@ const ic = (d: React.ReactNode) => (
 
 const capabilities = [
   {
-    span: 'wide', live: false, kicker: 'Automation',
-    title: 'AI that clears the busywork',
-    body: 'Draft the week from open authorizations, triage EVV exceptions before they become denials, and flag claims that are ready to bill — the platform proposes, your coordinators approve.',
+    span: 'wide', live: true, kicker: 'AI copilot',
+    title: 'An AI copilot that proposes — you approve',
+    body: 'Ask in plain language. The Gemini-powered copilot answers with your agency context and proposes the action — enroll a caregiver in required training, surface what needs attention — then waits for a human to confirm. Every query and action is audit-logged.',
     icon: ic(<><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" /></>),
   },
   {
@@ -52,7 +52,7 @@ const capabilities = [
     icon: ic(<><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20M6 15h4" /></>),
   },
   {
-    span: 'half', live: false, kicker: 'Agency management',
+    span: 'half', live: true, kicker: 'Agency management',
     title: 'Run the whole agency',
     body: 'Credentialing, training, client records, and authorizations in one operational core — so the office stops living in spreadsheets and email threads.',
     icon: ic(<><path d="M3 21V8l9-5 9 5v13" /><path d="M9 21v-6h6v6M3 21h18" /></>),
@@ -60,9 +60,9 @@ const capabilities = [
 ];
 
 const aiPoints = [
-  { title: 'Drafts the schedule', body: 'Proposes a conflict-free week from open authorizations and caregiver availability. You review and publish.' },
-  { title: 'Triages exceptions', body: 'Surfaces GPS drift, missing elements, and credential gaps the moment they happen — ranked by claim risk.' },
-  { title: 'Checks claim-readiness', body: 'Validates units, dates, and EVV status against payer rules before anything reaches the aggregator.' },
+  { title: 'Proposes, you approve', body: 'Ask in plain language. The copilot proposes the action — nothing executes until a human confirms it. Human-in-the-loop by design.' },
+  { title: 'Acts in your workflow', body: 'Grounded in your agency’s real caregivers and courses, it can enroll a caregiver in required training on your confirmation. More actions are rolling out.' },
+  { title: 'Audit-logged by design', body: 'Every query (prompt hashed, never stored in plaintext) and every confirmed or declined action is written to the tamper-evident trail.' },
 ];
 
 const standards = [
@@ -72,23 +72,21 @@ const standards = [
   { name: 'Sandata', note: 'Aggregator mapping' },
 ];
 
-const PHOTO = (id: string) => `https://images.unsplash.com/${id}?q=80&w=200&h=200&fit=crop&crop=faces`;
-
-const testimonials = [
+// Outcome statements by role — honest product capabilities, not fabricated
+// customer quotes (this is a new product; we will feature named agencies as
+// our first customers go live).
+const outcomes = [
   {
-    quote: 'RayHealth replaced three systems and a wall of spreadsheets. Denials dropped about forty percent in a quarter, and our last DHS audit took an afternoon instead of a week.',
-    name: 'Danielle Reyes', role: 'Director of Operations', org: 'Keystone Home Care',
-    photo: PHOTO('photo-1494790108377-be9c29b29330'), featured: true,
+    quote: 'Replace three systems and a wall of spreadsheets with one operational core — scheduling, EVV, compliance, and the audit trail in the same place.',
+    persona: 'For operations directors', featured: true,
   },
   {
-    quote: 'GPS clock-in simply works. Caregivers stopped calling the office, and every visit is defensible.',
-    name: 'Marcus Whitfield', role: 'Compliance Officer', org: 'Liberty Bell Home Health',
-    photo: PHOTO('photo-1500648767791-00dcc994a43e'),
+    quote: 'GPS clock-in captures all six federal elements automatically, so every visit is defensible and your audit trail builds itself.',
+    persona: 'For compliance officers',
   },
   {
-    quote: 'Scheduling catches credential and authorization conflicts before I publish. I trust the week when I send it.',
-    name: 'Priya Nair', role: 'Scheduling Coordinator', org: 'Three Rivers Care',
-    photo: PHOTO('photo-1573497019940-1c28c88b4f3e'),
+    quote: 'Credential and authorization conflicts surface before you publish — so the week you send is the week that holds.',
+    persona: 'For schedulers & coordinators',
   },
 ];
 
@@ -324,12 +322,11 @@ html{scroll-behavior:smooth;}
 .rh-q.feat .qt{color:#fff; font-size:1.375rem; line-height:1.5; letter-spacing:-.02em;}
 .rh-q .who{margin-top:24px; padding-top:18px; border-top:1px solid var(--line); display:flex; align-items:center; gap:.8rem;}
 .rh-q.feat .who{border-top-color:var(--dark-line);}
-.rh-qphoto{width:48px; height:48px; border-radius:50%; object-fit:cover; flex-shrink:0; background:var(--surface); border:1px solid var(--line);}
-.rh-q.feat .rh-qphoto{width:56px; height:56px; border-color:var(--dark-line);}
+.rh-qmark{width:30px; height:30px; border-radius:8px; display:grid; place-items:center; flex-shrink:0; background:var(--accent-tint); color:var(--accent-deep);}
+.rh-qmark svg{width:18px; height:18px;}
+.rh-q.feat .rh-qmark{background:rgba(16,116,128,.22); color:#5fd0d6;}
 .rh-q .nm{font-size:.9rem; font-weight:600; color:var(--ink);}
 .rh-q.feat .nm{color:#fff;}
-.rh-q .rl{font-size:.82rem; color:var(--muted); margin-top:2px;}
-.rh-q.feat .rl{color:#9fa8a3;}
 @media(max-width:820px){ .rh-quotes{grid-template-columns:1fr;} .rh-q.feat{grid-row:auto;} }
 
 /* final cta */
@@ -855,19 +852,16 @@ export function LandingPage() {
       {/* Testimonials */}
       <section className="rh-sec tight" style={{ background: 'var(--warm)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
         <div className="rh-sechead">
-          <p className="rh-eyelabel rh-rv">What teams say</p>
-          <h2 className="rh-h2 rh-rv">Agencies don’t go back to spreadsheets.</h2>
+          <p className="rh-eyelabel rh-rv">Outcomes by role</p>
+          <h2 className="rh-h2 rh-rv">Built for the people who run the agency.</h2>
         </div>
         <div className="rh-quotes">
-          {testimonials.map((t) => (
-            <figure className={`rh-q ${t.featured ? 'feat' : ''} rh-rv`} key={t.name}>
-              <blockquote className="qt">“{t.quote}”</blockquote>
+          {outcomes.map((t) => (
+            <figure className={`rh-q ${t.featured ? 'feat' : ''} rh-rv`} key={t.persona}>
+              <blockquote className="qt">{t.quote}</blockquote>
               <figcaption className="who">
-                <img className="rh-qphoto" src={t.photo} alt={t.name} loading="lazy" width={48} height={48} />
-                <div>
-                  <div className="nm">{t.name}</div>
-                  <div className="rl">{t.role} · {t.org}</div>
-                </div>
+                <span className="rh-qmark" aria-hidden>{ic(<path d="M20 6 9 17l-5-5" />)}</span>
+                <div className="nm">{t.persona}</div>
               </figcaption>
             </figure>
           ))}

@@ -182,20 +182,24 @@ export function TaskCodesPage() {
               <p style={{ marginTop: 8, fontSize: '.97rem', lineHeight: 1.6, color: 'var(--body)', maxWidth: '60ch' }}>
                 {g.blurb}
               </p>
-              <div className="mk-table" style={{ marginTop: 18 }}>
-                <div className="mk-trow" style={{ gridTemplateColumns: '0.8fr 2fr 1.3fr' }}>
-                  <div>Code</div>
-                  <div>Task</div>
-                  <div>Category</div>
-                </div>
-                {g.rows.map((r) => (
-                  <div className="mk-trow" key={r.task} style={{ gridTemplateColumns: '0.8fr 2fr 1.3fr' }}>
-                    <div className="mono">{r.code}</div>
-                    <div>{r.task}</div>
-                    <div>{r.category}</div>
-                  </div>
-                ))}
-              </div>
+              <table className="mk-tbl" style={{ marginTop: 18 }}>
+                <thead>
+                  <tr>
+                    <th scope="col" style={{ width: '20%' }}>Code</th>
+                    <th scope="col" style={{ width: '49%' }}>Task</th>
+                    <th scope="col" style={{ width: '31%' }}>Category</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.rows.map((r) => (
+                    <tr key={r.task}>
+                      <td className="mono">{r.code}</td>
+                      <td>{r.task}</td>
+                      <td>{r.category}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ))}
 

@@ -100,18 +100,22 @@ export function EvvGuidePage() {
               verify six things about each visit. If any one of them is missing or can&rsquo;t be substantiated,
               the visit record is incomplete and the resulting claim is at risk.
             </p>
-            <div className="mk-table">
-              <div className="mk-trow" style={{ gridTemplateColumns: '1fr 1.4fr' }}>
-                <div>Element</div>
-                <div>What it captures</div>
-              </div>
-              {sixElements.map((e) => (
-                <div className="mk-trow" style={{ gridTemplateColumns: '1fr 1.4fr' }} key={e.element}>
-                  <div>{e.element}</div>
-                  <div>{e.captures}</div>
-                </div>
-              ))}
-            </div>
+            <table className="mk-tbl">
+              <thead>
+                <tr>
+                  <th scope="col" style={{ width: '42%' }}>Element</th>
+                  <th scope="col">What it captures</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sixElements.map((e) => (
+                  <tr key={e.element}>
+                    <td>{e.element}</td>
+                    <td>{e.captures}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
             <h2>How Pennsylvania&rsquo;s model works</h2>
             <p>
