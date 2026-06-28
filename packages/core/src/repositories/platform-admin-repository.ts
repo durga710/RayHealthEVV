@@ -36,6 +36,37 @@ export interface PlatformUserRow {
   suspendedAt: string | null;
 }
 
+export interface PlatformStats {
+  agencies: { total: number; pending: number; approved: number; rejected: number };
+  users: { total: number; suspended: number; byRole: Record<string, number> };
+  clients: number;
+  caregivers: { total: number; active: number };
+  visits: { total: number; today: number; last7d: number; verified: number };
+  exceptions: { open: number };
+  claims: { total: number; byStatus: Record<string, number>; chargedCents: number; paidCents: number };
+  generatedAt: string;
+}
+
+export interface PlatformActivityRow {
+  id: string;
+  eventType: string;
+  entityType: string;
+  actorType: string;
+  outcome: string;
+  agencyId: string;
+  agencyName: string | null;
+  occurredAt: string | null;
+}
+
+export interface PlatformAgencyDetail extends PlatformAgencyRow {
+  caregiverCount: number;
+  visitCount: number;
+  claimCount: number;
+  chargedCents: number;
+  users: PlatformUserRow[];
+  recentActivity: PlatformActivityRow[];
+}
+
 function toIso(v: unknown): string | null {
   if (v == null) return null;
   return v instanceof Date ? v.toISOString() : String(v);
@@ -170,5 +201,174 @@ export class PlatformAdminRepository {
         .update({ revoked_at: this.db.fn.now() });
     }
     return { agencyId: user.agency_id, email: user.email };
+  }
+
+  /**
+   * Cross-agency platform metrics for the CEO command center. Every aggregate is
+   * wrapped so a missing table/column degrades that one number to 0 rather than
+   * failing the whole dashboard.
+   */
+  async getPlatformStats(): Promise<PlatformStats> {
+    const now = new Date();
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+    const weekAgo = new Date(now.getTime() - 7 * 86_400_000).toISOString();
+    const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+      try {
+        return await fn();
+      } catch {
+        return fallback;
+      }
+    };
+    const num = (v: unknown): number => Number(v ?? 0) || 0;
+
+    const [agencyRows, userRows, suspended, clients, cgRows, visitRows, openExc, claimRows] = await Promise.all([
+      safe(() => this.db('agencies').select('review_status').count('id as c').groupBy('review_status'), [] as any[]),
+      safe(() => this.db('users').select('role').count('id as c').groupBy('role'), [] as any[]),
+      safe(async () => num((await this.db('users').whereNotNull('suspended_at').count('id as c'))[0]?.c), 0),
+      safe(async () => num((await this.db('clients').count('id as c'))[0]?.c), 0),
+      safe(() => this.db('caregivers').select('status').count('id as c').groupBy('status'), [] as any[]),
+      safe(async () => ({
+        total: num((await this.db('evv_visits').count('id as c'))[0]?.c),
+        today: num((await this.db('evv_visits').where('clock_in_time', '>=', todayStart).count('id as c'))[0]?.c),
+        last7d: num((await this.db('evv_visits').where('clock_in_time', '>=', weekAgo).count('id as c'))[0]?.c),
+        verified: num((await this.db('evv_visits').where('status', 'verified').count('id as c'))[0]?.c),
+      }), { total: 0, today: 0, last7d: 0, verified: 0 }),
+      safe(async () => num((await this.db('evv_exceptions').whereNull('approved_at').count('id as c'))[0]?.c), 0),
+      safe(() => this.db('claims').select('status').count('id as c')
+        .sum('total_charge_cents as charged').groupBy('status'), [] as any[]),
+    ]);
+
+    const agencyByStatus = (agencyRows as Array<{ review_status: string; c: unknown }>);
+    const get = (rows: Array<Record<string, unknown>>, key: string, val: string): number =>
+      num(rows.find((r) => r[key] === val)?.c);
+
+    const byRole: Record<string, number> = {};
+    let userTotal = 0;
+    for (const r of userRows as Array<{ role: string; c: unknown }>) {
+      byRole[r.role] = num(r.c);
+      userTotal += num(r.c);
+    }
+
+    const cg = cgRows as Array<{ status: string; c: unknown }>;
+    const cgTotal = cg.reduce((s, r) => s + num(r.c), 0);
+
+    const claimByStatus: Record<string, number> = {};
+    let claimTotal = 0;
+    let chargedCents = 0;
+    for (const r of claimRows as Array<{ status: string; c: unknown; charged: unknown }>) {
+      claimByStatus[r.status] = num(r.c);
+      claimTotal += num(r.c);
+      chargedCents += num(r.charged);
+    }
+    const paidCents = await safe(async () => num((await this.db('claims').sum('paid_cents as p'))[0]?.p), 0);
+
+    return {
+      agencies: {
+        total: agencyByStatus.reduce((s, r) => s + num(r.c), 0),
+        pending: get(agencyByStatus as any, 'review_status', 'pending'),
+        approved: get(agencyByStatus as any, 'review_status', 'approved'),
+        rejected: get(agencyByStatus as any, 'review_status', 'rejected'),
+      },
+      users: { total: userTotal, suspended, byRole },
+      clients,
+      caregivers: { total: cgTotal, active: get(cg as any, 'status', 'active') },
+      visits: visitRows,
+      exceptions: { open: openExc },
+      claims: { total: claimTotal, byStatus: claimByStatus, chargedCents, paidCents },
+      generatedAt: now.toISOString(),
+    };
+  }
+
+  /** Global, cross-agency audit feed — newest first. The "monitor everything" tap. */
+  async getRecentActivity(limit = 40): Promise<PlatformActivityRow[]> {
+    const rows = (await this.db('audit_events as e')
+      .leftJoin('agencies as a', 'a.id', 'e.agency_id')
+      .orderBy('e.occurred_at', 'desc')
+      .limit(Math.min(Math.max(limit, 1), 200))
+      .select(
+        'e.id',
+        'e.event_type',
+        'e.entity_type',
+        'e.actor_type',
+        'e.outcome',
+        'e.agency_id',
+        'e.occurred_at',
+        'a.name as agency_name',
+      )) as Array<Record<string, unknown>>;
+    return rows.map((r) => ({
+      id: r.id as string,
+      eventType: r.event_type as string,
+      entityType: r.entity_type as string,
+      actorType: r.actor_type as string,
+      outcome: r.outcome as string,
+      agencyId: r.agency_id as string,
+      agencyName: (r.agency_name as string | null) ?? null,
+      occurredAt: toIso(r.occurred_at),
+    }));
+  }
+
+  /** Deep drill-down on one agency — counts, its users, and its recent activity. */
+  async getAgencyDetail(agencyId: string): Promise<PlatformAgencyDetail | null> {
+    const base = (await this.listAgencies()).find((a) => a.id === agencyId);
+    if (!base) return null;
+    const num = (v: unknown): number => Number(v ?? 0) || 0;
+    const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+      try { return await fn(); } catch { return fallback; }
+    };
+
+    const [caregiverCount, claimAgg, users, activity] = await Promise.all([
+      safe(async () => num((await this.db('caregivers').where('agency_id', agencyId).count('id as c'))[0]?.c), 0),
+      safe(async () => {
+        const [row] = await this.db('claims').where('agency_id', agencyId)
+          .count('id as c').sum('total_charge_cents as charged');
+        return { count: num(row?.c), charged: num(row?.charged) };
+      }, { count: 0, charged: 0 }),
+      safe(() => this.db('users as u')
+        .leftJoin('agencies as a', 'a.id', 'u.agency_id')
+        .where('u.agency_id', agencyId)
+        .orderBy('u.created_at', 'desc')
+        .select('u.id', 'u.email', 'u.role', 'u.agency_id', 'u.created_at', 'u.suspended_at', 'a.name as agency_name'),
+        [] as Array<Record<string, unknown>>),
+      safe(() => this.db('audit_events as e')
+        .leftJoin('agencies as a', 'a.id', 'e.agency_id')
+        .where('e.agency_id', agencyId)
+        .orderBy('e.occurred_at', 'desc')
+        .limit(25)
+        .select('e.id', 'e.event_type', 'e.entity_type', 'e.actor_type', 'e.outcome', 'e.agency_id', 'e.occurred_at', 'a.name as agency_name'),
+        [] as Array<Record<string, unknown>>),
+    ]);
+
+    // evv_visits has no agency_id; count via the caregiver → users → agency join.
+    const visitCount = await safe(async () => num((await this.db('evv_visits as v')
+      .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
+      .where('u.agency_id', agencyId)
+      .countDistinct('v.id as c'))[0]?.c), 0);
+
+    return {
+      ...base,
+      caregiverCount,
+      visitCount,
+      claimCount: claimAgg.count,
+      chargedCents: claimAgg.charged,
+      users: (users as Array<Record<string, unknown>>).map((r) => ({
+        id: r.id as string,
+        email: r.email as string,
+        role: r.role as string,
+        agencyId: r.agency_id as string,
+        agencyName: (r.agency_name as string | null) ?? null,
+        createdAt: toIso(r.created_at),
+        suspendedAt: toIso(r.suspended_at),
+      })),
+      recentActivity: (activity as Array<Record<string, unknown>>).map((r) => ({
+        id: r.id as string,
+        eventType: r.event_type as string,
+        entityType: r.entity_type as string,
+        actorType: r.actor_type as string,
+        outcome: r.outcome as string,
+        agencyId: r.agency_id as string,
+        agencyName: (r.agency_name as string | null) ?? null,
+        occurredAt: toIso(r.occurred_at),
+      })),
+    };
   }
 }

@@ -30,6 +30,58 @@ export interface PlatformUserRow {
     createdAt: string | null;
     suspendedAt: string | null;
 }
+export interface PlatformStats {
+    agencies: {
+        total: number;
+        pending: number;
+        approved: number;
+        rejected: number;
+    };
+    users: {
+        total: number;
+        suspended: number;
+        byRole: Record<string, number>;
+    };
+    clients: number;
+    caregivers: {
+        total: number;
+        active: number;
+    };
+    visits: {
+        total: number;
+        today: number;
+        last7d: number;
+        verified: number;
+    };
+    exceptions: {
+        open: number;
+    };
+    claims: {
+        total: number;
+        byStatus: Record<string, number>;
+        chargedCents: number;
+        paidCents: number;
+    };
+    generatedAt: string;
+}
+export interface PlatformActivityRow {
+    id: string;
+    eventType: string;
+    entityType: string;
+    actorType: string;
+    outcome: string;
+    agencyId: string;
+    agencyName: string | null;
+    occurredAt: string | null;
+}
+export interface PlatformAgencyDetail extends PlatformAgencyRow {
+    caregiverCount: number;
+    visitCount: number;
+    claimCount: number;
+    chargedCents: number;
+    users: PlatformUserRow[];
+    recentActivity: PlatformActivityRow[];
+}
 export declare class PlatformAdminRepository {
     private readonly db;
     constructor(db: Knex);
@@ -54,5 +106,15 @@ export declare class PlatformAdminRepository {
         agencyId: string;
         email: string;
     } | null>;
+    /**
+     * Cross-agency platform metrics for the CEO command center. Every aggregate is
+     * wrapped so a missing table/column degrades that one number to 0 rather than
+     * failing the whole dashboard.
+     */
+    getPlatformStats(): Promise<PlatformStats>;
+    /** Global, cross-agency audit feed — newest first. The "monitor everything" tap. */
+    getRecentActivity(limit?: number): Promise<PlatformActivityRow[]>;
+    /** Deep drill-down on one agency — counts, its users, and its recent activity. */
+    getAgencyDetail(agencyId: string): Promise<PlatformAgencyDetail | null>;
 }
 //# sourceMappingURL=platform-admin-repository.d.ts.map

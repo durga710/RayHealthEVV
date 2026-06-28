@@ -107,6 +107,37 @@ describe('super-admin token-gated actions', () => {
             .send({});
         expect(res.status).toBe(404);
     });
+    it('returns platform stats with a valid token', async () => {
+        const getPlatformStats = vi.fn().mockResolvedValue({ agencies: { total: 6 }, users: { total: 9, byRole: {} } });
+        vi.spyOn(core, 'PlatformAdminRepository').mockImplementation(() => ({ getPlatformStats }));
+        const res = await request(createApp())
+            .get('/superadmin/stats')
+            .set('Authorization', `Bearer ${platformToken()}`);
+        expect(res.status).toBe(200);
+        expect(res.body.agencies.total).toBe(6);
+    });
+    it('blocks stats without a platform token', async () => {
+        const res = await request(createApp()).get('/superadmin/stats');
+        expect(res.status).toBe(401);
+    });
+    it('returns the global activity feed', async () => {
+        const getRecentActivity = vi.fn().mockResolvedValue([{ id: 'e1', eventType: 'agency.review.approved' }]);
+        vi.spyOn(core, 'PlatformAdminRepository').mockImplementation(() => ({ getRecentActivity }));
+        const res = await request(createApp())
+            .get('/superadmin/activity?limit=10')
+            .set('Authorization', `Bearer ${platformToken()}`);
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(1);
+    });
+    it('returns an agency drill-down detail', async () => {
+        const getAgencyDetail = vi.fn().mockResolvedValue({ id: 'a1', name: 'Acme', users: [], recentActivity: [] });
+        vi.spyOn(core, 'PlatformAdminRepository').mockImplementation(() => ({ getAgencyDetail }));
+        const res = await request(createApp())
+            .get('/superadmin/agencies/a1')
+            .set('Authorization', `Bearer ${platformToken()}`);
+        expect(res.status).toBe(200);
+        expect(res.body.name).toBe('Acme');
+    });
     it('suspends a user and audits it', async () => {
         const setUserSuspended = vi.fn().mockResolvedValue({ agencyId: 'a1', email: 'x@y.z' });
         vi.spyOn(core, 'PlatformAdminRepository').mockImplementation(() => ({ setUserSuspended }));

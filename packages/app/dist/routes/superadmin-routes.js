@@ -295,6 +295,27 @@ async function audit(db, eventType, agencyId, entityType, entityId, payload) {
         safeError(`Failed to audit ${eventType}`, err);
     }
 }
+router.get('/stats', async (req, res) => {
+    try {
+        const stats = await new PlatformAdminRepository(req.app.get('db')).getPlatformStats();
+        res.json(stats);
+    }
+    catch (err) {
+        safeError('superadmin stats failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+router.get('/activity', async (req, res) => {
+    const limit = Number(req.query.limit) || 40;
+    try {
+        const activity = await new PlatformAdminRepository(req.app.get('db')).getRecentActivity(limit);
+        res.json(activity);
+    }
+    catch (err) {
+        safeError('superadmin activity failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 router.get('/agencies', async (req, res) => {
     try {
         const agencies = await new PlatformAdminRepository(req.app.get('db')).listAgencies();
@@ -302,6 +323,22 @@ router.get('/agencies', async (req, res) => {
     }
     catch (err) {
         safeError('superadmin list agencies failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+router.get('/agencies/:id', async (req, res) => {
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    try {
+        const detail = await new PlatformAdminRepository(req.app.get('db')).getAgencyDetail(id);
+        if (!detail) {
+            res.status(404).json({ message: 'agency not found' });
+            return;
+        }
+        res.json(detail);
+    }
+    catch (err) {
+        safeError('superadmin agency detail failed', err);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
