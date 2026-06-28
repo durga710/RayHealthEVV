@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SupportChat } from '../support/SupportChat.js';
+import { BrandLogo } from '../../components/brand/BrandLogo.js';
 
 /* ─────────────────────────────────────────────────────────────
    RayHealth landing — editorial, emerald-accented, enterprise.
@@ -161,15 +162,6 @@ const faqs = [
   { q: 'Can caregivers be trained inside the platform?', a: 'The EVV Academy delivers lessons, quizzes, and certificate renewals so training and compliance live in one place. (Rolling out.)' },
 ];
 
-const Logo = () => (
-  <span className="rh-logo">
-    <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden>
-      <rect x="1" y="1" width="26" height="26" rx="8" fill="#0E9D6E" />
-      <path d="M8.5 14.2l3.4 3.4 7-7.2" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-    <span>RayHealth</span>
-  </span>
-);
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -177,7 +169,8 @@ const CSS = `
 .rh{
   --ink:#0a0f0d; --ink-soft:#39433e; --body:#525c57; --muted:#8a948e;
   --paper:#ffffff; --warm:#fbfbf8; --surface:#f5f6f3; --line:#e8eae4; --line-2:#dde0d9;
-  --accent:#0e9d6e; --accent-deep:#0a7a55; --accent-tint:#ebf7f1;
+  --accent:#107480; --accent-deep:#0c5d66; --accent-tint:#e7f3f4;
+  --accent2:#ee6c2c; --accent2-deep:#d8551b; --accent2-tint:#fdeee4;
   --dark:#0a0f0d; --dark-line:rgba(255,255,255,.10);
   --maxw:1120px;
   font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -191,7 +184,7 @@ const CSS = `
 
 /* buttons */
 .rh-btn{display:inline-flex; align-items:center; gap:.5rem; height:44px; padding:0 1.25rem; border-radius:10px; font-size:.9375rem; font-weight:550; transition:transform .16s ease, background .16s ease, box-shadow .16s ease, border-color .16s ease;}
-.rh-btn-pri{background:var(--accent); color:#fff; box-shadow:0 1px 0 rgba(10,30,20,.04), 0 8px 24px -12px rgba(14,157,110,.6);}
+.rh-btn-pri{background:var(--accent); color:#fff; box-shadow:0 1px 0 rgba(10,30,20,.04), 0 8px 24px -12px rgba(16,116,128,.6);}
 .rh-btn-pri:hover{background:var(--accent-deep); transform:translateY(-1px);}
 .rh-btn-ghost{color:var(--ink); border:1px solid var(--line-2); background:var(--paper);}
 .rh-btn-ghost:hover{border-color:var(--ink); }
@@ -215,7 +208,7 @@ const CSS = `
 /* hero */
 .rh-hero{position:relative; overflow:hidden; background:var(--warm); border-bottom:1px solid var(--line);}
 .rh-hero-bloom{position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(48% 52% at 80% 14%, rgba(14,157,110,.12), transparent 72%), radial-gradient(38% 38% at 6% 0%, rgba(14,157,110,.06), transparent 70%);}
+  background:radial-gradient(48% 52% at 80% 14%, rgba(16,116,128,.12), transparent 72%), radial-gradient(38% 38% at 6% 0%, rgba(16,116,128,.06), transparent 70%);}
 .rh-hero-grid{position:absolute; inset:0; pointer-events:none;
   background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
   background-size:64px 64px; opacity:.45;
@@ -224,7 +217,7 @@ const CSS = `
 .rh-heroin{position:relative; max-width:var(--maxw); margin:0 auto; padding:72px 24px 0; display:grid; grid-template-columns:1.02fr .98fr; gap:56px; align-items:center;}
 .rh-herotext{max-width:34rem;}
 .rh-eyebrow{display:inline-flex; align-items:center; gap:.5rem; padding:.4rem .8rem .4rem .55rem; border-radius:999px; background:var(--paper); border:1px solid var(--line-2); font-size:.78rem; font-weight:550; color:var(--ink-soft); box-shadow:0 1px 2px rgba(10,20,15,.03);}
-.rh-eyebrow .pip{width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--accent-tint);}
+.rh-eyebrow .pip{width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 0 4px var(--accent2-tint);}
 .rh-display{margin:22px 0 0; font-size:clamp(2.4rem,4.4vw,3.4rem); line-height:1.05; letter-spacing:-0.035em; font-weight:600; color:var(--ink); text-wrap:balance;}
 .rh-display .em{color:var(--accent-deep);}
 .rh-sublede{margin:20px 0 0; max-width:46ch; font-size:1.125rem; line-height:1.6; color:var(--body);}
@@ -286,15 +279,15 @@ const CSS = `
 /* dark AI band */
 .rh-dark{background:var(--dark); color:#cfd6d2; position:relative; overflow:hidden;}
 .rh-dark::before{content:""; position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(50% 60% at 80% 0%, rgba(14,157,110,.18), transparent 70%);}
+  background:radial-gradient(50% 60% at 80% 0%, rgba(16,116,128,.18), transparent 70%);}
 .rh-darkin{position:relative; max-width:var(--maxw); margin:0 auto; padding:104px 24px;}
-.rh-dark .rh-eyelabel{color:#5fd6a6;}
+.rh-dark .rh-eyelabel{color:#5fd0d6;}
 .rh-dark h2{color:#fff;}
 .rh-dark .rh-deck{color:#9fa8a3;}
 .rh-aigrid{margin-top:48px; display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:1px solid var(--dark-line); border-radius:16px; overflow:hidden;}
 .rh-ai{padding:32px; border-right:1px solid var(--dark-line);}
 .rh-ai:last-child{border-right:none;}
-.rh-ai .n{display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; background:rgba(14,157,110,.16); color:#5fd6a6; font-size:.8rem; font-weight:650; font-variant-numeric:tabular-nums;}
+.rh-ai .n{display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; background:rgba(16,116,128,.16); color:#5fd0d6; font-size:.8rem; font-weight:650; font-variant-numeric:tabular-nums;}
 .rh-ai h3{color:#fff; font-size:1.0625rem; margin-top:18px; letter-spacing:-.02em;}
 .rh-ai p{margin-top:8px; font-size:.9375rem; line-height:1.6; color:#9fa8a3;}
 @media(max-width:760px){ .rh-aigrid{grid-template-columns:1fr;} .rh-ai{border-right:none; border-bottom:1px solid var(--dark-line);} .rh-ai:last-child{border-bottom:none;} }
@@ -328,7 +321,7 @@ const CSS = `
 /* final cta */
 .rh-final{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
 .rh-finalcard{background:var(--ink); border-radius:24px; padding:72px 40px; text-align:center; position:relative; overflow:hidden;}
-.rh-finalcard::before{content:""; position:absolute; inset:0; background:radial-gradient(60% 100% at 50% 0%, rgba(14,157,110,.22), transparent 70%);}
+.rh-finalcard::before{content:""; position:absolute; inset:0; background:radial-gradient(60% 100% at 50% 0%, rgba(16,116,128,.22), transparent 70%);}
 .rh-finalcard h2{position:relative; color:#fff; font-size:clamp(1.8rem,3.4vw,2.6rem); letter-spacing:-.03em;}
 .rh-finalcard p{position:relative; color:#9fa8a3; font-size:1.0625rem; line-height:1.6; max-width:46ch; margin:16px auto 0;}
 .rh-finalcard .rh-herocta{position:relative;}
@@ -381,12 +374,12 @@ const CSS = `
 .rh-res{max-width:var(--maxw); margin:44px auto 0; padding:0 24px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
 .rh-rescard{border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--paper); display:flex; flex-direction:column; transition:box-shadow .2s ease, transform .2s ease;}
 .rh-rescard:hover{box-shadow:0 18px 40px -28px rgba(10,30,20,.4); transform:translateY(-3px);}
-.rh-restop{height:8px; background:linear-gradient(90deg,var(--accent),#7fd9b5);}
+.rh-restop{height:8px; background:linear-gradient(90deg,var(--accent),var(--accent2));}
 .rh-resbody{padding:24px; display:flex; flex-direction:column; flex:1;}
 .rh-restag{font-size:.7rem; font-weight:650; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-deep);}
 .rh-rescard h3{margin-top:10px; font-size:1.05rem; line-height:1.3; letter-spacing:-.01em; color:var(--ink);}
 .rh-rescard p{margin-top:8px; font-size:.9rem; line-height:1.55; color:var(--body); flex:1;}
-.rh-reslink{margin-top:16px; font-size:.875rem; font-weight:600; color:var(--accent-deep);}
+.rh-reslink{margin-top:16px; font-size:.875rem; font-weight:600; color:var(--accent2-deep);}
 @media(max-width:880px){.rh-res{grid-template-columns:1fr;}}
 
 /* mission */
@@ -428,7 +421,7 @@ const CSS = `
 .rh-evvcard{background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:14px;}
 .rh-map{height:120px; border-radius:10px; background:linear-gradient(135deg,#e9f6ef,#e8eefb); position:relative; overflow:hidden; border:1px solid var(--line);}
 .rh-map::before{content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(10,40,30,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(10,40,30,.05) 1px,transparent 1px); background-size:22px 22px;}
-.rh-map .pin{position:absolute; left:46%; top:42%; width:14px; height:14px; border-radius:50%; background:var(--accent); border:3px solid #fff; box-shadow:0 0 0 6px rgba(14,157,110,.18);}
+.rh-map .pin{position:absolute; left:46%; top:42%; width:14px; height:14px; border-radius:50%; background:var(--accent); border:3px solid #fff; box-shadow:0 0 0 6px rgba(16,116,128,.18);}
 .rh-evvgrid{margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:7px;}
 .rh-evvi{display:flex; gap:.4rem; align-items:center; font-size:.72rem; color:var(--ink-soft); border:1px solid var(--line); border-radius:8px; padding:.45rem .55rem;}
 /* visual: audit log */
@@ -450,13 +443,13 @@ const CSS = `
 .rh-cmprow>div{padding:15px 20px; font-size:.9rem; display:flex; align-items:center; gap:.5rem;}
 .rh-cmprow .lbl{color:var(--ink); font-weight:500;}
 .rh-cmprow .old{color:var(--muted);}
-.rh-cmprow .new{color:var(--ink); background:rgba(14,157,110,.045);}
+.rh-cmprow .new{color:var(--ink); background:rgba(16,116,128,.045);}
 @media(max-width:620px){.rh-cmphd .lbl,.rh-cmprow .lbl{display:none;} .rh-cmphd,.rh-cmprow{grid-template-columns:1fr 1fr;}}
 
 /* pricing */
 .rh-pricing{max-width:var(--maxw); margin:48px auto 0; padding:0 24px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; align-items:start;}
 .rh-price{border:1px solid var(--line); border-radius:18px; padding:30px; background:var(--paper); display:flex; flex-direction:column; position:relative;}
-.rh-price.feat{border-color:var(--accent); box-shadow:0 36px 80px -44px rgba(14,157,110,.55);}
+.rh-price.feat{border-color:var(--accent); box-shadow:0 36px 80px -44px rgba(16,116,128,.55);}
 .rh-pbadge{position:absolute; top:-11px; left:30px; background:var(--accent); color:#fff; font-size:.68rem; font-weight:650; letter-spacing:.04em; padding:.28rem .7rem; border-radius:999px;}
 .rh-price h3{font-size:1.15rem; letter-spacing:-.02em;}
 .rh-price .pr{margin-top:10px; font-size:2rem; font-weight:600; color:var(--ink); letter-spacing:-.03em;}
@@ -503,7 +496,7 @@ export function LandingPage() {
 
       <nav className="rh-nav">
         <div className="rh-navin">
-          <Link to="/"><Logo /></Link>
+          <Link to="/" aria-label="RayHealthEVV home"><BrandLogo height={34} /></Link>
           <div className="rh-navmid">
             <Link to="/solutions/scheduling">Scheduling</Link>
             <Link to="/solutions/electronic-visit-verification">EVV</Link>
@@ -862,7 +855,7 @@ export function LandingPage() {
       <section className="rh-mission">
         <div className="rh-missionin">
           <div className="rh-rv">
-            <p className="rh-eyelabel" style={{ color: '#5fd6a6' }}>Our mission</p>
+            <p className="rh-eyelabel" style={{ color: '#5fd0d6' }}>Our mission</p>
             <h2>Make verified, compliant care the easiest way to run an agency.</h2>
             <p className="md">RayHealth is built in Pennsylvania for Pennsylvania providers — so every visit is proven, every claim is defensible, and coordinators get their time back for the people who need it.</p>
           </div>
@@ -936,7 +929,7 @@ export function LandingPage() {
       <footer className="rh-foot">
         <div className="rh-footgrid">
           <div>
-            <Logo />
+            <BrandLogo height={40} />
             <p className="blurb">The operating system for Pennsylvania home-care agencies. Verified visits, defensible claims, one operational core.</p>
           </div>
           <div className="rh-footcol">

@@ -93,14 +93,14 @@ interface BoardColumn {
 
 const board: BoardColumn[] = [
   { day: 'Mon', cards: [
-    { t: '8:00 AM', who: 'M. Santos', bg: '#ebf7f1', bar: '#0e9d6e' },
+    { t: '8:00 AM', who: 'M. Santos', bg: '#e7f3f4', bar: '#107480' },
     { t: '1:00 PM', who: 'R. Vance', bg: '#eef3fb', bar: '#3b82f6' },
   ] },
   { day: 'Tue', cards: [
     { t: '9:30 AM', who: 'A. Brooks', bg: '#f3eefb', bar: '#8b5cf6' },
   ] },
   { day: 'Wed', cards: [
-    { t: '8:00 AM', who: 'M. Santos', bg: '#ebf7f1', bar: '#0e9d6e' },
+    { t: '8:00 AM', who: 'M. Santos', bg: '#e7f3f4', bar: '#107480' },
     { t: '11:00 AM', who: 'Open shift', bg: '#fdf1e3', bar: '#d97706' },
   ] },
   { day: 'Thu', cards: [
@@ -108,7 +108,7 @@ const board: BoardColumn[] = [
   ] },
   { day: 'Fri', cards: [
     { t: '8:00 AM', who: 'A. Brooks', bg: '#f3eefb', bar: '#8b5cf6' },
-    { t: '2:00 PM', who: 'M. Santos', bg: '#ebf7f1', bar: '#0e9d6e' },
+    { t: '2:00 PM', who: 'M. Santos', bg: '#e7f3f4', bar: '#107480' },
   ] },
 ];
 

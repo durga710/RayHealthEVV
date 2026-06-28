@@ -146,7 +146,7 @@ function ScheduleVisual() {
               <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '.85rem' }}>{s.day} · {s.time} · {s.who}</div>
               <div style={{ color: 'var(--mut)', fontSize: '.72rem' }}>{s.auth}</div>
             </div>
-            {pill('#ebf7f1', '#0a7a55', 'Eligible')}
+            {pill('#e7f3f4', '#0c5d66', 'Eligible')}
           </div>
         ))}
         <div style={{ display: 'flex', gap: '.5rem', marginTop: 14 }}>
@@ -162,7 +162,7 @@ function TriageVisual() {
   const rows = [
     { sev: '#b91c1c', bg: '#fdecec', risk: '$412 at risk', t: 'Missed clock-out · Tue visit', d: 'Manual edit needed before billing window closes (2 days)' },
     { sev: '#b45309', bg: '#fdf1e3', risk: '$190 at risk', t: 'FBI clearance expiring', d: 'R. Vance · blocks 3 upcoming authorized visits' },
-    { sev: '#0a7a55', bg: '#ebf7f1', risk: '$0 · informational', t: 'GPS drift on clock-in', d: 'Within tolerance · no action required' },
+    { sev: '#0c5d66', bg: '#e7f3f4', risk: '$0 · informational', t: 'GPS drift on clock-in', d: 'Within tolerance · no action required' },
   ];
   return (
     <div className="mk-visual">
@@ -310,7 +310,7 @@ export function AiAutomationPage() {
                 key={r.t}
                 style={{ background: 'rgba(255,255,255,.04)', border: '1px solid var(--dark-line)' }}
               >
-                <div className="mk-ficon" style={{ background: 'rgba(95,214,166,.14)', color: '#5fd6a6' }}>{r.i}</div>
+                <div className="mk-ficon" style={{ background: 'rgba(95,214,166,.14)', color: '#5fd0d6' }}>{r.i}</div>
                 <h3 style={{ color: '#fff' }}>{r.t}</h3>
                 <p style={{ color: '#9fa8a3' }}>{r.b}</p>
               </div>

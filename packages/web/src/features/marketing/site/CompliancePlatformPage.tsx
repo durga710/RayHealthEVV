@@ -57,8 +57,8 @@ const logRows: readonly LogRow[] = [
   { actor: 'm.santos@agency', action: 'visit.task_complete', ts: '2026-06-22 09:46:03', dot: '#16a34a' },
   { actor: 'm.santos@agency', action: 'visit.clock_out', ts: '2026-06-22 11:02:51', dot: '#16a34a' },
   { actor: 'k.lee@agency', action: 'visit.edit_time', ts: '2026-06-22 14:18:22', dot: '#b45309' },
-  { actor: 'k.lee@agency', action: 'visit.approve', ts: '2026-06-22 14:19:07', dot: '#0e9d6e' },
-  { actor: 'system', action: 'evv.submit.sandata', ts: '2026-06-22 18:00:00', dot: '#0e9d6e' },
+  { actor: 'k.lee@agency', action: 'visit.approve', ts: '2026-06-22 14:19:07', dot: '#107480' },
+  { actor: 'system', action: 'evv.submit.sandata', ts: '2026-06-22 18:00:00', dot: '#107480' },
 ] as const;
 
 export function CompliancePlatformPage() {
@@ -129,7 +129,7 @@ export function CompliancePlatformPage() {
                   <div key={r.ts} style={{ display: 'flex', alignItems: 'center', gap: '.6rem', padding: '9px 2px', borderTop: i ? '1px solid rgba(255,255,255,.08)' : 'none' }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: r.dot, flexShrink: 0 }} />
                     <span style={{ fontSize: '.72rem', color: '#9fa8a3', width: '6.2rem', flexShrink: 0 }}>{r.actor}</span>
-                    <span style={{ fontSize: '.72rem', color: '#5fd6a6', flex: 1 }}>{r.action}</span>
+                    <span style={{ fontSize: '.72rem', color: '#5fd0d6', flex: 1 }}>{r.action}</span>
                     <span style={{ fontSize: '.68rem', color: '#6b746f', flexShrink: 0 }}>{r.ts}</span>
                   </div>
                 ))}

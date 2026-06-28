@@ -190,7 +190,7 @@ export function EvvSolutionPage() {
                   <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-100%)', color: 'var(--accent-deep)' }}>
                     {mkic(<><circle cx="12" cy="10" r="3" /><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z" /></>)}
                   </div>
-                  <div style={{ position: 'absolute', bottom: 8, left: 8 }}>{pill('#ebf7f1', '#0a7a55', 'Within client home')}</div>
+                  <div style={{ position: 'absolute', bottom: 8, left: 8 }}>{pill('#e7f3f4', '#0c5d66', 'Within client home')}</div>
                 </div>
                 {/* element checklist */}
                 <div style={{ marginTop: 12 }}>
@@ -223,10 +223,10 @@ export function EvvSolutionPage() {
               <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 12, padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
                   <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '.9rem' }}>Visit verified &amp; locked</div>
-                  {pill('#ebf7f1', '#0a7a55', 'Mapped to Sandata')}
+                  {pill('#e7f3f4', '#0c5d66', 'Mapped to Sandata')}
                 </div>
-                <div style={{ display: 'flex', gap: '.6rem', marginTop: 12, padding: 12, background: '#ebf7f1', borderRadius: 10, border: '1px solid #cdeede' }}>
-                  <span style={{ color: '#0a7a55', flexShrink: 0 }}>{mkic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>)}</span>
+                <div style={{ display: 'flex', gap: '.6rem', marginTop: 12, padding: 12, background: '#e7f3f4', borderRadius: 10, border: '1px solid #cdeede' }}>
+                  <span style={{ color: '#0c5d66', flexShrink: 0 }}>{mkic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>)}</span>
                   <div style={{ fontSize: '.82rem', color: '#0a5c40', lineHeight: 1.5 }}>
                     <strong>Tamper-evident.</strong> Verified by GPS at 10:01 AM. Any edit is logged with user and timestamp.
                   </div>

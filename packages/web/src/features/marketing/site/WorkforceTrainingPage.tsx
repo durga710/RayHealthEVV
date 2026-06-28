@@ -165,10 +165,10 @@ export function WorkforceTrainingPage() {
               <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 12, padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontWeight: 700, color: 'var(--ink)' }}>EVV Fundamentals</div>
-                  {pill('#ebf7f1', '#0a7a55', '80% complete')}
+                  {pill('#e7f3f4', '#0c5d66', '80% complete')}
                 </div>
                 <div style={{ height: 7, borderRadius: 999, background: 'var(--surface)', marginTop: 12, overflow: 'hidden' }}>
-                  <div style={{ width: '80%', height: '100%', background: 'linear-gradient(90deg,#0e9d6e,#5fd6a6)' }} />
+                  <div style={{ width: '80%', height: '100%', background: 'linear-gradient(90deg,#107480,#5fd0d6)' }} />
                 </div>
                 <div style={{ marginTop: 14 }}>
                   {[

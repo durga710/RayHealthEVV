@@ -7,15 +7,15 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#7c3aed",
+  "theme_color": "#107480",
   "background_color": "#F8FAFC",
   "lang": "en-US",
   "categories": ["health", "medical", "business", "productivity"],
   "icons": [
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
+      "src": "/brand/rayhealthevv-mark.png",
+      "type": "image/png",
+      "sizes": "304x304",
       "purpose": "any maskable"
     }
   ]

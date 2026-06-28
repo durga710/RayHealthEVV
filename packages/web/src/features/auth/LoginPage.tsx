@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext.js';
+import { BrandLogo } from '../../components/brand/BrandLogo.js';
 
 const ADMIN_ROLES = new Set(['admin', 'coordinator']);
 
@@ -87,7 +88,7 @@ export function LoginPage() {
             right: '-20%',
             width: '60%',
             height: '60%',
-            background: 'radial-gradient(circle, rgba(124, 58, 237,0.18) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(16,116,128,0.22) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -106,10 +107,11 @@ export function LoginPage() {
             letterSpacing: '-0.01em',
           }}
         >
+          <BrandLogo variant="mark" height={30} alt="" />
           RayHealth
           <span
             style={{
-              background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
+              background: 'linear-gradient(135deg, #ee6c2c 0%, #f59e3c 100%)',
               color: 'white',
               padding: '3px 8px',
               borderRadius: '5px',
@@ -168,7 +170,7 @@ export function LoginPage() {
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#7c3aed"
+                  stroke="#5fd0d6"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -301,7 +303,7 @@ export function LoginPage() {
             <div style={{ textAlign: 'center' }}>
               <Link
                 to="/forgot-password"
-                style={{ fontSize: '0.875rem', color: '#7c3aed', fontWeight: 500 }}
+                style={{ fontSize: '0.875rem', color: '#107480', fontWeight: 500 }}
               >
                 Forgot your password?
               </Link>
@@ -339,11 +341,11 @@ export function LoginPage() {
               HIPAA compliance documentation
             </Link>
             <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
-              Need access? <Link to="/" style={{ color: '#7c3aed', fontWeight: 500 }}>Contact your agency admin.</Link>
+              Need access? <Link to="/" style={{ color: '#107480', fontWeight: 500 }}>Contact your agency admin.</Link>
             </span>
             <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
               New agency?{' '}
-              <Link to="/signup" style={{ color: '#7c3aed', fontWeight: 500 }}>Create an account.</Link>
+              <Link to="/signup" style={{ color: '#107480', fontWeight: 500 }}>Create an account.</Link>
             </span>
           </div>
         </div>

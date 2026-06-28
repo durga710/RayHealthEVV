@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SupportChat } from '../../support/SupportChat.js';
+import { BrandLogo } from '../../../components/brand/BrandLogo.js';
 
 /**
  * Shared chrome + design system for the RayHealth marketing site,
@@ -42,26 +43,17 @@ export const mkic = (d: React.ReactNode) => (
 );
 export const MK_CHECK = <path d="M20 6 9 17l-5-5" />;
 
-const Logo = () => (
-  <span className="mk-logo">
-    <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden>
-      <rect x="1" y="1" width="26" height="26" rx="8" fill="#0E9D6E" />
-      <path d="M8.5 14.2l3.4 3.4 7-7.2" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-    <span>RayHealth</span>
-  </span>
-);
 
 export const SITE_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-.mk{--ink:#0a0f0d;--ink-soft:#39433e;--body:#525c57;--mut:#8a948e;--paper:#fff;--warm:#fbfbf8;--surface:#f5f6f3;--line:#e8eae4;--line-2:#dde0d9;--accent:#0e9d6e;--accent-deep:#0a7a55;--accent-tint:#ebf7f1;--ink-bg:#0a0f0d;--dark-line:rgba(255,255,255,.10);--maxw:1120px;
+.mk{--ink:#0a0f0d;--ink-soft:#39433e;--body:#525c57;--mut:#8a948e;--paper:#fff;--warm:#fbfbf8;--surface:#f5f6f3;--line:#e8eae4;--line-2:#dde0d9;--accent:#107480;--accent-deep:#0c5d66;--accent-tint:#e7f3f4;--accent2:#ee6c2c;--accent2-deep:#d8551b;--accent2-tint:#fdeee4;--ink-bg:#0a0f0d;--dark-line:rgba(255,255,255,.10);--maxw:1120px;
   font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--body);background:var(--paper);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;}
 .mk *{box-sizing:border-box;}
 .mk h1,.mk h2,.mk h3,.mk h4{color:var(--ink);margin:0;font-weight:600;letter-spacing:-.02em;}
 .mk p{margin:0;} .mk a{text-decoration:none;color:inherit;}
 .mk-wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;width:100%;}
 .mk-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:44px;padding:0 1.25rem;border-radius:10px;font-size:.9375rem;font-weight:550;transition:background .16s,box-shadow .16s,transform .16s,border-color .16s;}
-.mk-pri{background:var(--accent);color:#fff;box-shadow:0 8px 24px -12px rgba(14,157,110,.6);}
+.mk-pri{background:var(--accent);color:#fff;box-shadow:0 8px 24px -12px rgba(16,116,128,.6);}
 .mk-pri:hover{background:var(--accent-deep);transform:translateY(-1px);}
 .mk-ghost{color:var(--ink);border:1px solid var(--line-2);background:var(--paper);}
 .mk-ghost:hover{border-color:var(--ink);}
@@ -91,7 +83,7 @@ export const SITE_CSS = `
 .mk-dark{background:var(--ink-bg);color:#cfd6d2;}
 .mk-dark h1,.mk-dark h2,.mk-dark h3{color:#fff;}
 .mk-eylabel{font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-deep);}
-.mk-dark .mk-eylabel{color:#5fd6a6;}
+.mk-dark .mk-eylabel{color:#5fd0d6;}
 .mk-h2{font-size:clamp(1.7rem,3.2vw,2.4rem);line-height:1.12;letter-spacing:-.03em;margin-top:12px;}
 .mk-deck{margin-top:14px;font-size:1.0625rem;line-height:1.6;color:var(--body);max-width:58ch;}
 .mk-dark .mk-deck{color:#9fa8a3;}
@@ -145,7 +137,7 @@ export const SITE_CSS = `
 .mk-trow .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--accent-deep);font-weight:600;}
 /* callout / cta */
 .mk-callout{position:relative;overflow:hidden;background:var(--ink-bg);border-radius:24px;padding:64px 40px;text-align:center;color:#fff;}
-.mk-callout::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 100% at 50% 0%,rgba(14,157,110,.22),transparent 70%);}
+.mk-callout::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 100% at 50% 0%,rgba(16,116,128,.22),transparent 70%);}
 .mk-callout h2{position:relative;color:#fff;font-size:clamp(1.7rem,3.2vw,2.4rem);letter-spacing:-.03em;}
 .mk-callout p{position:relative;color:#9fa8a3;font-size:1.05rem;line-height:1.6;max-width:48ch;margin:14px auto 0;}
 .mk-callout .mk-herocta{position:relative;justify-content:center;margin-top:26px;}
@@ -164,7 +156,7 @@ export const SITE_CSS = `
 .mk-prose ul{margin-top:14px;padding-left:0;}
 .mk-prose li{list-style:none;display:flex;gap:.6rem;align-items:flex-start;font-size:1.0625rem;line-height:1.6;color:var(--body);margin-top:10px;}
 .mk-prose .lead{font-size:1.25rem;line-height:1.6;color:var(--ink-soft);}
-.mk-pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;font-weight:650;letter-spacing:.04em;padding:.25rem .6rem;border-radius:999px;background:var(--accent-tint);color:var(--accent-deep);}
+.mk-pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;font-weight:650;letter-spacing:.04em;padding:.25rem .6rem;border-radius:999px;background:var(--accent2-tint);color:var(--accent2-deep);}
 /* footer */
 .mk-foot{margin-top:auto;border-top:1px solid var(--line);background:var(--warm);padding:64px 0 40px;}
 .mk-footgrid{max-width:var(--maxw);margin:0 auto;padding:0 24px;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:32px;}
@@ -183,7 +175,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
       <style dangerouslySetInnerHTML={{ __html: SITE_CSS }} />
       <nav className="mk-nav">
         <div className="mk-navin">
-          <Link to="/"><Logo /></Link>
+          <Link to="/" aria-label="RayHealthEVV home"><BrandLogo height={34} /></Link>
           <div className="mk-navmid">
             <Link to="/solutions/scheduling">Scheduling</Link>
             <Link to="/solutions/electronic-visit-verification">EVV</Link>
@@ -203,7 +195,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
       <footer className="mk-foot">
         <div className="mk-footgrid">
           <div>
-            <Logo />
+            <BrandLogo height={40} />
             <p className="blurb">The operating system for Pennsylvania home-care agencies. Verified visits, defensible claims, one operational core.</p>
           </div>
           <div className="mk-footcol"><h4>Platform</h4>{NAV.platform.map((l) => <Link key={l.label} to={l.to}>{l.label}</Link>)}</div>
