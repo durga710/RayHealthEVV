@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
@@ -16,21 +17,47 @@ beforeAll(async () => {
 
 afterEach(() => vi.restoreAllMocks());
 
-async function platformToken(): Promise<string> {
-  const res = await request(createApp())
-    .post('/superadmin/login')
-    .send({ username: USERNAME, password: PASSWORD });
-  expect(res.status).toBe(200);
-  return res.body.token as string;
+/** A full platform token is normally issued only after WebAuthn. Tests that
+ *  exercise the token-gated endpoints mint one directly. */
+function platformToken(): string {
+  return jwt.sign(
+    { sub: 'platform-superadmin', scope: 'platform', username: USERNAME },
+    process.env.JWT_SECRET!,
+    { algorithm: 'HS256', expiresIn: '2h' },
+  );
 }
 
-describe('super-admin routes', () => {
-  it('issues a platform token for correct credentials', async () => {
+describe('super-admin login + WebAuthn 2FA', () => {
+  it('returns the enroll stage when no device is registered yet', async () => {
+    vi.spyOn(core, 'PlatformCredentialRepository').mockImplementation(() => ({
+      listByUsername: vi.fn().mockResolvedValue([]),
+    } as any));
+
     const res = await request(createApp())
       .post('/superadmin/login')
       .send({ username: USERNAME, password: PASSWORD });
+
     expect(res.status).toBe(200);
-    expect(res.body.token).toEqual(expect.any(String));
+    expect(res.body.stage).toBe('enroll');
+    expect(res.body.stageToken).toEqual(expect.any(String));
+    expect(res.body.options.challenge).toEqual(expect.any(String));
+    expect(res.body.token).toBeUndefined(); // no full token before 2FA
+  });
+
+  it('returns the 2fa stage when a device is registered', async () => {
+    vi.spyOn(core, 'PlatformCredentialRepository').mockImplementation(() => ({
+      listByUsername: vi.fn().mockResolvedValue([
+        { credentialId: 'cred-1', transports: [], publicKey: 'pk', counter: 0 },
+      ]),
+    } as any));
+
+    const res = await request(createApp())
+      .post('/superadmin/login')
+      .send({ username: USERNAME, password: PASSWORD });
+
+    expect(res.status).toBe(200);
+    expect(res.body.stage).toBe('2fa');
+    expect(res.body.options.challenge).toEqual(expect.any(String));
   });
 
   it('rejects wrong credentials with 401', async () => {
@@ -40,19 +67,42 @@ describe('super-admin routes', () => {
     expect(res.status).toBe(401);
   });
 
+  it('rejects WebAuthn register verify with an invalid stage token', async () => {
+    const res = await request(createApp())
+      .post('/superadmin/webauthn/register/verify')
+      .send({ stageToken: 'not-a-jwt', response: {} });
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects WebAuthn authenticate verify with an invalid stage token', async () => {
+    const res = await request(createApp())
+      .post('/superadmin/webauthn/authenticate/verify')
+      .send({ stageToken: 'not-a-jwt', response: {} });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('super-admin token-gated actions', () => {
   it('blocks agency listing without a platform token', async () => {
     const res = await request(createApp()).get('/superadmin/agencies');
     expect(res.status).toBe(401);
+  });
+
+  it('rejects an agency-scoped (non-platform) token', async () => {
+    const agencyToken = jwt.sign({ sub: 'u1', agencyId: 'a1', role: 'admin' }, process.env.JWT_SECRET!, { algorithm: 'HS256' });
+    const res = await request(createApp())
+      .get('/superadmin/agencies')
+      .set('Authorization', `Bearer ${agencyToken}`);
+    expect(res.status).toBe(403);
   });
 
   it('lists agencies with a valid platform token', async () => {
     const listAgencies = vi.fn().mockResolvedValue([{ id: 'a1', name: 'Acme', reviewStatus: 'pending' }]);
     vi.spyOn(core, 'PlatformAdminRepository').mockImplementation(() => ({ listAgencies } as any));
 
-    const token = await platformToken();
     const res = await request(createApp())
       .get('/superadmin/agencies')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${platformToken()}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
@@ -61,13 +111,11 @@ describe('super-admin routes', () => {
   it('approves an agency and audits it', async () => {
     const setAgencyReview = vi.fn().mockResolvedValue({ id: 'a1', name: 'Acme' });
     vi.spyOn(core, 'PlatformAdminRepository').mockImplementation(() => ({ setAgencyReview } as any));
-    const create = vi.fn().mockResolvedValue({});
-    vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create } as any));
+    vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create: vi.fn().mockResolvedValue({}) } as any));
 
-    const token = await platformToken();
     const res = await request(createApp())
       .post('/superadmin/agencies/a1/approve')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${platformToken()}`)
       .send({});
 
     expect(res.status).toBe(200);
@@ -79,10 +127,9 @@ describe('super-admin routes', () => {
     vi.spyOn(core, 'PlatformAdminRepository').mockImplementation(() => ({
       setAgencyReview: vi.fn().mockResolvedValue(null),
     } as any));
-    const token = await platformToken();
     const res = await request(createApp())
       .post('/superadmin/agencies/missing/approve')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${platformToken()}`)
       .send({});
     expect(res.status).toBe(404);
   });
@@ -92,24 +139,13 @@ describe('super-admin routes', () => {
     vi.spyOn(core, 'PlatformAdminRepository').mockImplementation(() => ({ setUserSuspended } as any));
     vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create: vi.fn().mockResolvedValue({}) } as any));
 
-    const token = await platformToken();
     const res = await request(createApp())
       .post('/superadmin/users/u1/suspend')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${platformToken()}`)
       .send({});
 
     expect(res.status).toBe(200);
     expect(res.body.suspended).toBe(true);
     expect(setUserSuspended).toHaveBeenCalledWith('u1', true);
-  });
-
-  it('rejects an agency-scoped (non-platform) token', async () => {
-    // A token without scope:'platform' must not reach the console.
-    const { default: jwt } = await import('jsonwebtoken');
-    const agencyToken = jwt.sign({ sub: 'u1', agencyId: 'a1', role: 'admin' }, process.env.JWT_SECRET!, { algorithm: 'HS256' });
-    const res = await request(createApp())
-      .get('/superadmin/agencies')
-      .set('Authorization', `Bearer ${agencyToken}`);
-    expect(res.status).toBe(403);
   });
 });

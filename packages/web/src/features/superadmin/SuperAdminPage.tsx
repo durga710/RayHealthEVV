@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { startRegistration, startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 
 /**
  * Hidden platform super-admin console. Not linked from any nav. Authenticates
@@ -117,28 +118,69 @@ export function SuperAdminPage() {
     if (token) void load(token);
   }, [token, load]);
 
+  const [bioStatus, setBioStatus] = useState<string | null>(null);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoggingIn(true);
     setLoginErr(null);
+    setBioStatus(null);
     try {
+      // Factor 1: password → returns a WebAuthn stage (enroll or 2fa).
       const res = await fetch('/api/superadmin/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-      const body = (await res.json().catch(() => ({}))) as { token?: string; message?: string };
-      if (!res.ok || !body.token) {
+      const body = (await res.json().catch(() => ({}))) as {
+        stage?: 'enroll' | '2fa';
+        stageToken?: string;
+        options?: unknown;
+        message?: string;
+      };
+      if (!res.ok || !body.stage || !body.stageToken) {
         setLoginErr(body.message || 'Invalid credentials');
         return;
       }
-      sessionStorage.setItem(TOKEN_KEY, body.token);
+      if (!browserSupportsWebAuthn()) {
+        setLoginErr('This browser does not support device biometrics. Use a device with Face ID / Windows Hello.');
+        return;
+      }
+
+      // Factor 2: device biometric (Face ID / Windows Hello) via WebAuthn.
+      let verifyPath: string;
+      let verifyBody: Record<string, unknown>;
+      if (body.stage === 'enroll') {
+        setBioStatus('No device registered yet — set up Face ID / biometric for this device…');
+        const att = await startRegistration({ optionsJSON: body.options as never });
+        verifyPath = '/api/superadmin/webauthn/register/verify';
+        verifyBody = { stageToken: body.stageToken, response: att, deviceLabel: navigator.platform || 'device' };
+      } else {
+        setBioStatus('Confirm your identity with Face ID / biometric…');
+        const asr = await startAuthentication({ optionsJSON: body.options as never });
+        verifyPath = '/api/superadmin/webauthn/authenticate/verify';
+        verifyBody = { stageToken: body.stageToken, response: asr };
+      }
+
+      const vres = await fetch(verifyPath, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(verifyBody),
+      });
+      const vbody = (await vres.json().catch(() => ({}))) as { token?: string; message?: string };
+      if (!vres.ok || !vbody.token) {
+        setLoginErr(vbody.message || 'Biometric verification failed.');
+        return;
+      }
+      sessionStorage.setItem(TOKEN_KEY, vbody.token);
       setPassword('');
-      setToken(body.token);
-    } catch {
-      setLoginErr('Could not reach the server.');
+      setToken(vbody.token);
+    } catch (err) {
+      // startRegistration/startAuthentication throw on cancel / no authenticator.
+      setLoginErr((err as Error)?.message || 'Biometric prompt was cancelled.');
     } finally {
       setLoggingIn(false);
+      setBioStatus(null);
     }
   };
 
@@ -195,10 +237,14 @@ export function SuperAdminPage() {
             Password
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" style={inputStyle} required />
           </label>
+          {bioStatus && <div role="status" style={{ color: colors.accent, fontSize: '0.85rem' }}>{bioStatus}</div>}
           {loginErr && <div role="alert" style={{ color: colors.red, fontSize: '0.85rem' }}>{loginErr}</div>}
           <button type="submit" disabled={loggingIn} style={{ ...btn(colors.accent), opacity: loggingIn ? 0.6 : 1, padding: '0.65rem' }}>
             {loggingIn ? 'Signing in…' : 'Sign in'}
           </button>
+          <p style={{ margin: 0, color: colors.muted, fontSize: '0.72rem', textAlign: 'center' }}>
+            Protected by password + device biometric (Face ID / Windows Hello).
+          </p>
         </form>
       </div>
     );

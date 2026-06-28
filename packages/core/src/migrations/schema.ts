@@ -1325,6 +1325,27 @@ export async function up(knex: Knex): Promise<void> {
       t.timestamp('suspended_at', { useTz: true }).nullable();
     });
   }
+
+  // ── R22 — Platform super-admin WebAuthn (Face ID / device biometric) 2FA ──
+  // Passkey credentials registered by the super-admin for second-factor login.
+  // We store only the credential's PUBLIC key (base64url) + signature counter —
+  // never any biometric data, which by design never leaves the user's device.
+  // Scoped by `username` (the env SUPER_ADMIN_USERNAME) since the super-admin is
+  // not a row in `users`. Multiple rows = multiple enrolled devices.
+  if (!(await knex.schema.hasTable('platform_admin_credentials'))) {
+    await knex.schema.createTable('platform_admin_credentials', (table) => {
+      table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+      table.string('username', 100).notNullable();
+      table.text('credential_id').notNullable().unique(); // base64url
+      table.text('public_key').notNullable(); // base64url-encoded COSE public key
+      table.bigInteger('counter').notNullable().defaultTo(0);
+      table.text('transports').nullable(); // JSON array
+      table.string('device_label', 120).nullable();
+      table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+      table.timestamp('last_used_at', { useTz: true }).nullable();
+      table.index(['username']);
+    });
+  }
 }
 
 export async function down(knex: Knex): Promise<void> {

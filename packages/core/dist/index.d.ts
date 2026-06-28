@@ -59,4 +59,5 @@ export * from './domain/recurring-schedule.js';
 export * from './services/recurrence-service.js';
 export * from './repositories/recurring-schedule-repository.js';
 export * from './repositories/platform-admin-repository.js';
+export * from './repositories/platform-credential-repository.js';
 //# sourceMappingURL=index.d.ts.map
