@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { AuditEventRepository, EvvRepository } from '@rayhealth/core';
+import {
+  AuditEventRepository,
+  EvvRepository,
+  AgencyHhaexchangeConfigRepository,
+  buildHhaexchangeExport,
+  toHhaexchangeCsv,
+  type HhaexchangeVisitInput,
+} from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 import { safeError } from '../security/safe-log.js';
 
@@ -359,6 +366,211 @@ router.post('/sandata/reconcile', requireCapability('billing.write'), async (req
     res.json({ updated, notFound });
   } catch (err) {
     safeError('sandata reconcile failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * GET /exports/hhaexchange.csv?from=YYYY-MM-DD&to=YYYY-MM-DD
+ *
+ * HHAeXchange-aggregator-shaped EVV export, for agencies whose state routes
+ * EVV through HHAeXchange instead of Sandata. Unlike the Sandata skeleton this
+ * uses the config-driven builder (services/hhaexchange-mapping.ts): the
+ * agency's HHAeXchange config supplies AgencyTaxID / ProviderID, the caregiver
+ * → EmployeeID map, and the service-code map. Visits with no mapping (or no
+ * clock-out) are skipped and reported in the `X-Skipped` header rather than
+ * silently dropped. A valid config is REQUIRED — without it we 422 (mirrors the
+ * 837 download guard) so the operator knows to finish HHAeXchange setup first.
+ *
+ * Member ID = the client's import `external_id` (the source-system id, which is
+ * the HHAeXchange Member ID for imported clients), falling back to the client
+ * UUID for hand-entered clients.
+ */
+router.get('/hhaexchange.csv', requireCapability('billing.read'), async (req, res) => {
+  try {
+    const fromRaw = typeof req.query.from === 'string' ? req.query.from : undefined;
+    const toRaw = typeof req.query.to === 'string' ? req.query.to : undefined;
+    const isDate = (v: string | undefined) => !v || /^\d{4}-\d{2}-\d{2}(T.*)?$/.test(v);
+    if (!isDate(fromRaw) || !isDate(toRaw)) {
+      return res.status(400).json({ message: 'from / to must be YYYY-MM-DD or ISO 8601' });
+    }
+    const fromIso = fromRaw ? new Date(fromRaw).toISOString() : undefined;
+    const toIso = toRaw ? new Date(`${toRaw}T23:59:59.999Z`).toISOString() : undefined;
+
+    const db = req.app.get('db');
+    const config = await new AgencyHhaexchangeConfigRepository(db).findValid(req.auth.agencyId);
+    if (!config) {
+      return res.status(422).json({
+        message:
+          'HHAeXchange is not fully configured for this agency. Set the Tax ID, Provider ID, caregiver and service-code mappings before exporting.',
+      });
+    }
+
+    let q = db('evv_visits as v')
+      .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
+      .leftJoin('assignments as a', 'a.id', 'v.assignment_id')
+      .leftJoin('visit_templates as t', 't.id', 'a.visit_template_id')
+      .leftJoin('clients as c', 'c.id', db.raw('coalesce(v.client_id, t.client_id)'))
+      .where('u.agency_id', req.auth.agencyId)
+      .select(
+        'v.id as visit_id',
+        'v.caregiver_id',
+        'c.id as client_id',
+        'c.external_id as client_external_id',
+        'c.first_name as client_first_name',
+        'c.last_name as client_last_name',
+        'v.service_code',
+        'v.clock_in_time',
+        'v.clock_out_time',
+        'v.clock_in_location',
+        'v.clock_out_location',
+      )
+      .orderBy('v.clock_in_time', 'asc');
+    if (fromIso) q = q.andWhere('v.clock_in_time', '>=', fromIso);
+    if (toIso) q = q.andWhere('v.clock_in_time', '<=', toIso);
+    const rows = await q;
+
+    const toIso8601 = (v: unknown): string => {
+      if (!v) return '';
+      return v instanceof Date ? v.toISOString() : new Date(String(v)).toISOString();
+    };
+    const parseLoc = (loc: unknown): { lat?: number; lng?: number } => {
+      if (!loc) return {};
+      const obj = typeof loc === 'string' ? (JSON.parse(loc) as Record<string, unknown>) : (loc as Record<string, unknown>);
+      return { lat: obj.lat as number | undefined, lng: obj.lng as number | undefined };
+    };
+
+    const visits: HhaexchangeVisitInput[] = (rows as Record<string, unknown>[]).map((r) => {
+      const inLoc = parseLoc(r.clock_in_location);
+      const outLoc = parseLoc(r.clock_out_location);
+      return {
+        visitId: r.visit_id as string,
+        caregiverId: r.caregiver_id as string,
+        memberId: (r.client_external_id as string | null) ?? (r.client_id as string | null) ?? '',
+        clientFirstName: (r.client_first_name as string | null) ?? '',
+        clientLastName: (r.client_last_name as string | null) ?? '',
+        clockInIso: toIso8601(r.clock_in_time),
+        clockOutIso: r.clock_out_time ? toIso8601(r.clock_out_time) : null,
+        internalServiceCode: (r.service_code as string | null) ?? '',
+        clockInLat: inLoc.lat ?? 0,
+        clockInLng: inLoc.lng ?? 0,
+        clockOutLat: outLoc.lat ?? null,
+        clockOutLng: outLoc.lng ?? null,
+      };
+    });
+
+    const { rows: csvRows, skipped } = buildHhaexchangeExport(visits, config);
+    const body = toHhaexchangeCsv(csvRows);
+    const filename = `rayhealth-hhaexchange-${req.auth.agencyId.slice(0, 8)}-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+    res.setHeader('content-type', 'text/csv; charset=utf-8');
+    res.setHeader('content-disposition', `attachment; filename="${filename}"`);
+    res.setHeader('X-Skipped', String(skipped.length));
+    res.send(body);
+  } catch (err) {
+    safeError('hhaexchange.csv export failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * POST /exports/hhaexchange/submit  { from?, to? }
+ *
+ * HHAeXchange analogue of /sandata/submit. Marks every verified visit in the
+ * range as `submitted` to HHAeXchange. Only advances visits not already in the
+ * pipeline; never downgrades accepted/rejected.
+ */
+router.post('/hhaexchange/submit', requireCapability('billing.write'), async (req, res) => {
+  const parsed = submitSchema.safeParse(req.body ?? {});
+  if (!parsed.success || !isYmdOrIso(parsed.data.from) || !isYmdOrIso(parsed.data.to)) {
+    return res.status(400).json({ message: 'from / to must be YYYY-MM-DD or ISO 8601' });
+  }
+  try {
+    const { from, to } = parsed.data;
+    const fromIso = from ? new Date(from).toISOString() : undefined;
+    const toIso = to ? new Date(`${to.length === 10 ? `${to}T23:59:59.999Z` : to}`).toISOString() : undefined;
+
+    const db = req.app.get('db');
+    const marked = await new EvvRepository(db).markHhaexchangeSubmittedInRange(
+      req.auth.agencyId,
+      fromIso,
+      toIso,
+    );
+
+    try {
+      await new AuditEventRepository(db).create({
+        agencyId: req.auth.agencyId,
+        actorId: req.auth.userId,
+        actorType: 'user',
+        eventType: 'evv.hhaexchange.submitted',
+        entityType: 'evv_batch',
+        entityId: req.auth.agencyId,
+        outcome: 'success',
+        payload: { marked, from: from ?? null, to: to ?? null },
+        occurredAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      safeError('Failed to audit evv.hhaexchange.submitted', err);
+    }
+
+    res.json({ marked, from: from ?? null, to: to ?? null });
+  } catch (err) {
+    safeError('hhaexchange submit failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * POST /exports/hhaexchange/reconcile  { results: [{ visitId, status, confirmationId? }] }
+ *
+ * HHAeXchange analogue of /sandata/reconcile. Applies the aggregator's response
+ * back onto each visit; tenant-scoped; unknown ids counted as notFound.
+ */
+router.post('/hhaexchange/reconcile', requireCapability('billing.write'), async (req, res) => {
+  const parsed = reconcileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: 'results must be a non-empty array of { visitId, status }',
+      issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+    });
+  }
+  try {
+    const db = req.app.get('db');
+    const repo = new EvvRepository(db);
+
+    let updated = 0;
+    const notFound: string[] = [];
+    for (const r of parsed.data.results) {
+      const ok = await repo.markHhaexchangeSubmission(
+        r.visitId,
+        req.auth.agencyId,
+        r.status,
+        r.confirmationId ?? undefined,
+      );
+      if (ok) updated += 1;
+      else notFound.push(r.visitId);
+    }
+
+    try {
+      await new AuditEventRepository(db).create({
+        agencyId: req.auth.agencyId,
+        actorId: req.auth.userId,
+        actorType: 'user',
+        eventType: 'evv.hhaexchange.reconciled',
+        entityType: 'evv_batch',
+        entityId: req.auth.agencyId,
+        outcome: 'success',
+        payload: { updated, notFound: notFound.length },
+        occurredAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      safeError('Failed to audit evv.hhaexchange.reconciled', err);
+    }
+
+    res.json({ updated, notFound });
+  } catch (err) {
+    safeError('hhaexchange reconcile failed', err);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });

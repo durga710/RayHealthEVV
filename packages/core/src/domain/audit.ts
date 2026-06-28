@@ -40,6 +40,9 @@ export const auditEventTypes = [
   // batch as sent to the aggregator; `reconciled` records the aggregator's
   // accept/reject response written back onto each visit.
   'evv.sandata.submitted', 'evv.sandata.reconciled',
+  // HHAeXchange aggregator submission lifecycle — mirror of the Sandata pair
+  // for agencies routed through HHAeXchange instead of Sandata.
+  'evv.hhaexchange.submitted', 'evv.hhaexchange.reconciled',
   // Bulk migration import (clients / caregivers / authorizations CSV load).
   'data.imported',
   // ERA / 835 remittance posting (payer payment file matched back onto claims).

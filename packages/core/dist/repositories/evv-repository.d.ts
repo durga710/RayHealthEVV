@@ -66,5 +66,15 @@ export declare class EvvRepository {
      */
     markSandataSubmittedInRange(agencyId: string, fromIso?: string, toIso?: string): Promise<number>;
     markSandataSubmission(visitId: string, agencyId: string, status: 'pending' | 'submitted' | 'accepted' | 'rejected', confirmationId?: string | null): Promise<boolean>;
+    /**
+     * HHAeXchange analogue of {@link markSandataSubmittedInRange}. Bulk-advances
+     * every verified visit in the range that is not yet in the HHAeXchange
+     * pipeline (hhaexchange_status IS NULL or 'pending') to 'submitted'. Never
+     * downgrades an accepted/rejected/submitted row. Tenant-scoped. Returns the
+     * number of rows advanced.
+     */
+    markHhaexchangeSubmittedInRange(agencyId: string, fromIso?: string, toIso?: string): Promise<number>;
+    /** HHAeXchange analogue of {@link markSandataSubmission}. Tenant-scoped. */
+    markHhaexchangeSubmission(visitId: string, agencyId: string, status: 'pending' | 'submitted' | 'accepted' | 'rejected', confirmationId?: string | null): Promise<boolean>;
 }
 //# sourceMappingURL=evv-repository.d.ts.map

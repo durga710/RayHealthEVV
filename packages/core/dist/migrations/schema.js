@@ -418,6 +418,7 @@ export async function up(knex) {
             'claim.generated','claim.validated','claim.submitted','claim.status-changed',
             'payroll.exported',
             'evv.sandata.submitted','evv.sandata.reconciled',
+            'evv.hhaexchange.submitted','evv.hhaexchange.reconciled',
             'data.imported','claim.remittance.posted',
             'schedule.recurring.materialized'
           ));
@@ -1164,6 +1165,44 @@ export async function up(knex) {
         });
         await knex.raw(`create index if not exists assignments_recurring_schedule_id_idx
        on assignments (recurring_schedule_id)`);
+    }
+    // ── R20 — HHAeXchange aggregator submission tracking ──────────────────────
+    // Mirror of R7 (Sandata) for agencies whose state routes EVV through the
+    // HHAeXchange aggregator instead of Sandata. Same four-state lifecycle and
+    // the same exclusion from the immutability trigger — these columns change
+    // legitimately after clock-out when the export batch is submitted and the
+    // aggregator's accept/reject response is written back.
+    if (await knex.schema.hasTable('evv_visits')) {
+        if (!(await knex.schema.hasColumn('evv_visits', 'hhaexchange_status'))) {
+            await knex.schema.alterTable('evv_visits', (t) => {
+                t.string('hhaexchange_status').nullable();
+            });
+        }
+        if (!(await knex.schema.hasColumn('evv_visits', 'hhaexchange_confirmation_id'))) {
+            await knex.schema.alterTable('evv_visits', (t) => {
+                t.text('hhaexchange_confirmation_id').nullable();
+            });
+        }
+        await knex.raw(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+          WHERE table_schema = 'public'
+            AND table_name = 'evv_visits'
+            AND constraint_name = 'evv_visits_hhaexchange_status_check'
+        ) AND EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'evv_visits'
+            AND column_name = 'hhaexchange_status'
+        ) THEN
+          ALTER TABLE evv_visits
+            ADD CONSTRAINT evv_visits_hhaexchange_status_check
+            CHECK (hhaexchange_status IN ('pending','submitted','accepted','rejected'));
+        END IF;
+      END$$;
+    `);
     }
 }
 export async function down(knex) {

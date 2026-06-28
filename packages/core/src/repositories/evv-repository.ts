@@ -255,4 +255,56 @@ export class EvvRepository {
 
     return count > 0;
   }
+
+  /**
+   * HHAeXchange analogue of {@link markSandataSubmittedInRange}. Bulk-advances
+   * every verified visit in the range that is not yet in the HHAeXchange
+   * pipeline (hhaexchange_status IS NULL or 'pending') to 'submitted'. Never
+   * downgrades an accepted/rejected/submitted row. Tenant-scoped. Returns the
+   * number of rows advanced.
+   */
+  async markHhaexchangeSubmittedInRange(
+    agencyId: string,
+    fromIso?: string,
+    toIso?: string
+  ): Promise<number> {
+    const allowedIds = this.db('evv_visits as v')
+      .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
+      .where('u.agency_id', agencyId)
+      .andWhere('v.status', 'verified')
+      .andWhere((b) =>
+        b.whereNull('v.hhaexchange_status').orWhere('v.hhaexchange_status', 'pending')
+      );
+    if (fromIso) allowedIds.andWhere('v.clock_in_time', '>=', fromIso);
+    if (toIso) allowedIds.andWhere('v.clock_in_time', '<=', toIso);
+
+    const count = await this.db('evv_visits')
+      .whereIn('id', allowedIds.select('v.id'))
+      .update({ hhaexchange_status: 'submitted' });
+
+    return count;
+  }
+
+  /** HHAeXchange analogue of {@link markSandataSubmission}. Tenant-scoped. */
+  async markHhaexchangeSubmission(
+    visitId: string,
+    agencyId: string,
+    status: 'pending' | 'submitted' | 'accepted' | 'rejected',
+    confirmationId?: string | null
+  ): Promise<boolean> {
+    const allowedIds = this.db('evv_visits as v')
+      .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
+      .where('u.agency_id', agencyId)
+      .andWhere('v.id', visitId)
+      .select('v.id');
+
+    const count = await this.db('evv_visits')
+      .whereIn('id', allowedIds)
+      .update({
+        hhaexchange_status: status,
+        ...(confirmationId !== undefined ? { hhaexchange_confirmation_id: confirmationId } : {})
+      });
+
+    return count > 0;
+  }
 }

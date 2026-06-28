@@ -99,6 +99,40 @@ export function MedicaidWorkflowPage() {
     }
   };
 
+  // HHAeXchange aggregator submission (for agencies routed through HHAeXchange
+  // instead of Sandata; mirrors the Sandata lifecycle above).
+  const [hhaxFrom, setHhaxFrom] = useState<string>('');
+  const [hhaxTo, setHhaxTo] = useState<string>(todayIso());
+  const [hhaxSubmitting, setHhaxSubmitting] = useState(false);
+  const [hhaxMsg, setHhaxMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  const hhaxQuery = () => {
+    const params = new URLSearchParams();
+    if (hhaxFrom) params.set('from', hhaxFrom);
+    if (hhaxTo) params.set('to', hhaxTo);
+    const qs = params.toString();
+    return qs ? `?${qs}` : '';
+  };
+
+  const handleHhaxSubmit = async () => {
+    setHhaxSubmitting(true);
+    setHhaxMsg(null);
+    try {
+      const result = await postJson<{ marked: number }>('/api/exports/hhaexchange/submit', {
+        from: hhaxFrom || undefined,
+        to: hhaxTo || undefined,
+      });
+      setHhaxMsg({
+        kind: 'ok',
+        text: `${result.marked} verified visit${result.marked === 1 ? '' : 's'} marked as submitted to HHAeXchange.`,
+      });
+    } catch (err) {
+      setHhaxMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Submission failed' });
+    } finally {
+      setHhaxSubmitting(false);
+    }
+  };
+
   const load = async (effectiveAsOf: string) => {
     setLoading(true);
     setError(null);
@@ -397,6 +431,97 @@ export function MedicaidWorkflowPage() {
             }}
           >
             {submitMsg.text}
+          </div>
+        ) : null}
+      </div>
+
+      <div style={{ ...sectionCard, marginTop: '1rem' }}>
+        <h3 style={{ color: 'var(--color-text)', fontSize: '1rem', fontWeight: 800, margin: 0 }}>
+          State EVV aggregator (HHAeXchange)
+        </h3>
+        <p
+          style={{
+            color: 'var(--color-text-muted)',
+            fontSize: '0.9rem',
+            margin: '0.4rem 0 1rem',
+          }}
+        >
+          For agencies whose state routes EVV through HHAeXchange. The CSV uses your HHAeXchange
+          configuration (Tax ID, Provider ID, caregiver and service-code mappings) — configure it on{' '}
+          Agency Setup first or the download returns 422. Acceptance / rejection is written back via{' '}
+          <code>POST /api/exports/hhaexchange/reconcile</code>.
+        </p>
+
+        <div
+          style={{
+            alignItems: 'flex-end',
+            display: 'grid',
+            gap: '0.75rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            marginBottom: '1rem',
+          }}
+        >
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <span style={labelStyle}>From</span>
+            <input
+              type="date"
+              value={hhaxFrom}
+              onChange={(event) => setHhaxFrom(event.target.value)}
+              style={inputStyle}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <span style={labelStyle}>To</span>
+            <input
+              type="date"
+              value={hhaxTo}
+              onChange={(event) => setHhaxTo(event.target.value)}
+              style={inputStyle}
+            />
+          </label>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'center' }}>
+          <a
+            href={`/api/exports/hhaexchange.csv${hhaxQuery()}`}
+            style={{
+              ...primaryButtonStyle,
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text)',
+              textDecoration: 'none',
+            }}
+          >
+            Download HHAeXchange CSV
+          </a>
+          <button
+            type="button"
+            onClick={handleHhaxSubmit}
+            disabled={hhaxSubmitting}
+            style={{ ...primaryButtonStyle, opacity: hhaxSubmitting ? 0.55 : 1 }}
+          >
+            {hhaxSubmitting ? 'Marking…' : 'Mark batch submitted'}
+          </button>
+        </div>
+
+        {hhaxMsg ? (
+          <div
+            role={hhaxMsg.kind === 'err' ? 'alert' : 'status'}
+            style={{
+              backgroundColor:
+                hhaxMsg.kind === 'err' ? 'var(--color-danger-bg)' : 'var(--color-success-bg, #ecfdf5)',
+              border: `1px solid ${
+                hhaxMsg.kind === 'err' ? 'var(--color-danger-border)' : 'var(--color-success-border, #a7f3d0)'
+              }`,
+              borderRadius: 10,
+              color: hhaxMsg.kind === 'err' ? 'var(--color-danger)' : 'var(--color-success, #047857)',
+              fontSize: '0.9rem',
+              fontWeight: 700,
+              marginTop: '1rem',
+              padding: '0.75rem 1rem',
+            }}
+          >
+            {hhaxMsg.text}
           </div>
         ) : null}
       </div>
