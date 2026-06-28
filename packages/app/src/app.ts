@@ -40,6 +40,7 @@ import supportRoutes from './routes/support-routes.js';
 import complianceEngineRoutes from './routes/compliance-engine-routes.js';
 import exportRoutes from './routes/export-routes.js';
 import importRoutes from './routes/import-routes.js';
+import recurringScheduleRoutes from './routes/recurring-schedule-routes.js';
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 
@@ -220,6 +221,7 @@ export function createApp() {
     app.use(`${prefix}/authorizations`, authorizationRoutes);
     app.use(`${prefix}/templates`, templateRoutes);
     app.use(`${prefix}/assignments`, assignmentRoutes);
+    app.use(`${prefix}/recurring-schedules`, recurringScheduleRoutes);
     app.use(`${prefix}/evv`, evvRoutes);
     app.use(`${prefix}/mobile`, mobileRoutes);
     app.use(`${prefix}/maintenance`, maintenanceRoutes);

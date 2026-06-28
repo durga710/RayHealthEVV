@@ -438,7 +438,8 @@ export async function up(knex: Knex): Promise<void> {
             'claim.generated','claim.validated','claim.submitted','claim.status-changed',
             'payroll.exported',
             'evv.sandata.submitted','evv.sandata.reconciled',
-            'data.imported','claim.remittance.posted'
+            'data.imported','claim.remittance.posted',
+            'schedule.recurring.materialized'
           ));
       END IF;
     END$$;
@@ -1189,6 +1190,49 @@ export async function up(knex: Knex): Promise<void> {
       table.index(['agency_id']);
       table.index(['claim_id']);
     });
+  }
+
+  // ── R19 — Recurring schedules ──────────────────────────────────────────────
+  // A recurring schedule is a weekly visit pattern (which caregiver, which
+  // visit template/client, which days-of-week + time, over a date range). The
+  // materializer expands it into concrete `assignments` for a rolling horizon,
+  // running each occurrence through the same conflict + credential checks as a
+  // manual assignment. `assignments.recurring_schedule_id` links a generated
+  // assignment back to its pattern (traceability + idempotent re-materialize).
+  if (!(await knex.schema.hasTable('recurring_schedules'))) {
+    await knex.schema.createTable('recurring_schedules', (table) => {
+      table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+      table.uuid('agency_id').references('id').inTable('agencies').notNullable().onDelete('CASCADE');
+      table.uuid('caregiver_id').notNullable();
+      table.uuid('visit_template_id').references('id').inTable('visit_templates').notNullable().onDelete('CASCADE');
+      // days_of_week: JSON array of ints 0(Sun)..6(Sat).
+      table.jsonb('days_of_week').notNullable().defaultTo('[]');
+      table.string('start_time', 5).notNullable(); // 'HH:MM'
+      table.string('end_time', 5).notNullable(); // 'HH:MM'
+      table.date('start_date').notNullable();
+      table.date('end_date').notNullable();
+      table.string('status', 12).notNullable().defaultTo('active'); // active | paused | ended
+      table.timestamps(true, true);
+      table.index(['agency_id', 'status']);
+      table.index(['caregiver_id']);
+    });
+    await knex.raw(
+      `ALTER TABLE recurring_schedules ADD CONSTRAINT recurring_schedules_status_check
+       CHECK (status IN ('active','paused','ended'))`,
+    );
+  }
+
+  if (
+    (await knex.schema.hasTable('assignments')) &&
+    !(await knex.schema.hasColumn('assignments', 'recurring_schedule_id'))
+  ) {
+    await knex.schema.alterTable('assignments', (t) => {
+      t.uuid('recurring_schedule_id').nullable();
+    });
+    await knex.raw(
+      `create index if not exists assignments_recurring_schedule_id_idx
+       on assignments (recurring_schedule_id)`,
+    );
   }
 }
 

@@ -43,6 +43,8 @@ export const auditEventTypes = [
     'data.imported',
     // ERA / 835 remittance posting (payer payment file matched back onto claims).
     'claim.remittance.posted',
+    // Recurring schedule materialized into concrete assignments for a horizon.
+    'schedule.recurring.materialized',
 ];
 export const auditOutcomes = ['success', 'failure', 'denied'];
 export const auditActorTypes = ['user', 'service', 'system'];

@@ -19,6 +19,7 @@ const AuthorizationsPage = lazy(() => import('./features/authorizations/Authoriz
 const ImportPage = lazy(() => import('./features/import/ImportPage.js').then((m) => ({ default: m.ImportPage })));
 const TemplatesPage = lazy(() => import('./features/scheduling/TemplatesPage.js').then((m) => ({ default: m.TemplatesPage })));
 const AssignmentsPage = lazy(() => import('./features/scheduling/AssignmentsPage.js').then((m) => ({ default: m.AssignmentsPage })));
+const RecurringSchedulesPage = lazy(() => import('./features/scheduling/RecurringSchedulesPage.js').then((m) => ({ default: m.RecurringSchedulesPage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage.js').then((m) => ({ default: m.LoginPage })));
 const SignupPage = lazy(() => import('./features/auth/SignupPage.js').then((m) => ({ default: m.SignupPage })));
 const AcceptInvitePage = lazy(() => import('./features/auth/AcceptInvitePage.js').then((m) => ({ default: m.AcceptInvitePage })));
@@ -284,6 +285,7 @@ const navGroupDefs: NavGroupDef[] = [
     items: [
       { to: '/admin/templates', label: 'Templates', icon: icons.templates },
       { to: '/admin/assignments', label: 'Assignments', icon: icons.assignments },
+      { to: '/admin/recurring-schedules', label: 'Recurring', icon: icons.assignments },
     ],
   },
   {
@@ -494,6 +496,7 @@ export function App() {
           <Route path="import" element={<ImportPage />} />
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="assignments" element={<AssignmentsPage />} />
+          <Route path="recurring-schedules" element={<RecurringSchedulesPage />} />
           <Route path="review" element={<VisitReviewPage />} />
           <Route path="audit-events" element={<AuditEventsPage />} />
           <Route path="audit-retention" element={<AuditRetentionPage />} />
