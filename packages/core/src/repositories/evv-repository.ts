@@ -204,6 +204,36 @@ export class EvvRepository {
    * Tenant-scoped via the caregiver → users → agency join so a rogue caller
    * cannot update a visit from a different agency.
    */
+  /**
+   * Bulk-mark every verified visit in a date range as `submitted` — the
+   * write-back for "this batch was sent to the Sandata aggregator". Only
+   * advances visits that are not yet in the aggregator pipeline
+   * (sandata_status IS NULL or 'pending'); never downgrades an already
+   * accepted/rejected/submitted row. Tenant-scoped via the caregiver → users
+   * → agency join. Returns the number of rows advanced.
+   */
+  async markSandataSubmittedInRange(
+    agencyId: string,
+    fromIso?: string,
+    toIso?: string
+  ): Promise<number> {
+    const allowedIds = this.db('evv_visits as v')
+      .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
+      .where('u.agency_id', agencyId)
+      .andWhere('v.status', 'verified')
+      .andWhere((b) =>
+        b.whereNull('v.sandata_status').orWhere('v.sandata_status', 'pending')
+      );
+    if (fromIso) allowedIds.andWhere('v.clock_in_time', '>=', fromIso);
+    if (toIso) allowedIds.andWhere('v.clock_in_time', '<=', toIso);
+
+    const count = await this.db('evv_visits')
+      .whereIn('id', allowedIds.select('v.id'))
+      .update({ sandata_status: 'submitted' });
+
+    return count;
+  }
+
   async markSandataSubmission(
     visitId: string,
     agencyId: string,

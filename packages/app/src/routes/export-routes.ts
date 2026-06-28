@@ -1,9 +1,30 @@
 import { Router } from 'express';
-import { EvvRepository } from '@rayhealth/core';
+import { z } from 'zod';
+import { AuditEventRepository, EvvRepository } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 import { safeError } from '../security/safe-log.js';
 
 const router = Router();
+
+const isYmdOrIso = (v: string | undefined) => !v || /^\d{4}-\d{2}-\d{2}(T.*)?$/.test(v);
+
+const submitSchema = z.object({
+  from: z.string().optional(),
+  to: z.string().optional(),
+});
+
+const reconcileSchema = z.object({
+  results: z
+    .array(
+      z.object({
+        visitId: z.string().uuid(),
+        status: z.enum(['pending', 'submitted', 'accepted', 'rejected']),
+        confirmationId: z.string().max(128).nullable().optional(),
+      }),
+    )
+    .min(1)
+    .max(1000),
+});
 
 /** Escape one CSV cell per RFC 4180. */
 function csvCell(value: unknown): string {
@@ -21,7 +42,7 @@ function csvCell(value: unknown): string {
  * records this as a PHI read (path matches /exports, treated as PHI in
  * audit-log's PHI_GET_PATHS in a follow-up update if not already).
  */
-router.get('/visits.csv', requireCapability('schedule.read'), async (req, res) => {
+router.get('/visits.csv', requireCapability('billing.read'), async (req, res) => {
   try {
     const fromRaw = typeof req.query.from === 'string' ? req.query.from : undefined;
     const toRaw = typeof req.query.to === 'string' ? req.query.to : undefined;
@@ -105,7 +126,7 @@ router.get('/visits.csv', requireCapability('schedule.read'), async (req, res) =
  * end-to-end with their account managers; the missing pieces above are
  * tracked in docs/RELEASE_PREP_GAPS.md MED-priority items.
  */
-router.get('/sandata.csv', requireCapability('schedule.read'), async (req, res) => {
+router.get('/sandata.csv', requireCapability('billing.read'), async (req, res) => {
   try {
     const fromRaw = typeof req.query.from === 'string' ? req.query.from : undefined;
     const toRaw = typeof req.query.to === 'string' ? req.query.to : undefined;
@@ -233,6 +254,111 @@ router.get('/sandata.csv', requireCapability('schedule.read'), async (req, res) 
     res.send(body);
   } catch (err) {
     safeError('sandata.csv export failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * POST /exports/sandata/submit  { from?, to? }
+ *
+ * Marks every verified visit in the date range as `submitted` to the state
+ * EVV aggregator — the write-back that records "this batch was sent to
+ * Sandata". Until a visit reaches `accepted`, claim generation flags it at
+ * medium denial risk; this is the first step of that lifecycle. Only advances
+ * visits not already in the pipeline (never downgrades accepted/rejected).
+ */
+router.post('/sandata/submit', requireCapability('billing.write'), async (req, res) => {
+  const parsed = submitSchema.safeParse(req.body ?? {});
+  if (!parsed.success || !isYmdOrIso(parsed.data.from) || !isYmdOrIso(parsed.data.to)) {
+    return res.status(400).json({ message: 'from / to must be YYYY-MM-DD or ISO 8601' });
+  }
+  try {
+    const { from, to } = parsed.data;
+    const fromIso = from ? new Date(from).toISOString() : undefined;
+    const toIso = to ? new Date(`${to.length === 10 ? `${to}T23:59:59.999Z` : to}`).toISOString() : undefined;
+
+    const db = req.app.get('db');
+    const marked = await new EvvRepository(db).markSandataSubmittedInRange(
+      req.auth.agencyId,
+      fromIso,
+      toIso,
+    );
+
+    try {
+      await new AuditEventRepository(db).create({
+        agencyId: req.auth.agencyId,
+        actorId: req.auth.userId,
+        actorType: 'user',
+        eventType: 'evv.sandata.submitted',
+        entityType: 'evv_batch',
+        entityId: req.auth.agencyId,
+        outcome: 'success',
+        payload: { marked, from: from ?? null, to: to ?? null },
+        occurredAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      safeError('Failed to audit evv.sandata.submitted', err);
+    }
+
+    res.json({ marked, from: from ?? null, to: to ?? null });
+  } catch (err) {
+    safeError('sandata submit failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * POST /exports/sandata/reconcile  { results: [{ visitId, status, confirmationId? }] }
+ *
+ * Applies the aggregator's response file back onto each visit — typically
+ * `accepted` (clears the denial-risk flag) or `rejected` (raises it to high).
+ * Each update is tenant-scoped inside the repository; unknown / cross-agency
+ * visit ids are counted as `notFound` rather than failing the whole batch.
+ */
+router.post('/sandata/reconcile', requireCapability('billing.write'), async (req, res) => {
+  const parsed = reconcileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: 'results must be a non-empty array of { visitId, status }',
+      issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+    });
+  }
+  try {
+    const db = req.app.get('db');
+    const repo = new EvvRepository(db);
+
+    let updated = 0;
+    const notFound: string[] = [];
+    for (const r of parsed.data.results) {
+      const ok = await repo.markSandataSubmission(
+        r.visitId,
+        req.auth.agencyId,
+        r.status,
+        r.confirmationId ?? undefined,
+      );
+      if (ok) updated += 1;
+      else notFound.push(r.visitId);
+    }
+
+    try {
+      await new AuditEventRepository(db).create({
+        agencyId: req.auth.agencyId,
+        actorId: req.auth.userId,
+        actorType: 'user',
+        eventType: 'evv.sandata.reconciled',
+        entityType: 'evv_batch',
+        entityId: req.auth.agencyId,
+        outcome: 'success',
+        payload: { updated, notFound: notFound.length },
+        occurredAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      safeError('Failed to audit evv.sandata.reconciled', err);
+    }
+
+    res.json({ updated, notFound });
+  } catch (err) {
+    safeError('sandata reconcile failed', err);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });

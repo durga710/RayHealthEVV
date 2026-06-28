@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getJson } from '../../lib/api-client.js';
+import { getJson, postJson } from '../../lib/api-client.js';
 import {
   ComplianceEmptyQueue,
   ComplianceModuleLayout,
@@ -65,6 +65,39 @@ export function MedicaidWorkflowPage() {
   const [snapshot, setSnapshot] = useState<MedicaidWorkflowResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sandata aggregator submission
+  const [sandataFrom, setSandataFrom] = useState<string>('');
+  const [sandataTo, setSandataTo] = useState<string>(todayIso());
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMsg, setSubmitMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  const sandataQuery = () => {
+    const params = new URLSearchParams();
+    if (sandataFrom) params.set('from', sandataFrom);
+    if (sandataTo) params.set('to', sandataTo);
+    const qs = params.toString();
+    return qs ? `?${qs}` : '';
+  };
+
+  const handleSandataSubmit = async () => {
+    setSubmitting(true);
+    setSubmitMsg(null);
+    try {
+      const result = await postJson<{ marked: number }>('/api/exports/sandata/submit', {
+        from: sandataFrom || undefined,
+        to: sandataTo || undefined,
+      });
+      setSubmitMsg({
+        kind: 'ok',
+        text: `${result.marked} verified visit${result.marked === 1 ? '' : 's'} marked as submitted to Sandata.`,
+      });
+    } catch (err) {
+      setSubmitMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Submission failed' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const load = async (effectiveAsOf: string) => {
     setLoading(true);
@@ -264,6 +297,109 @@ export function MedicaidWorkflowPage() {
           />
         </div>
       ) : null}
+
+      <div style={{ ...sectionCard, marginTop: '1rem' }}>
+        <h3 style={{ color: 'var(--color-text)', fontSize: '1rem', fontWeight: 800, margin: 0 }}>
+          State EVV aggregator (Sandata)
+        </h3>
+        <p
+          style={{
+            color: 'var(--color-text-muted)',
+            fontSize: '0.9rem',
+            margin: '0.4rem 0 1rem',
+          }}
+        >
+          Download the Sandata submission file for a date range, then record that the batch was
+          sent. Until a visit is accepted by the aggregator, claim generation flags it at medium
+          denial risk. Acceptance / rejection is written back from Sandata&apos;s response file via{' '}
+          <code>POST /api/exports/sandata/reconcile</code>.
+        </p>
+
+        <div
+          style={{
+            alignItems: 'flex-end',
+            display: 'grid',
+            gap: '0.75rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            marginBottom: '1rem',
+          }}
+        >
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <span style={labelStyle}>From</span>
+            <input
+              type="date"
+              value={sandataFrom}
+              onChange={(event) => setSandataFrom(event.target.value)}
+              style={inputStyle}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <span style={labelStyle}>To</span>
+            <input
+              type="date"
+              value={sandataTo}
+              onChange={(event) => setSandataTo(event.target.value)}
+              style={inputStyle}
+            />
+          </label>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'center' }}>
+          <a
+            href={`/api/exports/sandata.csv${sandataQuery()}`}
+            style={{
+              ...primaryButtonStyle,
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text)',
+              textDecoration: 'none',
+            }}
+          >
+            Download Sandata CSV
+          </a>
+          <a
+            href={`/api/exports/visits.csv${sandataQuery()}`}
+            style={{
+              ...primaryButtonStyle,
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text)',
+              textDecoration: 'none',
+            }}
+          >
+            Download visits CSV
+          </a>
+          <button
+            type="button"
+            onClick={handleSandataSubmit}
+            disabled={submitting}
+            style={{ ...primaryButtonStyle, opacity: submitting ? 0.55 : 1 }}
+          >
+            {submitting ? 'Marking…' : 'Mark batch submitted'}
+          </button>
+        </div>
+
+        {submitMsg ? (
+          <div
+            role={submitMsg.kind === 'err' ? 'alert' : 'status'}
+            style={{
+              backgroundColor:
+                submitMsg.kind === 'err' ? 'var(--color-danger-bg)' : 'var(--color-success-bg, #ecfdf5)',
+              border: `1px solid ${
+                submitMsg.kind === 'err' ? 'var(--color-danger-border)' : 'var(--color-success-border, #a7f3d0)'
+              }`,
+              borderRadius: 10,
+              color: submitMsg.kind === 'err' ? 'var(--color-danger)' : 'var(--color-success, #047857)',
+              fontSize: '0.9rem',
+              fontWeight: 700,
+              marginTop: '1rem',
+              padding: '0.75rem 1rem',
+            }}
+          >
+            {submitMsg.text}
+          </div>
+        ) : null}
+      </div>
     </ComplianceModuleLayout>
   );
 }

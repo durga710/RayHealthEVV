@@ -416,7 +416,8 @@ export async function up(knex) {
             'copilot.query','copilot.action.confirmed','copilot.action.declined',
             'copilot.reminder.sent',
             'claim.generated','claim.validated','claim.submitted','claim.status-changed',
-            'payroll.exported'
+            'payroll.exported',
+            'evv.sandata.submitted','evv.sandata.reconciled'
           ));
       END IF;
     END$$;

@@ -36,6 +36,10 @@ export const auditEventTypes = [
   // Billing / claims lifecycle.
   'claim.generated', 'claim.validated', 'claim.submitted', 'claim.status-changed',
   'payroll.exported',
+  // State EVV aggregator (Sandata) submission lifecycle. `submitted` marks a
+  // batch as sent to the aggregator; `reconciled` records the aggregator's
+  // accept/reject response written back onto each visit.
+  'evv.sandata.submitted', 'evv.sandata.reconciled',
 ] as const;
 
 export const auditOutcomes = ['success', 'failure', 'denied'] as const;
