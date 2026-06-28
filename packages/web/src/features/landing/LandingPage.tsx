@@ -22,7 +22,7 @@ const ic = (d: React.ReactNode) => (
 
 const capabilities = [
   {
-    span: 'wide', live: true, kicker: 'Automation',
+    span: 'wide', live: false, kicker: 'Automation',
     title: 'AI that clears the busywork',
     body: 'Draft the week from open authorizations, triage EVV exceptions before they become denials, and flag claims that are ready to bill — the platform proposes, your coordinators approve.',
     icon: ic(<><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" /></>),
@@ -180,6 +180,8 @@ const CSS = `
 .rh h1,.rh h2,.rh h3,.rh h4{color:var(--ink); margin:0; font-weight:600; letter-spacing:-0.02em;}
 .rh p{margin:0;}
 .rh :where(a){text-decoration:none; color:inherit;}
+html{scroll-behavior:smooth;}
+.rh [id]{scroll-margin-top:88px;}
 .rh-wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
 
 /* buttons */
@@ -217,7 +219,8 @@ const CSS = `
 .rh-heroin{position:relative; max-width:var(--maxw); margin:0 auto; padding:72px 24px 0; display:grid; grid-template-columns:1.02fr .98fr; gap:56px; align-items:center;}
 .rh-herotext{max-width:34rem;}
 .rh-eyebrow{display:inline-flex; align-items:center; gap:.5rem; padding:.4rem .8rem .4rem .55rem; border-radius:999px; background:var(--paper); border:1px solid var(--line-2); font-size:.78rem; font-weight:550; color:var(--ink-soft); box-shadow:0 1px 2px rgba(10,20,15,.03);}
-.rh-eyebrow .pip{width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 0 4px var(--accent2-tint);}
+.rh-eyebrow .pip{width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 0 0 rgba(238,108,44,.45); animation:rh-pip 2.4s ease-out infinite;}
+@keyframes rh-pip{0%{box-shadow:0 0 0 0 rgba(238,108,44,.45);}70%{box-shadow:0 0 0 7px rgba(238,108,44,0);}100%{box-shadow:0 0 0 0 rgba(238,108,44,0);}}
 .rh-display{margin:22px 0 0; font-size:clamp(2.4rem,4.4vw,3.4rem); line-height:1.05; letter-spacing:-0.035em; font-weight:600; color:var(--ink); text-wrap:balance;}
 .rh-display .em{color:var(--accent-deep);}
 .rh-sublede{margin:20px 0 0; max-width:46ch; font-size:1.125rem; line-height:1.6; color:var(--body);}
@@ -341,7 +344,8 @@ const CSS = `
 
 /* audiences */
 .rh-aud{max-width:var(--maxw); margin:44px auto 0; padding:0 24px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
-.rh-audcard{border:1px solid var(--line); border-radius:16px; padding:28px; background:var(--paper);}
+.rh-audcard{border:1px solid var(--line); border-radius:16px; padding:28px; background:var(--paper); transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;}
+.rh-audcard:hover{border-color:var(--line-2); box-shadow:0 18px 40px -28px rgba(10,30,20,.4); transform:translateY(-2px);}
 .rh-audcard h3{font-size:1.0625rem; letter-spacing:-.02em;}
 .rh-audcard p{margin-top:8px; font-size:.92rem; line-height:1.6; color:var(--body);}
 .rh-audlist{margin:16px 0 0; padding:16px 0 0; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:11px;}
@@ -475,7 +479,7 @@ const CSS = `
 /* reveal */
 .rh-rv{opacity:0; transform:translateY(16px); transition:opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1);}
 .rh-rv.in{opacity:1; transform:none;}
-@media(prefers-reduced-motion:reduce){ .rh-rv{opacity:1; transform:none; transition:none;} .rh-btn,.rh-cell{transition:none;} }
+@media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} .rh-rv{opacity:1; transform:none; transition:none;} .rh-btn,.rh-cell,.rh-audcard,.rh-rescard{transition:none;} .rh-eyebrow .pip{animation:none;} }
 `;
 
 export function LandingPage() {
