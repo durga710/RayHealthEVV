@@ -3,9 +3,11 @@ import { requireCapability } from '../middleware/require-capability.js';
 import {
   AuditEventRepository,
   ClientRepository,
+  EvvExceptionRepository,
   EvvRepository,
   ScheduleRepository,
   checkGeofence,
+  detectVisitExceptions,
   evvClockInInputSchema,
   evvClockOutInputSchema,
   evvServiceCodeSchema,
@@ -195,14 +197,71 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
       }
     }
 
+    const clockOutTime = new Date().toISOString();
+
+    // Best-effort scheduled-start lookup for late-clock-in detection.
+    let scheduledStartTime: string | null = null;
+    try {
+      const assignmentRow = await db('assignments')
+        .where({ id: existing.assignmentId })
+        .first('scheduled_start_time');
+      const raw = assignmentRow?.scheduled_start_time;
+      scheduledStartTime = raw ? new Date(raw).toISOString() : null;
+    } catch (err) {
+      safeError('Failed to load scheduled start for late-clock-in detection', err);
+    }
+
+    // Run the six-element / timing compliance check on the completed visit.
+    // Real exceptions (missing or degraded GPS, late clock-in) flag the visit
+    // and file rows into the exception queue instead of rubber-stamping it
+    // 'verified'. A clean visit verifies as before.
+    const completedVisit = {
+      ...existing,
+      clockOutTime,
+      clockOutLocation: parsed.data.location
+    };
+    const detected = detectVisitExceptions(completedVisit, { scheduledStartTime });
+    const status = detected.length > 0 ? 'flagged' : 'verified';
+
     // updateVisit returns null when the visit is on another tenant OR does
     // not exist. Both surface as 404 — we never confirm cross-tenant existence.
     const visit = await repo.updateVisit(id.data, req.auth.agencyId, {
-      clockOutTime: new Date().toISOString(),
+      clockOutTime,
       clockOutLocation: parsed.data.location,
-      status: 'verified'
+      status
     });
     if (!visit) return res.status(404).json({ message: 'Visit not found' });
+
+    // Persist exceptions + audit the flagging. Best-effort: a logging failure
+    // must not roll back an already-recorded visit.
+    if (detected.length > 0) {
+      try {
+        const exceptionRepo = new EvvExceptionRepository(db);
+        for (const ex of detected) {
+          await exceptionRepo.create({
+            visitId: id.data,
+            exceptionType: ex.exceptionType,
+            reason: ex.reason
+          });
+        }
+        await new AuditEventRepository(db).create({
+          agencyId: req.auth.agencyId,
+          actorId: req.auth.userId,
+          actorType: 'user',
+          eventType: 'exception.filed',
+          entityType: 'evv.visit',
+          entityId: id.data,
+          outcome: 'success',
+          payload: {
+            exceptions: detected.map((e) => ({ type: e.exceptionType, reason: e.reason }))
+          },
+          occurredAt: new Date().toISOString()
+        });
+      } catch (err) {
+        safeError('Failed to persist EVV exceptions', err);
+      }
+    }
+
     res.json(visit);
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });

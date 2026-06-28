@@ -41,10 +41,12 @@ export function AICopilotPanel({ userRole }: AICopilotPanelProps): ReactElement 
     let cancelled = false;
     (async () => {
       try {
-        const response = await getJson<ApiResponse<AgencyFeatures>>('/api/agencies/me/features');
+        // Source of truth for the copilot add-on flag is the copilot status
+        // endpoint (returns { enabled, plan }); map it into the feature shape.
+        const response = await getJson<ApiResponse<AiCopilotFlag>>('/api/copilot/status');
         if (cancelled) return;
         if (response.success && response.data) {
-          setFeatures(response.data);
+          setFeatures({ aiCopilot: { enabled: response.data.enabled, plan: response.data.plan } });
         } else {
           // Failed to load — assume off (safe default).
           setFeatures({ aiCopilot: { enabled: false, plan: 'off' } });

@@ -36,7 +36,7 @@ export function LearningDashboardPage() {
     let cancelled = false;
     (async () => {
       try {
-        const response = await getJson<ApiResponse<LearningAgencyRollup>>('/api/learning/dashboard');
+        const response = await getJson<ApiResponse<LearningAgencyRollup>>('/api/learning/rollup');
         if (cancelled) return;
         if (response.success && response.data) {
           setRollup(response.data);

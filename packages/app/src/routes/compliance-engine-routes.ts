@@ -439,7 +439,7 @@ router.get(
  */
 router.get(
   '/claims/overview',
-  requireCapability('audit.read'),
+  requireCapability('billing.read'),
   async (req, res) => {
     try {
       if (!req.auth.agencyId) {
@@ -474,7 +474,7 @@ router.get(
  */
 router.get(
   '/payroll/overview',
-  requireCapability('audit.read'),
+  requireCapability('billing.read'),
   async (req, res) => {
     try {
       if (!req.auth.agencyId) {

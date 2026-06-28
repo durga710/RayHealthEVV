@@ -347,7 +347,7 @@ router.get('/credentials/overview', requireCapability('staff.read'), async (req,
  * claim-ready, flagged = not-ready, pending = in-flight). Capability `evv.read`
  * (admin + coordinator). Policy block echoes the 7-day Sandata submission window.
  */
-router.get('/claims/overview', requireCapability('audit.read'), async (req, res) => {
+router.get('/claims/overview', requireCapability('billing.read'), async (req, res) => {
     try {
         if (!req.auth.agencyId) {
             return res.status(403).json({ message: 'Agency context required' });
@@ -376,7 +376,7 @@ router.get('/claims/overview', requireCapability('audit.read'), async (req, res)
  * verified hours in the trailing 7 / 30 days, completed visits in 7 days,
  * and currently in-progress shifts. Capability `evv.read` (admin + coordinator).
  */
-router.get('/payroll/overview', requireCapability('audit.read'), async (req, res) => {
+router.get('/payroll/overview', requireCapability('billing.read'), async (req, res) => {
     try {
         if (!req.auth.agencyId) {
             return res.status(403).json({ message: 'Agency context required' });

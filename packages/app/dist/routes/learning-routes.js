@@ -68,6 +68,43 @@ router.get('/analytics', requireCapability('staff.read'), async (req, res) => {
         res.status(500).json({ success: false, error: message });
     }
 });
+// GET /learning/courses/:id/caregivers — enrollment roster for one course (admin/coordinator)
+router.get('/courses/:id/caregivers', requireCapability('staff.read'), async (req, res) => {
+    try {
+        const db = req.app.get('db');
+        const repo = new LearningRepository(db);
+        const envelope = await repo.getCourseCaregivers(String(req.params.id), req.auth.agencyId);
+        if (!envelope) {
+            return res.status(404).json({ success: false, error: 'course not found' });
+        }
+        res.json({ success: true, data: envelope });
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : 'unexpected error';
+        res.status(500).json({ success: false, error: message });
+    }
+});
+// GET /learning/caregivers/:id — one caregiver's training progress (admin/coordinator).
+// Agency-scoped: the caregiver must belong to the caller's agency.
+router.get('/caregivers/:id', requireCapability('staff.read'), async (req, res) => {
+    try {
+        const db = req.app.get('db');
+        const caregiverId = String(req.params.id);
+        const owned = await db('caregivers')
+            .where({ id: caregiverId, agency_id: req.auth.agencyId })
+            .first('id');
+        if (!owned) {
+            return res.status(404).json({ success: false, error: 'caregiver not found' });
+        }
+        const repo = new LearningRepository(db);
+        const progress = await repo.getCaregiverProgress(caregiverId);
+        res.json({ success: true, data: progress });
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : 'unexpected error';
+        res.status(500).json({ success: false, error: message });
+    }
+});
 // POST /learning/enroll — coordinator enrolls a caregiver in a course
 router.post('/enroll', requireCapability('staff.write'), async (req, res) => {
     try {
