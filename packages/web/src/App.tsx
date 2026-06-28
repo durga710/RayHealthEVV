@@ -1,65 +1,109 @@
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { NavLink, Link, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from './lib/AuthContext.js';
-import { AgencySetupPage } from './features/agency/AgencySetupPage.js';
-import { StaffPage } from './features/staff/StaffPage.js';
-import { ClientsPage } from './features/clients/ClientsPage.js';
-import { AuthorizationsPage } from './features/authorizations/AuthorizationsPage.js';
-import { TemplatesPage } from './features/scheduling/TemplatesPage.js';
-import { AssignmentsPage } from './features/scheduling/AssignmentsPage.js';
-import { LoginPage } from './features/auth/LoginPage.js';
-import { SignupPage } from './features/auth/SignupPage.js';
-import { AcceptInvitePage } from './features/auth/AcceptInvitePage.js';
-import { ForgotPasswordPage } from './features/auth/ForgotPasswordPage.js';
-import { ResetPasswordPage } from './features/auth/ResetPasswordPage.js';
-import { CaregiverLayout } from './features/caregiver/CaregiverLayout.js';
-import { CaregiverDashboard } from './features/caregiver/CaregiverDashboard.js';
-import { CaregiverSchedulePage } from './features/caregiver/CaregiverSchedulePage.js';
-import { CaregiverVisitsPage } from './features/caregiver/CaregiverVisitsPage.js';
-import { CaregiverLearningHubPage } from './features/caregiver/CaregiverLearningHubPage.js';
-import { CaregiverTrainingPage } from './features/caregiver/CaregiverTrainingPage.js';
-import { CourseDetailPage } from './features/caregiver/CourseDetailPage.js';
+
+// Eager: public LCP route (must paint instantly + keep App.test.tsx green),
+// shared layout wrappers, and the floating assistant utility used inside the
+// admin layout. Everything else is route-level code-split below.
 import { LandingPage } from './features/landing/LandingPage.js';
-import { VisitReviewPage } from './features/evv/VisitReviewPage.js';
-import { PricingPage } from './features/marketing/site/PricingPage.js';
-import { ContactPage } from './features/marketing/site/ContactPage.js';
-import { DemoPage } from './features/marketing/site/DemoPage.js';
-import { LaunchPage } from './features/marketing/site/LaunchPage.js';
-import { AdsPage } from './features/marketing/site/AdsPage.js';
-import { StatusPage } from './features/marketing/site/StatusPage.js';
-import { PrivacyPage } from './features/marketing/site/PrivacyPage.js';
-import { SchedulingPage } from './features/marketing/site/SchedulingPage.js';
-import { EvvSolutionPage } from './features/marketing/site/EvvSolutionPage.js';
-import { BillingPayrollPage } from './features/marketing/site/BillingPayrollPage.js';
-import { WorkforceTrainingPage } from './features/marketing/site/WorkforceTrainingPage.js';
-import { AiAutomationPage } from './features/marketing/site/AiAutomationPage.js';
-import { CompliancePlatformPage } from './features/marketing/site/CompliancePlatformPage.js';
-import { EvvGuidePage } from './features/marketing/site/EvvGuidePage.js';
-import { TaskCodesPage } from './features/marketing/site/TaskCodesPage.js';
-import { AuditChecklistPage } from './features/marketing/site/AuditChecklistPage.js';
+import { CaregiverLayout } from './features/caregiver/CaregiverLayout.js';
 import { AdminAssistant } from './features/support/AdminAssistant.js';
-import { AuditRetentionPage } from './features/audit/AuditRetentionPage.js';
-import { DashboardPage } from './features/admin/DashboardPage.js';
-import { AuditEventsPage } from './features/audit/AuditEventsPage.js';
-import { HipaaCompliancePage } from './features/marketing/site/HipaaCompliancePage.js';
-import { LearningHubPage } from './features/learning/LearningHubPage.js';
-import { LearningPortalPage } from './features/learning/LearningPortalPage.js';
-import { ApplyPage } from './features/onboarding/ApplyPage.js';
-import { InterviewPage } from './features/onboarding/InterviewPage.js';
-import { OnboardingHubPage } from './features/onboarding/OnboardingHubPage.js';
-import { ApplicantDetailPage } from './features/onboarding/ApplicantDetailPage.js';
-import { ProfilePage } from './features/profile/ProfilePage.js';
-import { ComplianceOverviewPage } from './features/compliance-engine/ComplianceOverviewPage.js';
-import { AuditDefensePage } from './features/compliance-engine/AuditDefensePage.js';
-import { ExceptionResolutionPage } from './features/compliance-engine/ExceptionResolutionPage.js';
-import { AuthorizationOversightPage } from './features/compliance-engine/AuthorizationOversightPage.js';
-import { MedicaidWorkflowPage } from './features/compliance-engine/MedicaidWorkflowPage.js';
-import { PayrollReconciliationPage } from './features/compliance-engine/PayrollReconciliationPage.js';
-import { ClaimMatchingPage } from './features/compliance-engine/ClaimMatchingPage.js';
-import { CredentialsPage } from './features/compliance-engine/CredentialsPage.js';
+
+// Lazy-loaded route leaves — each becomes its own chunk. The page components are
+// NAMED exports, so map the named export onto `default` for React.lazy.
+const AgencySetupPage = lazy(() => import('./features/agency/AgencySetupPage.js').then((m) => ({ default: m.AgencySetupPage })));
+const StaffPage = lazy(() => import('./features/staff/StaffPage.js').then((m) => ({ default: m.StaffPage })));
+const ClientsPage = lazy(() => import('./features/clients/ClientsPage.js').then((m) => ({ default: m.ClientsPage })));
+const AuthorizationsPage = lazy(() => import('./features/authorizations/AuthorizationsPage.js').then((m) => ({ default: m.AuthorizationsPage })));
+const TemplatesPage = lazy(() => import('./features/scheduling/TemplatesPage.js').then((m) => ({ default: m.TemplatesPage })));
+const AssignmentsPage = lazy(() => import('./features/scheduling/AssignmentsPage.js').then((m) => ({ default: m.AssignmentsPage })));
+const LoginPage = lazy(() => import('./features/auth/LoginPage.js').then((m) => ({ default: m.LoginPage })));
+const SignupPage = lazy(() => import('./features/auth/SignupPage.js').then((m) => ({ default: m.SignupPage })));
+const AcceptInvitePage = lazy(() => import('./features/auth/AcceptInvitePage.js').then((m) => ({ default: m.AcceptInvitePage })));
+const ForgotPasswordPage = lazy(() => import('./features/auth/ForgotPasswordPage.js').then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('./features/auth/ResetPasswordPage.js').then((m) => ({ default: m.ResetPasswordPage })));
+const CaregiverDashboard = lazy(() => import('./features/caregiver/CaregiverDashboard.js').then((m) => ({ default: m.CaregiverDashboard })));
+const CaregiverSchedulePage = lazy(() => import('./features/caregiver/CaregiverSchedulePage.js').then((m) => ({ default: m.CaregiverSchedulePage })));
+const CaregiverVisitsPage = lazy(() => import('./features/caregiver/CaregiverVisitsPage.js').then((m) => ({ default: m.CaregiverVisitsPage })));
+const CaregiverLearningHubPage = lazy(() => import('./features/caregiver/CaregiverLearningHubPage.js').then((m) => ({ default: m.CaregiverLearningHubPage })));
+const CaregiverTrainingPage = lazy(() => import('./features/caregiver/CaregiverTrainingPage.js').then((m) => ({ default: m.CaregiverTrainingPage })));
+const CourseDetailPage = lazy(() => import('./features/caregiver/CourseDetailPage.js').then((m) => ({ default: m.CourseDetailPage })));
+const VisitReviewPage = lazy(() => import('./features/evv/VisitReviewPage.js').then((m) => ({ default: m.VisitReviewPage })));
+const PricingPage = lazy(() => import('./features/marketing/site/PricingPage.js').then((m) => ({ default: m.PricingPage })));
+const ContactPage = lazy(() => import('./features/marketing/site/ContactPage.js').then((m) => ({ default: m.ContactPage })));
+const DemoPage = lazy(() => import('./features/marketing/site/DemoPage.js').then((m) => ({ default: m.DemoPage })));
+const LaunchPage = lazy(() => import('./features/marketing/site/LaunchPage.js').then((m) => ({ default: m.LaunchPage })));
+const AdsPage = lazy(() => import('./features/marketing/site/AdsPage.js').then((m) => ({ default: m.AdsPage })));
+const StatusPage = lazy(() => import('./features/marketing/site/StatusPage.js').then((m) => ({ default: m.StatusPage })));
+const PrivacyPage = lazy(() => import('./features/marketing/site/PrivacyPage.js').then((m) => ({ default: m.PrivacyPage })));
+const SchedulingPage = lazy(() => import('./features/marketing/site/SchedulingPage.js').then((m) => ({ default: m.SchedulingPage })));
+const EvvSolutionPage = lazy(() => import('./features/marketing/site/EvvSolutionPage.js').then((m) => ({ default: m.EvvSolutionPage })));
+const BillingPayrollPage = lazy(() => import('./features/marketing/site/BillingPayrollPage.js').then((m) => ({ default: m.BillingPayrollPage })));
+const WorkforceTrainingPage = lazy(() => import('./features/marketing/site/WorkforceTrainingPage.js').then((m) => ({ default: m.WorkforceTrainingPage })));
+const AiAutomationPage = lazy(() => import('./features/marketing/site/AiAutomationPage.js').then((m) => ({ default: m.AiAutomationPage })));
+const CompliancePlatformPage = lazy(() => import('./features/marketing/site/CompliancePlatformPage.js').then((m) => ({ default: m.CompliancePlatformPage })));
+const EvvGuidePage = lazy(() => import('./features/marketing/site/EvvGuidePage.js').then((m) => ({ default: m.EvvGuidePage })));
+const TaskCodesPage = lazy(() => import('./features/marketing/site/TaskCodesPage.js').then((m) => ({ default: m.TaskCodesPage })));
+const AuditChecklistPage = lazy(() => import('./features/marketing/site/AuditChecklistPage.js').then((m) => ({ default: m.AuditChecklistPage })));
+const HipaaCompliancePage = lazy(() => import('./features/marketing/site/HipaaCompliancePage.js').then((m) => ({ default: m.HipaaCompliancePage })));
+const AuditRetentionPage = lazy(() => import('./features/audit/AuditRetentionPage.js').then((m) => ({ default: m.AuditRetentionPage })));
+const DashboardPage = lazy(() => import('./features/admin/DashboardPage.js').then((m) => ({ default: m.DashboardPage })));
+const AuditEventsPage = lazy(() => import('./features/audit/AuditEventsPage.js').then((m) => ({ default: m.AuditEventsPage })));
+const LearningHubPage = lazy(() => import('./features/learning/LearningHubPage.js').then((m) => ({ default: m.LearningHubPage })));
+const LearningPortalPage = lazy(() => import('./features/learning/LearningPortalPage.js').then((m) => ({ default: m.LearningPortalPage })));
+const ApplyPage = lazy(() => import('./features/onboarding/ApplyPage.js').then((m) => ({ default: m.ApplyPage })));
+const InterviewPage = lazy(() => import('./features/onboarding/InterviewPage.js').then((m) => ({ default: m.InterviewPage })));
+const OnboardingHubPage = lazy(() => import('./features/onboarding/OnboardingHubPage.js').then((m) => ({ default: m.OnboardingHubPage })));
+const ApplicantDetailPage = lazy(() => import('./features/onboarding/ApplicantDetailPage.js').then((m) => ({ default: m.ApplicantDetailPage })));
+const ProfilePage = lazy(() => import('./features/profile/ProfilePage.js').then((m) => ({ default: m.ProfilePage })));
+const ComplianceOverviewPage = lazy(() => import('./features/compliance-engine/ComplianceOverviewPage.js').then((m) => ({ default: m.ComplianceOverviewPage })));
+const AuditDefensePage = lazy(() => import('./features/compliance-engine/AuditDefensePage.js').then((m) => ({ default: m.AuditDefensePage })));
+const ExceptionResolutionPage = lazy(() => import('./features/compliance-engine/ExceptionResolutionPage.js').then((m) => ({ default: m.ExceptionResolutionPage })));
+const AuthorizationOversightPage = lazy(() => import('./features/compliance-engine/AuthorizationOversightPage.js').then((m) => ({ default: m.AuthorizationOversightPage })));
+const MedicaidWorkflowPage = lazy(() => import('./features/compliance-engine/MedicaidWorkflowPage.js').then((m) => ({ default: m.MedicaidWorkflowPage })));
+const PayrollReconciliationPage = lazy(() => import('./features/compliance-engine/PayrollReconciliationPage.js').then((m) => ({ default: m.PayrollReconciliationPage })));
+const ClaimMatchingPage = lazy(() => import('./features/compliance-engine/ClaimMatchingPage.js').then((m) => ({ default: m.ClaimMatchingPage })));
+const CredentialsPage = lazy(() => import('./features/compliance-engine/CredentialsPage.js').then((m) => ({ default: m.CredentialsPage })));
 
 const ADMIN_ROLES = new Set(['admin', 'coordinator']);
+
+/**
+ * Branded loading state shown while a lazily-loaded route chunk is fetched.
+ * Centered, fixed min-height to avoid layout shift, small teal spinner using the
+ * RayHealth brand color. Respects prefers-reduced-motion (no spin when reduced).
+ */
+function RouteFallback() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '60vh',
+        width: '100%',
+      }}
+    >
+      <style>{`
+        @keyframes rh-route-spin { to { transform: rotate(360deg); } }
+        .rh-route-spinner {
+          width: 28px;
+          height: 28px;
+          border: 3px solid rgba(16, 116, 128, 0.18);
+          border-top-color: #107480;
+          border-radius: 50%;
+          animation: rh-route-spin 0.7s linear infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .rh-route-spinner { animation: none; }
+        }
+      `}</style>
+      <span className="rh-route-spinner" aria-hidden="true" />
+    </div>
+  );
+}
 
 /** Redirects unauthenticated users to /login. */
 function ProtectedRoute() {
@@ -394,7 +438,8 @@ function AdminLayout() {
 
 export function App() {
   return (
-    <Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/contact" element={<ContactPage />} />
@@ -464,7 +509,8 @@ export function App() {
         </Route>
       </Route>
       
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
