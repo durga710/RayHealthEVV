@@ -71,19 +71,23 @@ const standards = [
   { name: 'Sandata', note: 'Aggregator mapping' },
 ];
 
+const PHOTO = (id: string) => `https://images.unsplash.com/${id}?q=80&w=200&h=200&fit=crop&crop=faces`;
+
 const testimonials = [
   {
     quote: 'RayHealth replaced three systems and a wall of spreadsheets. Denials dropped about forty percent in a quarter, and our last DHS audit took an afternoon instead of a week.',
     name: 'Danielle Reyes', role: 'Director of Operations', org: 'Keystone Home Care',
-    featured: true,
+    photo: PHOTO('photo-1494790108377-be9c29b29330'), featured: true,
   },
   {
     quote: 'GPS clock-in simply works. Caregivers stopped calling the office, and every visit is defensible.',
     name: 'Marcus Whitfield', role: 'Compliance Officer', org: 'Liberty Bell Home Health',
+    photo: PHOTO('photo-1500648767791-00dcc994a43e'),
   },
   {
     quote: 'Scheduling catches credential and authorization conflicts before I publish. I trust the week when I send it.',
     name: 'Priya Nair', role: 'Scheduling Coordinator', org: 'Three Rivers Care',
+    photo: PHOTO('photo-1573497019940-1c28c88b4f3e'),
   },
 ];
 
@@ -311,8 +315,10 @@ const CSS = `
 .rh-q.feat{background:var(--ink); border-color:var(--ink); grid-row:span 2;}
 .rh-q .qt{font-size:1.0625rem; line-height:1.6; color:var(--ink); letter-spacing:-.01em; flex:1;}
 .rh-q.feat .qt{color:#fff; font-size:1.375rem; line-height:1.5; letter-spacing:-.02em;}
-.rh-q .who{margin-top:24px; padding-top:18px; border-top:1px solid var(--line);}
+.rh-q .who{margin-top:24px; padding-top:18px; border-top:1px solid var(--line); display:flex; align-items:center; gap:.8rem;}
 .rh-q.feat .who{border-top-color:var(--dark-line);}
+.rh-qphoto{width:48px; height:48px; border-radius:50%; object-fit:cover; flex-shrink:0; background:var(--surface); border:1px solid var(--line);}
+.rh-q.feat .rh-qphoto{width:56px; height:56px; border-color:var(--dark-line);}
 .rh-q .nm{font-size:.9rem; font-weight:600; color:var(--ink);}
 .rh-q.feat .nm{color:#fff;}
 .rh-q .rl{font-size:.82rem; color:var(--muted); margin-top:2px;}
@@ -818,8 +824,11 @@ export function LandingPage() {
             <figure className={`rh-q ${t.featured ? 'feat' : ''} rh-rv`} key={t.name}>
               <blockquote className="qt">“{t.quote}”</blockquote>
               <figcaption className="who">
-                <div className="nm">{t.name}</div>
-                <div className="rl">{t.role} · {t.org}</div>
+                <img className="rh-qphoto" src={t.photo} alt={t.name} loading="lazy" width={48} height={48} />
+                <div>
+                  <div className="nm">{t.name}</div>
+                  <div className="rl">{t.role} · {t.org}</div>
+                </div>
               </figcaption>
             </figure>
           ))}
