@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { CaregiverRepository } from '@rayhealth/core';
+import { AuditEventRepository, CaregiverRepository, CredentialComplianceService, paCredentialTypes, paCredentialStatuses, } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 import { safeError } from '../security/safe-log.js';
 import { z } from 'zod';
@@ -7,6 +7,15 @@ const router = Router();
 const CHANGEABLE_ROLES = ['admin', 'coordinator'];
 const patchSchema = z.object({ role: z.enum(CHANGEABLE_ROLES) });
 const npiSchema = z.object({ npi: z.string().regex(/^\d{10}$/, 'NPI must be exactly 10 digits') });
+// Body schema for adding a caregiver credential. caregiverId comes from the
+// URL, not the body, so it is omitted here.
+const credentialBodySchema = z.object({
+    credentialType: z.enum(paCredentialTypes),
+    status: z.enum(paCredentialStatuses).default('pending'),
+    expiresAt: z.string().date(),
+    issuedAt: z.string().date().optional(),
+    notes: z.string().max(2000).optional(),
+});
 /**
  * GET /staff — lists all staff for the caller's agency.
  *
@@ -86,6 +95,128 @@ router.patch('/caregivers/:id', requireCapability('staff.write'), async (req, re
     }
     catch (error) {
         safeError('PATCH /staff/caregivers/:id failed', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+// ── Caregiver credentialing ───────────────────────────────────────────────
+// GET    /staff/caregivers/:id/credentials            — list + compliance roll-up
+// POST   /staff/caregivers/:id/credentials            — add a credential
+// DELETE /staff/caregivers/:id/credentials/:credId    — expire a credential
+//
+// Every route validates the caregiver belongs to the caller's agency before
+// touching credential rows (getCredentials/expireCredential already join
+// caregivers on agency_id, but the POST path inserts by caregiver_id and so
+// needs the explicit guard to prevent cross-agency writes).
+router.get('/caregivers/:id/credentials', requireCapability('staff.read'), async (req, res) => {
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    try {
+        const db = req.app.get('db');
+        const repo = new CaregiverRepository(db);
+        const caregiver = await repo.findById(id, req.auth.agencyId);
+        if (!caregiver) {
+            res.status(404).json({ message: 'caregiver not found' });
+            return;
+        }
+        const credentials = await repo.getCredentials(id, req.auth.agencyId);
+        const compliance = new CredentialComplianceService().evaluate(credentials);
+        res.json({ credentials, compliance });
+    }
+    catch (error) {
+        safeError('GET /staff/caregivers/:id/credentials failed', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+router.post('/caregivers/:id/credentials', requireCapability('staff.write'), async (req, res) => {
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    const parse = credentialBodySchema.safeParse(req.body);
+    if (!parse.success) {
+        res.status(400).json({ message: parse.error.issues[0]?.message ?? 'Invalid credential' });
+        return;
+    }
+    try {
+        const db = req.app.get('db');
+        const repo = new CaregiverRepository(db);
+        const caregiver = await repo.findById(id, req.auth.agencyId);
+        if (!caregiver) {
+            res.status(404).json({ message: 'caregiver not found' });
+            return;
+        }
+        const credential = await repo.saveCredential({
+            caregiverId: id,
+            credentialType: parse.data.credentialType,
+            status: parse.data.status,
+            expiresAt: parse.data.expiresAt,
+            issuedAt: parse.data.issuedAt,
+            notes: parse.data.notes,
+        });
+        try {
+            await new AuditEventRepository(db).create({
+                agencyId: req.auth.agencyId,
+                actorId: req.auth.userId,
+                actorType: 'user',
+                eventType: 'credential.created',
+                entityType: 'credential',
+                // saveCredential always returns a persisted row (returning('*')), so
+                // id is present even though the domain schema types it optional.
+                entityId: credential.id,
+                outcome: 'success',
+                payload: {
+                    caregiverId: id,
+                    credentialType: credential.credentialType,
+                    status: credential.status,
+                    expiresAt: credential.expiresAt,
+                },
+                occurredAt: new Date().toISOString(),
+            });
+        }
+        catch (err) {
+            safeError('Failed to audit credential.created', err);
+        }
+        res.status(201).json(credential);
+    }
+    catch (error) {
+        safeError('POST /staff/caregivers/:id/credentials failed', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+router.delete('/caregivers/:id/credentials/:credId', requireCapability('staff.write'), async (req, res) => {
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    const rawCredId = req.params.credId;
+    const credId = Array.isArray(rawCredId) ? rawCredId[0] : rawCredId;
+    try {
+        const db = req.app.get('db');
+        const repo = new CaregiverRepository(db);
+        const caregiver = await repo.findById(id, req.auth.agencyId);
+        if (!caregiver) {
+            res.status(404).json({ message: 'caregiver not found' });
+            return;
+        }
+        // expireCredential is agency-scoped via its join; the caregiver guard
+        // above gives a clean 404 for an unknown caregiver.
+        await repo.expireCredential(credId, req.auth.agencyId);
+        try {
+            await new AuditEventRepository(db).create({
+                agencyId: req.auth.agencyId,
+                actorId: req.auth.userId,
+                actorType: 'user',
+                eventType: 'credential.expired',
+                entityType: 'credential',
+                entityId: credId,
+                outcome: 'success',
+                payload: { caregiverId: id },
+                occurredAt: new Date().toISOString(),
+            });
+        }
+        catch (err) {
+            safeError('Failed to audit credential.expired', err);
+        }
+        res.json({ id: credId, status: 'expired' });
+    }
+    catch (error) {
+        safeError('DELETE /staff/caregivers/:id/credentials/:credId failed', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });

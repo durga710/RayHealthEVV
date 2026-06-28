@@ -2,9 +2,10 @@
  * Audit retention sweep.
  *
  * Moves audit_events rows older than the configured retention floor (default
- * 6 years per HIPAA §164.530(j)(2) and docs/compliance/hipaa/DATA_RETENTION.md)
- * from the hot `audit_events` table to the cold `audit_events_archive` table,
- * then deletes them from `audit_events`.
+ * 7 years — PA_RETENTION_YEARS, which exceeds the HIPAA §164.530(j)(2) 6-year
+ * floor and is the conservative nationwide default) from the hot
+ * `audit_events` table to the cold `audit_events_archive` table, then deletes
+ * them from `audit_events`.
  *
  * Why this exists
  *   - `audit_events` is append-only by trigger (no UPDATE, no DELETE allowed
@@ -21,8 +22,9 @@
  * Or schedule via cron / Vercel Cron / GitHub Actions (recommended: nightly
  * at 02:00 America/New_York).
  */
+import { PA_RETENTION_YEARS } from '../config/pennsylvania.js';
 const DEFAULTS = {
-    retentionYears: 6,
+    retentionYears: PA_RETENTION_YEARS,
     chunkSize: 1000,
     maxRowsPerRun: 100000,
     now: undefined,
@@ -106,16 +108,22 @@ async function processOneChunk(db, cutoff, limit) {
         // Insert into archive, preserving original id and timestamps.
         // ON CONFLICT DO NOTHING means a partially-completed previous run
         // (e.g., archived rows but failed to delete from hot) is safely re-runnable.
+        // Column list mirrors the LIVE audit_events shape (actor_id/actor_type/
+        // entity_type/entity_id/outcome/correlation_id). The previous version
+        // referenced legacy columns (actor_user_id/actor_caregiver_id/resource_type/
+        // resource_id/user_agent/ip_address) that do not exist on audit_events, so
+        // this INSERT...SELECT threw "column does not exist" on the first non-empty
+        // run. See schema.ts R16 for the archive table definition.
         const archived = await trx.raw(`
       INSERT INTO audit_events_archive (
-        id, agency_id, actor_user_id, actor_caregiver_id,
-        event_type, resource_type, resource_id, payload,
-        user_agent, ip_address, occurred_at
+        id, agency_id, actor_id, actor_type,
+        event_type, entity_type, entity_id, outcome,
+        correlation_id, payload, occurred_at
       )
       SELECT
-        id, agency_id, actor_user_id, actor_caregiver_id,
-        event_type, resource_type, resource_id, payload,
-        user_agent, ip_address, occurred_at
+        id, agency_id, actor_id, actor_type,
+        event_type, entity_type, entity_id, outcome,
+        correlation_id, payload, occurred_at
       FROM audit_events
       WHERE id = ANY(?::uuid[])
       ON CONFLICT (id) DO NOTHING

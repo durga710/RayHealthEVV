@@ -1007,6 +1007,68 @@ export async function up(knex) {
             t.jsonb('fee_schedule').nullable();
         });
     }
+    // ── R16 — Audit retention infrastructure ──────────────────────────────────
+    // The audit retention sweep moves rows older than the statutory floor
+    // (PA_RETENTION_YEARS = 7) out of the hot `audit_events` table into
+    // `audit_events_archive`, logging each run to `audit_retention_runs`. These
+    // tables previously lived only in an orphaned dated migration that the
+    // baseline runner (`schema.up`) never invokes, so prod never had them and
+    // the sweep would fail. They are created here, idempotently, mirroring the
+    // LIVE `audit_events` shape (actor_id/actor_type/entity_type/entity_id/
+    // outcome/correlation_id) — NOT the legacy actor_user_id/resource_type shape
+    // that the original archive table and sweep INSERT...SELECT were written
+    // against.
+    if (!(await knex.schema.hasTable('audit_events_archive'))) {
+        await knex.schema.createTable('audit_events_archive', (table) => {
+            // Keep id stable across the move so a future restore can re-insert by id.
+            table.uuid('id').primary();
+            table.uuid('agency_id').notNullable();
+            table.uuid('actor_id').notNullable();
+            table.string('actor_type').notNullable().defaultTo('user');
+            table.string('event_type').notNullable();
+            table.string('entity_type').notNullable();
+            table.uuid('entity_id').notNullable();
+            table.string('outcome').notNullable().defaultTo('success');
+            table.string('correlation_id');
+            table.jsonb('payload').notNullable().defaultTo(knex.raw("'{}'::jsonb"));
+            table.timestamp('occurred_at').notNullable();
+            table.timestamp('archived_at').notNullable().defaultTo(knex.fn.now());
+            table.index(['agency_id', 'occurred_at']);
+            table.index(['event_type']);
+        });
+    }
+    else {
+        // Bring an archive table created by the legacy migration into alignment
+        // with the live audit_events shape. Old columns (actor_user_id etc.) are
+        // left in place (nullable) — dropping them could lose side-channel data.
+        for (const [col, add] of [
+            ['actor_id', (t) => t.uuid('actor_id')],
+            ['actor_type', (t) => t.string('actor_type')],
+            ['entity_type', (t) => t.string('entity_type')],
+            ['entity_id', (t) => t.uuid('entity_id')],
+            ['outcome', (t) => t.string('outcome')],
+            ['correlation_id', (t) => t.string('correlation_id')],
+        ]) {
+            if (!(await knex.schema.hasColumn('audit_events_archive', col))) {
+                await knex.schema.alterTable('audit_events_archive', add);
+            }
+        }
+    }
+    if (!(await knex.schema.hasTable('audit_retention_runs'))) {
+        await knex.schema.createTable('audit_retention_runs', (table) => {
+            table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+            table.timestamp('started_at').notNullable();
+            table.timestamp('completed_at');
+            table.string('status').notNullable(); // running | success | error
+            table.integer('rows_archived').notNullable().defaultTo(0);
+            table.integer('rows_purged_from_hot').notNullable().defaultTo(0);
+            table.timestamp('cutoff_used').notNullable();
+            table.text('error_message');
+            table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
+            table.index(['started_at']);
+            table.index(['status']);
+        });
+    }
 }
 export async function down(knex) {
     await knex.schema.dropTableIfExists('claim_lines');

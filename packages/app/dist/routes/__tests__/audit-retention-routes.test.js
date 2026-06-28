@@ -66,12 +66,12 @@ describe('GET /admin/audit-retention/status', () => {
             .set('Authorization', `Bearer ${makeToken('admin', agencyId, userId)}`);
         expect(response.status).toBe(200);
         expect(response.body).toMatchObject({
-            retentionFloorYears: 6,
+            retentionFloorYears: 7,
             hot: {
                 totalRows: 12345,
                 oldestOccurredAt: '2024-01-15T00:00:00.000Z',
                 eventsLast30Days: 3402,
-                eventsApproachingSixYearLimit: 0,
+                eventsApproachingRetentionLimit: 0,
             },
             archive: {
                 totalRows: 0,

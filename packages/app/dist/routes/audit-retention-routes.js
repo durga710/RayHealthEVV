@@ -11,7 +11,7 @@
  * privileged session.
  */
 import { Router } from 'express';
-import { hasCapability, runAuditRetentionSweep } from '@rayhealth/core';
+import { hasCapability, runAuditRetentionSweep, PA_RETENTION_YEARS } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 const router = Router();
 // ---------- Status ----------
@@ -31,7 +31,7 @@ router.get('/status', requireCapability('audit.read'), async (req, res) => {
         .count('id as count'));
     const last30Count = last30Rows[0]?.count ?? '0';
     const cutoff = new Date();
-    cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 6);
+    cutoff.setUTCFullYear(cutoff.getUTCFullYear() - PA_RETENTION_YEARS);
     const approachingRows = (await db('audit_events')
         .where('occurred_at', '<', cutoff)
         .count('id as count'));
@@ -40,12 +40,12 @@ router.get('/status', requireCapability('audit.read'), async (req, res) => {
         .orderBy('started_at', 'desc')
         .first();
     res.json({
-        retentionFloorYears: 6,
+        retentionFloorYears: PA_RETENTION_YEARS,
         hot: {
             totalRows: Number(hotStats?.total ?? 0),
             oldestOccurredAt: hotStats?.oldest_occurred_at?.toISOString() ?? null,
             eventsLast30Days: Number(last30Count ?? 0),
-            eventsApproachingSixYearLimit: Number(approachingLimitCount ?? 0),
+            eventsApproachingRetentionLimit: Number(approachingLimitCount ?? 0),
         },
         archive: {
             totalRows: Number(archiveStats?.total ?? 0),

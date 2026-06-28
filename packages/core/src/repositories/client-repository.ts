@@ -74,6 +74,18 @@ export class ClientRepository {
     };
   }
 
+  /**
+   * True when the client exists and belongs to the given agency. Used to guard
+   * cross-tenant writes (e.g. creating an authorization for a clientId that
+   * belongs to another agency).
+   */
+  async clientBelongsToAgency(clientId: string, agencyId: string): Promise<boolean> {
+    const row = await this.db('clients')
+      .where({ id: clientId, agency_id: agencyId })
+      .first('id');
+    return Boolean(row);
+  }
+
   async createAuthorization(authorization: Authorization): Promise<Authorization> {
     const [inserted] = await this.db('authorizations').insert({
       id: authorization.id ?? crypto.randomUUID(),

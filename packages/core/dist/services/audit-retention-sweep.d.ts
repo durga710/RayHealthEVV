@@ -2,9 +2,10 @@
  * Audit retention sweep.
  *
  * Moves audit_events rows older than the configured retention floor (default
- * 6 years per HIPAA §164.530(j)(2) and docs/compliance/hipaa/DATA_RETENTION.md)
- * from the hot `audit_events` table to the cold `audit_events_archive` table,
- * then deletes them from `audit_events`.
+ * 7 years — PA_RETENTION_YEARS, which exceeds the HIPAA §164.530(j)(2) 6-year
+ * floor and is the conservative nationwide default) from the hot
+ * `audit_events` table to the cold `audit_events_archive` table, then deletes
+ * them from `audit_events`.
  *
  * Why this exists
  *   - `audit_events` is append-only by trigger (no UPDATE, no DELETE allowed
@@ -23,7 +24,12 @@
  */
 import type { Knex } from 'knex';
 export interface AuditRetentionSweepOptions {
-    /** Retention floor in years. Default 6 per HIPAA. */
+    /**
+     * Retention floor in years. Default {@link PA_RETENTION_YEARS} (7) — PA's
+     * statutory floor is the longest in the nation and exceeds the HIPAA
+     * §164.530(j)(2) 6-year floor, so it is the conservative default that keeps
+     * every state compliant.
+     */
     retentionYears?: number;
     /** Rows per chunk. Default 1000. */
     chunkSize?: number;

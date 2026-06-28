@@ -2,9 +2,10 @@
  * Audit retention sweep.
  *
  * Moves audit_events rows older than the configured retention floor (default
- * 6 years per HIPAA §164.530(j)(2) and docs/compliance/hipaa/DATA_RETENTION.md)
- * from the hot `audit_events` table to the cold `audit_events_archive` table,
- * then deletes them from `audit_events`.
+ * 7 years — PA_RETENTION_YEARS, which exceeds the HIPAA §164.530(j)(2) 6-year
+ * floor and is the conservative nationwide default) from the hot
+ * `audit_events` table to the cold `audit_events_archive` table, then deletes
+ * them from `audit_events`.
  *
  * Why this exists
  *   - `audit_events` is append-only by trigger (no UPDATE, no DELETE allowed
@@ -23,9 +24,15 @@
  */
 
 import type { Knex } from 'knex'
+import { PA_RETENTION_YEARS } from '../config/pennsylvania.js'
 
 export interface AuditRetentionSweepOptions {
-  /** Retention floor in years. Default 6 per HIPAA. */
+  /**
+   * Retention floor in years. Default {@link PA_RETENTION_YEARS} (7) — PA's
+   * statutory floor is the longest in the nation and exceeds the HIPAA
+   * §164.530(j)(2) 6-year floor, so it is the conservative default that keeps
+   * every state compliant.
+   */
   retentionYears?: number
   /** Rows per chunk. Default 1000. */
   chunkSize?: number
@@ -44,7 +51,7 @@ export interface AuditRetentionSweepResult {
 }
 
 const DEFAULTS: Required<Omit<AuditRetentionSweepOptions, 'now'>> & { now?: Date } = {
-  retentionYears: 6,
+  retentionYears: PA_RETENTION_YEARS,
   chunkSize: 1000,
   maxRowsPerRun: 100_000,
   now: undefined,
@@ -146,17 +153,23 @@ async function processOneChunk(db: Knex, cutoff: Date, limit: number): Promise<C
     // Insert into archive, preserving original id and timestamps.
     // ON CONFLICT DO NOTHING means a partially-completed previous run
     // (e.g., archived rows but failed to delete from hot) is safely re-runnable.
+    // Column list mirrors the LIVE audit_events shape (actor_id/actor_type/
+    // entity_type/entity_id/outcome/correlation_id). The previous version
+    // referenced legacy columns (actor_user_id/actor_caregiver_id/resource_type/
+    // resource_id/user_agent/ip_address) that do not exist on audit_events, so
+    // this INSERT...SELECT threw "column does not exist" on the first non-empty
+    // run. See schema.ts R16 for the archive table definition.
     const archived = await trx.raw(
       `
       INSERT INTO audit_events_archive (
-        id, agency_id, actor_user_id, actor_caregiver_id,
-        event_type, resource_type, resource_id, payload,
-        user_agent, ip_address, occurred_at
+        id, agency_id, actor_id, actor_type,
+        event_type, entity_type, entity_id, outcome,
+        correlation_id, payload, occurred_at
       )
       SELECT
-        id, agency_id, actor_user_id, actor_caregiver_id,
-        event_type, resource_type, resource_id, payload,
-        user_agent, ip_address, occurred_at
+        id, agency_id, actor_id, actor_type,
+        event_type, entity_type, entity_id, outcome,
+        correlation_id, payload, occurred_at
       FROM audit_events
       WHERE id = ANY(?::uuid[])
       ON CONFLICT (id) DO NOTHING

@@ -16,12 +16,15 @@ interface Authorization {
 
 type Banner = { kind: 'success' | 'error'; text: string } | null;
 
+// Canonical PA HCPCS codes — these are the ONLY codes EVV visits and 837 claim
+// lines carry, so authorizations must use them or claim-matching and units
+// burn-down silently fail. Keep in lock-step with paServiceCodes in
+// packages/core/src/config/pennsylvania.ts (the API rejects anything else).
 const PA_SERVICE_CODES = [
-  { code: 'W1793', label: 'W1793 — Personal Assistance' },
-  { code: 'W7076', label: 'W7076 — Attendant Care' },
-  { code: 'W8001', label: 'W8001 — Respite Care' },
-  { code: 'S5125', label: 'S5125 — Home Health Aide' },
-  { code: 'T1019', label: 'T1019 — Personal Care Aide' },
+  { code: 'T1019', label: 'T1019 — Personal care services (per 15 min)' },
+  { code: 'S5125', label: 'S5125 — Attendant care services (per 15 min)' },
+  { code: 'T1004', label: 'T1004 — Qualified nursing aide services (per 15 min)' },
+  { code: 'T1021', label: 'T1021 — Home health aide / CNA (per visit)' },
 ];
 
 // Select fields use the global .select-field class for consistency.
@@ -34,7 +37,6 @@ export function AuthorizationsPage() {
   const [clientId, setClientId] = useState('');
   const [payerId, setPayerId] = useState('');
   const [serviceCode, setServiceCode] = useState('');
-  const [customCode, setCustomCode] = useState('');
   const [unitsAuthorized, setUnitsAuthorized] = useState<number | ''>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -71,8 +73,7 @@ export function AuthorizationsPage() {
     e.preventDefault();
     setValidationError('');
     setBanner(null);
-    const effectiveCode = serviceCode === 'OTHER' ? customCode : serviceCode;
-    if (!effectiveCode) { setValidationError('Please enter a service code.'); return; }
+    if (!serviceCode) { setValidationError('Please select a service code.'); return; }
     if (startDate && endDate && endDate < startDate) {
       setValidationError('End date must be on or after start date.');
       return;
@@ -82,13 +83,13 @@ export function AuthorizationsPage() {
       const newAuth = await postJson<Authorization>('/api/authorizations', {
         clientId,
         payerId,
-        serviceCode: effectiveCode,
+        serviceCode,
         unitsAuthorized: Number(unitsAuthorized),
         startDate,
         endDate,
       });
       setAuthorizations(prev => [...prev, newAuth]);
-      setClientId(''); setPayerId(''); setServiceCode(''); setCustomCode('');
+      setClientId(''); setPayerId(''); setServiceCode('');
       setUnitsAuthorized(''); setStartDate(''); setEndDate('');
       setBanner({ kind: 'success', text: `Authorization added for ${clientName(newAuth.clientId)}.` });
     } catch (err) {
@@ -164,23 +165,12 @@ export function AuthorizationsPage() {
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 <label htmlFor="serviceCode" className="label">Service Code</label>
-                <select id="serviceCode" value={serviceCode} onChange={e => { setServiceCode(e.target.value); setCustomCode(''); }} required className="select-field">
+                <select id="serviceCode" value={serviceCode} onChange={e => setServiceCode(e.target.value)} required className="select-field">
                   <option value="">Select…</option>
                   {PA_SERVICE_CODES.map(s => (
                     <option key={s.code} value={s.code}>{s.label}</option>
                   ))}
-                  <option value="OTHER">Other…</option>
                 </select>
-                {serviceCode === 'OTHER' && (
-                  <input
-                    placeholder="Enter service code"
-                    value={customCode}
-                    onChange={e => setCustomCode(e.target.value)}
-                    style={{ marginTop: '0.4rem' }}
-                    required
-                    className="input-field"
-                  />
-                )}
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 <label htmlFor="units" className="label">Units</label>

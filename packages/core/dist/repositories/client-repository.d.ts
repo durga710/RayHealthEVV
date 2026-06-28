@@ -32,6 +32,12 @@ export declare class ClientRepository {
         longitude: number | null;
         geofenceRadiusM: number | null;
     } | undefined>;
+    /**
+     * True when the client exists and belongs to the given agency. Used to guard
+     * cross-tenant writes (e.g. creating an authorization for a clientId that
+     * belongs to another agency).
+     */
+    clientBelongsToAgency(clientId: string, agencyId: string): Promise<boolean>;
     createAuthorization(authorization: Authorization): Promise<Authorization>;
     getAuthorizations(agencyId: string): Promise<Authorization[]>;
     private mapRowToClient;

@@ -10,6 +10,26 @@ describe('Pennsylvania domain schemas', () => {
     it('requires authorization units and service code', () => {
         expect(() => authorizationSchema.parse({ clientId: 'cl-1', payerId: 'payer-1', unitsAuthorized: 0 })).toThrow();
     });
+    it('rejects non-canonical service codes on authorizations', () => {
+        // W-series program codes never appear on an EVV visit or 837 claim line,
+        // so an authorization in one would never burn down. The schema blocks them.
+        expect(() => authorizationSchema.parse({
+            clientId: 'cl-1',
+            payerId: 'payer-1',
+            unitsAuthorized: 100,
+            serviceCode: 'W1793',
+            startDate: '2026-06-01',
+            endDate: '2026-06-30',
+        })).toThrow();
+        expect(authorizationSchema.parse({
+            clientId: 'cl-1',
+            payerId: 'payer-1',
+            unitsAuthorized: 100,
+            serviceCode: 'T1019',
+            startDate: '2026-06-01',
+            endDate: '2026-06-30',
+        }).serviceCode).toBe('T1019');
+    });
     it('tracks caregiver credentials with expiration dates', () => {
         expect(caregiverCredentialSchema.parse({
             caregiverId: 'cg-1',
