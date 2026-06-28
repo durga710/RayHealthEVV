@@ -222,6 +222,9 @@ const CSS = `
 .rh-display .em{color:var(--accent-deep);}
 .rh-sublede{margin:20px 0 0; max-width:46ch; font-size:1.125rem; line-height:1.6; color:var(--body);}
 .rh-herocta{margin-top:28px; display:flex; gap:.75rem; flex-wrap:wrap;}
+.rh-herotrust{list-style:none; margin:26px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:10px 22px;}
+.rh-herotrust li{display:inline-flex; align-items:center; gap:.45rem; font-size:.875rem; font-weight:500; color:var(--ink-soft);}
+.rh-herotrust svg{width:17px; height:17px; color:var(--accent); flex-shrink:0;}
 .rh-heromedia{position:relative;}
 .rh-photo{position:relative; border-radius:20px; overflow:hidden; aspect-ratio:4/5; border:1px solid var(--line-2);
   background:#e9ece8 center 22% / cover no-repeat;
@@ -324,7 +327,7 @@ const CSS = `
 .rh-finalcard::before{content:""; position:absolute; inset:0; background:radial-gradient(60% 100% at 50% 0%, rgba(16,116,128,.22), transparent 70%);}
 .rh-finalcard h2{position:relative; color:#fff; font-size:clamp(1.8rem,3.4vw,2.6rem); letter-spacing:-.03em;}
 .rh-finalcard p{position:relative; color:#9fa8a3; font-size:1.0625rem; line-height:1.6; max-width:46ch; margin:16px auto 0;}
-.rh-finalcard .rh-herocta{position:relative;}
+.rh-finalcard .rh-herocta{position:relative; justify-content:center; margin-top:32px;}
 
 /* footer */
 .rh-foot{border-top:1px solid var(--line); background:var(--warm); padding:64px 0 40px;}
@@ -527,6 +530,11 @@ export function LandingPage() {
               <Link to="/demo" className="rh-btn rh-btn-pri">Book a demo</Link>
               <a href="#platform" className="rh-btn rh-btn-ghost">Explore the platform</a>
             </div>
+            <ul className="rh-herotrust">
+              <li>{ic(<path d="M20 6 9 17l-5-5" />)}No per-visit fees</li>
+              <li>{ic(<path d="M20 6 9 17l-5-5" />)}Live in days, not months</li>
+              <li>{ic(<path d="M20 6 9 17l-5-5" />)}PA DHS &amp; Cures Act aligned</li>
+            </ul>
           </div>
 
           <div className="rh-heromedia">

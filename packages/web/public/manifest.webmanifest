@@ -13,9 +13,15 @@
   "categories": ["health", "medical", "business", "productivity"],
   "icons": [
     {
-      "src": "/brand/rayhealthevv-mark.png",
+      "src": "/brand/icon-192.png",
       "type": "image/png",
-      "sizes": "304x304",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/brand/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
       "purpose": "any maskable"
     }
   ]
