@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SupportChat } from '../support/SupportChat.js';
 
@@ -114,6 +114,31 @@ const resources = [
   { tag: 'Guide', t: 'Everything PA agencies need to know about EVV', b: 'The six federal elements, aggregator submission, and the mistakes that trigger denials.' },
   { tag: 'Reference', t: 'PA DHS task codes 106–256, explained', b: 'A plain-English map of personal-assistance duty codes and how to use them in care plans.' },
   { tag: 'Checklist', t: 'Preparing for a DHS audit', b: 'What auditors actually ask for — and how an immutable trail answers it in minutes.' },
+  { tag: 'Playbook', t: 'Cutting claim denials in your first quarter', b: 'The exception-resolution workflow that turns rejected claims into paid ones.' },
+  { tag: 'Guide', t: 'Onboarding caregivers onto GPS clock-in', b: 'A rollout plan that gets your field team verifying visits in days, not weeks.' },
+  { tag: 'Article', t: 'Telephony &amp; offline EVV: covering every home', b: 'How RayHealth verifies visits where there is no signal — and stays compliant.' },
+];
+
+const spotlights = [
+  { key: 'scheduling', kicker: 'Scheduling', title: 'Build the week, catch every conflict.', body: 'Drag visits onto a calendar and let the platform enforce the rules — expired credentials, overlapping authorizations, and travel gaps surface before you publish.', points: ['Live eligibility & credential checks', 'Authorization burn-down per client', 'Open-shift and coverage alerts'] },
+  { key: 'evv', kicker: 'Electronic visit verification', title: 'Proof on every visit, automatically.', body: 'GPS-verified clock-in and clock-out capture all six federal EVV elements the moment a visit begins — with telephony and offline fallback so no home is left uncovered.', points: ['Six federal elements per visit', 'GPS accuracy within a few meters', 'Offline capture with automatic retry'] },
+  { key: 'audit', kicker: 'Compliance & audit', title: 'An audit trail that defends itself.', body: 'Every state change is appended to a tamper-evident log — actor, action, outcome, timestamp — scoped per agency. What used to take a week of binders takes an afternoon.', points: ['Append-only, tamper-evident log', 'Filter by actor, client, or action', 'Export-ready for DHS review'] },
+];
+
+const comparison = {
+  rows: [
+    { label: 'Visit verification', old: 'Paper timesheets, phone calls', neu: 'GPS-verified, six EVV elements' },
+    { label: 'Scheduling conflicts', old: 'Found after the fact', neu: 'Caught before you publish' },
+    { label: 'Claim denials', old: 'Chased one by one', neu: 'Flagged before billing' },
+    { label: 'Audit prep', old: 'A week of binders', neu: 'An afternoon of exports' },
+    { label: 'Caregiver training', old: 'Separate LMS & spreadsheets', neu: 'Built into the platform' },
+  ],
+};
+
+const pricingTiers = [
+  { name: 'Starter', price: 'Custom', unit: '', desc: 'For new and small agencies getting compliant fast.', feat: ['Scheduling & EVV', 'PA DHS task codes', 'Caregiver mobile app', 'Immutable audit trail'], featured: false, cta: 'Get a quote' },
+  { name: 'Growth', price: 'Custom', unit: '', desc: 'For scaling agencies that live in the platform.', feat: ['Everything in Starter', 'Billing reconciliation', 'Exception queues & alerts', 'Priority onboarding'], featured: true, cta: 'Book a demo' },
+  { name: 'Enterprise', price: "Let's talk", unit: '', desc: 'For multi-site providers with advanced needs.', feat: ['Everything in Growth', 'AI automation suite', 'Custom integrations', 'Dedicated success manager'], featured: false, cta: 'Talk to sales' },
 ];
 
 const missionStats = [
@@ -368,11 +393,82 @@ const CSS = `
 .rh-mstats .l{font-size:.85rem; color:#9fa8a3; margin-top:4px; line-height:1.4;}
 @media(max-width:760px){.rh-missionin{grid-template-columns:1fr; gap:36px;}}
 
-/* faq */
+/* feature spotlights */
+.rh-spot{max-width:var(--maxw); margin:24px auto 0; padding:0 24px;}
+.rh-spotrow{display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; padding:52px 0;}
+.rh-spotrow + .rh-spotrow{border-top:1px solid var(--line);}
+.rh-spotrow.rev .rh-spottext{order:2;}
+.rh-spottext h3{font-size:clamp(1.4rem,2.4vw,1.95rem); letter-spacing:-.025em; margin-top:12px; color:var(--ink); line-height:1.15;}
+.rh-spottext p{margin-top:12px; font-size:1.0625rem; line-height:1.6; color:var(--body);}
+.rh-spotpts{margin:18px 0 0; padding:0; display:flex; flex-direction:column; gap:10px;}
+.rh-spotpts li{list-style:none; display:flex; gap:.55rem; align-items:center; font-size:.95rem; color:var(--ink-soft);}
+.rh-ck{width:18px; height:18px; border-radius:5px; background:var(--accent-tint); color:var(--accent-deep); display:grid; place-items:center; flex-shrink:0;}
+.rh-ck svg{width:12px; height:12px;}
+.rh-spotvis{border:1px solid var(--line); border-radius:18px; background:var(--surface); padding:18px; box-shadow:0 34px 70px -44px rgba(10,30,20,.4); min-height:280px;}
+.rh-vischrome{display:flex; align-items:center; gap:.4rem; padding:0 4px 14px;}
+.rh-vischrome i{width:9px; height:9px; border-radius:50%; display:inline-block;}
+.rh-vischrome .t{margin-left:.5rem; font-size:.72rem; color:var(--muted); font-weight:500;}
+@media(max-width:880px){.rh-spotrow{grid-template-columns:1fr; gap:26px; padding:36px 0;} .rh-spotrow.rev .rh-spottext{order:-1;}}
+/* visual: week board */
+.rh-wk{display:grid; grid-template-columns:repeat(5,1fr); gap:7px; background:var(--paper); border-radius:12px; padding:12px; border:1px solid var(--line);}
+.rh-wkhd{font-size:.62rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding-bottom:8px; text-align:center;}
+.rh-vt{border-radius:7px; padding:7px 8px; margin-bottom:6px;}
+.rh-vt .nm{font-weight:600; color:var(--ink); font-size:.7rem; line-height:1.2;}
+.rh-vt .tm{color:var(--muted); font-size:.62rem; margin-top:1px;}
+.rh-vt.g{background:var(--accent-tint); border:1px solid #cdeadd;}
+.rh-vt.b{background:#eef2ff; border:1px solid #dbe3fb;}
+.rh-vt.n{background:var(--surface); border:1px solid var(--line);}
+/* visual: EVV verify */
+.rh-evvcard{background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:14px;}
+.rh-map{height:120px; border-radius:10px; background:linear-gradient(135deg,#e9f6ef,#e8eefb); position:relative; overflow:hidden; border:1px solid var(--line);}
+.rh-map::before{content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(10,40,30,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(10,40,30,.05) 1px,transparent 1px); background-size:22px 22px;}
+.rh-map .pin{position:absolute; left:46%; top:42%; width:14px; height:14px; border-radius:50%; background:var(--accent); border:3px solid #fff; box-shadow:0 0 0 6px rgba(14,157,110,.18);}
+.rh-evvgrid{margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:7px;}
+.rh-evvi{display:flex; gap:.4rem; align-items:center; font-size:.72rem; color:var(--ink-soft); border:1px solid var(--line); border-radius:8px; padding:.45rem .55rem;}
+/* visual: audit log */
+.rh-logcard{background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:6px 14px;}
+.rh-logrow{display:grid; grid-template-columns:auto 1fr auto; gap:10px; padding:10px 2px; border-bottom:1px solid var(--line); align-items:center;}
+.rh-logrow:last-child{border-bottom:none;}
+.rh-logrow .dot{width:7px; height:7px; border-radius:50%; background:var(--accent);}
+.rh-logrow .ac{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem; color:var(--ink-soft);}
+.rh-logrow .ts{font-size:.68rem; color:var(--muted); font-variant-numeric:tabular-nums;}
+
+/* comparison */
+.rh-cmp{max-width:920px; margin:40px auto 0; padding:0 24px;}
+.rh-cmptbl{border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--paper);}
+.rh-cmphd, .rh-cmprow{display:grid; grid-template-columns:1.4fr 1fr 1fr;}
+.rh-cmphd>div{padding:16px 20px; font-weight:600; font-size:.85rem; letter-spacing:.02em;}
+.rh-cmphd .old{color:var(--muted);}
+.rh-cmphd .new{color:var(--accent-deep); background:var(--accent-tint);}
+.rh-cmprow{border-top:1px solid var(--line);}
+.rh-cmprow>div{padding:15px 20px; font-size:.9rem; display:flex; align-items:center; gap:.5rem;}
+.rh-cmprow .lbl{color:var(--ink); font-weight:500;}
+.rh-cmprow .old{color:var(--muted);}
+.rh-cmprow .new{color:var(--ink); background:rgba(14,157,110,.045);}
+@media(max-width:620px){.rh-cmphd .lbl,.rh-cmprow .lbl{display:none;} .rh-cmphd,.rh-cmprow{grid-template-columns:1fr 1fr;}}
+
+/* pricing */
+.rh-pricing{max-width:var(--maxw); margin:48px auto 0; padding:0 24px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; align-items:start;}
+.rh-price{border:1px solid var(--line); border-radius:18px; padding:30px; background:var(--paper); display:flex; flex-direction:column; position:relative;}
+.rh-price.feat{border-color:var(--accent); box-shadow:0 36px 80px -44px rgba(14,157,110,.55);}
+.rh-pbadge{position:absolute; top:-11px; left:30px; background:var(--accent); color:#fff; font-size:.68rem; font-weight:650; letter-spacing:.04em; padding:.28rem .7rem; border-radius:999px;}
+.rh-price h3{font-size:1.15rem; letter-spacing:-.02em;}
+.rh-price .pr{margin-top:10px; font-size:2rem; font-weight:600; color:var(--ink); letter-spacing:-.03em;}
+.rh-price .pd{margin-top:8px; font-size:.9rem; color:var(--body); line-height:1.5;}
+.rh-plist{margin:20px 0 22px; padding-top:20px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:11px; flex:1;}
+.rh-plist li{list-style:none; display:flex; gap:.55rem; align-items:flex-start; font-size:.9rem; color:var(--ink-soft);}
+@media(max-width:880px){.rh-pricing{grid-template-columns:1fr; max-width:460px;}}
+
+/* faq accordion */
 .rh-faqs{max-width:820px; margin:36px auto 0; padding:0 24px;}
-.rh-faq{border-bottom:1px solid var(--line); padding:22px 2px;}
-.rh-faq h3{font-size:1.0625rem; letter-spacing:-.01em;}
-.rh-faq p{margin-top:8px; font-size:.95rem; line-height:1.6; color:var(--body); max-width:72ch;}
+.rh-faq{border-bottom:1px solid var(--line); padding:6px 2px;}
+.rh-faqq{width:100%; text-align:left; background:none; border:none; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:20px 0; font:inherit; color:inherit;}
+.rh-faqq h3{font-size:1.0625rem; letter-spacing:-.01em; font-weight:600; color:var(--ink);}
+.rh-faqtog{flex-shrink:0; width:26px; height:26px; border-radius:7px; border:1px solid var(--line-2); display:grid; place-items:center; color:var(--ink-soft); transition:transform .25s ease, background .2s ease, color .2s ease, border-color .2s ease;}
+.rh-faq.open .rh-faqtog{background:var(--accent); color:#fff; border-color:var(--accent); transform:rotate(45deg);}
+.rh-faqa{overflow:hidden; max-height:0; transition:max-height .3s ease;}
+.rh-faq.open .rh-faqa{max-height:260px;}
+.rh-faqa p{padding:0 0 20px; font-size:.95rem; line-height:1.6; color:var(--body); max-width:72ch;}
 
 /* reveal */
 .rh-rv{opacity:0; transform:translateY(16px); transition:opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1);}
@@ -382,6 +478,7 @@ const CSS = `
 
 export function LandingPage() {
   const root = useRef<HTMLDivElement>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
     const els = root.current?.querySelectorAll('.rh-rv');
@@ -526,6 +623,78 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Feature spotlights with crafted visuals */}
+      <section className="rh-sec tight">
+        <div className="rh-sechead">
+          <p className="rh-eyelabel rh-rv">Inside the product</p>
+          <h2 className="rh-h2 rh-rv">Designed for the work, down to the pixel.</h2>
+        </div>
+        <div className="rh-spot">
+          {spotlights.map((s, idx) => (
+            <div className={`rh-spotrow${idx % 2 === 1 ? ' rev' : ''}`} key={s.key}>
+              <div className="rh-spottext rh-rv">
+                <p className="rh-eyelabel">{s.kicker}</p>
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+                <ul className="rh-spotpts">
+                  {s.points.map((p) => (
+                    <li key={p}><span className="rh-ck">{ic(<path d="M20 6 9 17l-5-5" />)}</span><span>{p}</span></li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rh-spotvis rh-rv" aria-hidden>
+                <div className="rh-vischrome">
+                  <i style={{ background: '#ff5f57' }} /><i style={{ background: '#febc2e' }} /><i style={{ background: '#28c840' }} />
+                  <span className="t">app.rayhealthevv.com</span>
+                </div>
+                {s.key === 'scheduling' && (
+                  <div className="rh-wk">
+                    {[
+                      { d: 'Mon', v: [{ c: 'g', n: 'M. Cole', t: '9:00 · PA 106' }, { c: 'b', n: 'H. Vance', t: '11:30' }] },
+                      { d: 'Tue', v: [{ c: 'n', n: 'D. Whitfield', t: '8:30' }, { c: 'g', n: 'R. Ortiz', t: '1:00' }] },
+                      { d: 'Wed', v: [{ c: 'b', n: 'A. Brooks', t: '10:00' }] },
+                      { d: 'Thu', v: [{ c: 'g', n: 'M. Cole', t: '9:00' }, { c: 'n', n: 'J. Pierce', t: '2:30' }] },
+                      { d: 'Fri', v: [{ c: 'g', n: 'H. Vance', t: '11:30' }] },
+                    ].map((col) => (
+                      <div key={col.d}>
+                        <div className="rh-wkhd">{col.d}</div>
+                        {col.v.map((v, i) => (
+                          <div className={`rh-vt ${v.c}`} key={i}><div className="nm">{v.n}</div><div className="tm">{v.t}</div></div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {s.key === 'evv' && (
+                  <div className="rh-evvcard">
+                    <div className="rh-map"><span className="pin" /></div>
+                    <div className="rh-evvgrid">
+                      {['Caregiver ID', 'Client ID', 'Service type', 'Date & time', 'Location', 'Visit status'].map((e) => (
+                        <div className="rh-evvi" key={e}><span className="rh-ck">{ic(<path d="M20 6 9 17l-5-5" />)}</span>{e}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {s.key === 'audit' && (
+                  <div className="rh-logcard">
+                    {[
+                      { a: 'visit.verified', t: '09:02:14' },
+                      { a: 'auth.checked', t: '09:02:14' },
+                      { a: 'schedule.published', t: '08:41:09' },
+                      { a: 'credential.renewed', t: '08:12:55' },
+                      { a: 'claim.flagged', t: '07:58:30' },
+                      { a: 'session.login', t: '07:50:02' },
+                    ].map((r, i) => (
+                      <div className="rh-logrow" key={i}><span className="dot" /><span className="ac">{r.a}</span><span className="ts">{r.t}</span></div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Module deep-dive */}
       <section className="rh-sec tight" style={{ background: 'var(--warm)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
         <div className="rh-sechead">
@@ -589,6 +758,30 @@ export function LandingPage() {
         </div>
         <div className="rh-intg">
           {integrations.map((i) => <span className="rh-rv" key={i}>{i}</span>)}
+        </div>
+      </section>
+
+      {/* Comparison */}
+      <section className="rh-sec tight" style={{ background: 'var(--warm)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+        <div className="rh-sechead center">
+          <p className="rh-eyelabel rh-rv">Why agencies switch</p>
+          <h2 className="rh-h2 rh-rv">The old way vs. RayHealth.</h2>
+        </div>
+        <div className="rh-cmp rh-rv">
+          <div className="rh-cmptbl">
+            <div className="rh-cmphd">
+              <div className="lbl">&nbsp;</div>
+              <div className="old">The old way</div>
+              <div className="new">With RayHealth</div>
+            </div>
+            {comparison.rows.map((r) => (
+              <div className="rh-cmprow" key={r.label}>
+                <div className="lbl">{r.label}</div>
+                <div className="old">{r.old}</div>
+                <div className="new"><span className="rh-ck">{ic(<path d="M20 6 9 17l-5-5" />)}</span>{r.neu}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -671,6 +864,31 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section className="rh-sec">
+        <div className="rh-sechead center">
+          <p className="rh-eyelabel rh-rv">Pricing</p>
+          <h2 className="rh-h2 rh-rv">Plans that scale with your agency.</h2>
+          <p className="rh-deck rh-rv">Transparent, per-agency pricing. No per-visit surcharges, no surprises.</p>
+        </div>
+        <div className="rh-pricing">
+          {pricingTiers.map((t) => (
+            <div className={`rh-price${t.featured ? ' feat' : ''} rh-rv`} key={t.name}>
+              {t.featured && <span className="rh-pbadge">Most popular</span>}
+              <h3>{t.name}</h3>
+              <div className="pr">{t.price}</div>
+              <p className="pd">{t.desc}</p>
+              <ul className="rh-plist">
+                {t.feat.map((f) => (
+                  <li key={f}><span className="rh-ck">{ic(<path d="M20 6 9 17l-5-5" />)}</span><span>{f}</span></li>
+                ))}
+              </ul>
+              <Link to="/demo" className={`rh-btn ${t.featured ? 'rh-btn-pri' : 'rh-btn-ghost'}`} style={{ justifyContent: 'center' }}>{t.cta}</Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* FAQ */}
       <section className="rh-sec">
         <div className="rh-sechead center">
@@ -678,10 +896,13 @@ export function LandingPage() {
           <h2 className="rh-h2 rh-rv">Questions, answered.</h2>
         </div>
         <div className="rh-faqs">
-          {faqs.map((f) => (
-            <div className="rh-faq rh-rv" key={f.q}>
-              <h3>{f.q}</h3>
-              <p>{f.a}</p>
+          {faqs.map((f, i) => (
+            <div className={`rh-faq rh-rv${openFaq === i ? ' open' : ''}`} key={f.q}>
+              <button type="button" className="rh-faqq" aria-expanded={openFaq === i} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                <h3>{f.q}</h3>
+                <span className="rh-faqtog" aria-hidden>{ic(<path d="M12 5v14M5 12h14" />)}</span>
+              </button>
+              <div className="rh-faqa"><p>{f.a}</p></div>
             </div>
           ))}
         </div>
