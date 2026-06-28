@@ -20,6 +20,7 @@ import authorizationRoutes from './routes/authorization-routes.js';
 import templateRoutes from './routes/template-routes.js';
 import assignmentRoutes from './routes/assignment-routes.js';
 import evvRoutes from './routes/evv-routes.js';
+import mobileRoutes from './routes/mobile-routes.js';
 import maintenanceRoutes from './routes/maintenance-routes.js';
 import taskRoutes from './routes/task-routes.js';
 import auditRetentionRoutes from './routes/audit-retention-routes.js';
@@ -220,6 +221,7 @@ export function createApp() {
     app.use(`${prefix}/templates`, templateRoutes);
     app.use(`${prefix}/assignments`, assignmentRoutes);
     app.use(`${prefix}/evv`, evvRoutes);
+    app.use(`${prefix}/mobile`, mobileRoutes);
     app.use(`${prefix}/maintenance`, maintenanceRoutes);
     app.use(`${prefix}/exports`, exportRoutes);
     app.use(`${prefix}/import`, importRoutes);

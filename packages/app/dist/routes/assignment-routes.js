@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireCapability } from '../middleware/require-capability.js';
-import { AuditEventRepository, CaregiverRepository, ClaimRepository, ClientRepository, ScheduleRepository, assignmentInputSchema, checkScheduleConflicts, } from '@rayhealth/core';
+import { AuditEventRepository, CaregiverRepository, ClaimRepository, ClientRepository, ScheduleRepository, assignmentInputSchema, checkScheduleConflicts, evaluateCredentialEligibility, } from '@rayhealth/core';
 import { safeError } from '../security/safe-log.js';
 const router = Router();
 router.get('/caregiver', requireCapability('schedule.read'), async (req, res) => {
@@ -38,10 +38,20 @@ router.post('/', requireCapability('schedule.write'), async (req, res) => {
         // Verify the caregiver belongs to this agency before creating the assignment.
         // Without this check an admin with a leaked caregiverId from another agency
         // could create cross-agency assignments.
-        const caregiver = await new CaregiverRepository(db).findById(parsed.data.caregiverId, req.auth.agencyId);
+        const caregiverRepo = new CaregiverRepository(db);
+        const caregiver = await caregiverRepo.findById(parsed.data.caregiverId, req.auth.agencyId);
         if (!caregiver) {
             return res.status(403).json({ message: 'Caregiver does not belong to this agency' });
         }
+        // Credential check (HHAeXchange-style): surface a warning when the caregiver
+        // has non-active credentials. A warning, not a hard block, so a coordinator
+        // can still schedule while a renewal is in flight — the warning rides along
+        // on the response and the assignment.created audit.
+        const credentials = await caregiverRepo.getCredentials(parsed.data.caregiverId, req.auth.agencyId);
+        const credCheck = evaluateCredentialEligibility({
+            operatingTrack: 'personal-assistance',
+            credentials: credentials.map((c) => ({ credentialType: c.credentialType, status: c.status })),
+        });
         // Resolve the template's client (also validates the template is in-agency).
         const templateClient = await repo.getTemplateClient(parsed.data.visitTemplateId, req.auth.agencyId);
         if (!templateClient) {
@@ -87,6 +97,12 @@ router.post('/', requireCapability('schedule.write'), async (req, res) => {
                 conflicts: conflicts.hardConflicts,
             });
         }
+        const warnings = [
+            ...conflicts.warnings,
+            ...(credCheck.eligible
+                ? []
+                : [`Caregiver has non-active credentials: ${credCheck.reasons.join(', ')}`]),
+        ];
         const assignment = await repo.createAssignment(parsed.data);
         // Audit the schedule write (was previously unaudited).
         try {
@@ -103,7 +119,7 @@ router.post('/', requireCapability('schedule.write'), async (req, res) => {
                     visitTemplateId: parsed.data.visitTemplateId,
                     clientId: templateClient.clientId,
                     visitDate: parsed.data.visitDate ?? null,
-                    warnings: conflicts.warnings,
+                    warnings,
                 },
                 occurredAt: new Date().toISOString(),
             });
@@ -111,7 +127,7 @@ router.post('/', requireCapability('schedule.write'), async (req, res) => {
         catch (err) {
             safeError('Failed to audit assignment.created', err);
         }
-        res.status(201).json({ ...assignment, warnings: conflicts.warnings });
+        res.status(201).json({ ...assignment, warnings });
     }
     catch (error) {
         safeError('Assignment creation failed', error);

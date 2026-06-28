@@ -24,7 +24,8 @@ describe('assignment routes', () => {
     } as any));
     // The route now verifies caregiver belongs to the agency before creating.
     vi.spyOn(core, 'CaregiverRepository').mockImplementation(() => ({
-      findById: vi.fn().mockResolvedValue({ id: 'caregiver-1', agencyId: 'agency-id', status: 'active' })
+      findById: vi.fn().mockResolvedValue({ id: 'caregiver-1', agencyId: 'agency-id', status: 'active' }),
+      getCredentials: vi.fn().mockResolvedValue([])
     } as any));
     // Conflict-gate dependencies (authorizations, billed units, audit).
     vi.spyOn(core, 'ClientRepository').mockImplementation(() => ({
@@ -50,6 +51,37 @@ describe('assignment routes', () => {
 
     expect(response.status).toBe(201);
     expect(mockCreateAssignment).toHaveBeenCalled();
+  });
+
+  it('warns (does not block) when the caregiver has non-active credentials', async () => {
+    vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
+      createAssignment: vi.fn().mockResolvedValue({ id: '124', caregiverId: 'caregiver-1', visitTemplateId: 'template-1' }),
+      getTemplateClient: vi.fn().mockResolvedValue({ clientId: 'client-1' }),
+      getCaregiverScheduleForConflict: vi.fn().mockResolvedValue([])
+    } as any));
+    vi.spyOn(core, 'CaregiverRepository').mockImplementation(() => ({
+      findById: vi.fn().mockResolvedValue({ id: 'caregiver-1', agencyId: 'agency-id', status: 'active' }),
+      getCredentials: vi.fn().mockResolvedValue([
+        { credentialType: 'tb-screening', status: 'expired' }
+      ])
+    } as any));
+    vi.spyOn(core, 'ClientRepository').mockImplementation(() => ({
+      getAuthorizations: vi.fn().mockResolvedValue([])
+    } as any));
+    vi.spyOn(core, 'ClaimRepository').mockImplementation(() => ({
+      getBilledLineUnits: vi.fn().mockResolvedValue([])
+    } as any));
+    vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({
+      create: vi.fn().mockResolvedValue({})
+    } as any));
+
+    const response = await request(createApp())
+      .post('/assignments')
+      .set('Authorization', `Bearer ${makeToken('coordinator')}`)
+      .send({ clientId: 'client-1', caregiverId: 'caregiver-1', visitTemplateId: 'template-1', visitDate: '2026-05-20' });
+
+    expect(response.status).toBe(201);
+    expect(response.body.warnings.some((w: string) => w.includes('non-active credentials'))).toBe(true);
   });
 
   it('forbids caregivers from creating assignments', async () => {
