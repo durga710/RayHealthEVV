@@ -205,7 +205,9 @@ function Quiz({ questions, onPass }: QuizProps) {
 
         {quizState === 'passed' ? (
           <div style={{ padding: '2rem 1.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🏅</div>
+            <div style={{ color: '#15803D', marginBottom: '0.5rem', lineHeight: 0 }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+            </div>
             <div style={{ fontWeight: 700, fontSize: '1.125rem', color: '#15803D', marginBottom: '0.25rem' }}>
               Quiz Passed!
             </div>
@@ -221,7 +223,9 @@ function Quiz({ questions, onPass }: QuizProps) {
                 padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#DC2626',
                 display: 'flex', alignItems: 'center', gap: '0.5rem',
               }}>
-                <span>✗</span>
+                <span style={{ display: 'inline-flex', flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                </span>
                 <span>
                   {correctCount} of {questions.length} correct — {Math.round(PASS_THRESHOLD * 100)}% required to pass.
                   Review the highlighted questions and try again.
@@ -429,7 +433,7 @@ export function CourseDetailPage() {
           </span>
           {isCompleted && (
             <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: 'rgba(134,239,172,0.3)', color: '#BBF7D0', borderRadius: '100px', padding: '0.2rem 0.65rem' }}>
-              ✓ Completed
+              Completed
             </span>
           )}
           {isInProgress && (
@@ -441,7 +445,10 @@ export function CourseDetailPage() {
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.5rem', lineHeight: 1.2 }}>{course.title}</h1>
         <p style={{ fontSize: '0.9rem', margin: 0, opacity: 0.85, lineHeight: 1.5 }}>{course.description}</p>
         <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1rem', fontSize: '0.8rem', opacity: 0.75, flexWrap: 'wrap' }}>
-          <span>⏱ {course.durationMinutes} min</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {course.durationMinutes} min
+          </span>
           {enrollment.dueAt && <span>Due: {formatDate(enrollment.dueAt)}</span>}
           {enrollment.lastCompletedAt && <span>Completed: {formatDate(enrollment.lastCompletedAt)}</span>}
           {enrollment.expiresAt && <span>Cert expires: {formatDate(enrollment.expiresAt)}</span>}
@@ -474,7 +481,9 @@ export function CourseDetailPage() {
       {/* Important note */}
       {mods?.note && (
         <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '10px', padding: '0.85rem 1.25rem', marginBottom: '1.25rem', fontSize: '0.875rem', color: '#92400E', display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
-          <span style={{ fontSize: '1rem', flexShrink: 0 }}>ℹ️</span>
+          <span style={{ display: 'inline-flex', flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          </span>
           <span>{mods.note}</span>
         </div>
       )}
@@ -557,7 +566,8 @@ export function CourseDetailPage() {
               fontSize: '0.875rem', textDecoration: 'none',
             }}
           >
-            📋 Official Course Resource ↗
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+            Official Course Resource ↗
           </a>
         </div>
       )}
@@ -577,7 +587,10 @@ export function CourseDetailPage() {
         <div>
           {isCompleted ? (
             <>
-              <div style={{ fontWeight: 700, color: '#15803D', fontSize: '1rem' }}>🏅 Training Complete</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, color: '#15803D', fontSize: '1rem' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+                Training Complete
+              </div>
               <div style={{ fontSize: '0.8125rem', color: '#16A34A', marginTop: '0.2rem' }}>
                 Completed {formatDate(enrollment.lastCompletedAt)}
                 {enrollment.expiresAt && ` · Expires ${formatDate(enrollment.expiresAt)}`}
@@ -605,12 +618,18 @@ export function CourseDetailPage() {
             disabled={completing}
             onClick={() => void handleMarkComplete()}
             style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
               padding: '0.6rem 1.4rem', fontWeight: 700, fontSize: '0.9375rem',
               color: '#fff', background: completing ? '#94A3B8' : 'var(--color-primary, #7c3aed)',
               border: 'none', borderRadius: '8px', cursor: completing ? 'wait' : 'pointer', whiteSpace: 'nowrap',
             }}
           >
-            {completing ? 'Saving…' : '✓ Mark Complete'}
+            {completing ? 'Saving…' : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M20 6 9 17l-5-5"/></svg>
+                Mark Complete
+              </>
+            )}
           </button>
         )}
         {!isCompleted && completing && quizPassed && (

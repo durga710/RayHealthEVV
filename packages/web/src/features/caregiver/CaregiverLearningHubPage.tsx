@@ -246,7 +246,10 @@ export function CaregiverLearningHubPage() {
                       {course.description}
                     </p>
                     <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#94A3B8', flexWrap: 'wrap' }}>
-                      <span>⏱ {course.durationMinutes} min</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {course.durationMinutes} min
+                      </span>
                       {dueAt && <span>Due: {formatDate(dueAt)}</span>}
                       {completedAt && <span>Completed: {formatDate(completedAt)}</span>}
                       {expiresAt && <span>Expires: {formatDate(expiresAt)}</span>}

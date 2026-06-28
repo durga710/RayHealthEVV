@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { getJson } from '../../lib/api-client.js';
 
@@ -44,24 +44,41 @@ interface InsightsPanelProps {
   refreshKey?: number;
 }
 
-const SEVERITY_STYLES: Record<InsightSeverity, { bg: string; border: string; fg: string; icon: string }> = {
+const SEVERITY_STYLES: Record<InsightSeverity, { bg: string; border: string; fg: string; icon: ReactNode }> = {
   critical: {
     bg: '#FCEBEB',
     border: '#E24B4A',
     fg: '#791F1F',
-    icon: '⚠',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    ),
   },
   warning: {
     bg: '#FAEEDA',
     border: '#BA7517',
     fg: '#633806',
-    icon: '◷',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    ),
   },
   info: {
     bg: '#E6F1FB',
     border: '#185FA5',
     fg: '#0C447C',
-    icon: 'ⓘ',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
+      </svg>
+    ),
   },
 };
 
@@ -171,7 +188,7 @@ function InsightCard({ insight }: { insight: LearningInsight }): ReactElement {
       }}
     >
       <header style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-        <span aria-hidden style={{ color: styles.fg, fontSize: '1.1rem' }}>{styles.icon}</span>
+        <span aria-hidden style={{ color: styles.fg, display: 'inline-flex' }}>{styles.icon}</span>
         <h4 style={{ margin: 0, fontSize: '1rem', color: styles.fg, fontWeight: 500 }}>
           {insight.title}
         </h4>

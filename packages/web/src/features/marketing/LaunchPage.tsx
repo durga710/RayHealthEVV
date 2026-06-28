@@ -100,11 +100,12 @@ export function LaunchPage() {
                   display: 'grid',
                   placeItems: 'center',
                   flexShrink: 0,
-                  color: '#16a34a',
-                  fontSize: '0.875rem'
+                  color: '#16a34a'
                 }}
               >
-                ✓
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
               </div>
               <span style={{ color: '#0F172A', fontSize: '0.9rem', lineHeight: 1.5 }}>{line}</span>
             </div>
@@ -147,10 +148,13 @@ export function LaunchPage() {
                   display: 'grid',
                   placeItems: 'center',
                   flexShrink: 0,
-                  fontSize: '0.875rem'
+                  color: '#b45309'
                 }}
               >
-                ⏱
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="12" cy="12" r="9" />
+                  <polyline points="12 7 12 12 15 14" />
+                </svg>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                 <span style={{ color: '#0F172A', fontSize: '0.9rem', lineHeight: 1.5 }}>{line}</span>

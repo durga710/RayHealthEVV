@@ -144,8 +144,12 @@ export function AgencySetupPage() {
             border: '1px solid #1E293B',
           }}
         >
-          <p style={{ margin: '0 0 0.75rem', color: '#E2E8F0', fontWeight: 700, fontSize: '0.9375rem' }}>
-            🏥 Pennsylvania Only
+          <p style={{ margin: '0 0 0.75rem', color: '#E2E8F0', fontWeight: 700, fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}>
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            Pennsylvania Only
           </p>
           <p style={{ margin: '0 0 1rem', color: '#94A3B8', fontSize: '0.8125rem', lineHeight: 1.6 }}>
             RayHealth EVV is purpose-built for Pennsylvania DHS Personal Assistance Services, ensuring full compliance with state and federal requirements.
@@ -157,7 +161,11 @@ export function AgencySetupPage() {
               'Sandata aggregator ready',
             ].map(item => (
               <li key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.8125rem', color: '#94A3B8' }}>
-                <span style={{ color: '#10B981', fontWeight: 700, flexShrink: 0 }}>✓</span>
+                <span style={{ color: '#10B981', display: 'flex', flexShrink: 0, marginTop: '0.1rem' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </span>
                 {item}
               </li>
             ))}

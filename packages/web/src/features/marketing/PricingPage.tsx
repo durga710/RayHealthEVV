@@ -125,7 +125,11 @@ export function PricingPage() {
                   key={f}
                   style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', paddingLeft: '1.5rem', position: 'relative' }}
                 >
-                  <span style={{ position: 'absolute', left: 0, top: 0, color: 'var(--color-primary-light)', fontWeight: 800 }}>✓</span>
+                  <span style={{ position: 'absolute', left: 0, top: '1px', color: 'var(--color-primary-light)', display: 'inline-flex' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
                   {f}
                 </li>
               ))}

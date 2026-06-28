@@ -201,7 +201,7 @@ export function CopilotChatPage(): ReactElement {
       try {
         const response = await postJson<ApiResponse<CopilotActionResult>>('/api/copilot/execute', turn.proposedActionData);
         if (response.success && response.data) {
-          appendSystemTurn(`✓ Done: ${response.data.summary}`);
+          appendSystemTurn(`Done: ${response.data.summary}`);
         } else {
           appendSystemTurn(`Could not run the action: ${response.error ?? 'unknown error'}`);
         }

@@ -65,7 +65,12 @@ export function ContactPage() {
       >
         {status === 'ok' ? (
           <div style={{ textAlign: 'center', padding: '1rem' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✓</div>
+            <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
             <h2 style={{ color: 'var(--color-primary-dark)', margin: 0 }}>Got it.</h2>
             <p style={{ color: 'var(--color-text-muted)', marginTop: '0.75rem', lineHeight: 1.6 }}>
               We'll be in touch within one business day.

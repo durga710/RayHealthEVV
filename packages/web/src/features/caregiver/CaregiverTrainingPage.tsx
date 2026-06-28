@@ -165,7 +165,13 @@ export function CaregiverTrainingPage() {
           borderRadius: '10px',
           alignItems: 'center',
         }}>
-          <span style={{ fontSize: '1.25rem' }}>{data.isCompliant ? '✅' : '⚠️'}</span>
+          <span style={{ display: 'inline-flex', flexShrink: 0, color: data.isCompliant ? '#15803D' : '#92400E' }}>
+            {data.isCompliant ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            )}
+          </span>
           <div>
             <div style={{ fontWeight: 600, fontSize: '0.9rem', color: data.isCompliant ? '#15803D' : '#92400E' }}>
               {data.isCompliant ? 'Training compliant' : 'Training incomplete'}
@@ -241,8 +247,9 @@ export function CaregiverTrainingPage() {
 
                 <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, alignItems: 'center' }}>
                   {isCompleted && (
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#16A34A', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '6px', padding: '0.3rem 0.7rem' }}>
-                      🏅 Certificate
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', fontWeight: 600, color: '#16A34A', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '6px', padding: '0.3rem 0.7rem' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+                      Certificate
                     </span>
                   )}
                   <button
@@ -267,7 +274,10 @@ export function CaregiverTrainingPage() {
               <ProgressBar pct={pct} />
 
               <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.6rem', flexWrap: 'wrap' }}>
-                <span>⏱ {course.durationMinutes} min</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {course.durationMinutes} min
+                </span>
                 <span>{pct}% complete</span>
                 {enrollment.dueAt && <span>Due: {formatDate(enrollment.dueAt)}</span>}
                 {enrollment.lastCompletedAt && <span>Completed: {formatDate(enrollment.lastCompletedAt)}</span>}
