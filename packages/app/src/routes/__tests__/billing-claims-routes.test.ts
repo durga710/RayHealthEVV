@@ -30,6 +30,9 @@ function mockRepos(overrides: RepoOverrides = {}) {
   vi.spyOn(core, 'AuditEventRepository').mockImplementation(
     () => ({ create: vi.fn().mockResolvedValue({}) }) as unknown as core.AuditEventRepository,
   );
+  vi.spyOn(core, 'AgencyRepository').mockImplementation(
+    () => ({ getFeeSchedule: vi.fn().mockResolvedValue({}) }) as unknown as core.AgencyRepository,
+  );
   return repo;
 }
 

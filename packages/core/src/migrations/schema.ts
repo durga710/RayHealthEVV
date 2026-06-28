@@ -1051,6 +1051,18 @@ export async function up(knex: Knex): Promise<void> {
       }
     }
   }
+
+  // ── R15 — Agency fee schedule (cents per billing unit, by HCPCS code) ──────
+  // Stored as jsonb { "T1019": 600, ... } keyed by service code. Drives the
+  // claim line chargeCents; without it claim lines are $0 and flagged.
+  if (
+    (await knex.schema.hasTable('agencies')) &&
+    !(await knex.schema.hasColumn('agencies', 'fee_schedule'))
+  ) {
+    await knex.schema.alterTable('agencies', (t) => {
+      t.jsonb('fee_schedule').nullable();
+    });
+  }
 }
 
 export async function down(knex: Knex): Promise<void> {

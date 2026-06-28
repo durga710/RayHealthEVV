@@ -22,6 +22,7 @@ function mockRepos(overrides = {}) {
     };
     vi.spyOn(core, 'ClaimRepository').mockImplementation(() => repo);
     vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create: vi.fn().mockResolvedValue({}) }));
+    vi.spyOn(core, 'AgencyRepository').mockImplementation(() => ({ getFeeSchedule: vi.fn().mockResolvedValue({}) }));
     return repo;
 }
 const sampleClaim = {

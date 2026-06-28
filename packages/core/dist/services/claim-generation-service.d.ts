@@ -51,6 +51,12 @@ export interface GenerateClaimsInput {
     authorizations: readonly AuthorizationContext[];
     /** Units already billed per authorization id across prior claims. */
     priorUnitsByAuth?: Readonly<Record<string, number>>;
+    /**
+     * Contracted fee schedule: cents per billing unit, keyed by HCPCS service
+     * code. When a visit's service code has no rate the line charges $0 and is
+     * flagged — a claim can't be sent to a payer at $0.
+     */
+    ratesByServiceCode?: Readonly<Record<string, number>>;
     /** Injectable id generator (deterministic in tests). */
     newId?: () => string;
 }

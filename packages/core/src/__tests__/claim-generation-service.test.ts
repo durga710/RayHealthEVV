@@ -51,6 +51,8 @@ function input(overrides: Partial<GenerateClaimsInput> = {}): GenerateClaimsInpu
     visits: overrides.visits ?? [visit()],
     authorizations: overrides.authorizations ?? [baseAuth],
     priorUnitsByAuth: overrides.priorUnitsByAuth,
+    ratesByServiceCode:
+      overrides.ratesByServiceCode ?? { T1019: 600, S5125: 600, T1004: 600, T1021: 5000 },
     newId: overrides.newId ?? seqIds(),
   };
 }
@@ -97,8 +99,19 @@ describe('generateClaims', () => {
     expect(claim.denialRisk).toBe('low');
     expect(claim.lines).toHaveLength(1);
     expect(claim.lines[0].denialReasons).toHaveLength(0);
+    expect(claim.lines[0].chargeCents).toBe(2400); // 4 units * 600 cents
+    expect(claim.totalChargeCents).toBe(2400);
     expect(claim.lines[0].claimId).toBe(claim.id);
     expect(claim.controlNumber).toMatch(/^[0-9A-F]{12}$/);
+  });
+
+  it('flags a $0 line (medium risk) when no fee-schedule rate is configured', () => {
+    const { claims } = generateClaims(input({ ratesByServiceCode: {} }));
+    expect(claims).toHaveLength(1);
+    const line = claims[0].lines[0];
+    expect(line.chargeCents).toBe(0);
+    expect(line.denialRisk).toBe('medium');
+    expect(line.denialReasons.some((r) => r.includes('fee-schedule rate'))).toBe(true);
   });
 
   it('reports a visit with no matching authorization as unbillable', () => {

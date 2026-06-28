@@ -62,6 +62,12 @@ export interface GenerateClaimsInput {
   authorizations: readonly AuthorizationContext[];
   /** Units already billed per authorization id across prior claims. */
   priorUnitsByAuth?: Readonly<Record<string, number>>;
+  /**
+   * Contracted fee schedule: cents per billing unit, keyed by HCPCS service
+   * code. When a visit's service code has no rate the line charges $0 and is
+   * flagged — a claim can't be sent to a payer at $0.
+   */
+  ratesByServiceCode?: Readonly<Record<string, number>>;
   /** Injectable id generator (deterministic in tests). */
   newId?: () => string;
 }
@@ -228,6 +234,13 @@ export function generateClaims(input: GenerateClaimsInput): GenerateClaimsResult
 
     remainingByAuth.set(auth.id, remaining - units);
 
+    const ratePerUnit = input.ratesByServiceCode?.[visit.serviceCode] ?? 0;
+    const chargeCents = ratePerUnit * units;
+    if (ratePerUnit <= 0 && units > 0) {
+      reasons.push(`No fee-schedule rate configured for ${visit.serviceCode} — charge is $0.00.`);
+      riskFlags.push('medium');
+    }
+
     const denialRisk = worstRisk(riskFlags);
     const line: ClaimLine = {
       visitId: visit.visitId,
@@ -235,7 +248,7 @@ export function generateClaims(input: GenerateClaimsInput): GenerateClaimsResult
       serviceDate,
       units,
       minutes,
-      chargeCents: 0,
+      chargeCents,
       denialRisk,
       denialReasons: reasons,
     };

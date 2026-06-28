@@ -16,7 +16,7 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
-import { AuditEventRepository, ClaimRepository, buildPayrollExport, canTransitionClaim, claimStatuses, generate837P, generateClaims, paServiceCodeDescriptions, } from '@rayhealth/core';
+import { AgencyRepository, AuditEventRepository, ClaimRepository, buildPayrollExport, canTransitionClaim, claimStatuses, generate837P, generateClaims, paServiceCodeDescriptions, } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 const router = Router();
 const datePattern = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD');
@@ -87,11 +87,12 @@ router.post('/claims/generate', requireCapability('billing.write'), async (req, 
         const db = req.app.get('db');
         const repo = new ClaimRepository(db);
         const agencyId = req.auth.agencyId;
-        const [allVisits, alreadyBilled, authorizations, billedUnits] = await Promise.all([
+        const [allVisits, alreadyBilled, authorizations, billedUnits, ratesByServiceCode] = await Promise.all([
             repo.getBillableVisits(agencyId, startOfDayIso(periodStart), endOfDayIso(periodEnd)),
             repo.getActiveClaimVisitIds(agencyId),
             repo.getAgencyAuthorizations(agencyId),
             repo.getBilledLineUnits(agencyId),
+            new AgencyRepository(db).getFeeSchedule(agencyId),
         ]);
         const visits = allVisits.filter((v) => !alreadyBilled.has(v.visitId));
         const result = generateClaims({
@@ -101,6 +102,7 @@ router.post('/claims/generate', requireCapability('billing.write'), async (req, 
             visits,
             authorizations,
             priorUnitsByAuth: priorUnitsByAuth(billedUnits, authorizations),
+            ratesByServiceCode,
         });
         const created = await repo.createClaims(result.claims);
         await audit(db, req, 'claim.generated', agencyId, {
@@ -253,6 +255,28 @@ router.get('/claims/:id/837', requireCapability('billing.read'), async (req, res
         ]);
         if (!profile) {
             res.status(404).json({ message: 'Agency billing profile not found' });
+            return;
+        }
+        // A clearinghouse / PA Medicaid rejects an 837 with an empty billing
+        // provider. Refuse to emit a structurally-invalid file; tell the admin
+        // exactly which Billing & Clearinghouse fields to complete first.
+        const requiredProfile = [
+            ['npi', 'Billing NPI'],
+            ['taxId', 'Tax ID (EIN)'],
+            ['address1', 'Service address'],
+            ['city', 'City'],
+            ['state', 'State'],
+            ['postalCode', 'ZIP code'],
+        ];
+        const missing = requiredProfile
+            .filter(([key]) => !String(profile[key] ?? '').trim())
+            .map(([, label]) => label);
+        if (missing.length > 0) {
+            res.status(422).json({
+                message: `Agency billing profile is incomplete — set ${missing.join(', ')} under Settings → Billing & Clearinghouse before generating an 837.`,
+                code: 'BILLING_PROFILE_INCOMPLETE',
+                missing,
+            });
             return;
         }
         const client = clientInfo.get(claim.clientId);
