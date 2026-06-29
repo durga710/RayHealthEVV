@@ -9,6 +9,7 @@ import { useAuth } from './lib/AuthContext.js';
 import { LandingPage } from './features/landing/LandingPage.js';
 import { CaregiverLayout } from './features/caregiver/CaregiverLayout.js';
 import { AdminAssistant } from './features/support/AdminAssistant.js';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary.js';
 
 // Lazy-loaded route leaves — each becomes its own chunk. The page components are
 // NAMED exports, so map the named export onto `default` for React.lazy.
@@ -365,6 +366,7 @@ const navGroupDefs: NavGroupDef[] = [
 
 function AdminLayout() {
   const { logout, user } = useAuth();
+  const { pathname } = useLocation();
   const [navOpen, setNavOpen] = useState(false);
   const closeNav = () => setNavOpen(false);
 
@@ -485,7 +487,12 @@ function AdminLayout() {
 
       <main className="admin-main">
         <div className="admin-main__inner">
-          <Outlet />
+          {/* One broken page degrades to a localized message instead of
+              blanking the whole admin shell. Keyed by pathname so navigating
+              away from a crashed page clears the error. */}
+          <RouteErrorBoundary key={pathname}>
+            <Outlet />
+          </RouteErrorBoundary>
         </div>
       </main>
 
