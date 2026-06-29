@@ -1,12 +1,22 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../src/lib/AuthContext';
 
 const PRIMARY = '#1a5fa8';
 const INACTIVE = '#9ab0c8';
 
 export default function TabLayout() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Auth gate for the whole tab area. If the session is lost at any point
+  // (token rejected, logout, expiry mid-use), bounce straight to login rather
+  // than leaving the user on a protected screen they can't load data into.
+  if (!isLoading && !isAuthenticated) {
+    return <Redirect href="/login" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
