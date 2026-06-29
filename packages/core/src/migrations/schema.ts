@@ -1399,9 +1399,83 @@ export async function up(knex: Knex): Promise<void> {
       });
     }
   }
+
+  // ── R25 — EVV aggregator + clearinghouse submission config ────────────────
+  // Ports agency_evv_config / agency_sandata_config / agency_hhaexchange_config
+  // (previously created only by unported dated migrations, so absent on a freshly
+  // migrated DB) into the baseline, and adds what automated submission needs: a
+  // per-agency API base URL and an AES-256-GCM encrypted credentials blob (see
+  // security/cell-cipher.ts). agency_clearinghouse_config is new — it carries the
+  // 837/835 trading-partner transport, endpoint, and credentials.
+  if (!(await knex.schema.hasTable('agency_evv_config'))) {
+    await knex.schema.createTable('agency_evv_config', (t) => {
+      t.uuid('agency_id').primary().references('id').inTable('agencies').onDelete('CASCADE');
+      t.string('aggregator', 16).notNullable().defaultTo('none');
+      t.string('state_code', 2).notNullable().defaultTo('PA');
+      t.boolean('production_ready').notNullable().defaultTo(false);
+      t.timestamps(true, true);
+    });
+  }
+
+  if (!(await knex.schema.hasTable('agency_sandata_config'))) {
+    await knex.schema.createTable('agency_sandata_config', (t) => {
+      t.uuid('agency_id').primary().references('id').inTable('agencies').onDelete('CASCADE');
+      t.string('provider_id', 9).nullable();
+      t.string('timezone', 64).notNullable().defaultTo('America/New_York');
+      t.jsonb('caregiver_mappings').notNullable().defaultTo(knex.raw("'[]'::jsonb"));
+      t.jsonb('service_mappings').notNullable().defaultTo(knex.raw("'[]'::jsonb"));
+      t.boolean('enabled').notNullable().defaultTo(false);
+      t.string('api_base_url', 255).nullable();
+      t.text('credentials_encrypted').nullable();
+      t.timestamps(true, true);
+    });
+  } else if (!(await knex.schema.hasColumn('agency_sandata_config', 'api_base_url'))) {
+    await knex.schema.alterTable('agency_sandata_config', (t) => {
+      t.string('api_base_url', 255).nullable();
+      t.text('credentials_encrypted').nullable();
+    });
+  }
+
+  if (!(await knex.schema.hasTable('agency_hhaexchange_config'))) {
+    await knex.schema.createTable('agency_hhaexchange_config', (t) => {
+      t.uuid('agency_id').primary().references('id').inTable('agencies').onDelete('CASCADE');
+      t.string('agency_tax_id', 9).nullable();
+      t.string('hha_provider_id', 32).nullable();
+      t.string('timezone', 64).notNullable().defaultTo('America/New_York');
+      t.jsonb('caregiver_mappings').notNullable().defaultTo(knex.raw("'[]'::jsonb"));
+      t.jsonb('service_mappings').notNullable().defaultTo(knex.raw("'[]'::jsonb"));
+      t.boolean('enabled').notNullable().defaultTo(false);
+      t.string('api_base_url', 255).nullable();
+      t.text('credentials_encrypted').nullable();
+      t.timestamps(true, true);
+    });
+  } else if (!(await knex.schema.hasColumn('agency_hhaexchange_config', 'api_base_url'))) {
+    await knex.schema.alterTable('agency_hhaexchange_config', (t) => {
+      t.string('api_base_url', 255).nullable();
+      t.text('credentials_encrypted').nullable();
+    });
+  }
+
+  if (!(await knex.schema.hasTable('agency_clearinghouse_config'))) {
+    await knex.schema.createTable('agency_clearinghouse_config', (t) => {
+      t.uuid('agency_id').primary().references('id').inTable('agencies').onDelete('CASCADE');
+      // 'sftp' | 'http' — how the 837 is transmitted and the 835 retrieved.
+      t.string('transport', 16).notNullable().defaultTo('sftp');
+      t.string('endpoint', 255).nullable();
+      t.text('credentials_encrypted').nullable();
+      // Free-form per-clearinghouse settings (submitter id, receiver id, dirs).
+      t.jsonb('settings').notNullable().defaultTo(knex.raw("'{}'::jsonb"));
+      t.boolean('enabled').notNullable().defaultTo(false);
+      t.timestamps(true, true);
+    });
+  }
 }
 
 export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTableIfExists('agency_clearinghouse_config');
+  await knex.schema.dropTableIfExists('agency_hhaexchange_config');
+  await knex.schema.dropTableIfExists('agency_sandata_config');
+  await knex.schema.dropTableIfExists('agency_evv_config');
   await knex.schema.dropTableIfExists('claim_lines');
   await knex.schema.dropTableIfExists('claims');
   await knex.schema.dropTableIfExists('password_reset_tokens');

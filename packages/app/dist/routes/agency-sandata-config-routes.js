@@ -24,6 +24,18 @@ const sandataConfigUpdateSchema = z.object({
     caregivers: z.array(sandataCaregiverMappingSchema).optional(),
     services: z.array(sandataServiceMappingSchema).optional(),
     enabled: z.boolean().optional(),
+    apiBaseUrl: z.string().url().max(255).nullable().optional(),
+    // Write-only. undefined = leave unchanged; null = clear; object = encrypt+store.
+    credentials: z
+        .object({
+        username: z.string().max(255).optional(),
+        password: z.string().max(255).optional(),
+        apiKey: z.string().max(512).optional(),
+        account: z.string().max(255).optional(),
+    })
+        .strict()
+        .nullable()
+        .optional(),
 });
 function emptyPartialFor(agencyId) {
     return {
@@ -33,6 +45,8 @@ function emptyPartialFor(agencyId) {
         caregivers: [],
         services: [],
         enabled: false,
+        apiBaseUrl: null,
+        hasCredentials: false,
     };
 }
 function mergeConfig(current, update) {
@@ -43,6 +57,8 @@ function mergeConfig(current, update) {
         caregivers: update.caregivers ?? current.caregivers,
         services: update.services ?? current.services,
         enabled: update.enabled ?? current.enabled,
+        apiBaseUrl: update.apiBaseUrl !== undefined ? update.apiBaseUrl : current.apiBaseUrl,
+        hasCredentials: current.hasCredentials,
     };
 }
 function validateForEnable(next) {
@@ -60,6 +76,8 @@ function redactForAudit(c) {
         enabled: c.enabled,
         caregiverMappingCount: c.caregivers.length,
         serviceMappingCount: c.services.length,
+        apiBaseUrlSet: Boolean(c.apiBaseUrl),
+        hasCredentials: c.hasCredentials,
     };
 }
 // ---------- GET ----------
@@ -105,7 +123,7 @@ router.put('/me/sandata-config', requireCapability('agency.write'), async (req, 
             res.status(422).json({ success: false, error: guardError });
             return;
         }
-        const stored = await repo.upsert(next);
+        const stored = await repo.upsert({ ...next, credentials: parsed.data.credentials });
         try {
             await new AuditEventRepository(db).create({
                 agencyId: req.auth.agencyId,

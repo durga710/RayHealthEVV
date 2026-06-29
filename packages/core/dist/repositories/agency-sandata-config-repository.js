@@ -8,6 +8,7 @@
  * (nullable identity) so the admin UI can render a half-filled state.
  */
 import { sandataCaregiverMappingSchema, sandataServiceMappingSchema, } from '../services/sandata-mapping.js';
+import { encryptCell, decryptCell } from '../security/cell-cipher.js';
 function parseJsonField(value) {
     if (Array.isArray(value))
         return value;
@@ -50,6 +51,8 @@ function rowToPartial(row) {
         caregivers: parseCaregivers(row.caregiver_mappings),
         services: parseServices(row.service_mappings),
         enabled: Boolean(row.enabled),
+        apiBaseUrl: row.api_base_url ?? null,
+        hasCredentials: Boolean(row.credentials_encrypted),
     };
 }
 function rowToConfig(row) {
@@ -82,6 +85,38 @@ export class AgencySandataConfigRepository {
             .first());
         return row ? rowToConfig(row) : undefined;
     }
+    /**
+     * Returns the full submission config WITH decrypted credentials — for the
+     * Sandata client only. Never expose this to an API response; the admin UI
+     * uses `findByAgency` (which carries `hasCredentials`, not the secret).
+     */
+    async findSubmissionConfig(agencyId) {
+        const row = (await this.db('agency_sandata_config')
+            .where({ agency_id: agencyId })
+            .first());
+        if (!row)
+            return undefined;
+        let credentials = null;
+        if (row.credentials_encrypted) {
+            const plain = decryptCell(row.credentials_encrypted);
+            if (plain) {
+                try {
+                    credentials = JSON.parse(plain);
+                }
+                catch {
+                    credentials = null;
+                }
+            }
+        }
+        return {
+            enabled: Boolean(row.enabled),
+            apiBaseUrl: row.api_base_url ?? null,
+            providerId: row.provider_id,
+            credentials,
+            caregivers: parseCaregivers(row.caregiver_mappings),
+            services: parseServices(row.service_mappings),
+        };
+    }
     async upsert(input) {
         const payload = {
             agency_id: input.agencyId,
@@ -92,17 +127,19 @@ export class AgencySandataConfigRepository {
             enabled: input.enabled,
             updated_at: this.db.fn.now(),
         };
+        // Tri-state: only touch these columns when the caller supplied them, so a
+        // mappings-only save never wipes a previously stored endpoint / credentials.
+        if (input.apiBaseUrl !== undefined)
+            payload.api_base_url = input.apiBaseUrl;
+        if (input.credentials !== undefined) {
+            payload.credentials_encrypted = input.credentials
+                ? encryptCell(JSON.stringify(input.credentials))
+                : null;
+        }
         await this.db('agency_sandata_config')
             .insert({ ...payload, created_at: this.db.fn.now() })
             .onConflict('agency_id')
-            .merge({
-            provider_id: payload.provider_id,
-            timezone: payload.timezone,
-            caregiver_mappings: payload.caregiver_mappings,
-            service_mappings: payload.service_mappings,
-            enabled: payload.enabled,
-            updated_at: payload.updated_at,
-        });
+            .merge(payload);
         const stored = await this.findByAgency(input.agencyId);
         if (!stored) {
             throw new Error(`upsert succeeded but no row found for agency=${input.agencyId}`);

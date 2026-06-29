@@ -6,23 +6,63 @@ import { makeToken, setTestJwtSecret } from './test-helpers.js';
 beforeAll(() => setTestJwtSecret());
 describe('Sandata submission write-back routes', () => {
     afterEach(() => {
+        vi.unstubAllGlobals();
         vi.restoreAllMocks();
     });
-    it('marks a batch submitted and returns the count', async () => {
-        const markSandataSubmittedInRange = vi.fn().mockResolvedValue(7);
+    it('returns not_configured (409) when Sandata is not set up', async () => {
+        vi.spyOn(core, 'AgencySandataConfigRepository').mockImplementation(() => ({
+            findSubmissionConfig: vi.fn().mockResolvedValue(undefined),
+        }));
+        const res = await request(createApp())
+            .post('/exports/sandata/submit')
+            .set('Authorization', `Bearer ${makeToken('admin')}`)
+            .send({ from: '2026-06-01', to: '2026-06-30' });
+        expect(res.status).toBe(409);
+        expect(res.body.status).toBe('not_configured');
+    });
+    it('submits verified visits and records each acknowledgment', async () => {
+        vi.spyOn(core, 'AgencySandataConfigRepository').mockImplementation(() => ({
+            findSubmissionConfig: vi.fn().mockResolvedValue({
+                enabled: true,
+                apiBaseUrl: 'https://sandbox.sandata.example/v1',
+                providerId: '123456789',
+                credentials: { apiKey: 'k' },
+                caregivers: [{ caregiverId: 'cg-1', externalWorkerId: 'W-1' }],
+                services: [{ internalServiceCode: 'PCA', hcpcsCode: 'T1019', hcpcsModifier: 'U2', label: 'PC' }],
+            }),
+        }));
+        const markSandataSubmission = vi.fn().mockResolvedValue(true);
         vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
-            markSandataSubmittedInRange,
+            getVisitsForExport: vi.fn().mockResolvedValue([
+                {
+                    visitId: 'v-1',
+                    serviceCode: 'PCA',
+                    clientId: 'client-1',
+                    caregiverId: 'cg-1',
+                    clockInTime: '2026-06-01T13:00:00.000Z',
+                    clockOutTime: '2026-06-01T17:00:00.000Z',
+                    clockInLocation: { lat: 40.1, lng: -75.1 },
+                    clockOutLocation: { lat: 40.1, lng: -75.1 },
+                    status: 'verified',
+                },
+            ]),
+            markSandataSubmission,
         }));
         vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({
             create: vi.fn().mockResolvedValue({}),
+        }));
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve(JSON.stringify({ batchId: 'B-1', results: [{ visitOtherId: 'v-1', status: 'accepted', confirmationId: 'C-1' }] })),
         }));
         const res = await request(createApp())
             .post('/exports/sandata/submit')
             .set('Authorization', `Bearer ${makeToken('admin')}`)
             .send({ from: '2026-06-01', to: '2026-06-30' });
         expect(res.status).toBe(200);
-        expect(res.body.marked).toBe(7);
-        expect(markSandataSubmittedInRange).toHaveBeenCalledWith('agency-1', expect.any(String), expect.any(String));
+        expect(res.body).toMatchObject({ status: 'ok', batchId: 'B-1', accepted: 1 });
+        expect(markSandataSubmission).toHaveBeenCalledWith('v-1', 'agency-1', 'accepted', 'C-1');
     });
     it('rejects a malformed date on submit with 400', async () => {
         const res = await request(createApp())

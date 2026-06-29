@@ -4,9 +4,12 @@ import {
   AuditEventRepository,
   EvvRepository,
   AgencyHhaexchangeConfigRepository,
+  AgencySandataConfigRepository,
+  SandataClient,
   buildHhaexchangeExport,
   toHhaexchangeCsv,
   type HhaexchangeVisitInput,
+  type VisitSubmission,
 } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 import { safeError } from '../security/safe-log.js';
@@ -268,11 +271,13 @@ router.get('/sandata.csv', requireCapability('billing.read'), async (req, res) =
 /**
  * POST /exports/sandata/submit  { from?, to? }
  *
- * Marks every verified visit in the date range as `submitted` to the state
- * EVV aggregator — the write-back that records "this batch was sent to
- * Sandata". Until a visit reaches `accepted`, claim generation flags it at
- * medium denial risk; this is the first step of that lifecycle. Only advances
- * visits not already in the pipeline (never downgrades accepted/rejected).
+ * Transmits every verified visit in the date range to the agency's Sandata
+ * aggregator over its API and records the per-visit acknowledgments. Returns
+ * `not_configured` (409) when the agency has not finished Sandata setup — no
+ * endpoint / Provider ID / credentials — so a half-configured agency never
+ * believes a batch was sent. On a transport failure returns `error` (502) with
+ * whether a retry is sane; on success records each ack onto the visit and
+ * audits the batch.
  */
 router.post('/sandata/submit', requireCapability('billing.write'), async (req, res) => {
   const parsed = submitSchema.safeParse(req.body ?? {});
@@ -285,11 +290,53 @@ router.post('/sandata/submit', requireCapability('billing.write'), async (req, r
     const toIso = to ? new Date(`${to.length === 10 ? `${to}T23:59:59.999Z` : to}`).toISOString() : undefined;
 
     const db = req.app.get('db');
-    const marked = await new EvvRepository(db).markSandataSubmittedInRange(
-      req.auth.agencyId,
-      fromIso,
-      toIso,
-    );
+    const config = await new AgencySandataConfigRepository(db).findSubmissionConfig(req.auth.agencyId);
+    if (!config) {
+      return res
+        .status(409)
+        .json({ status: 'not_configured', reason: 'Sandata integration has not been set up for this agency' });
+    }
+
+    const rows = await new EvvRepository(db).getVisitsForExport(req.auth.agencyId, fromIso, toIso);
+    const visits: VisitSubmission[] = rows
+      .filter((r) => r.status === 'verified')
+      .map((r) => {
+        const inLoc = (r.clockInLocation ?? {}) as { lat?: number; lng?: number };
+        const outLoc = (r.clockOutLocation ?? {}) as { lat?: number; lng?: number };
+        return {
+          visitId: r.visitId,
+          clientId: r.clientId ?? '',
+          caregiverId: r.caregiverId,
+          serviceCode: r.serviceCode ?? '',
+          clockInAt: r.clockInTime,
+          clockOutAt: r.clockOutTime,
+          clockInLat: inLoc.lat ?? null,
+          clockInLng: inLoc.lng ?? null,
+          clockOutLat: outLoc.lat ?? null,
+          clockOutLng: outLoc.lng ?? null,
+          verificationMethod: inLoc.lat != null ? 'gps' : 'manual',
+        };
+      });
+
+    const result = await SandataClient.submitVisits(config, visits);
+    if (result.kind === 'not_configured') {
+      return res.status(409).json({ status: 'not_configured', reason: result.reason });
+    }
+    if (result.kind === 'error') {
+      return res.status(502).json({ status: 'error', message: result.message, retryable: result.retryable });
+    }
+
+    // Record each Sandata acknowledgment back onto the originating visit.
+    const repo = new EvvRepository(db);
+    let submitted = 0;
+    let accepted = 0;
+    let rejected = 0;
+    for (const ack of result.acks) {
+      await repo.markSandataSubmission(ack.visitId, req.auth.agencyId, ack.status, ack.confirmationId ?? undefined);
+      if (ack.status === 'accepted') accepted += 1;
+      else if (ack.status === 'rejected') rejected += 1;
+      else submitted += 1;
+    }
 
     try {
       await new AuditEventRepository(db).create({
@@ -300,14 +347,14 @@ router.post('/sandata/submit', requireCapability('billing.write'), async (req, r
         entityType: 'evv_batch',
         entityId: req.auth.agencyId,
         outcome: 'success',
-        payload: { marked, from: from ?? null, to: to ?? null },
+        payload: { batchId: result.batchId, submitted, accepted, rejected, from: from ?? null, to: to ?? null },
         occurredAt: new Date().toISOString(),
       });
     } catch (err) {
       safeError('Failed to audit evv.sandata.submitted', err);
     }
 
-    res.json({ marked, from: from ?? null, to: to ?? null });
+    res.json({ status: 'ok', batchId: result.batchId, submitted, accepted, rejected });
   } catch (err) {
     safeError('sandata submit failed', err);
     res.status(500).json({ message: 'Internal Server Error' });
