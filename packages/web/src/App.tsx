@@ -13,6 +13,7 @@ import { AdminAssistant } from './features/support/AdminAssistant.js';
 // Lazy-loaded route leaves — each becomes its own chunk. The page components are
 // NAMED exports, so map the named export onto `default` for React.lazy.
 const AgencySetupPage = lazy(() => import('./features/agency/AgencySetupPage.js').then((m) => ({ default: m.AgencySetupPage })));
+const GoLiveReadinessPage = lazy(() => import('./features/agency/GoLiveReadinessPage.js').then((m) => ({ default: m.GoLiveReadinessPage })));
 const StaffPage = lazy(() => import('./features/staff/StaffPage.js').then((m) => ({ default: m.StaffPage })));
 const ClientsPage = lazy(() => import('./features/clients/ClientsPage.js').then((m) => ({ default: m.ClientsPage })));
 const AuthorizationsPage = lazy(() => import('./features/authorizations/AuthorizationsPage.js').then((m) => ({ default: m.AuthorizationsPage })));
@@ -284,6 +285,7 @@ const navGroupDefs: NavGroupDef[] = [
     label: 'Agency',
     allowedRoles: ['admin'],
     items: [
+      { to: '/admin/readiness', label: 'Go-Live Checklist', icon: icons.dashboard },
       { to: '/admin/agency', label: 'Agency Setup', icon: icons.agency },
       { to: '/admin/staff', label: 'Staff', icon: icons.staff },
       { to: '/admin/clients', label: 'Clients', icon: icons.clients },
@@ -542,6 +544,7 @@ export function App() {
       <Route path="/admin" element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
           <Route path="agency" element={<AgencySetupPage />} />
+          <Route path="readiness" element={<GoLiveReadinessPage />} />
           <Route path="staff" element={<StaffPage />} />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="authorizations" element={<AuthorizationsPage />} />
