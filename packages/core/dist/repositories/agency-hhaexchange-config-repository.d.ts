@@ -14,6 +14,8 @@
  */
 import type { Knex } from 'knex';
 import { type HhaexchangeCaregiverMapping, type HhaexchangeConfig, type HhaexchangeServiceMapping } from '../services/hhaexchange-mapping.js';
+import type { IntegrationCredentials } from '../integrations/types.js';
+import type { HhaexchangeClientConfig } from '../integrations/hhaexchange-client.js';
 export interface PartialHhaexchangeConfig {
     agencyId: string;
     agencyTaxId: string | null;
@@ -22,6 +24,26 @@ export interface PartialHhaexchangeConfig {
     caregivers: HhaexchangeCaregiverMapping[];
     services: HhaexchangeServiceMapping[];
     enabled: boolean;
+    apiBaseUrl: string | null;
+    /** Read-only indicator — plaintext credentials are never returned to callers. */
+    hasCredentials: boolean;
+}
+/**
+ * Upsert input. `credentials` is write-only and tri-state:
+ *   undefined → leave the stored credentials unchanged
+ *   null      → clear the stored credentials
+ *   object    → encrypt (AES-256-GCM) and store
+ */
+export interface HhaexchangeConfigUpsert {
+    agencyId: string;
+    agencyTaxId: string | null;
+    hhaProviderId: string | null;
+    timezone: string;
+    caregivers: HhaexchangeCaregiverMapping[];
+    services: HhaexchangeServiceMapping[];
+    enabled: boolean;
+    apiBaseUrl?: string | null;
+    credentials?: IntegrationCredentials | null;
 }
 export declare class AgencyHhaexchangeConfigRepository {
     private readonly db;
@@ -32,6 +54,12 @@ export declare class AgencyHhaexchangeConfigRepository {
      * are present. Use this in the export pipeline — emitting an HHAeXchange
      * row without these fields would be rejected by the aggregator. */
     findValid(agencyId: string): Promise<HhaexchangeConfig | undefined>;
-    upsert(input: PartialHhaexchangeConfig): Promise<PartialHhaexchangeConfig>;
+    /**
+     * Returns the full submission config WITH decrypted credentials — for the
+     * HHAeXchange client only. Never expose this to an API response; the admin UI
+     * uses `findByAgency` (which carries `hasCredentials`, not the secret).
+     */
+    findSubmissionConfig(agencyId: string): Promise<HhaexchangeClientConfig | undefined>;
+    upsert(input: HhaexchangeConfigUpsert): Promise<PartialHhaexchangeConfig>;
 }
 //# sourceMappingURL=agency-hhaexchange-config-repository.d.ts.map

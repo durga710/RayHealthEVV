@@ -29,6 +29,18 @@ const hhaexchangeConfigUpdateSchema = z.object({
     caregivers: z.array(hhaexchangeCaregiverMappingSchema).optional(),
     services: z.array(hhaexchangeServiceMappingSchema).optional(),
     enabled: z.boolean().optional(),
+    apiBaseUrl: z.string().url().max(255).nullable().optional(),
+    // Write-only. undefined = leave unchanged; null = clear; object = encrypt+store.
+    credentials: z
+        .object({
+        username: z.string().max(255).optional(),
+        password: z.string().max(255).optional(),
+        apiKey: z.string().max(512).optional(),
+        account: z.string().max(255).optional(),
+    })
+        .strict()
+        .nullable()
+        .optional(),
 });
 // ---------- Helpers ----------
 function emptyPartialFor(agencyId) {
@@ -40,6 +52,8 @@ function emptyPartialFor(agencyId) {
         caregivers: [],
         services: [],
         enabled: false,
+        apiBaseUrl: null,
+        hasCredentials: false,
     };
 }
 function mergeConfig(current, update) {
@@ -51,6 +65,8 @@ function mergeConfig(current, update) {
         caregivers: update.caregivers ?? current.caregivers,
         services: update.services ?? current.services,
         enabled: update.enabled ?? current.enabled,
+        apiBaseUrl: update.apiBaseUrl !== undefined ? update.apiBaseUrl : current.apiBaseUrl,
+        hasCredentials: current.hasCredentials,
     };
 }
 /** Refuse to set `enabled=true` until both identity fields are populated.
@@ -110,7 +126,7 @@ router.put('/me/hhaexchange-config', requireCapability('agency.write'), async (r
             res.status(422).json({ success: false, error: guardError });
             return;
         }
-        const stored = await repo.upsert(next);
+        const stored = await repo.upsert({ ...next, credentials: parsed.data.credentials });
         try {
             await new AuditEventRepository(db).create({
                 agencyId: req.auth.agencyId,
@@ -148,6 +164,8 @@ function redactForAudit(c) {
         enabled: c.enabled,
         caregiverMappingCount: c.caregivers.length,
         serviceMappingCount: c.services.length,
+        apiBaseUrlSet: Boolean(c.apiBaseUrl),
+        hasCredentials: c.hasCredentials,
     };
 }
 export default router;

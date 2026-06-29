@@ -21,6 +21,9 @@ import {
   type HhaexchangeConfig,
   type HhaexchangeServiceMapping,
 } from '../services/hhaexchange-mapping.js'
+import { encryptCell, decryptCell } from '../security/cell-cipher.js'
+import type { IntegrationCredentials } from '../integrations/types.js'
+import type { HhaexchangeClientConfig } from '../integrations/hhaexchange-client.js'
 
 interface AgencyHhaexchangeConfigRow {
   agency_id: string
@@ -30,6 +33,8 @@ interface AgencyHhaexchangeConfigRow {
   caregiver_mappings: unknown
   service_mappings: unknown
   enabled: boolean
+  api_base_url: string | null
+  credentials_encrypted: string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -92,6 +97,27 @@ export interface PartialHhaexchangeConfig {
   caregivers: HhaexchangeCaregiverMapping[]
   services: HhaexchangeServiceMapping[]
   enabled: boolean
+  apiBaseUrl: string | null
+  /** Read-only indicator — plaintext credentials are never returned to callers. */
+  hasCredentials: boolean
+}
+
+/**
+ * Upsert input. `credentials` is write-only and tri-state:
+ *   undefined → leave the stored credentials unchanged
+ *   null      → clear the stored credentials
+ *   object    → encrypt (AES-256-GCM) and store
+ */
+export interface HhaexchangeConfigUpsert {
+  agencyId: string
+  agencyTaxId: string | null
+  hhaProviderId: string | null
+  timezone: string
+  caregivers: HhaexchangeCaregiverMapping[]
+  services: HhaexchangeServiceMapping[]
+  enabled: boolean
+  apiBaseUrl?: string | null
+  credentials?: IntegrationCredentials | null
 }
 
 /**
@@ -108,6 +134,8 @@ function rowToPartial(row: AgencyHhaexchangeConfigRow): PartialHhaexchangeConfig
     caregivers: parseCaregivers(row.caregiver_mappings),
     services: parseServices(row.service_mappings),
     enabled: Boolean(row.enabled),
+    apiBaseUrl: row.api_base_url ?? null,
+    hasCredentials: Boolean(row.credentials_encrypted),
   }
 }
 
@@ -132,8 +160,40 @@ export class AgencyHhaexchangeConfigRepository {
     return row ? rowToConfig(row) : undefined
   }
 
-  async upsert(input: PartialHhaexchangeConfig): Promise<PartialHhaexchangeConfig> {
-    const payload = {
+  /**
+   * Returns the full submission config WITH decrypted credentials — for the
+   * HHAeXchange client only. Never expose this to an API response; the admin UI
+   * uses `findByAgency` (which carries `hasCredentials`, not the secret).
+   */
+  async findSubmissionConfig(agencyId: string): Promise<HhaexchangeClientConfig | undefined> {
+    const row = (await this.db('agency_hhaexchange_config')
+      .where({ agency_id: agencyId })
+      .first()) as AgencyHhaexchangeConfigRow | undefined
+    if (!row) return undefined
+
+    let credentials: IntegrationCredentials | null = null
+    if (row.credentials_encrypted) {
+      const plain = decryptCell(row.credentials_encrypted)
+      if (plain) {
+        try {
+          credentials = JSON.parse(plain) as IntegrationCredentials
+        } catch {
+          credentials = null
+        }
+      }
+    }
+
+    return {
+      enabled: Boolean(row.enabled),
+      apiBaseUrl: row.api_base_url ?? null,
+      agencyTaxId: row.agency_tax_id,
+      hhaProviderId: row.hha_provider_id,
+      credentials,
+    }
+  }
+
+  async upsert(input: HhaexchangeConfigUpsert): Promise<PartialHhaexchangeConfig> {
+    const payload: Record<string, unknown> = {
       agency_id: input.agencyId,
       agency_tax_id: input.agencyTaxId,
       hha_provider_id: input.hhaProviderId,
@@ -143,18 +203,19 @@ export class AgencyHhaexchangeConfigRepository {
       enabled: input.enabled,
       updated_at: this.db.fn.now(),
     }
+    // Tri-state: only touch these columns when the caller supplied them, so a
+    // mappings-only save never wipes a previously stored endpoint / credentials.
+    if (input.apiBaseUrl !== undefined) payload.api_base_url = input.apiBaseUrl
+    if (input.credentials !== undefined) {
+      payload.credentials_encrypted = input.credentials
+        ? encryptCell(JSON.stringify(input.credentials))
+        : null
+    }
+
     await this.db('agency_hhaexchange_config')
       .insert({ ...payload, created_at: this.db.fn.now() })
       .onConflict('agency_id')
-      .merge({
-        agency_tax_id: payload.agency_tax_id,
-        hha_provider_id: payload.hha_provider_id,
-        timezone: payload.timezone,
-        caregiver_mappings: payload.caregiver_mappings,
-        service_mappings: payload.service_mappings,
-        enabled: payload.enabled,
-        updated_at: payload.updated_at,
-      })
+      .merge(payload)
 
     const stored = await this.findByAgency(input.agencyId)
     if (!stored) {

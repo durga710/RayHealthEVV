@@ -11,13 +11,9 @@ describe('HHAeXchange submission write-back routes', () => {
     vi.restoreAllMocks();
   });
 
-  it('marks a batch submitted and returns the count', async () => {
-    const markHhaexchangeSubmittedInRange = vi.fn().mockResolvedValue(4);
-    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
-      markHhaexchangeSubmittedInRange,
-    } as any));
-    vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({
-      create: vi.fn().mockResolvedValue({}),
+  it('returns not_configured (409) when HHAeXchange is not set up', async () => {
+    vi.spyOn(core, 'AgencyHhaexchangeConfigRepository').mockImplementation(() => ({
+      findSubmissionConfig: vi.fn().mockResolvedValue(undefined),
     } as any));
 
     const res = await request(createApp())
@@ -25,9 +21,32 @@ describe('HHAeXchange submission write-back routes', () => {
       .set('Authorization', `Bearer ${makeToken('admin')}`)
       .send({ from: '2026-06-01', to: '2026-06-30' });
 
-    expect(res.status).toBe(200);
-    expect(res.body.marked).toBe(4);
-    expect(markHhaexchangeSubmittedInRange).toHaveBeenCalledWith('agency-1', expect.any(String), expect.any(String));
+    expect(res.status).toBe(409);
+    expect(res.body.status).toBe('not_configured');
+  });
+
+  it('returns an honest error (502) when configured but the transport is unimplemented', async () => {
+    vi.spyOn(core, 'AgencyHhaexchangeConfigRepository').mockImplementation(() => ({
+      findSubmissionConfig: vi.fn().mockResolvedValue({
+        enabled: true,
+        apiBaseUrl: 'https://hhax.example/api',
+        agencyTaxId: '123456789',
+        hhaProviderId: 'P-1',
+        credentials: { apiKey: 'k' },
+      }),
+    } as any));
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      getVisitsForExport: vi.fn().mockResolvedValue([]),
+      markHhaexchangeSubmission: vi.fn().mockResolvedValue(true),
+    } as any));
+
+    const res = await request(createApp())
+      .post('/exports/hhaexchange/submit')
+      .set('Authorization', `Bearer ${makeToken('admin')}`)
+      .send({ from: '2026-06-01', to: '2026-06-30' });
+
+    expect(res.status).toBe(502);
+    expect(res.body.status).toBe('error');
   });
 
   it('rejects a malformed date on submit with 400', async () => {
