@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SupportChat } from '../support/SupportChat.js';
 import { BrandLogo } from '../../components/brand/BrandLogo.js';
+import { RayVerifySection } from './RayVerifySection.js';
 
 /* ─────────────────────────────────────────────────────────────
    RayHealth landing — editorial, emerald-accented, enterprise.
@@ -485,6 +486,51 @@ html{scroll-behavior:smooth;}
 .rh-rv{opacity:0; transform:translateY(16px); transition:opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1);}
 .rh-rv.in{opacity:1; transform:none;}
 @media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} .rh-rv{opacity:1; transform:none; transition:none;} .rh-btn,.rh-cell,.rh-audcard,.rh-rescard{transition:none;} .rh-eyebrow .pip{animation:none;} }
+
+/* RayVerify — trust engine band */
+.rvfy{position:relative; background:var(--dark); color:#cfd6d2; overflow:hidden;}
+.rvfy-bloom{position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(620px 320px at 18% 0%, rgba(16,116,128,.28), transparent 70%),
+    radial-gradient(520px 300px at 92% 100%, rgba(238,108,44,.16), transparent 72%);}
+.rvfy-in{position:relative; max-width:var(--maxw); margin:0 auto; padding:104px 24px;}
+.rvfy-head{max-width:62ch;}
+.rvfy-eyebrow{display:inline-flex; align-items:center; gap:.5rem; font-size:.78rem; font-weight:600; letter-spacing:.02em; text-transform:uppercase; color:#5fd0d6;}
+.rvfy-pip{width:7px; height:7px; border-radius:50%; background:#5fd0d6; box-shadow:0 0 0 4px rgba(95,208,214,.16);}
+.rvfy-title{margin-top:18px; color:#fff; font-size:clamp(2rem,4vw,2.9rem); line-height:1.08;}
+.rvfy-em{background:linear-gradient(90deg,#5fd0d6,#3fb0bb); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+.rvfy-deck{margin-top:18px; font-size:1.0625rem; line-height:1.65; color:#9fa8a3;}
+.rvfy-body{margin-top:52px; display:grid; grid-template-columns:minmax(0,0.95fr) minmax(0,1.05fr); gap:56px; align-items:start;}
+
+/* pipeline */
+.rvfy-pipe{position:relative; padding-left:8px;}
+.rvfy-pipe-rail{position:absolute; left:27px; top:24px; bottom:24px; width:2px; border-radius:2px; background:linear-gradient(180deg, rgba(95,208,214,.5), rgba(255,255,255,.08)); overflow:hidden;}
+.rvfy-pulse{position:absolute; left:-3px; width:8px; height:8px; border-radius:50%; background:#5fd0d6; box-shadow:0 0 14px 3px rgba(95,208,214,.7); margin-top:-4px;}
+.rvfy-stages{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:14px;}
+.rvfy-stage{display:flex; align-items:center; gap:16px;}
+.rvfy-node{flex:none; width:40px; height:40px; border-radius:11px; display:inline-flex; align-items:center; justify-content:center; color:#bfeef1; background:rgba(16,116,128,.18); border:1px solid rgba(95,208,214,.34); position:relative; z-index:1;}
+.rvfy-node-ok{color:#0a0f0d; background:#5fd0d6; border-color:#5fd0d6; box-shadow:0 0 0 4px rgba(95,208,214,.16);}
+.rvfy-stagetext{display:flex; flex-direction:column; gap:2px;}
+.rvfy-stagelabel{display:flex; align-items:center; gap:10px; color:#fff; font-weight:600; font-size:.98rem;}
+.rvfy-stagedetail{color:#8a948e; font-size:.85rem; line-height:1.4;}
+.rvfy-flag{font-size:.66rem; font-weight:600; letter-spacing:.03em; text-transform:uppercase; padding:2px 7px; border-radius:999px;}
+.rvfy-flag.live{color:#7ee0b0; background:rgba(16,185,129,.14); border:1px solid rgba(16,185,129,.4);}
+.rvfy-flag.soon{color:#e7b894; background:rgba(238,108,44,.12); border:1px solid rgba(238,108,44,.36);}
+.rvfy-verified .rvfy-stagelabel{font-size:1.02rem;}
+
+/* value layers */
+.rvfy-layers{display:flex; flex-direction:column; gap:4px;}
+.rvfy-layer{padding:22px 0; border-bottom:1px solid var(--dark-line);}
+.rvfy-layer:first-child{padding-top:0;}
+.rvfy-layerk{font-size:.74rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#5fd0d6;}
+.rvfy-layert{margin-top:8px; color:#fff; font-size:1.18rem;}
+.rvfy-layerb{margin-top:8px; color:#9fa8a3; font-size:.95rem; line-height:1.6;}
+.rvfy-cta{margin-top:26px;}
+.rvfy-btn{display:inline-flex; align-items:center; gap:.5rem; height:46px; padding:0 1.3rem; border-radius:11px; background:#fff; color:#0a0f0d; font-weight:600; font-size:.94rem; transition:transform .16s ease, box-shadow .16s ease;}
+.rvfy-btn:hover{transform:translateY(-1px); box-shadow:0 14px 34px -16px rgba(95,208,214,.7);}
+.rvfy-foot{margin-top:16px; font-size:.82rem; line-height:1.55; color:#7a847f; max-width:52ch;}
+@media(max-width:880px){ .rvfy-body{grid-template-columns:1fr; gap:40px;} .rvfy-in{padding:80px 24px;} }
+@media(prefers-reduced-motion:reduce){ .rvfy-pulse{display:none;} }
 `;
 
 export function LandingPage() {
@@ -513,6 +559,7 @@ export function LandingPage() {
           <div className="rh-navmid">
             <Link to="/solutions/scheduling">Scheduling</Link>
             <Link to="/solutions/electronic-visit-verification">EVV</Link>
+            <Link to="/rayverify">RayVerify</Link>
             <Link to="/platform/ai-automation">AI automation</Link>
             <Link to="/platform/compliance">Compliance</Link>
             <Link to="/pricing">Pricing</Link>
@@ -538,6 +585,7 @@ export function LandingPage() {
           <div className="rh-mobile-in">
             <Link to="/solutions/scheduling" onClick={() => setMenuOpen(false)}>Scheduling</Link>
             <Link to="/solutions/electronic-visit-verification" onClick={() => setMenuOpen(false)}>Electronic visit verification</Link>
+            <Link to="/rayverify" onClick={() => setMenuOpen(false)}>RayVerify</Link>
             <Link to="/solutions/workforce-training" onClick={() => setMenuOpen(false)}>Workforce & training</Link>
             <Link to="/platform/ai-automation" onClick={() => setMenuOpen(false)}>AI automation</Link>
             <Link to="/platform/compliance" onClick={() => setMenuOpen(false)}>Compliance</Link>
@@ -664,6 +712,9 @@ export function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* RayVerify — trust engine band */}
+      <RayVerifySection />
 
       {/* Feature spotlights with crafted visuals */}
       <section className="rh-sec tight">
@@ -974,6 +1025,7 @@ export function LandingPage() {
           <div className="rh-footcol">
             <h4>Platform</h4>
             <a href="#platform">Overview</a>
+            <Link to="/rayverify">RayVerify</Link>
             <Link to="/platform/ai-automation">AI automation</Link>
             <Link to="/platform/compliance">Compliance</Link>
             <Link to="/pricing">Pricing</Link>

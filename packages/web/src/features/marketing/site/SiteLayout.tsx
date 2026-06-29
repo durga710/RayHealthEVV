@@ -13,6 +13,7 @@ import { BrandLogo } from '../../../components/brand/BrandLogo.js';
 export const NAV = {
   platform: [
     { label: 'Overview', to: '/' },
+    { label: 'RayVerify', to: '/rayverify' },
     { label: 'AI automation', to: '/platform/ai-automation' },
     { label: 'Compliance', to: '/platform/compliance' },
     { label: 'Pricing', to: '/pricing' },
@@ -187,6 +188,7 @@ export const SITE_CSS = `
 const MOBILE_LINKS: readonly { label: string; to: string }[] = [
   { label: 'Scheduling', to: '/solutions/scheduling' },
   { label: 'Electronic visit verification', to: '/solutions/electronic-visit-verification' },
+  { label: 'RayVerify', to: '/rayverify' },
   { label: 'Billing & payroll', to: '/solutions/billing-payroll' },
   { label: 'Workforce & training', to: '/solutions/workforce-training' },
   { label: 'AI automation', to: '/platform/ai-automation' },
@@ -210,6 +212,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
           <div className="mk-navmid">
             <Link to="/solutions/scheduling">Scheduling</Link>
             <Link to="/solutions/electronic-visit-verification">EVV</Link>
+            <Link to="/rayverify">RayVerify</Link>
             <Link to="/solutions/workforce-training">Workforce</Link>
             <Link to="/platform/ai-automation">AI automation</Link>
             <Link to="/pricing">Pricing</Link>
