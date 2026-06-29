@@ -33,6 +33,7 @@ import billingClaimsRoutes from './routes/billing-claims-routes.js';
 import onboardingRoutes from './routes/onboarding-routes.js';
 import onboardingAdminRoutes from './routes/onboarding-admin-routes.js';
 import profileRoutes from './routes/profile-routes.js';
+import settingsRoutes from './routes/settings-routes.js';
 import agencySandataConfigRoutes from './routes/agency-sandata-config-routes.js';
 import agencyHhaexchangeConfigRoutes from './routes/agency-hhaexchange-config-routes.js';
 import copilotRoutes from './routes/copilot-routes.js';
@@ -245,6 +246,7 @@ export function createApp() {
     app.use(`${prefix}/billing`, billingClaimsRoutes);
     app.use(`${prefix}/admin/onboarding`, onboardingAdminRoutes);
     app.use(`${prefix}/profile`, profileRoutes);
+    app.use(`${prefix}/settings`, settingsRoutes);
     app.use(`${prefix}/compliance-engine`, complianceEngineRoutes);
     app.use(`${prefix}/command-center`, commandCenterRoutes);
   }

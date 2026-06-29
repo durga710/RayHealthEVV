@@ -22,10 +22,15 @@ interface AuthUser {
   agencyTheme?: AgencyTheme | null;
 }
 
+export type LoginResult =
+  | { role: string }
+  | { twoFactorRequired: true; challengeToken: string };
+
 interface AuthContextType {
   isAuthenticated: boolean;
   user: AuthUser | null;
-  login: (email: string, password: string) => Promise<{ role: string }>;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  completeTwoFactor: (challengeToken: string, code: string) => Promise<{ role: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -75,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ role: string }> => {
+  const login = async (email: string, password: string): Promise<LoginResult> => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       credentials: 'include',
@@ -84,6 +89,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (!res.ok) {
       const { message } = await res.json().catch(() => ({ message: 'Login failed' }));
+      throw new Error(message);
+    }
+    const data = await res.json();
+    if (data.twoFactorRequired) {
+      return { twoFactorRequired: true, challengeToken: data.challengeToken as string };
+    }
+    setUser({ userId: data.userId, role: data.role, agencyId: data.agencyId, agencyTheme: data.agencyTheme, email: data.email ?? null, firstName: data.firstName ?? null, lastName: data.lastName ?? null, avatarUrl: data.avatarUrl ?? null });
+    setCsrfToken(data.csrfToken ?? null);
+    applyAgencyTheme(data.agencyTheme);
+    return { role: data.role as string };
+  };
+
+  const completeTwoFactor = async (challengeToken: string, code: string): Promise<{ role: string }> => {
+    const res = await fetch(`${API_BASE}/auth/login/2fa`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeToken, code }),
+    });
+    if (!res.ok) {
+      const { message } = await res.json().catch(() => ({ message: 'Verification failed' }));
       throw new Error(message);
     }
     const data = await res.json();
@@ -119,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!user, user, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!user, user, login, completeTwoFactor, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

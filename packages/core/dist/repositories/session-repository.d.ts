@@ -5,6 +5,10 @@ export declare class SessionRepository {
     constructor(db: Knex);
     create(session: NewSession): Promise<Session>;
     findActiveByTokenHash(sessionTokenHash: string, nowIso: string): Promise<Session | undefined>;
+    /** Active (non-revoked, unexpired) sessions for a user, newest first. */
+    listActiveByUser(userId: string, nowIso: string): Promise<Session[]>;
+    /** Revokes every active session for a user except one (e.g. the current). Returns count revoked. */
+    revokeAllForUserExcept(userId: string, exceptId: string, revokedAtIso: string): Promise<number>;
     revokeById(id: string, revokedAtIso: string): Promise<void>;
     revokeByTokenHash(sessionTokenHash: string, revokedAtIso: string): Promise<void>;
     rotateCsrfToken(id: string, csrfTokenHash: string): Promise<void>;

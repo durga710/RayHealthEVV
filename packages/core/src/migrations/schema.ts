@@ -1369,6 +1369,36 @@ export async function up(knex: Knex): Promise<void> {
       });
     }
   }
+
+  // ── R24 — Account settings: 2FA (TOTP), notifications, preferences ─────────
+  // All nullable/defaulted so existing users are unaffected. totp_secret holds
+  // the base32 secret (only used while totp_enabled); totp_backup_codes is a
+  // JSON array of bcrypt-hashed single-use recovery codes. notification_prefs
+  // and preferences are free-form JSON blobs owned by the settings UI.
+  if (await knex.schema.hasTable('users')) {
+    if (!(await knex.schema.hasColumn('users', 'totp_secret'))) {
+      await knex.schema.alterTable('users', (t) => {
+        t.text('totp_secret').nullable();
+        t.boolean('totp_enabled').notNullable().defaultTo(false);
+        t.jsonb('totp_backup_codes').nullable();
+      });
+    }
+    if (!(await knex.schema.hasColumn('users', 'notification_prefs'))) {
+      await knex.schema.alterTable('users', (t) => {
+        t.jsonb('notification_prefs').nullable();
+      });
+    }
+    if (!(await knex.schema.hasColumn('users', 'preferences'))) {
+      await knex.schema.alterTable('users', (t) => {
+        t.jsonb('preferences').nullable();
+      });
+    }
+    if (!(await knex.schema.hasColumn('users', 'deletion_requested_at'))) {
+      await knex.schema.alterTable('users', (t) => {
+        t.timestamp('deletion_requested_at', { useTz: true }).nullable();
+      });
+    }
+  }
 }
 
 export async function down(knex: Knex): Promise<void> {

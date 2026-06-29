@@ -71,6 +71,25 @@ export class SessionRepository {
     return row ? mapSession(row) : undefined;
   }
 
+  /** Active (non-revoked, unexpired) sessions for a user, newest first. */
+  async listActiveByUser(userId: string, nowIso: string): Promise<Session[]> {
+    const rows = await this.db('sessions')
+      .where({ user_id: userId })
+      .whereNull('revoked_at')
+      .where('expires_at', '>', nowIso)
+      .orderBy('created_at', 'desc');
+    return (rows as SessionRow[]).map(mapSession);
+  }
+
+  /** Revokes every active session for a user except one (e.g. the current). Returns count revoked. */
+  async revokeAllForUserExcept(userId: string, exceptId: string, revokedAtIso: string): Promise<number> {
+    return this.db('sessions')
+      .where({ user_id: userId })
+      .whereNot({ id: exceptId })
+      .whereNull('revoked_at')
+      .update({ revoked_at: revokedAtIso });
+  }
+
   async revokeById(id: string, revokedAtIso: string): Promise<void> {
     await this.db('sessions')
       .where({ id })

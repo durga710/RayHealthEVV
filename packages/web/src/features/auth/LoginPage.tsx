@@ -12,14 +12,27 @@ const trustPoints = [
 ];
 
 export function LoginPage() {
-  const { login, isAuthenticated, user } = useAuth();
+  const { login, completeTwoFactor, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [challengeToken, setChallengeToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
   const passwordWasReset = searchParams.get('reset') === '1';
+
+  const goToDashboard = (role: string) => {
+    const returnTo = searchParams.get('returnTo');
+    if (returnTo && returnTo.startsWith('/') && ADMIN_ROLES.has(role)) {
+      navigate(returnTo, { replace: true });
+    } else if (ADMIN_ROLES.has(role)) {
+      navigate('/admin', { replace: true });
+    } else {
+      navigate('/portal', { replace: true });
+    }
+  };
 
   // If the user is already authenticated (e.g. pressing Back from /admin),
   // send them straight to their dashboard instead of showing the login form.
@@ -40,18 +53,29 @@ export function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const { role } = await login(email, password);
-      const returnTo = searchParams.get('returnTo');
-      // replace: true so /login is never in the back-button history
-      if (returnTo && returnTo.startsWith('/') && ADMIN_ROLES.has(role)) {
-        navigate(returnTo, { replace: true });
-      } else if (ADMIN_ROLES.has(role)) {
-        navigate('/admin', { replace: true });
+      const result = await login(email, password);
+      if ('twoFactorRequired' in result) {
+        setChallengeToken(result.challengeToken);
       } else {
-        navigate('/portal', { replace: true });
+        goToDashboard(result.role);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!challengeToken) return;
+    setError('');
+    setLoading(true);
+    try {
+      const { role } = await completeTwoFactor(challengeToken, code.trim());
+      goToDashboard(role);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -255,6 +279,43 @@ export function LoginPage() {
             </div>
           )}
 
+          {challengeToken ? (
+            <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label htmlFor="code" className="label">Authentication code</label>
+                <input
+                  id="code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="6-digit code or backup code"
+                  required
+                  className="input-field"
+                />
+                <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>
+                  Enter the code from your authenticator app, or a backup code.
+                </span>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                style={{ width: '100%', padding: '0.75rem', fontWeight: 600, marginTop: '0.25rem', fontSize: '0.9375rem', cursor: loading ? 'wait' : 'pointer' }}
+              >
+                {loading ? 'Verifying…' : 'Verify & sign in'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setChallengeToken(null); setCode(''); setError(''); }}
+                style={{ background: 'none', border: 'none', color: '#107480', fontWeight: 500, fontSize: '0.875rem', cursor: 'pointer' }}
+              >
+                ← Back to sign in
+              </button>
+            </form>
+          ) : (
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <label htmlFor="email" className="label">Email</label>
@@ -309,6 +370,7 @@ export function LoginPage() {
               </Link>
             </div>
           </form>
+          )}
 
           <div
             style={{

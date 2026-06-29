@@ -60,6 +60,7 @@ const LearningHubPage = lazy(() => import('./features/learning/LearningHubPage.j
 const LearningPortalPage = lazy(() => import('./features/learning/LearningPortalPage.js').then((m) => ({ default: m.LearningPortalPage })));
 const CourseEditorPage = lazy(() => import('./features/learning/CourseEditorPage.js').then((m) => ({ default: m.CourseEditorPage })));
 const CertificatePage = lazy(() => import('./features/learning/CertificatePage.js').then((m) => ({ default: m.CertificatePage })));
+const SettingsPage = lazy(() => import('./features/settings/SettingsPage.js').then((m) => ({ default: m.SettingsPage })));
 const ApplyPage = lazy(() => import('./features/onboarding/ApplyPage.js').then((m) => ({ default: m.ApplyPage })));
 const InterviewPage = lazy(() => import('./features/onboarding/InterviewPage.js').then((m) => ({ default: m.InterviewPage })));
 const OnboardingHubPage = lazy(() => import('./features/onboarding/OnboardingHubPage.js').then((m) => ({ default: m.OnboardingHubPage })));
@@ -166,6 +167,12 @@ const icons = {
       <rect x="14" y="3" width="7" height="5" rx="1" />
       <rect x="14" y="12" width="7" height="9" rx="1" />
       <rect x="3" y="16" width="7" height="5" rx="1" />
+    </svg>
+  ),
+  settings: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
   ),
   agency: (
@@ -343,6 +350,7 @@ const navGroupDefs: NavGroupDef[] = [
     label: 'Account',
     items: [
       { to: '/admin/profile', label: 'My Profile', icon: icons.profile },
+      { to: '/admin/settings', label: 'Settings', icon: icons.settings },
     ],
   },
 ];
@@ -524,6 +532,7 @@ export function App() {
           <Route path="training/:courseId" element={<CourseDetailPage />} />
           <Route path="training/:courseId/certificate" element={<CertificatePage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Route>
 
@@ -548,6 +557,7 @@ export function App() {
           <Route path="onboarding" element={<OnboardingHubPage />} />
           <Route path="onboarding/:id" element={<ApplicantDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="compliance-engine" element={<ComplianceOverviewPage />} />
           <Route path="compliance-engine/audit-defense" element={<AuditDefensePage />} />
           <Route path="compliance-engine/exceptions" element={<ExceptionResolutionPage />} />
