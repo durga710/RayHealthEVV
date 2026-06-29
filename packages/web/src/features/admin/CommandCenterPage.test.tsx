@@ -40,7 +40,9 @@ function mockFetch(handlers: Record<string, unknown>) {
 }
 
 describe('CommandCenterPage', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('renders the prioritized attention item and the coverage-gap KPI', async () => {
     vi.stubGlobal('fetch', mockFetch({ '/api/command-center/summary': summary }));

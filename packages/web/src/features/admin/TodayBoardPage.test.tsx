@@ -24,7 +24,9 @@ const board = {
 };
 
 describe('TodayBoardPage', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('renders all visits with status badges', async () => {
     vi.stubGlobal('fetch', vi.fn(() =>
