@@ -1,6 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
+  Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/AuthContext';
 import { useRouter } from 'expo-router';
 
@@ -18,12 +21,24 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const router = useRouter();
   const passwordRef = useRef<TextInput>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passFocused, setPassFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Keep the focused field visible above the soft keyboard. When the keyboard
+  // opens, scroll the (short) form to the end so both inputs and the sign-in
+  // button sit above it. This uses a scroll ref only — no state change — so it
+  // can't reintroduce the focus-blur bug we fixed earlier.
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const sub = Keyboard.addListener(showEvent, () => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
+  }, []);
 
   const canSubmit = email.trim().length > 0 && password.length > 0 && !isSubmitting;
 
@@ -45,9 +60,10 @@ export default function LoginScreen() {
     <LinearGradient colors={['#0f2d52', '#1a5fa8', '#2d7dd2']} style={styles.gradient}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -55,12 +71,12 @@ export default function LoginScreen() {
           {/* Brand */}
           <View style={styles.brandBlock}>
             <View style={styles.logoRing}>
-              <LinearGradient
-                colors={['#ffffff30', '#ffffff08']}
-                style={styles.logoGradient}
-              >
-                <Text style={styles.logoText}>R</Text>
-              </LinearGradient>
+              <Image
+                source={require('../../../assets/images/rayhealthevv-mark.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+                accessibilityLabel="RayHealthEVV logo"
+              />
             </View>
             <Text style={styles.appName}>RayHealthEVV™</Text>
             <Text style={styles.tagline}>Electronic Visit Verification</Text>
@@ -72,7 +88,7 @@ export default function LoginScreen() {
 
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Email address</Text>
-              <View style={[styles.inputWrap, emailFocused && styles.inputWrapFocused]}>
+              <View style={styles.inputWrap}>
                 <Text style={styles.inputIcon}>✉️</Text>
                 <TextInput
                   style={styles.input}
@@ -85,8 +101,6 @@ export default function LoginScreen() {
                   value={email}
                   onChangeText={setEmail}
                   onSubmitEditing={() => passwordRef.current?.focus()}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
                   editable={!isSubmitting}
                 />
               </View>
@@ -94,22 +108,33 @@ export default function LoginScreen() {
 
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Password</Text>
-              <View style={[styles.inputWrap, passFocused && styles.inputWrapFocused]}>
+              <View style={styles.inputWrap}>
                 <Text style={styles.inputIcon}>🔒</Text>
                 <TextInput
                   ref={passwordRef}
                   style={styles.input}
                   placeholder="••••••••"
                   placeholderTextColor="#b0c4d8"
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   returnKeyType="go"
                   value={password}
                   onChangeText={setPassword}
                   onSubmitEditing={handleLogin}
-                  onFocus={() => setPassFocused(true)}
-                  onBlur={() => setPassFocused(false)}
                   editable={!isSubmitting}
                 />
+                <Pressable
+                  onPress={() => setShowPassword((v) => !v)}
+                  hitSlop={10}
+                  style={styles.eyeBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color="#6898c0"
+                  />
+                </Pressable>
               </View>
             </View>
 
@@ -166,12 +191,15 @@ const styles = StyleSheet.create({
 
   brandBlock: { alignItems: 'center', marginBottom: 36 },
   logoRing: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     borderWidth: 2,
     borderColor: '#ffffff40',
+    backgroundColor: '#ffffff',
     overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
     shadowColor: '#000',
     shadowOpacity: 0.4,
@@ -179,12 +207,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 10,
   },
-  logoGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: { color: '#fff', fontSize: 42, fontWeight: '900' },
+  logoImage: { width: 72, height: 72 },
   appName: {
     fontSize: 28, fontWeight: '900', color: '#fff',
     letterSpacing: -0.5, textShadowColor: '#00000040',
@@ -235,6 +258,7 @@ const styles = StyleSheet.create({
   },
   inputIcon: { fontSize: 16 },
   input: { flex: 1, fontSize: 16, color: '#1a3a5c' },
+  eyeBtn: { padding: 4 },
 
   errorBox: {
     flexDirection: 'row',

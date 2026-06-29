@@ -3,11 +3,12 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../lib/AuthContext';
@@ -78,10 +79,12 @@ function greetingFor(user: { firstName?: string | null } | null): string {
 }
 
 function AdminScreen({ role, onLogout }: { role: string; onLogout: () => void }) {
+  const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar style="light" />
       <LinearGradient colors={['#0f2d52', '#1a5fa8']} style={styles.adminGradient}>
-        <View style={styles.adminWrap}>
+        <View style={[styles.adminWrap, { paddingTop: insets.top + 16 }]}>
           <View style={styles.adminIconCircle}>
             <Text style={styles.adminEmoji}>🖥️</Text>
           </View>
@@ -105,7 +108,7 @@ function AdminScreen({ role, onLogout }: { role: string; onLogout: () => void })
           </Pressable>
         </View>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -124,6 +127,7 @@ function EmptyVisits() {
 export default function DashboardScreen() {
   const { logout, user } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -260,9 +264,10 @@ export default function DashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar style="light" />
       {/* Header */}
-      <LinearGradient colors={['#0f2d52', '#1a5fa8']} style={styles.header}>
+      <LinearGradient colors={['#0f2d52', '#1a5fa8']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerTop}>
           <Pressable
             onLongPress={handleSessionPillLongPress}
@@ -322,7 +327,7 @@ export default function DashboardScreen() {
           />
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

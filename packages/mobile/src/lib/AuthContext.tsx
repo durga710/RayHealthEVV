@@ -60,11 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    async function hydrate() {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+    async function loadCachedUser() {
       const userJson = await SecureStore.getItemAsync(USER_KEY);
-      setMobileAccessToken(token);
-      setIsAuthenticated(!!token);
       if (userJson) {
         try {
           setUser(JSON.parse(userJson) as MobileUser);
@@ -72,7 +69,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Corrupt user blob — ignore, leave user null. Token is still trusted server-side.
         }
       }
-      setIsLoading(false);
+    }
+
+    async function hydrate() {
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      setMobileAccessToken(token);
+
+      // Don't trust a stored token blindly — a stale/expired one must drop the
+      // user to login, not silently show an empty dashboard. Validate it once
+      // against the server before treating the session as authenticated.
+      try {
+        await apiClient.get('/api/auth/me', { skipAuthHandler: true } as never);
+        await loadCachedUser();
+        setIsAuthenticated(true);
+      } catch (err) {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status === 401) {
+          // Token explicitly rejected — clear it and force a fresh login.
+          await SecureStore.deleteItemAsync(TOKEN_KEY);
+          await SecureStore.deleteItemAsync(USER_KEY);
+          setMobileAccessToken(null);
+          setIsAuthenticated(false);
+        } else {
+          // No response (offline / server down) — don't lock a caregiver out in
+          // the field. Trust the cached token; a later real 401 still clears it.
+          await loadCachedUser();
+          setIsAuthenticated(true);
+        }
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     void hydrate();
