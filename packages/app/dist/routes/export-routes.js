@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { AuditEventRepository, EvvRepository, AgencyHhaexchangeConfigRepository, AgencySandataConfigRepository, SandataClient, HhaexchangeClient, buildHhaexchangeExport, toHhaexchangeCsv, } from '@rayhealth/core';
+import { AuditEventRepository, EvvRepository, ClientRepository, CaregiverRepository, AgencyHhaexchangeConfigRepository, AgencySandataConfigRepository, SandataClient, SandataAltEvv, HhaexchangeClient, buildHhaexchangeExport, toHhaexchangeCsv, } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 import { safeError } from '../security/safe-log.js';
 const router = Router();
@@ -594,6 +594,179 @@ router.post('/hhaexchange/reconcile', requireCapability('billing.write'), async 
     }
     catch (err) {
         safeError('hhaexchange reconcile failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+/** Build a real Alt-EVV transport config from the stored (decrypted) Sandata config. */
+function buildAltEvvConfig(cfg) {
+    if (!cfg)
+        return { ok: false, reason: 'Sandata integration has not been set up for this agency' };
+    if (!cfg.enabled)
+        return { ok: false, reason: 'Sandata integration is disabled for this agency' };
+    if (!cfg.apiBaseUrl)
+        return { ok: false, reason: 'No Sandata API base URL configured' };
+    const creds = cfg.credentials;
+    if (!creds || !creds.username || !creds.password) {
+        return { ok: false, reason: 'Sandata Alternate-EVV requires a username and password credential' };
+    }
+    return {
+        ok: true,
+        config: {
+            baseUrl: cfg.apiBaseUrl,
+            username: creds.username,
+            password: creds.password,
+            entityGuid: creds.entityGuid,
+            maxBatchSize: 5000,
+            statusPollDelayMs: 300000,
+            environment: /prod/i.test(cfg.apiBaseUrl) ? 'PROD' : 'UAT',
+        },
+    };
+}
+function toLocation(raw) {
+    const loc = (raw ?? {});
+    if (loc.lat == null || loc.lng == null)
+        return undefined;
+    return { lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy ?? 0 };
+}
+/** Adapt an export row to an EvvVisit for the mapper/validator. */
+function adaptVisit(row) {
+    return {
+        id: row.visitId,
+        // Export rows do not carry assignmentId; it is never transmitted to Sandata.
+        assignmentId: row.visitId,
+        caregiverId: row.caregiverId,
+        clientId: row.clientId ?? undefined,
+        serviceCode: (row.serviceCode ?? undefined),
+        clockInTime: row.clockInTime,
+        clockOutTime: row.clockOutTime ?? undefined,
+        clockInLocation: toLocation(row.clockInLocation),
+        clockOutLocation: toLocation(row.clockOutLocation),
+        status: row.status,
+    };
+}
+function summarizeTransmit(r) {
+    return {
+        posted: r.posted,
+        uuid: r.uuid,
+        blocked: r.blocked.length,
+        deferred: r.deferred.length,
+        error: r.error,
+    };
+}
+/**
+ * POST /exports/sandata/altevv/submit  { from?, to? }
+ *
+ * Transmits the verified visits in the range — and the clients + caregivers they
+ * reference — to Sandata's Alternate-EVV API in load order. Returns a per-entity
+ * summary (posted / blocked / deferred / uuid). 409 not_configured when setup is
+ * incomplete; nothing is sent. Visits defer until their dependencies verify via
+ * a subsequent /altevv/poll.
+ */
+router.post('/sandata/altevv/submit', requireCapability('billing.write'), async (req, res) => {
+    const parsed = submitSchema.safeParse(req.body ?? {});
+    if (!parsed.success || !isYmdOrIso(parsed.data.from) || !isYmdOrIso(parsed.data.to)) {
+        return res.status(400).json({ message: 'from / to must be YYYY-MM-DD or ISO 8601' });
+    }
+    try {
+        const { from, to } = parsed.data;
+        const fromIso = from ? new Date(from).toISOString() : undefined;
+        const toIso = to ? new Date(`${to.length === 10 ? `${to}T23:59:59.999Z` : to}`).toISOString() : undefined;
+        const db = req.app.get('db');
+        const agencyId = req.auth.agencyId;
+        const cfg = await new AgencySandataConfigRepository(db).findSubmissionConfig(agencyId);
+        const built = buildAltEvvConfig(cfg);
+        if (!built.ok)
+            return res.status(409).json({ status: 'not_configured', reason: built.reason });
+        const api = new SandataAltEvv.SandataApiClient(built.config);
+        const state = new SandataAltEvv.KnexSandataStateRepository(db);
+        const svc = new SandataAltEvv.SandataTransmissionService(api, state, built.config.environment);
+        const rows = (await new EvvRepository(db).getVisitsForExport(agencyId, fromIso, toIso));
+        const verifiedRows = rows.filter((r) => r.status === 'verified');
+        const visits = verifiedRows.map(adaptVisit);
+        // Only transmit the clients + caregivers these visits actually reference.
+        const clientIds = new Set(verifiedRows.map((r) => r.clientId).filter((id) => Boolean(id)));
+        const caregiverIds = new Set(verifiedRows.map((r) => r.caregiverId).filter(Boolean));
+        const allClients = (await new ClientRepository(db).getClients(agencyId));
+        const allCaregivers = (await new CaregiverRepository(db).findByAgency(agencyId));
+        const clients = allClients.filter((c) => c.id && clientIds.has(c.id));
+        const caregivers = allCaregivers.filter((c) => c.id && caregiverIds.has(c.id));
+        const clientResult = await svc.transmitClients(agencyId, clients);
+        const employeeResult = await svc.transmitEmployees(agencyId, caregivers);
+        const visitResult = await svc.transmitVisits(agencyId, visits);
+        try {
+            await new AuditEventRepository(db).create({
+                agencyId,
+                actorId: req.auth.userId,
+                actorType: 'user',
+                eventType: 'evv.sandata.altevv.submitted',
+                entityType: 'evv_batch',
+                entityId: agencyId,
+                outcome: 'success',
+                payload: {
+                    environment: built.config.environment,
+                    clients: summarizeTransmit(clientResult),
+                    employees: summarizeTransmit(employeeResult),
+                    visits: summarizeTransmit(visitResult),
+                    from: from ?? null,
+                    to: to ?? null,
+                },
+                occurredAt: new Date().toISOString(),
+            });
+        }
+        catch (err) {
+            safeError('Failed to audit evv.sandata.altevv.submitted', err);
+        }
+        res.json({
+            status: 'ok',
+            clients: summarizeTransmit(clientResult),
+            employees: summarizeTransmit(employeeResult),
+            visits: summarizeTransmit(visitResult),
+        });
+    }
+    catch (err) {
+        safeError('sandata altevv submit failed', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+/**
+ * POST /exports/sandata/altevv/poll
+ *
+ * Polls every pending Sandata transmission for its per-record results, applying
+ * ACCEPTED → VERIFIED / REJECTED / EXCEPTION and queueing visit exceptions for
+ * staff. Idempotent; run on a schedule. 409 not_configured when Sandata is unset.
+ */
+router.post('/sandata/altevv/poll', requireCapability('billing.write'), async (req, res) => {
+    try {
+        const db = req.app.get('db');
+        const agencyId = req.auth.agencyId;
+        const cfg = await new AgencySandataConfigRepository(db).findSubmissionConfig(agencyId);
+        const built = buildAltEvvConfig(cfg);
+        if (!built.ok)
+            return res.status(409).json({ status: 'not_configured', reason: built.reason });
+        const api = new SandataAltEvv.SandataApiClient(built.config);
+        const state = new SandataAltEvv.KnexSandataStateRepository(db);
+        const svc = new SandataAltEvv.SandataTransmissionService(api, state, built.config.environment);
+        const summary = await svc.pollPendingStatuses(agencyId);
+        try {
+            await new AuditEventRepository(db).create({
+                agencyId,
+                actorId: req.auth.userId,
+                actorType: 'user',
+                eventType: 'evv.sandata.altevv.polled',
+                entityType: 'evv_batch',
+                entityId: agencyId,
+                outcome: 'success',
+                payload: { ...summary },
+                occurredAt: new Date().toISOString(),
+            });
+        }
+        catch (err) {
+            safeError('Failed to audit evv.sandata.altevv.polled', err);
+        }
+        res.json({ status: 'ok', ...summary });
+    }
+    catch (err) {
+        safeError('sandata altevv poll failed', err);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });

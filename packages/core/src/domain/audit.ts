@@ -40,6 +40,9 @@ export const auditEventTypes = [
   // batch as sent to the aggregator; `reconciled` records the aggregator's
   // accept/reject response written back onto each visit.
   'evv.sandata.submitted', 'evv.sandata.reconciled',
+  // Real Alternate-EVV async transport: `submitted` = clients/employees/visits
+  // POSTed in load order; `polled` = status results applied + exceptions queued.
+  'evv.sandata.altevv.submitted', 'evv.sandata.altevv.polled',
   // HHAeXchange aggregator submission lifecycle — mirror of the Sandata pair
   // for agencies routed through HHAeXchange instead of Sandata.
   'evv.hhaexchange.submitted', 'evv.hhaexchange.reconciled',
