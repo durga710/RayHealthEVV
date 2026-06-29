@@ -45,6 +45,7 @@ const PrivacyPage = lazy(() => import('./features/marketing/site/PrivacyPage.js'
 const TermsPage = lazy(() => import('./features/marketing/site/TermsPage.js').then((m) => ({ default: m.TermsPage })));
 const SchedulingPage = lazy(() => import('./features/marketing/site/SchedulingPage.js').then((m) => ({ default: m.SchedulingPage })));
 const EvvSolutionPage = lazy(() => import('./features/marketing/site/EvvSolutionPage.js').then((m) => ({ default: m.EvvSolutionPage })));
+const RayVerifyPage = lazy(() => import('./features/marketing/site/RayVerifyPage.js').then((m) => ({ default: m.RayVerifyPage })));
 const BillingPayrollPage = lazy(() => import('./features/marketing/site/BillingPayrollPage.js').then((m) => ({ default: m.BillingPayrollPage })));
 const WorkforceTrainingPage = lazy(() => import('./features/marketing/site/WorkforceTrainingPage.js').then((m) => ({ default: m.WorkforceTrainingPage })));
 const AiAutomationPage = lazy(() => import('./features/marketing/site/AiAutomationPage.js').then((m) => ({ default: m.AiAutomationPage })));
@@ -516,6 +517,7 @@ export function App() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       {/* Marketing site — Platform / Solutions / Resources content pages */}
+      <Route path="/rayverify" element={<RayVerifyPage />} />
       <Route path="/platform/ai-automation" element={<AiAutomationPage />} />
       <Route path="/platform/compliance" element={<CompliancePlatformPage />} />
       <Route path="/solutions/scheduling" element={<SchedulingPage />} />
