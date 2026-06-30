@@ -22,7 +22,7 @@
  *   # prod default branch also needs:  export RAYHEALTH_ALLOW_PROD_FIXTURE_CLEANUP=1
  *   npx tsx packages/core/scripts/cleanup-fixture-assignments.ts
  */
-import { knex, type Knex } from 'knex';
+import knex, { type Knex } from 'knex';
 
 const TEST_CAREGIVER_ID = '00000000-0000-4000-8000-000000000002';
 const PROD_PROXY_HOST = 'c-5.us-east-1.aws.neon.tech';
