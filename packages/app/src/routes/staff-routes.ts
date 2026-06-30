@@ -3,6 +3,7 @@ import {
   AuditEventRepository,
   CaregiverRepository,
   CredentialComplianceService,
+  EvvRepository,
   paCredentialTypes,
   paCredentialStatuses,
 } from '@rayhealth/core';
@@ -126,6 +127,56 @@ router.patch('/caregivers/:id', requireCapability('staff.write'), async (req, re
 // touching credential rows (getCredentials/expireCredential already join
 // caregivers on agency_id, but the POST path inserts by caregiver_id and so
 // needs the explicit guard to prevent cross-agency writes).
+
+// GET /staff/caregivers/:id — one caregiver's full profile (agency-scoped).
+// Exposes hasNpi (boolean) rather than the decrypted NPI, mirroring the list
+// endpoint's deliberate non-disclosure of the raw value.
+router.get('/caregivers/:id', requireCapability('staff.read'), async (req, res) => {
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  try {
+    const db = req.app.get('db');
+    const caregiver = await new CaregiverRepository(db).findById(id, req.auth.agencyId);
+    if (!caregiver) {
+      res.status(404).json({ message: 'caregiver not found' });
+      return;
+    }
+    res.json({
+      id: caregiver.id,
+      firstName: caregiver.firstName,
+      lastName: caregiver.lastName,
+      email: caregiver.email,
+      phone: caregiver.phone ?? null,
+      hireDate: caregiver.hireDate ?? null,
+      status: caregiver.status,
+      hasNpi: Boolean(caregiver.npi),
+    });
+  } catch (error) {
+    safeError('GET /staff/caregivers/:id failed', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// GET /staff/caregivers/:id/visits — one caregiver's visit history for the
+// admin activity view. findById proves the caregiver is in the caller's agency
+// (404 otherwise) before reading visits.
+router.get('/caregivers/:id/visits', requireCapability('staff.read'), async (req, res) => {
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  try {
+    const db = req.app.get('db');
+    const caregiver = await new CaregiverRepository(db).findById(id, req.auth.agencyId);
+    if (!caregiver) {
+      res.status(404).json({ message: 'caregiver not found' });
+      return;
+    }
+    const visits = await new EvvRepository(db).getVisitsForCaregiverInAgency(id, req.auth.agencyId);
+    res.json({ visits });
+  } catch (error) {
+    safeError('GET /staff/caregivers/:id/visits failed', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
 router.get(
   '/caregivers/:id/credentials',

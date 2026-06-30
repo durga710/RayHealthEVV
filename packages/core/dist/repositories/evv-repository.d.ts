@@ -21,6 +21,17 @@ export declare class EvvRepository {
     /** All visits within an agency. */
     getVisitsForAgency(agencyId: string): Promise<EvvVisit[]>;
     /**
+     * One caregiver's visits, tenant-scoped to an agency (for the admin
+     * per-caregiver activity view). Combines the agency join
+     * (users.caregiver_id → users.agency_id) with the snapshotted client's name
+     * and the latest exception reason, so an admin sees a caregiver's history
+     * with client context and the reason behind any flagged visit.
+     */
+    getVisitsForCaregiverInAgency(caregiverId: string, agencyId: string): Promise<Array<EvvVisit & {
+        flagReason: string | null;
+        clientName: string | null;
+    }>>;
+    /**
      * COUNT of visits in an agency — for dashboard tiles. Avoids pulling every
      * (PHI-bearing) visit row across the wire just to read `.length`.
      */
