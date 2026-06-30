@@ -72,6 +72,8 @@ function GeoMap({
   geoStatus,
   distanceM,
   accuracy,
+  userLat,
+  userLng,
 }: {
   clientLat: number;
   clientLng: number;
@@ -79,6 +81,8 @@ function GeoMap({
   geoStatus: GeoStatus;
   distanceM: number | null;
   accuracy: number | null;
+  userLat: number | null;
+  userLng: number | null;
 }) {
   const isInside = geoStatus === 'inside';
   const isOutside = geoStatus === 'outside';
@@ -100,14 +104,36 @@ function GeoMap({
   const latPad = padM / 111_320;
   const lngPad = padM / (111_320 * Math.cos((clientLat * Math.PI) / 180));
   const delta = Math.max(latPad * 2.4, 0.0025);
-  const fitToZone = () =>
+  const fitToZone = (animated = false) =>
     mapRef.current?.fitToCoordinates(
       [
         { latitude: clientLat + latPad, longitude: clientLng + lngPad },
         { latitude: clientLat - latPad, longitude: clientLng - lngPad },
       ],
-      { edgePadding: { top: 28, right: 28, bottom: 28, left: 28 }, animated: false },
+      { edgePadding: { top: 28, right: 28, bottom: 28, left: 28 }, animated },
     );
+
+  const hasUser = userLat != null && userLng != null;
+  // Pan to the caregiver. If they're far away, frame both them AND the zone so
+  // they can see their position relative to where they need to be; if close,
+  // just zoom in on them at the geofence scale.
+  const recenterMe = () => {
+    if (userLat == null || userLng == null) return;
+    if (distanceM != null && distanceM > radiusM * 3) {
+      mapRef.current?.fitToCoordinates(
+        [
+          { latitude: userLat, longitude: userLng },
+          { latitude: clientLat, longitude: clientLng },
+        ],
+        { edgePadding: { top: 56, right: 56, bottom: 90, left: 56 }, animated: true },
+      );
+    } else {
+      mapRef.current?.animateToRegion(
+        { latitude: userLat, longitude: userLng, latitudeDelta: delta, longitudeDelta: delta },
+        350,
+      );
+    }
+  };
 
   const progress = useRef(new Animated.Value(0)).current;
   // radius = how far the ping has travelled; fade = 1 at centre → 0 at the edge.
@@ -151,8 +177,8 @@ function GeoMap({
           latitudeDelta: delta,
           longitudeDelta: delta,
         }}
-        onMapReady={fitToZone}
-        onLayout={fitToZone}
+        onMapReady={() => fitToZone()}
+        onLayout={() => fitToZone()}
         showsUserLocation
         showsMyLocationButton={false}
         toolbarEnabled={false}
@@ -195,6 +221,27 @@ function GeoMap({
           <Text style={styles.mapAccuracyText}>GPS ±{Math.round(accuracy)} m</Text>
         </View>
       ) : null}
+
+      {/* Recenter controls — jump to my location or back to the client zone. */}
+      <View style={styles.mapControls}>
+        <Pressable
+          onPress={recenterMe}
+          disabled={!hasUser}
+          style={({ pressed }) => [styles.mapBtn, !hasUser && styles.mapBtnDisabled, pressed && hasUser && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Center map on my location"
+        >
+          <Ionicons name="locate" size={19} color={hasUser ? '#1a5fa8' : '#a8bdd4'} />
+        </Pressable>
+        <Pressable
+          onPress={() => fitToZone(true)}
+          style={({ pressed }) => [styles.mapBtn, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Center map on the client zone"
+        >
+          <Ionicons name="home" size={17} color="#1a5fa8" />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -425,6 +472,8 @@ export default function ClockInScreen() {
         geoStatus={geoStatus}
         distanceM={distanceM}
         accuracy={accuracy}
+        userLat={currentCoords?.lat ?? null}
+        userLng={currentCoords?.lng ?? null}
       />
     ) : null;
 
@@ -731,6 +780,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 5,
   },
   mapAccuracyText: { color: '#dbe6f1', fontSize: 11, fontWeight: '700' },
+  mapControls: { position: 'absolute', right: 12, bottom: 12, gap: 8 },
+  mapBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff',
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4,
+  },
+  mapBtnDisabled: { backgroundColor: '#eef2f6' },
 
   // Active timer
   timerCard: {
