@@ -8,7 +8,7 @@ export default function ErrorRetry({ message, onRetry }: { message?: string; onR
   return (
     <View style={styles.wrap}>
       <Ionicons name="cloud-offline-outline" size={40} color="#9db3c8" />
-      <Text style={styles.title}>Couldn't load</Text>
+      <Text style={styles.title}>{"Couldn't load"}</Text>
       <Text style={styles.msg}>{message ?? 'Check your connection and try again.'}</Text>
       <Pressable
         onPress={onRetry}
