@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import apiClient, { setMobileAccessToken, setUnauthorizedHandler } from './api-client';
+import { cancelAllShiftAlerts } from './shift-alert-scheduler';
 
 const TOKEN_KEY = 'rayhealth_mobile_access_token';
 const USER_KEY = 'rayhealth_mobile_user';
@@ -33,6 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearLocalState = useCallback(async () => {
+    // Cancel any scheduled shift-alert notifications first — their body carries
+    // the client's name (PHI), so a logged-out or shared device must not keep
+    // surfacing them. Best-effort; never block logout on it.
+    try {
+      await cancelAllShiftAlerts();
+    } catch {
+      /* ignore — proceed with clearing the session regardless */
+    }
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);
     setMobileAccessToken(null);
