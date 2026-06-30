@@ -130,6 +130,10 @@ export function CommandCenterPage() {
               borderRadius: '14px',
               padding: '1.25rem 1.4rem',
               color: '#E2E8F0',
+              // Crisp dark edge + clip so the gradient doesn't leave a light
+              // antialiasing sliver at the rounded corners.
+              border: '1px solid #1E293B',
+              overflow: 'hidden',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
