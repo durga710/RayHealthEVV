@@ -61,8 +61,6 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />
-      {/* Reached via push from a visit card / notification — not a tab. */}
-      <Tabs.Screen name="clockin" options={{ href: null }} />
     </Tabs>
   );
 }
