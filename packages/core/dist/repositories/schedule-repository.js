@@ -252,6 +252,66 @@ export class ScheduleRepository {
         }));
     }
     /**
+     * Forward-looking schedule for one caregiver — every assignment whose
+     * `scheduled_start_time` falls between the start of today and `daysAhead`
+     * days from now. Same row shape, joins, and tenant scope as
+     * getTodaysScheduleForCaregiver, but a wider window so the mobile app can
+     * render a multi-day agenda. The today-only evv_visits overlay is retained
+     * so an in-progress visit still surfaces on today's rows; future days simply
+     * have null current-visit fields.
+     *
+     * `daysAhead` is clamped by the caller; bound as a parameter (never string
+     * interpolated) to keep the interval arithmetic injection-safe.
+     */
+    async getUpcomingScheduleForCaregiver(caregiverId, agencyId, daysAhead = 7) {
+        const rows = await this.db('assignments as a')
+            .innerJoin('caregivers as cg', 'cg.id', 'a.caregiver_id')
+            .innerJoin('visit_templates as vt', 'vt.id', 'a.visit_template_id')
+            .innerJoin('clients as c', 'c.id', 'vt.client_id')
+            .leftJoin(this.db.raw(`(
+            SELECT DISTINCT ON (assignment_id)
+              assignment_id,
+              id,
+              status,
+              clock_in_time,
+              clock_out_time
+            FROM evv_visits
+            WHERE clock_in_time::date = (current_date AT TIME ZONE 'UTC')
+            ORDER BY assignment_id, clock_in_time DESC
+          ) as v`), 'v.assignment_id', 'a.id')
+            .where('a.caregiver_id', caregiverId)
+            .andWhere('cg.agency_id', agencyId)
+            .andWhereRaw("a.scheduled_start_time BETWEEN date_trunc('day', now()) AND (now() + (? * interval '1 day'))", [daysAhead])
+            .orderByRaw('a.scheduled_start_time ASC NULLS LAST')
+            .select('a.id as assignment_id', 'a.scheduled_start_time', 'a.scheduled_end_time', 'c.id as client_id', 'c.first_name as client_first_name', 'c.last_name as client_last_name', 'c.address_line_1 as client_address_line_1', 'c.city as client_city', 'c.state as client_state', 'c.latitude as client_latitude', 'c.longitude as client_longitude', 'c.geofence_radius_m as geofence_radius_m', 'vt.id as template_id', 'vt.name as template_name', 'v.id as current_visit_id', 'v.status as current_visit_status', 'v.clock_in_time as current_clock_in_time', 'v.clock_out_time as current_clock_out_time');
+        return rows.map((row) => ({
+            assignmentId: row.assignment_id,
+            scheduledStartTime: toIsoOrNull(row.scheduled_start_time),
+            scheduledEndTime: toIsoOrNull(row.scheduled_end_time),
+            clientId: row.client_id,
+            clientFirstName: row.client_first_name,
+            clientLastName: row.client_last_name,
+            clientAddressLine1: row.client_address_line_1 ?? null,
+            clientCity: row.client_city ?? null,
+            clientState: row.client_state ?? null,
+            clientLatitude: row.client_latitude === null || row.client_latitude === undefined
+                ? null
+                : Number(row.client_latitude),
+            clientLongitude: row.client_longitude === null || row.client_longitude === undefined
+                ? null
+                : Number(row.client_longitude),
+            geofenceRadiusM: row.geofence_radius_m === null || row.geofence_radius_m === undefined
+                ? 150
+                : Number(row.geofence_radius_m),
+            templateId: row.template_id,
+            templateName: row.template_name,
+            currentVisitId: row.current_visit_id ?? null,
+            currentVisitStatus: row.current_visit_status ?? null,
+            currentClockInTime: toIsoOrNull(row.current_clock_in_time),
+            currentClockOutTime: toIsoOrNull(row.current_clock_out_time)
+        }));
+    }
+    /**
      * Tenant-scoped (via client join) template update. Only provided fields are
      * written. Returns the updated template, or null when unknown / cross-tenant.
      */

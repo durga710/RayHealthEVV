@@ -80,6 +80,19 @@ export declare class ScheduleRepository {
      */
     getTodaysScheduleForCaregiver(caregiverId: string, agencyId: string): Promise<TodayScheduleRow[]>;
     /**
+     * Forward-looking schedule for one caregiver — every assignment whose
+     * `scheduled_start_time` falls between the start of today and `daysAhead`
+     * days from now. Same row shape, joins, and tenant scope as
+     * getTodaysScheduleForCaregiver, but a wider window so the mobile app can
+     * render a multi-day agenda. The today-only evv_visits overlay is retained
+     * so an in-progress visit still surfaces on today's rows; future days simply
+     * have null current-visit fields.
+     *
+     * `daysAhead` is clamped by the caller; bound as a parameter (never string
+     * interpolated) to keep the interval arithmetic injection-safe.
+     */
+    getUpcomingScheduleForCaregiver(caregiverId: string, agencyId: string, daysAhead?: number): Promise<TodayScheduleRow[]>;
+    /**
      * Tenant-scoped (via client join) template update. Only provided fields are
      * written. Returns the updated template, or null when unknown / cross-tenant.
      */

@@ -32,5 +32,30 @@ router.get('/caregiver/today', requireCapability('evv.read'), async (req, res) =
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+/**
+ * Forward-looking schedule for the mobile "Schedule" tab — the caregiver's
+ * assignments from the start of today through `?days` days ahead (default 7,
+ * clamped 1..30). Same row shape as /caregiver/today so the client can reuse
+ * its schedule-row model; `serverTime` included for the same clock-skew reason.
+ *
+ * Caregiver-only by the same scope rationale as /caregiver/today.
+ */
+router.get('/caregiver/schedule', requireCapability('evv.read'), async (req, res) => {
+    if (!req.auth.caregiverId) {
+        return res.status(403).json({ message: 'User is not authorized as a caregiver' });
+    }
+    try {
+        const parsed = Number.parseInt(String(req.query.days ?? '7'), 10);
+        const days = Number.isFinite(parsed) ? Math.min(30, Math.max(1, parsed)) : 7;
+        const db = req.app.get('db');
+        const repo = new ScheduleRepository(db);
+        const schedule = await repo.getUpcomingScheduleForCaregiver(req.auth.caregiverId, req.auth.agencyId, days);
+        res.json({ schedule, serverTime: new Date().toISOString() });
+    }
+    catch (err) {
+        safeError('Failed to load caregiver upcoming schedule', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 export default router;
 //# sourceMappingURL=mobile-routes.js.map
