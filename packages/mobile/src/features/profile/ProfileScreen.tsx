@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../lib/AuthContext';
 import apiClient from '../../lib/api-client';
 
@@ -32,6 +33,7 @@ const MIN_PASSWORD = 12;
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -219,6 +221,21 @@ export default function ProfileScreen() {
               </Pressable>
             </View>
 
+            {/* My Training */}
+            <Pressable
+              onPress={() => router.push('/training')}
+              style={({ pressed }) => [styles.navRow, pressed && { opacity: 0.92 }]}
+            >
+              <View style={styles.navIcon}>
+                <Ionicons name="school-outline" size={20} color="#1a5fa8" />
+              </View>
+              <View style={styles.navTextWrap}>
+                <Text style={styles.navTitle}>My Training</Text>
+                <Text style={styles.navSub}>Courses & certificates</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9db3c8" />
+            </Pressable>
+
             {/* Change password */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Change password</Text>
@@ -337,6 +354,20 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
   btnDisabled: { backgroundColor: '#a8bdd4' },
+
+  navRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#fff', borderRadius: 18, padding: 16,
+    shadowColor: '#0f2d52', shadowOpacity: 0.06, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 }, elevation: 2,
+  },
+  navIcon: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#eaf2fb',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  navTextWrap: { flex: 1 },
+  navTitle: { fontSize: 15, fontWeight: '800', color: '#0f2d52' },
+  navSub: { fontSize: 12, color: '#5a7088', marginTop: 2 },
 
   logoutBtn: {
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8,
