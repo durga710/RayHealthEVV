@@ -3,6 +3,7 @@ import {
   Alert,
   Animated,
   Easing,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -276,9 +277,11 @@ export default function ClockInScreen() {
   const openClockInTime = firstParam(params.clockInTime);
   const clientLat = params.clientLat ? parseFloat(firstParam(params.clientLat) ?? '') : null;
   const clientLng = params.clientLng ? parseFloat(firstParam(params.clientLng) ?? '') : null;
-  const clientGeofenceM = params.clientGeofenceM
-    ? parseInt(firstParam(params.clientGeofenceM) ?? '150', 10)
-    : 150;
+  // Guard against a "null"/garbage param (e.g. a null geofence stringified by
+  // the schedule path) parsing to NaN — which would make `d <= NaN` always
+  // false and trap the user permanently outside the zone.
+  const parsedGeofence = params.clientGeofenceM ? parseInt(firstParam(params.clientGeofenceM) ?? '', 10) : NaN;
+  const clientGeofenceM = Number.isFinite(parsedGeofence) && parsedGeofence > 0 ? parsedGeofence : 150;
   const hasGeolock =
     Number.isFinite(clientLat) && Number.isFinite(clientLng) &&
     clientLat !== null && clientLng !== null;
@@ -307,6 +310,19 @@ export default function ClockInScreen() {
 
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
 
+  const applyFix = useCallback((loc: Location.LocationObject) => {
+    const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+    setCurrentCoords(coords);
+    setAccuracy(loc.coords.accuracy ?? null);
+    if (hasGeolock && clientLat != null && clientLng != null) {
+      const d = haversineM(coords, { lat: clientLat, lng: clientLng });
+      setDistanceM(d);
+      setGeoStatus(d <= clientGeofenceM ? 'inside' : 'outside');
+    } else {
+      setGeoStatus('inside');
+    }
+  }, [hasGeolock, clientLat, clientLng, clientGeofenceM]);
+
   const startWatching = useCallback(async () => {
     setGeoStatus('requesting');
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -314,22 +330,22 @@ export default function ClockInScreen() {
       setGeoStatus('denied');
       return;
     }
+    // Seed with a fast last-known + one-shot fix so the user isn't stuck on
+    // "Acquiring location…" while the high-accuracy watch warms up (which can
+    // be slow or never fire indoors).
+    try {
+      const last = await Location.getLastKnownPositionAsync();
+      if (last) applyFix(last);
+      const fix = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      applyFix(fix);
+    } catch {
+      // Ignore — the watch below is the source of truth once it emits.
+    }
     locationSubRef.current = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, distanceInterval: 5, timeInterval: 4000 },
-      (loc) => {
-        const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-        setCurrentCoords(coords);
-        setAccuracy(loc.coords.accuracy ?? null);
-        if (hasGeolock && clientLat != null && clientLng != null) {
-          const d = haversineM(coords, { lat: clientLat, lng: clientLng });
-          setDistanceM(d);
-          setGeoStatus(d <= clientGeofenceM ? 'inside' : 'outside');
-        } else {
-          setGeoStatus('inside');
-        }
-      }
+      applyFix,
     );
-  }, [hasGeolock, clientLat, clientLng, clientGeofenceM]);
+  }, [applyFix]);
 
   useEffect(() => {
     void startWatching();
@@ -389,12 +405,31 @@ export default function ClockInScreen() {
   };
 
   const handleClockOut = async () => {
-    if (!visit || !currentCoords) return;
+    if (!visit) return;
     setGeofenceError(null);
     setIsLoading(true);
     try {
+      // A caregiver must always be able to END a shift. Use the live fix if we
+      // have one, otherwise fall back to last-known (they almost certainly had
+      // GPS when they clocked in at this client) so a stale/denied watch can't
+      // trap them in an open visit.
+      let coords = currentCoords;
+      let acc = accuracy;
+      if (!coords) {
+        try {
+          const last = await Location.getLastKnownPositionAsync();
+          if (last) {
+            coords = { lat: last.coords.latitude, lng: last.coords.longitude };
+            acc = last.coords.accuracy ?? null;
+          }
+        } catch {
+          // ignore — send a zeroed location below and let the server decide
+        }
+      }
       await apiClient.post(`/api/evv/clock-out/${visit.id}`, {
-        location: { lat: currentCoords.lat, lng: currentCoords.lng, accuracy: accuracy ?? 0 },
+        location: coords
+          ? { lat: coords.lat, lng: coords.lng, accuracy: acc ?? 0 }
+          : { lat: 0, lng: 0, accuracy: 0 },
       });
       const totalElapsed = elapsed;
       const clockInTime = visit.clockInTime;
@@ -421,7 +456,8 @@ export default function ClockInScreen() {
 
   const isClockedIn = visit !== null;
   const canClockIn = currentCoords != null && geoStatus === 'inside' && !isLoading;
-  const canClockOut = isClockedIn && currentCoords != null && !isLoading;
+  // Clock-out is intentionally NOT gated on a live fix — see handleClockOut.
+  const canClockOut = isClockedIn && !isLoading;
 
   const initials = (clientName ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -556,8 +592,27 @@ export default function ClockInScreen() {
     <View style={styles.deniedBox}>
       <Text style={styles.deniedTitle}>Location access required</Text>
       <Text style={styles.deniedNote}>
-        EVV compliance requires location access. Enable it in your device Settings.
+        EVV compliance needs your location to confirm you're at the client's
+        address. Enable it, then tap Retry.
       </Text>
+      <View style={styles.deniedActions}>
+        <Pressable
+          onPress={() => void startWatching()}
+          style={({ pressed }) => [styles.deniedBtn, pressed && { opacity: 0.85 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Retry location access"
+        >
+          <Text style={styles.deniedBtnText}>Retry</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => void Linking.openSettings()}
+          style={({ pressed }) => [styles.deniedBtnGhost, pressed && { opacity: 0.85 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Open device settings"
+        >
+          <Text style={styles.deniedBtnGhostText}>Open Settings</Text>
+        </Pressable>
+      </View>
     </View>
   ) : null;
 
@@ -831,6 +886,11 @@ const styles = StyleSheet.create({
   },
   deniedTitle: { color: '#991b1b', fontSize: 14, fontWeight: '700', marginBottom: 4 },
   deniedNote: { color: '#b91c1c', fontSize: 13, lineHeight: 19 },
+  deniedActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  deniedBtn: { backgroundColor: '#b91c1c', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 9 },
+  deniedBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  deniedBtnGhost: { borderWidth: 1, borderColor: '#fca5a5', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 9 },
+  deniedBtnGhostText: { color: '#b91c1c', fontSize: 13, fontWeight: '800' },
 
   // EVV note
   evvNote: {
