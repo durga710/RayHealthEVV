@@ -103,8 +103,19 @@ export default function ScheduleScreen() {
 
   const load = useCallback(async () => {
     try {
-      const res = await apiClient.get<{ schedule: ScheduleRow[] }>('/api/mobile/caregiver/schedule?days=30');
-      setRows(res.data?.schedule ?? []);
+      let schedule: ScheduleRow[] = [];
+      try {
+        // Preferred: full multi-day window for the calendar.
+        const res = await apiClient.get<{ schedule: ScheduleRow[] }>('/api/mobile/caregiver/schedule?days=30');
+        schedule = res.data?.schedule ?? [];
+      } catch {
+        // The /schedule endpoint may not be deployed yet — fall back to the
+        // always-available "today" window (same row shape) so the tab still
+        // shows visits instead of an empty state.
+        const res = await apiClient.get<{ schedule: ScheduleRow[] }>('/api/mobile/caregiver/today');
+        schedule = res.data?.schedule ?? [];
+      }
+      setRows(schedule);
     } catch {
       setRows([]);
     } finally {
