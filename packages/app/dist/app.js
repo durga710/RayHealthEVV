@@ -46,6 +46,48 @@ import superadminRoutes from './routes/superadmin-routes.js';
 import documentRoutes from './routes/documents.js';
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 /**
+ * TOTP second-factor verification. The 6-digit code has a ~10^6 keyspace and
+ * verifies fast, so an attacker who already has valid first-factor credentials
+ * could otherwise brute force the code within a single challenge-token window.
+ * 10 attempts per 15-min window per IP makes that infeasible while leaving room
+ * for a user fat-fingering the code a few times.
+ */
+const twoFaLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many verification attempts. Try again in a few minutes.' },
+    skip: () => process.env.NODE_ENV === 'test',
+});
+/**
+ * Password reset request + completion. Unauthenticated. Without a limit,
+ * /forgot-password can be scripted to email-bomb any address and run up SES
+ * cost, and both endpoints become an account-enumeration / token-guessing
+ * surface. 10 per 15-min window per IP is ample for a real reset.
+ */
+const passwordResetLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many requests. Please try again in a few minutes.' },
+    skip: () => process.env.NODE_ENV === 'test',
+});
+/**
+ * Public, unauthenticated marketing lead-capture (contact form). Writes to the
+ * DB on every submit, so it's an obvious spam/flood target. 10 per 15-min
+ * window per IP is well above genuine use.
+ */
+const marketingLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many requests. Please try again in a few minutes.' },
+    skip: () => process.env.NODE_ENV === 'test',
+});
+/**
  * Default rate limit for the authenticated API surface. 300 requests per
  * 15-minute window per IP is well above legitimate admin/coordinator use
  * (each page load is typically <10 requests) and well below what an
@@ -176,10 +218,13 @@ export function createApp() {
     // smaller (4000-char prompt cap enforced inside the route).
     app.use(express.json({ limit: '100kb' }));
     for (const prefix of ['', '/api']) {
+        app.use(`${prefix}/auth/login/2fa`, twoFaLimiter);
         app.use(`${prefix}/auth/login`, authLimiter);
         app.use(`${prefix}/auth/mobile/login`, authLimiter);
         app.use(`${prefix}/auth/bootstrap`, authLimiter);
         app.use(`${prefix}/auth/signup`, authLimiter);
+        app.use(`${prefix}/auth/forgot-password`, passwordResetLimiter);
+        app.use(`${prefix}/auth/reset-password`, passwordResetLimiter);
         app.use(`${prefix}/auth`, authRoutes);
         // Public invitation lookup + accept. Mounted before authContext so a
         // caregiver clicking the email link can hit them without a session.
@@ -188,7 +233,7 @@ export function createApp() {
         // on purpose — the public /status page polls these. Mounted BEFORE
         // authContext, behind their own tighter rate limit (60 / 15-min per IP).
         app.use(`${prefix}/health`, healthLimiter, healthRoutes);
-        app.use(`${prefix}/marketing`, marketingRoutes);
+        app.use(`${prefix}/marketing`, marketingLimiter, marketingRoutes);
         app.use(`${prefix}/onboarding`, onboardingRoutes);
         // Public marketing-site support chat ("RayHealthAssist"). Mounted before
         // authContext so the anonymous widget reaches it without a session; behind
