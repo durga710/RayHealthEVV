@@ -92,8 +92,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // user to login, not silently show an empty dashboard. Validate it once
       // against the server before treating the session as authenticated.
       try {
-        await apiClient.get('/api/auth/me', { skipAuthHandler: true } as never);
-        await loadCachedUser();
+        const { data } = await apiClient.get('/api/auth/me', { skipAuthHandler: true } as never);
+        const me = (data ?? {}) as { role?: string; agencyId?: string; firstName?: string | null };
+        const cachedJson = await SecureStore.getItemAsync(USER_KEY);
+        const cached = cachedJson ? (JSON.parse(cachedJson) as Partial<MobileUser>) : null;
+        const nextUser: MobileUser = {
+          role: me.role ?? cached?.role ?? '',
+          agencyId: me.agencyId ?? cached?.agencyId ?? '',
+          firstName: me.firstName ?? cached?.firstName ?? undefined,
+        };
+        setUser(nextUser);
+        await SecureStore.setItemAsync(USER_KEY, JSON.stringify(nextUser));
         setIsAuthenticated(true);
       } catch (err) {
         const status = (err as { response?: { status?: number } })?.response?.status;
@@ -138,7 +147,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await apiClient.post('/api/auth/mobile/login', { email, password });
     await SecureStore.setItemAsync(TOKEN_KEY, data.token);
     setMobileAccessToken(data.token);
-    const nextUser: MobileUser = { role: data.role, agencyId: data.agencyId };
+    let nextUser: MobileUser = { role: data.role, agencyId: data.agencyId };
+    // The login response doesn't carry the caregiver's name; fetch it for the
+    // dashboard greeting. Best-effort — never block sign-in on it.
+    try {
+      const me = await apiClient.get('/api/auth/me');
+      const firstName = (me.data as { firstName?: string | null })?.firstName;
+      if (firstName) nextUser = { ...nextUser, firstName };
+    } catch {
+      /* greeting personalization is non-critical */
+    }
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(nextUser));
     setUser(nextUser);
     setIsAuthenticated(true);

@@ -184,8 +184,11 @@ export default function DashboardScreen() {
   // manual pull-to-refresh.
   useFocusEffect(
     useCallback(() => {
+      // Admins/coordinators see the "use the web portal" screen, not the
+      // caregiver schedule — don't fire the caregiver-only /today request.
+      if (user?.role === 'admin' || user?.role === 'coordinator') return;
       void fetchAssignments();
-    }, []),
+    }, [user?.role]),
   );
 
   useEffect(() => {

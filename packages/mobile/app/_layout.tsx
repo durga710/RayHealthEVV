@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { LogBox, Pressable, StyleSheet, Text, View } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Notifications from 'expo-notifications';
@@ -59,6 +59,20 @@ export default function RootLayout() {
 
 function RootContent() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
+  // When the session is lost (logout, or a mid-use 401 revoke), reset the whole
+  // stack to login. The (tabs) layout already redirects, but screens pushed
+  // OVER the tabs — /clockin, /training, /visit-detail, /profile-details,
+  // /change-password — would otherwise strand the user on a now-unauthorized
+  // screen. Fire only on the authenticated→unauthenticated transition.
+  const prevAuth = useRef(isAuthenticated);
+  useEffect(() => {
+    if (prevAuth.current && !isAuthenticated) {
+      router.replace('/login');
+    }
+    prevAuth.current = isAuthenticated;
+  }, [isAuthenticated, router]);
 
   // Deep-link on notification tap. Pull the assignment data we embedded when
   // scheduling and route to /clockin with the same param shape the dashboard
