@@ -592,8 +592,7 @@ export default function ClockInScreen() {
     <View style={styles.deniedBox}>
       <Text style={styles.deniedTitle}>Location access required</Text>
       <Text style={styles.deniedNote}>
-        EVV compliance needs your location to confirm you're at the client's
-        address. Enable it, then tap Retry.
+        {"EVV compliance needs your location to confirm you're at the client's address. Enable it, then tap Retry."}
       </Text>
       <View style={styles.deniedActions}>
         <Pressable
