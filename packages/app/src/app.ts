@@ -45,6 +45,7 @@ import exportRoutes from './routes/export-routes.js';
 import importRoutes from './routes/import-routes.js';
 import recurringScheduleRoutes from './routes/recurring-schedule-routes.js';
 import superadminRoutes from './routes/superadmin-routes.js';
+import documentRoutes from './routes/documents.js';
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 
@@ -127,6 +128,17 @@ export function createApp() {
   const isProd = process.env.NODE_ENV === 'production';
   if (isProd && !process.env.ALLOWED_ORIGINS) {
     throw new Error('ALLOWED_ORIGINS env var must be set in production');
+  }
+
+  // Defense-in-depth for the "no non-BAA AI vendor" guarantee. The Gemini
+  // fallback was removed from the code path, but a lingering Google AI key in
+  // the prod environment is a signal something is misconfigured — refuse to
+  // boot rather than risk any future code path reaching a non-BAA AI vendor
+  // with PHI. (The removed client read either variable.)
+  if (isProd && (process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY)) {
+    throw new Error(
+      'GOOGLE_AI_API_KEY / GEMINI_API_KEY must not be set in production: AI runs on AWS Bedrock (BAA-covered) only',
+    );
   }
   const allowedOrigins =
     process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) ??
@@ -251,6 +263,7 @@ export function createApp() {
     app.use(`${prefix}/settings`, settingsRoutes);
     app.use(`${prefix}/compliance-engine`, complianceEngineRoutes);
     app.use(`${prefix}/command-center`, commandCenterRoutes);
+    app.use(`${prefix}/documents`, documentRoutes);
   }
 
   return app;
