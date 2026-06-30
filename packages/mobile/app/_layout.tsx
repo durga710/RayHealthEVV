@@ -1,8 +1,22 @@
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { LogBox, Pressable, StyleSheet, Text, View } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { AuthProvider, useAuth } from '../src/lib/AuthContext';
+
+// Expo Go (SDK 53+) removed remote push support, so expo-notifications' push-
+// token auto-registration logs a warning the moment the module is imported.
+// We only use LOCAL scheduled notifications (shift alerts), which still work in
+// Expo Go — so this message is expected noise *only* while running inside Expo
+// Go. It does NOT fire in a dev/production build, where remote push is
+// available, so scope the suppression to Expo Go to keep real push problems
+// visible everywhere else.
+if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+  LogBox.ignoreLogs([
+    'expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go',
+  ]);
+}
 
 // Show shift-alert notifications even when the app is foregrounded so the
 // system banner + sound + vibration still fire. We mirror the haptic
