@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
 import ScreenHeader from '../common/ScreenHeader';
+import { showAppAlert, showAppToast } from '../common/alerts/appAlert';
 
 const MIN_PASSWORD = 12;
 
@@ -43,14 +43,13 @@ export default function ChangePasswordScreen() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirm('');
-      Alert.alert('Password changed', 'Your password has been updated.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showAppToast({ message: "Password updated — you're all set.", variant: 'success' });
+      router.back();
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Could not change your password. Please try again.';
-      Alert.alert('Password not changed', msg);
+      showAppAlert('Password not changed', msg, undefined, { variant: 'error' });
     } finally {
       setSaving(false);
     }

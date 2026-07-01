@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
 import ScreenHeader from '../common/ScreenHeader';
+import { showAppAlert, showAppToast } from '../common/alerts/appAlert';
 
 interface Profile {
   email: string;
@@ -65,11 +65,10 @@ export default function EditDetailsScreen() {
         lastName: lastName.trim(),
         phone: phone.trim(),
       });
-      Alert.alert('Saved', 'Your details have been updated.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showAppToast({ message: "You're all set — your details have been updated.", variant: 'success' });
+      router.back();
     } catch {
-      Alert.alert('Could not save', 'Please check your connection and try again.');
+      showAppAlert('Could not save', 'Please check your connection and try again.', undefined, { variant: 'error' });
     } finally {
       setSaving(false);
     }
