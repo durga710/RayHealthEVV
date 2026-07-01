@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
@@ -12,6 +13,13 @@ import { safeError } from '../security/safe-log.js';
 import { CURRENT_TERMS_VERSION } from '../terms.js';
 import { verifySync } from 'otplib';
 const router = Router();
+/**
+ * A valid cost-12 bcrypt hash (of a throwaway string, NOT a real credential)
+ * used only to equalize response timing on the "user not found" path so an
+ * attacker cannot enumerate registered emails by measuring how long a login
+ * takes. Its cost factor matches the real hashes produced by bcrypt.hash(_, 12).
+ */
+const DUMMY_PASSWORD_HASH = '$2b$12$df0z.PFd7acWE5orxTvFmOnjqLdyh92rNGAOmR5RicwgyE18g7Vsm';
 function jwtSecret() {
     const secret = process.env.JWT_SECRET;
     if (!secret)
@@ -44,8 +52,10 @@ async function recordAuditEvent(db, event) {
         await new AuditEventRepository(db).create(event);
     }
     catch (error) {
+        // safeError redacts PHI/PII that Postgres driver errors can embed in
+        // .message/.stack, keeping it out of the (non-BAA) deploy log pipeline.
         if (process.env.NODE_ENV !== 'test') {
-            console.error('Failed to persist auth audit event', error);
+            safeError('Failed to persist auth audit event', error);
         }
     }
 }
@@ -60,6 +70,11 @@ router.post('/login', async (req, res) => {
         const repo = new UserRepository(db);
         const user = await repo.findByEmail(email);
         if (!user) {
+            // Run a bcrypt.compare against a dummy cost-12 hash even when the account
+            // doesn't exist, so response timing doesn't reveal which emails are
+            // registered (account enumeration). Matches the flat-timing pattern in
+            // superadmin-routes.
+            await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
             res.status(401).json({ message: 'Invalid credentials' });
             return;
         }
@@ -218,7 +233,10 @@ router.post('/mobile/login', async (req, res) => {
     try {
         const db = req.app.get('db');
         const user = await new UserRepository(db).findByEmail(email);
-        if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+        // Always run bcrypt.compare (dummy hash when the account is missing) so
+        // timing doesn't reveal whether the email is registered.
+        const passwordOk = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
+        if (!user || !passwordOk) {
             res.status(401).json({ message: 'Invalid credentials' });
             return;
         }
@@ -320,6 +338,24 @@ router.post('/signup', async (req, res) => {
 });
 // One-time admin bootstrap — serialized via advisory lock so concurrent requests cannot both succeed.
 router.post('/bootstrap', async (req, res) => {
+    // Secret gate (documented in .env.example): the endpoint is DISABLED unless
+    // BOOTSTRAP_SECRET is set, and requires a matching bootstrapSecret in the
+    // body. This is the documented way to disable bootstrap in prod after the
+    // first admin exists, and a second line of defense beyond the empty-users
+    // check below (e.g. if the users table is ever emptied by a migration/restore).
+    const expectedSecret = process.env.BOOTSTRAP_SECRET;
+    if (!expectedSecret) {
+        res.status(503).json({ message: 'Bootstrap is disabled' });
+        return;
+    }
+    const providedSecret = typeof req.body?.bootstrapSecret === 'string' ? req.body.bootstrapSecret : '';
+    const expectedBuf = Uint8Array.from(Buffer.from(expectedSecret));
+    const providedBuf = Uint8Array.from(Buffer.from(providedSecret));
+    if (expectedBuf.length !== providedBuf.length ||
+        !timingSafeEqual(expectedBuf, providedBuf)) {
+        res.status(403).json({ message: 'Forbidden' });
+        return;
+    }
     const { agencyId, email, password } = req.body ?? {};
     if (!agencyId || !email || !password) {
         res.status(400).json({ message: 'agencyId, email and password required' });

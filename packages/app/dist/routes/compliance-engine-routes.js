@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireCapability } from '../middleware/require-capability.js';
+import { safeError } from '../security/safe-log.js';
 import { AUDIT_DEFENSE_PACKET_COLUMNS, AuditEventRepository, ComplianceEngineRepository, PA_BACKGROUND_CHECK_RENEWAL_YEARS, PA_DHS_AUDIT_RESPONSE_HOURS, PA_GRACE_PERIOD_MINUTES, PA_RETENTION_YEARS, PA_RN_SUPERVISION_CHC_DAYS, PA_SANDATA_SUBMISSION_WINDOW_DAYS, auditPacketRowToCsv, paComplianceCredentials, paExceptionTypes, } from '@rayhealth/core';
 const router = Router();
 /**
@@ -78,7 +79,7 @@ router.get('/audit-defense/preview', requireCapability('audit.read'), async (req
         });
     }
     catch (error) {
-        console.error('Audit defense preview failed:', error);
+        safeError('Audit defense preview failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -170,7 +171,7 @@ router.get('/audit-defense/packet.csv', requireCapability('audit.read'), async (
         }
     }
     catch (error) {
-        console.error('Audit defense packet build failed:', error);
+        safeError('Audit defense packet build failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -212,7 +213,7 @@ router.get('/authorizations/overview', requireCapability('client.read'), async (
         });
     }
     catch (error) {
-        console.error('Authorization oversight failed:', error);
+        safeError('Authorization oversight failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -269,7 +270,7 @@ router.get('/authorizations/list', requireCapability('client.read'), async (req,
         });
     }
     catch (error) {
-        console.error('Authorization list failed:', error);
+        safeError('Authorization list failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -297,7 +298,7 @@ router.get('/summary', requireCapability('audit.read'), async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Compliance Engine summary failed:', error);
+        safeError('Compliance Engine summary failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -336,7 +337,7 @@ router.get('/credentials/overview', requireCapability('staff.read'), async (req,
         });
     }
     catch (error) {
-        console.error('Credentials compliance overview failed:', error);
+        safeError('Credentials compliance overview failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -365,7 +366,7 @@ router.get('/claims/overview', requireCapability('billing.read'), async (req, re
         });
     }
     catch (error) {
-        console.error('Claim matching overview failed:', error);
+        safeError('Claim matching overview failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -387,7 +388,7 @@ router.get('/claims/blockers', requireCapability('billing.read'), async (req, re
         res.json({ asOf: new Date().toISOString(), ...result });
     }
     catch (error) {
-        console.error('Claim readiness blockers failed:', error);
+        safeError('Claim readiness blockers failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -416,7 +417,7 @@ router.get('/payroll/overview', requireCapability('billing.read'), async (req, r
         });
     }
     catch (error) {
-        console.error('Payroll reconciliation overview failed:', error);
+        safeError('Payroll reconciliation overview failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -460,7 +461,7 @@ router.get('/medicaid/overview', requireCapability('client.read'), async (req, r
         });
     }
     catch (error) {
-        console.error('Medicaid workflow overview failed:', error);
+        safeError('Medicaid workflow overview failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -491,7 +492,7 @@ router.get('/exceptions/overview', requireCapability('audit.read'), async (req, 
         });
     }
     catch (error) {
-        console.error('Exception resolution overview failed:', error);
+        safeError('Exception resolution overview failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -540,7 +541,7 @@ router.get('/exceptions/list', requireCapability('audit.read'), async (req, res)
         });
     }
     catch (error) {
-        console.error('Exception list failed:', error);
+        safeError('Exception list failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
@@ -613,7 +614,7 @@ router.post('/exceptions/:id/acknowledge', requireCapability('audit.read'), asyn
         });
     }
     catch (error) {
-        console.error('Exception acknowledge failed:', error);
+        safeError('Exception acknowledge failed:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
