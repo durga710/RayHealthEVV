@@ -1,9 +1,11 @@
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
-import { LogBox, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LogBox, View } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { AuthProvider, useAuth } from '../src/lib/AuthContext';
+import AppAlertProvider from '../src/features/common/alerts/AppAlertProvider';
+import { showAppToast } from '../src/features/common/alerts/appAlert';
 
 // Expo Go (SDK 53+) removed remote push support, so expo-notifications' push-
 // token auto-registration logs a warning the moment the module is imported.
@@ -59,7 +61,15 @@ export default function RootLayout() {
 
 function RootContent() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, sessionRevokedMessage } = useAuth();
+
+  // Session-revoked notices now route through the branded toast system
+  // instead of the old bespoke slate-gray banner.
+  useEffect(() => {
+    if (sessionRevokedMessage) {
+      showAppToast({ message: sessionRevokedMessage, variant: 'warning', durationMs: 5000 });
+    }
+  }, [sessionRevokedMessage]);
 
   // When the session is lost (logout, or a mid-use 401 revoke), reset the whole
   // stack to login. The (tabs) layout already redirects, but screens pushed
@@ -106,53 +116,7 @@ function RootContent() {
         <Stack.Screen name="profile-details" options={{ headerShown: false }} />
         <Stack.Screen name="change-password" options={{ headerShown: false }} />
       </Stack>
-      <SessionRevokedBanner />
+      <AppAlertProvider />
     </View>
   );
 }
-
-function SessionRevokedBanner() {
-  const { sessionRevokedMessage, dismissSessionRevoked } = useAuth();
-  if (!sessionRevokedMessage) return null;
-  return (
-    <View pointerEvents="box-none" style={styles.bannerContainer}>
-      <Pressable
-        onPress={dismissSessionRevoked}
-        hitSlop={8}
-        accessibilityRole="alert"
-        accessibilityLabel={sessionRevokedMessage}
-        style={({ pressed }) => [styles.banner, pressed && styles.bannerPressed]}
-      >
-        <Text style={styles.bannerText}>{sessionRevokedMessage}</Text>
-      </Pressable>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  bannerContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 24,
-    alignItems: 'center',
-    paddingHorizontal: 16
-  },
-  banner: {
-    minHeight: 44,
-    width: '100%',
-    maxWidth: 480,
-    backgroundColor: '#1f2937',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4
-  },
-  bannerPressed: { opacity: 0.85 },
-  bannerText: { color: 'white', fontSize: 14, fontWeight: '500', textAlign: 'center' }
-});

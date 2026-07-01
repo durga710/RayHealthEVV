@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  Alert,
   Linking,
   Pressable,
   ScrollView,
@@ -16,6 +15,7 @@ import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../lib/AuthContext';
 import apiClient from '../../lib/api-client';
+import { showAppAlert } from '../common/alerts/appAlert';
 
 interface Profile {
   email: string;
@@ -94,15 +94,20 @@ export default function ProfileScreen() {
   const version = Constants.expoConfig?.version ?? '1.0.0';
 
   const confirmLogout = () => {
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: () => void logout() },
-    ]);
+    showAppAlert(
+      'Log out?',
+      "You'll need to sign in again to clock in or view your schedule.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Log out', style: 'destructive', onPress: () => void logout() },
+      ],
+      { variant: 'destructive', icon: 'log-out-outline' },
+    );
   };
 
   const openSupport = () => {
     Linking.openURL('mailto:support@rayhealthevv.com?subject=RayHealthEVV%20Support').catch(() => {
-      Alert.alert('Support', 'Email us at support@rayhealthevv.com');
+      showAppAlert('Support', 'Email us at support@rayhealthevv.com', undefined, { variant: 'info', icon: 'help-buoy-outline' });
     });
   };
 
