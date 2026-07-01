@@ -177,6 +177,17 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
       return res.status(404).json({ message: 'Visit not found' });
     }
 
+    // Idempotent no-op on a repeat call (double-tap, client retry after a
+    // slow response, or a stale client screen re-showing a finished visit as
+    // resumable). Without this, every repeat call re-ran geofence/exception
+    // detection and overwrote clock_out_time/clock_out_location with a fresh
+    // value — silently discarding the original clock-out and, if any
+    // exception was detected, filing a duplicate exception + audit row per
+    // call. Return the already-completed record unchanged instead.
+    if (existing.clockOutTime) {
+      return res.json(existing);
+    }
+
     // Geofence gate at clock-out. Same fail-open semantics as clock-in.
     // Visit rows carry `clientId` since the Cures-Act #2 snapshot rollout;
     // older rows without it skip the geofence check (the alternative is to
