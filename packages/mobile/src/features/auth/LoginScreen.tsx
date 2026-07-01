@@ -18,7 +18,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { Redirect, useRouter } from 'expo-router';
 
 export default function LoginScreen() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, needsAgencySelection } = useAuth();
   const router = useRouter();
   const passwordRef = useRef<TextInput>(null);
   const scrollRef = useRef<ScrollView>(null);
@@ -42,9 +42,12 @@ export default function LoginScreen() {
 
   // If the app ever lands on the login route while a valid session already
   // exists (e.g. a reload restoring the last route), don't strand the user on
-  // the login form — send them straight to the dashboard.
+  // the login form. Multi-agency accounts that haven't picked an agency for
+  // this session go to the picker; everyone else goes straight to the
+  // dashboard. This same Redirect also fires right after login() flips
+  // isAuthenticated, so no imperative navigation is needed in handleLogin.
   if (isAuthenticated) {
-    return <Redirect href="/(tabs)/dashboard" />;
+    return <Redirect href={needsAgencySelection ? '/select-agency' : '/(tabs)/dashboard'} />;
   }
 
   const canSubmit = email.trim().length > 0 && password.length > 0 && !isSubmitting;
@@ -55,10 +58,11 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     try {
       await login(email.trim(), password);
-      router.replace('/(tabs)/dashboard');
+      // Navigation is handled by the Redirect above once isAuthenticated
+      // flips — it routes to /select-agency for multi-agency accounts and to
+      // the dashboard otherwise, so there's no race between the two paths.
     } catch {
       setError('Invalid email or password. Please try again.');
-    } finally {
       setIsSubmitting(false);
     }
   };

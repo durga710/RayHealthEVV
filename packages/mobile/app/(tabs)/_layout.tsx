@@ -12,7 +12,7 @@ export const unstable_settings = {
 };
 
 export default function AppLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, needsAgencySelection } = useAuth();
 
   // Wait for the session to finish hydrating before mounting ANY protected
   // screen, so a child doesn't fire an authenticated request before the bearer
@@ -22,6 +22,12 @@ export default function AppLayout() {
   }
   if (!isAuthenticated) {
     return <Redirect href="/login" />;
+  }
+  // A multi-agency account fresh off sign-in must pick its agency before any
+  // agency-scoped tab renders — everything below this gate shows PHI that
+  // belongs to exactly one agency.
+  if (needsAgencySelection) {
+    return <Redirect href="/select-agency" />;
   }
 
   return (

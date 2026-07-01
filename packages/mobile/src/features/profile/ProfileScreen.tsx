@@ -67,7 +67,7 @@ function Row({
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, user, agencies } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
 
   useFocusEffect(
@@ -139,6 +139,19 @@ export default function ProfileScreen() {
             onPress={() => router.push('/profile-details')}
           />
           <Row
+            icon="business-outline"
+            tint="#0f766e"
+            title="Linked agencies"
+            subtitle={
+              user?.agencyName
+                ? `Working in ${user.agencyName}`
+                : agencies.length > 1
+                  ? `${agencies.length} agencies linked`
+                  : 'View and switch agencies'
+            }
+            onPress={() => router.push('/select-agency?intent=switch')}
+          />
+          <Row
             icon="lock-closed-outline"
             tint="#7c3aed"
             title="Password & security"
@@ -163,10 +176,17 @@ export default function ProfileScreen() {
         <Text style={styles.sectionLabel}>Support</Text>
         <View style={styles.group}>
           <Row
-            icon="help-buoy-outline"
+            icon="book-outline"
             tint="#0891b2"
-            title="Help & Support"
-            subtitle="Contact your agency"
+            title="Help & User Guide"
+            subtitle="How to use RayHealthEVV"
+            onPress={() => router.push('/help')}
+          />
+          <Row
+            icon="help-buoy-outline"
+            tint="#d97706"
+            title="Contact Support"
+            subtitle="Email RayHealthEVV support"
             onPress={openSupport}
           />
           <Row
