@@ -96,7 +96,7 @@ export default function LoginScreen() {
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Email address</Text>
               <View style={styles.inputWrap}>
-                <Text style={styles.inputIcon}>✉️</Text>
+                <Ionicons name="mail-outline" size={18} color="#6898c0" />
                 <TextInput
                   style={styles.input}
                   placeholder="you@example.com"
@@ -116,7 +116,7 @@ export default function LoginScreen() {
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputWrap}>
-                <Text style={styles.inputIcon}>🔒</Text>
+                <Ionicons name="lock-closed-outline" size={18} color="#6898c0" />
                 <TextInput
                   ref={passwordRef}
                   style={styles.input}
@@ -147,7 +147,7 @@ export default function LoginScreen() {
 
             {error ? (
               <View style={styles.errorBox}>
-                <Text style={styles.errorIcon}>⚠️</Text>
+                <Ionicons name="alert-circle" size={16} color="#b91c1c" style={styles.errorIcon} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
@@ -263,7 +263,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     elevation: 2,
   },
-  inputIcon: { fontSize: 16 },
   input: { flex: 1, fontSize: 16, color: '#1a3a5c' },
   eyeBtn: { padding: 4 },
 
@@ -278,7 +277,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#fecaca',
   },
-  errorIcon: { fontSize: 14, marginTop: 1 },
+  errorIcon: { marginTop: 1 },
   errorText: { flex: 1, color: '#b91c1c', fontSize: 13, lineHeight: 19 },
 
   loginBtnWrap: { borderRadius: 14, overflow: 'hidden', marginTop: 4 },
