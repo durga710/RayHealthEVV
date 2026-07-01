@@ -63,7 +63,7 @@ const tiers: readonly Tier[] = [
       'Multi-branch agency hierarchy',
       'Custom Cures-Act submission profile',
       'Dedicated environment + SLAs',
-      'BAA executed; HITRUST-aligned',
+      'BAA included; engineered to HIPAA Security Rule controls',
       'Named CSM, 30-min P1 response',
     ],
     cta: 'Contact sales',

@@ -178,30 +178,33 @@ export function PrivacyPage() {
 
             <h2>Subprocessors</h2>
             <p>
-              We use these vendors to deliver the service. Each handles PHI only
-              as needed for its function and operates under a HIPAA Business
-              Associate Agreement (or, for transit-only providers, sees only
-              encrypted traffic):
+              We use these vendors to deliver the service, each handling PHI only
+              as needed for its function. We do not route real patient data
+              through a subprocessor until a HIPAA Business Associate Agreement
+              (BAA) with that vendor is executed; the current status of each is
+              noted below.
             </p>
             <ul>
               <li>
-                <strong>Vercel</strong> — application compute (web app + API)
+                <strong>Vercel</strong> — application compute (web app + API);
+                BAA in progress
               </li>
               <li>
-                <strong>Neon</strong> — Postgres database
+                <strong>Neon</strong> — Postgres database; BAA in progress
               </li>
               <li>
-                <strong>AWS</strong> — Bedrock AI inference (BAA active)
+                <strong>AWS</strong> — Bedrock AI inference; BAA active
               </li>
               <li>
                 <strong>Cloudflare</strong> — DNS + TLS termination (encrypted
                 transit only; not a Business Associate under HHS guidance)
               </li>
               <li>
-                <strong>Google Firebase</strong> — push notifications and auth
+                <strong>Google Firebase</strong> — push notifications and auth;
+                BAA in progress
               </li>
               <li>
-                <strong>Resend</strong> — transactional email
+                <strong>Resend</strong> — transactional email; BAA in progress
               </li>
             </ul>
 
