@@ -11,11 +11,7 @@ afterEach(() => {
 });
 
 describe('GET /auth/mobile/me', () => {
-  // TODO: re-enable once GET /auth/mobile/me is actually mounted on auth-routes.
-  // The endpoint and `UserRepository.findById` were specced in a prior session
-  // but the route handler was rolled back; the test file remained. Skipping
-  // here to unblock CI until the route is reinstated in a focused PR.
-  it.skip('returns firstName/lastName from caregivers row when role=caregiver', async () => {
+  it('returns firstName/lastName from caregivers row when role=caregiver', async () => {
     const userId = '00000000-0000-4000-8000-000000000031';
     const agencyId = '00000000-0000-4000-8000-000000000032';
     const caregiverId = '00000000-0000-4000-8000-000000000033';
@@ -56,7 +52,7 @@ describe('GET /auth/mobile/me', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
-      id: userId,
+      userId,
       email: 'roman@rayhealth.example',
       role: 'caregiver',
       agencyId,
@@ -90,7 +86,7 @@ describe('GET /auth/mobile/me', () => {
     expect(response.status).toBe(200);
     expect(response.body.firstName).toBeUndefined();
     expect(response.body.lastName).toBeUndefined();
-    expect(response.body.id).toBe(userId);
+    expect(response.body.userId).toBe(userId);
     expect(response.body.role).toBe('admin');
   });
 

@@ -53,6 +53,14 @@ describe('auth session routes', () => {
   });
 
   it('continues to accept bearer JWTs for mobile and tests', async () => {
+    const findById = vi.fn().mockResolvedValue({
+      id: 'user-1',
+      agencyId: 'agency-1',
+      email: 'admin@rayhealth.example',
+      role: 'admin'
+    });
+    vi.spyOn(core, 'UserRepository').mockImplementation(() => ({ findById }) as unknown as core.UserRepository);
+
     const response = await request(createApp())
       .get('/auth/me')
       .set('Authorization', `Bearer ${makeToken('admin')}`);
