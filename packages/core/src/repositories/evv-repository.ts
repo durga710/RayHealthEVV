@@ -63,11 +63,28 @@ export class EvvRepository {
     return updated ? this.mapRowToVisit(updated) : null;
   }
 
-  /** All visits within an agency. */
-  async getVisitsForAgency(agencyId: string): Promise<EvvVisit[]> {
+  /**
+   * Visits within an agency, most-recent first. This table grows without bound
+   * over time, and this method backs a display list (GET /evv/visits) — not the
+   * aggregator export (see getVisitsForExport, which is date-ranged). A generous
+   * safety ceiling caps the response so a single request can't stream the entire
+   * multi-year visit corpus (PHI + GPS) or exhaust memory as the table grows;
+   * ordering by clock-in keeps the cap meaningful (the newest visits). Pass a
+   * smaller `limit`/`offset` to page; the ceiling is always enforced.
+   */
+  async getVisitsForAgency(
+    agencyId: string,
+    opts: { limit?: number; offset?: number } = {}
+  ): Promise<EvvVisit[]> {
+    const MAX = 5000;
+    const limit = Math.min(opts.limit ?? MAX, MAX);
+    const offset = Math.max(opts.offset ?? 0, 0);
     const rows = await this.db('evv_visits as v')
       .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
       .where('u.agency_id', agencyId)
+      .orderBy('v.clock_in_time', 'desc')
+      .limit(limit)
+      .offset(offset)
       .select('v.*');
     return rows.map((row) => this.mapRowToVisit(row));
   }
