@@ -63,4 +63,6 @@ export * from './repositories/recurring-schedule-repository.js';
 export * from './repositories/platform-admin-repository.js';
 export * from './repositories/platform-credential-repository.js';
 export * from './integrations/index.js';
+export * from './domain/user-agency.js';
+export * from './repositories/user-agency-repository.js';
 //# sourceMappingURL=index.d.ts.map

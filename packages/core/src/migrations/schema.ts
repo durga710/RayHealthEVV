@@ -425,6 +425,7 @@ export async function up(knex: Knex): Promise<void> {
             'assignment.created','assignment.cancelled',
             'exception.filed','exception.approved',
             'auth.login.success','auth.login.failure','auth.logout',
+            'auth.agency_switch',
             'session.created','session.revoked','csrf.failure',
             'phi.read','phi.create','phi.update','phi.delete','phi.export',
             'request.write','permission.denied',

@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { AgencyRepository, AuditEventRepository, CaregiverRepository, PasswordResetRepository, SessionRepository, UserRepository } from '@rayhealth/core';
+import { AgencyRepository, AuditEventRepository, CaregiverRepository, PasswordResetRepository, SessionRepository, UserAgencyRepository, UserRepository } from '@rayhealth/core';
 import { authContext } from '../middleware/auth-context.js';
 import { requireCsrf } from '../middleware/csrf.js';
 import { clearSessionCookieOptions, SESSION_COOKIE_NAME, sessionCookieOptions } from '../security/cookies.js';
@@ -224,6 +224,33 @@ router.post('/login/2fa', async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+/**
+ * Every agency the user may act in, for the mobile agency picker. Falls back
+ * to the user's home agency when the user_agencies table hasn't been migrated
+ * or backfilled yet, so login keeps working against an older database.
+ */
+async function listMobileAgencies(db, user) {
+    try {
+        const memberships = await new UserAgencyRepository(db).listActiveForUser(user.id);
+        if (memberships.length > 0) {
+            return memberships.map((m) => ({ agencyId: m.agencyId, agencyName: m.agencyName, role: m.role }));
+        }
+    }
+    catch {
+        /* pre-migration database — fall through to the home agency */
+    }
+    let agencyName = '';
+    try {
+        agencyName = (await new AgencyRepository(db).findById(user.agencyId))?.name ?? '';
+    }
+    catch {
+        /* name is cosmetic — never block login on it */
+    }
+    return [{ agencyId: user.agencyId, agencyName, role: user.role }];
+}
+function signMobileToken(claims) {
+    return jwt.sign(claims, jwtSecret(), { expiresIn: '8h', algorithm: 'HS256' });
+}
 router.post('/mobile/login', async (req, res) => {
     const { email, password } = req.body ?? {};
     if (!email || !password) {
@@ -245,7 +272,12 @@ router.post('/mobile/login', async (req, res) => {
             res.status(403).json({ code: gate.code, message: gate.message });
             return;
         }
-        const token = jwt.sign({ sub: user.id, agencyId: user.agencyId, role: user.role, caregiverId: user.caregiverId }, jwtSecret(), { expiresIn: '8h', algorithm: 'HS256' });
+        const token = signMobileToken({
+            sub: user.id,
+            agencyId: user.agencyId,
+            role: user.role,
+            caregiverId: user.caregiverId,
+        });
         await recordAuditEvent(db, {
             agencyId: user.agencyId,
             actorId: user.id,
@@ -257,7 +289,11 @@ router.post('/mobile/login', async (req, res) => {
             payload: { authMethod: 'bearer' },
             occurredAt: new Date().toISOString()
         });
-        res.json({ token, role: user.role, agencyId: user.agencyId });
+        // agencies powers the post-login agency picker: >1 entry means the app
+        // must prompt before showing any agency-scoped data. The token above is
+        // scoped to the home agency; /mobile/switch-agency swaps it.
+        const agencies = await listMobileAgencies(db, user);
+        res.json({ token, role: user.role, agencyId: user.agencyId, agencies });
     }
     catch {
         res.status(500).json({ message: 'Internal Server Error' });
@@ -535,5 +571,71 @@ async function sendAuthProfile(req, res) {
 }
 router.get('/me', authContext, async (req, res) => sendAuthProfile(req, res));
 router.get('/mobile/me', authContext, async (req, res) => sendAuthProfile(req, res));
+// GET /auth/mobile/agencies — every agency the signed-in user may act in,
+// plus which one the current token is scoped to. Powers the "Linked agencies"
+// screen and the post-login picker on token-restore.
+router.get('/mobile/agencies', authContext, async (req, res) => {
+    try {
+        const db = req.app.get('db');
+        const { userId, agencyId, role } = req.auth;
+        const agencies = await listMobileAgencies(db, { id: userId, agencyId, role });
+        res.json({ agencies, currentAgencyId: agencyId });
+    }
+    catch {
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+const switchAgencySchema = z.object({ agencyId: z.string().uuid() });
+// POST /auth/mobile/switch-agency — re-scope the caller's bearer token to
+// another agency they hold an active membership in. Issues a fresh JWT whose
+// agencyId/role/caregiverId claims come from that membership, so every
+// downstream tenant check keeps reading req.auth exactly as before.
+router.post('/mobile/switch-agency', authContext, requireCsrf, async (req, res) => {
+    const parsed = switchAgencySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+        res.status(400).json({ message: 'agencyId (uuid) required' });
+        return;
+    }
+    try {
+        const db = req.app.get('db');
+        const { userId } = req.auth;
+        const membership = await new UserAgencyRepository(db).findMembership(userId, parsed.data.agencyId);
+        // One generic denial for missing/disconnected/unapproved so the endpoint
+        // can't be used to probe which agencies exist.
+        const allowed = membership &&
+            membership.status === 'active' &&
+            (membership.agencyReviewStatus === undefined || membership.agencyReviewStatus === 'approved');
+        if (!allowed) {
+            res.status(403).json({ code: 'AGENCY_ACCESS_DENIED', message: 'You do not have access to this agency.' });
+            return;
+        }
+        const token = signMobileToken({
+            sub: userId,
+            agencyId: membership.agencyId,
+            role: membership.role,
+            caregiverId: membership.caregiverId,
+        });
+        await recordAuditEvent(db, {
+            agencyId: membership.agencyId,
+            actorId: userId,
+            actorType: 'user',
+            eventType: 'auth.agency_switch',
+            entityType: 'user',
+            entityId: userId,
+            outcome: 'success',
+            payload: { fromAgencyId: req.auth.agencyId, authMethod: req.auth.authMethod },
+            occurredAt: new Date().toISOString(),
+        });
+        res.json({
+            token,
+            role: membership.role,
+            agencyId: membership.agencyId,
+            agencyName: membership.agencyName,
+        });
+    }
+    catch {
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 export default router;
 //# sourceMappingURL=auth-routes.js.map
