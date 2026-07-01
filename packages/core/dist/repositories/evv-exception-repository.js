@@ -13,17 +13,12 @@ export class EvvExceptionRepository {
         }).returning('*');
         return this.mapRow(row);
     }
-    async approve(id, approvedBy) {
-        const [row] = await this.db('evv_exceptions')
-            .where({ id })
-            .update({ approved_by: approvedBy, approved_at: new Date().toISOString() })
-            .returning('*');
-        return row ? this.mapRow(row) : undefined;
-    }
-    async findByVisit(visitId) {
-        const rows = await this.db('evv_exceptions').where({ visit_id: visitId });
-        return rows.map((r) => this.mapRow(r));
-    }
+    // NOTE: an unscoped approve(id)/findByVisit(visitId) pair used to live here.
+    // They took no agencyId and were unused, a cross-tenant footgun for the next
+    // caller who wired them up. Deleted. The live, agency-scoped path is
+    // ComplianceEngineRepository.acknowledgeException(agencyId, id, actorId),
+    // which joins evv_exceptions -> evv_visits -> caregivers and re-checks the
+    // agency. Add new exception mutations there (scoped), not here.
     mapRow(row) {
         return {
             id: row.id,

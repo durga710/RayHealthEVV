@@ -50,3 +50,10 @@ DEPLOY_NOW.md
 PROGRESS.html
 PROJECT_STATUS.md
 HANDOFF*.md
+
+# Stray Google Cloud SDK installs — a mis-run `gcloud components install ...`
+# once created a multi-hundred-MB directory named after the command itself in
+# the repo root. Never commit the SDK or its artifacts.
+google-cloud-sdk/
+gcloud components install*/
+GEMINI.md
