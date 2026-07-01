@@ -1,7 +1,17 @@
 import jwt from 'jsonwebtoken';
-export function requirePlatformAdmin(req, res, next) {
+import { PLATFORM_COOKIE_NAME, readCookie } from '../security/cookies.js';
+function extractToken(req) {
+    const cookieToken = readCookie(req, PLATFORM_COOKIE_NAME);
+    if (cookieToken)
+        return cookieToken;
     const header = req.header('Authorization');
-    if (!header?.startsWith('Bearer ')) {
+    if (header?.startsWith('Bearer '))
+        return header.slice(7);
+    return undefined;
+}
+export function requirePlatformAdmin(req, res, next) {
+    const token = extractToken(req);
+    if (!token) {
         res.status(401).json({ message: 'Platform authorization required' });
         return;
     }
@@ -11,7 +21,7 @@ export function requirePlatformAdmin(req, res, next) {
         return;
     }
     try {
-        const payload = jwt.verify(header.slice(7), secret, { algorithms: ['HS256'] });
+        const payload = jwt.verify(token, secret, { algorithms: ['HS256'] });
         if (payload.scope !== 'platform') {
             res.status(403).json({ message: 'Not a platform token' });
             return;

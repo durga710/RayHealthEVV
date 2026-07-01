@@ -1,7 +1,35 @@
 import type { CookieOptions, Request } from 'express';
 
 export const SESSION_COOKIE_NAME = 'rayhealth_session';
+export const PLATFORM_COOKIE_NAME = 'rayhealth_platform';
 const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
+const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * Cookie for the platform super-admin token. httpOnly so an XSS anywhere in the
+ * SPA cannot read the highest-privilege credential in the system (it must never
+ * live in JS-readable storage). SameSite=strict is the CSRF defense for the
+ * hidden console — cross-site requests never carry it. maxAge matches the 2h
+ * platform-token expiry.
+ */
+export function platformCookieOptions(): CookieOptions {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: TWO_HOURS_MS,
+  };
+}
+
+export function clearPlatformCookieOptions(): CookieOptions {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  };
+}
 
 export function sessionCookieOptions(): CookieOptions {
   return {
