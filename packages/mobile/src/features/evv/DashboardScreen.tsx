@@ -18,7 +18,7 @@ import ErrorRetry from '../common/ErrorRetry';
 import EmptyState from '../common/EmptyState';
 import { ensureNotificationPermission } from '../../lib/notification-permissions';
 import { fireDevTestShiftAlert, scheduleShiftAlerts } from '../../lib/shift-alert-scheduler';
-import { deriveVisitState, type VisitState } from '../../lib/visit-state';
+import { deriveVisitState, resumableVisit, type VisitState } from '../../lib/visit-state';
 
 interface Assignment {
   id: string;
@@ -152,8 +152,11 @@ export default function DashboardScreen() {
         clientLng: r.clientLongitude ?? null,
         clientGeofenceM: r.geofenceRadiusM ?? 150,
         visitState: deriveVisitState(r),
-        openVisitId: r.currentVisitId ?? null,
-        clockInTime: r.currentClockInTime ?? null,
+        // Gated on resumableVisit() (not a raw copy of currentVisitId) so a
+        // completed visit — which still carries the day's currentVisitId —
+        // doesn't get treated as reopenable when the card is tapped again.
+        openVisitId: resumableVisit(r)?.id ?? null,
+        clockInTime: resumableVisit(r)?.clockInTime ?? null,
       }));
       setAssignments(list);
       setError(null);
