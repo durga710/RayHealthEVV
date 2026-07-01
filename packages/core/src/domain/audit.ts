@@ -7,6 +7,10 @@ export const auditEventTypes = [
   'assignment.created', 'assignment.cancelled',
   'exception.filed', 'exception.approved',
   'auth.login.success', 'auth.login.failure', 'auth.logout',
+  // A multi-agency user re-scoped their mobile token to another agency they
+  // hold an active membership in. Row lands under the DESTINATION agency;
+  // payload carries fromAgencyId.
+  'auth.agency_switch',
   'session.created', 'session.revoked',
   'csrf.failure',
   // PHI lifecycle. `phi.create` / `phi.update` / `phi.delete` replace the

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import {
   AuditEventRepository,
   CaregiverRepository,
+  UserAgencyRepository,
   UserRepository,
   type NewAuditEvent
 } from '@rayhealth/core';
@@ -130,6 +131,72 @@ router.post('/accept', async (req, res) => {
         throw err;
       }
 
+      // staffInviteSchema marks id as optional for the insert shape;
+      // a row resolved by findInviteById always has it.
+      const inviteId: string = invite.id ?? token;
+
+      // user_agencies is the multi-agency membership table; on a database
+      // that predates its migration, only the single-agency path works.
+      let hasMemberships = false;
+      try {
+        hasMemberships = await trx.schema.hasTable('user_agencies');
+      } catch {
+        /* schema introspection unavailable — behave as pre-migration */
+      }
+
+      // A user may already exist under this email at ANOTHER agency — a
+      // caregiver can work for multiple agencies with one mobile identity.
+      // In that case this accept links the inviting agency to the existing
+      // account instead of creating a new one. The person accepting must
+      // prove they own that account by entering its current password.
+      // Privacy: nothing in this flow reveals to the inviting agency (or the
+      // caregiver) WHICH other agencies the account is linked to.
+      const existing = await new UserRepository(trx).findByEmail(invite.email);
+      if (existing) {
+        if (!hasMemberships || invite.role !== 'caregiver' || existing.role !== 'caregiver') {
+          const err = new Error('An account with this email already exists.') as Error & { status: number };
+          err.status = 409;
+          throw err;
+        }
+        const passwordOk = await bcrypt.compare(password, existing.passwordHash);
+        if (!passwordOk) {
+          const err = new Error(
+            'An account with this email already exists. Enter that account’s current password to link this agency to it.'
+          ) as Error & { status: number; code: string };
+          err.status = 409;
+          err.code = 'EXISTING_ACCOUNT_PASSWORD_REQUIRED';
+          throw err;
+        }
+
+        const membershipRepo = new UserAgencyRepository(trx);
+        const already = await membershipRepo.findMembership(existing.id, invite.agencyId);
+        if (already) {
+          const err = new Error('This account is already connected to this agency.') as Error & { status: number };
+          err.status = 409;
+          throw err;
+        }
+
+        // Each agency keeps its own caregiver record (its own schedules and
+        // EVV visits hang off it), created from the names entered here.
+        const created = await new CaregiverRepository(trx).create({
+          agencyId: invite.agencyId,
+          firstName,
+          lastName,
+          email: invite.email,
+          phone,
+          status: 'active'
+        });
+        await membershipRepo.create({
+          userId: existing.id,
+          agencyId: invite.agencyId,
+          role: 'caregiver',
+          caregiverId: created.id
+        });
+        await inviteRepo.markInviteAccepted(inviteId, existing.id, acceptedAt);
+
+        return { invite, user: existing, caregiverId: created.id, inviteId, linkedExistingAccount: true };
+      }
+
       // Create the caregivers row first (when applicable) so we can link
       // the user to it. Non-caregiver roles (admin, coordinator, family)
       // get a user row only.
@@ -154,12 +221,20 @@ router.post('/accept', async (req, res) => {
         ...(caregiverId ? { caregiverId } : {})
       });
 
-      // staffInviteSchema marks id as optional for the insert shape;
-      // a row resolved by findInviteById always has it.
-      const inviteId: string = invite.id ?? token;
+      // Seed the membership row so user_agencies stays authoritative for
+      // every account created from now on (the migration backfills the rest).
+      if (hasMemberships) {
+        await new UserAgencyRepository(trx).create({
+          userId: user.id,
+          agencyId: invite.agencyId,
+          role: invite.role,
+          ...(caregiverId ? { caregiverId } : {})
+        });
+      }
+
       await inviteRepo.markInviteAccepted(inviteId, user.id, acceptedAt);
 
-      return { invite, user, caregiverId, inviteId };
+      return { invite, user, caregiverId, inviteId, linkedExistingAccount: false };
     });
 
     await audit(db, {
@@ -173,14 +248,21 @@ router.post('/accept', async (req, res) => {
       payload: {
         userId: result.user.id,
         role: result.invite.role,
-        caregiverId: result.caregiverId
+        caregiverId: result.caregiverId,
+        // True when the invite attached this agency to an existing mobile
+        // identity instead of creating a new account. Deliberately does NOT
+        // say anything about which other agencies that identity works with.
+        linkedExistingAccount: result.linkedExistingAccount
       },
       occurredAt: acceptedAt
     });
 
     res.status(201).json({
       userId: result.user.id,
-      message: `Welcome to ${result.invite.role === 'caregiver' ? 'the team' : 'RayHealth EVV'}.`
+      linkedExistingAccount: result.linkedExistingAccount,
+      message: result.linkedExistingAccount
+        ? 'This agency is now connected to your existing RayHealthEVV account. Sign in with your usual credentials.'
+        : `Welcome to ${result.invite.role === 'caregiver' ? 'the team' : 'RayHealth EVV'}.`
     });
   } catch (err: unknown) {
     const status = (err as { status?: number })?.status ?? 500;
@@ -188,8 +270,9 @@ router.post('/accept', async (req, res) => {
       status === 500
         ? 'Internal Server Error'
         : (err as Error).message;
+    const code = (err as { code?: string })?.code;
     if (status === 500) safeError('POST /invitations/accept failed', err);
-    res.status(status).json({ message });
+    res.status(status).json({ message, ...(code ? { code } : {}) });
   }
 });
 

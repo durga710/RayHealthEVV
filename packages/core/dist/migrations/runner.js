@@ -24,6 +24,7 @@ import { createDb } from '../db/knex.js';
 import * as schema from './schema.js';
 import * as extendVisitMaintenance from './2026-05-11-extend-visit-maintenance.js';
 import * as backfillVisitMaintenanceAgencyId from './2026-06-30-backfill-visit-maintenance-agency-id.js';
+import * as addUserAgencies from './2026-07-01-add-user-agencies.js';
 async function run() {
     const db = createDb();
     process.stderr.write('Running migrations...\n');
@@ -31,6 +32,7 @@ async function run() {
         await schema.up(db);
         await extendVisitMaintenance.up(db);
         await backfillVisitMaintenanceAgencyId.up(db);
+        await addUserAgencies.up(db);
         process.stderr.write('Migrations complete.\n');
     }
     catch (error) {
