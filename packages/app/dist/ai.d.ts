@@ -16,7 +16,16 @@ export declare const aiModel: LanguageModel;
  * credentials are present. The provider auto-detects AWS_BEARER_TOKEN_BEDROCK.
  */
 export declare function isBedrockConfigured(): boolean;
-/** True when ANY AI provider is usable (Bedrock preferred, Gemini fallback). */
+/**
+ * True when the AI provider is usable.
+ *
+ * Bedrock (Claude) is the ONLY provider. PHI flows through these AI surfaces
+ * (copilot, command-center briefing) and AWS is the only AI vendor under a
+ * signed BAA, so there is deliberately no non-BAA fallback — if Bedrock is
+ * not configured, the AI surfaces fail closed rather than routing PHI
+ * elsewhere. The public Privacy policy states this; do not reintroduce a
+ * fallback provider without legal/BAA review and a copy update.
+ */
 export declare function isAIConfigured(): boolean;
 export declare class AINotConfiguredError extends Error {
     constructor();
@@ -45,15 +54,16 @@ export interface AskAIOutput {
     text: string;
     usageTokens: number;
     model: string;
-    provider: 'bedrock' | 'gemini';
+    provider: 'bedrock';
 }
 /**
- * Provider-agnostic single-turn ask used by the Copilot.
+ * Single-turn ask used by the Copilot and command-center briefing.
  *
- * Bedrock (Claude) is the primary provider; Gemini is retained as a fallback so
- * a missing Bedrock key or a transient Bedrock outage degrades gracefully
- * instead of 500ing the Copilot. Returns the same { text, usageTokens, model }
- * contract the route already relied on, plus which provider answered.
+ * Bedrock (Claude) is the ONLY provider — see {@link isAIConfigured}. There
+ * is intentionally no non-BAA fallback: PHI passes through here, and routing
+ * it to a vendor without a signed BAA would be an unauthorized disclosure.
+ * When Bedrock is not configured this throws {@link AINotConfiguredError} and
+ * callers fail closed. Returns { text, usageTokens, model, provider }.
  */
 export declare function askAI(input: AskAIInput): Promise<AskAIOutput>;
 //# sourceMappingURL=ai.d.ts.map

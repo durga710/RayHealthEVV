@@ -168,7 +168,7 @@ Music: restrained piano plus low ambient bed.
 
 VO:
 
-> Compliance shouldn't feel like a folder you carry into a courtroom. RayHealthEVV makes audit-readiness the default. Every visit GPS-verified. Every clock event time-stamped. Every signature stored. EVV exceptions surfaced before billing. Training certificates renewed before they lapse. State-ready exports in a single click. 21st Cures Act ready, by design. RayHealthEVV. The operations-grade home care platform.
+> Compliance shouldn't feel like a folder you carry into a courtroom. RayHealthEVV makes audit-readiness the default. Every visit GPS-checked against the client's address. Every clock event time-stamped. Every signature stored. EVV exceptions surfaced before billing. Training certificates renewed before they lapse. State-ready exports in a single click. 21st Cures Act ready, by design. RayHealthEVV. The operations-grade home care platform.
 
 ## 6. Six-second Bumper - "Care, on the same page."
 

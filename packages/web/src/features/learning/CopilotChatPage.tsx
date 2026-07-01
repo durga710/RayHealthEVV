@@ -20,7 +20,7 @@ import { useAuth } from '../../lib/AuthContext.js';
 interface CopilotStatus {
   enabled: boolean;
   plan: 'off' | 'starter' | 'pro';
-  geminiConfigured: boolean;
+  aiConfigured: boolean;
 }
 
 // Mirror of CopilotAction shapes from @rayhealth/core. Inlined here to avoid
@@ -118,7 +118,7 @@ export function CopilotChatPage(): ReactElement {
         }
       } catch {
         if (!cancelled) {
-          setStatus({ enabled: false, plan: 'off', geminiConfigured: false });
+          setStatus({ enabled: false, plan: 'off', aiConfigured: false });
         }
       } finally {
         if (!cancelled) setStatusLoading(false);
@@ -255,16 +255,16 @@ export function CopilotChatPage(): ReactElement {
         </div>
       )}
 
-      {!statusLoading && status && status.enabled && !status.geminiConfigured && (
+      {!statusLoading && status && status.enabled && !status.aiConfigured && (
         <div style={warningBoxStyle}>
           <strong>Copilot infrastructure is offline.</strong>
           <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
-            The add-on is enabled but the Gemini key isn\'t configured on the backend. Operations team has been notified.
+            The add-on is enabled but the AI provider isn't configured on the backend. Operations team has been notified.
           </p>
         </div>
       )}
 
-      {!statusLoading && status && status.enabled && status.geminiConfigured && (
+      {!statusLoading && status && status.enabled && status.aiConfigured && (
         <>
           {turns.length === 0 && (
             <div style={suggestionsCardStyle}>

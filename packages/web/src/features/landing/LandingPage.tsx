@@ -37,7 +37,7 @@ const capabilities = [
   {
     span: 'one', live: true, kicker: 'EVV',
     title: 'Electronic visit verification',
-    body: 'GPS-verified clock-in and clock-out with all six federal data elements, captured automatically.',
+    body: 'Clock-in and clock-out GPS-checked against the client’s registered address, with all six federal data elements captured automatically.',
     icon: ic(<><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></>),
   },
   {
@@ -125,7 +125,7 @@ const resources = [
 
 const spotlights = [
   { key: 'scheduling', kicker: 'Scheduling', title: 'Build the week, catch every conflict.', body: 'Drag visits onto a calendar and let the platform enforce the rules — expired credentials, overlapping authorizations, and travel gaps surface before you publish.', points: ['Live eligibility & credential checks', 'Authorization burn-down per client', 'Open-shift and coverage alerts'] },
-  { key: 'evv', kicker: 'Electronic visit verification', title: 'Proof on every visit, automatically.', body: 'GPS-verified clock-in and clock-out capture all six federal EVV elements the moment a visit begins — with telephony and offline fallback so no home is left uncovered.', points: ['Six federal elements per visit', 'GPS accuracy within a few meters', 'Offline capture with automatic retry'] },
+  { key: 'evv', kicker: 'Electronic visit verification', title: 'Proof on every visit, automatically.', body: 'Clock-in and clock-out are GPS-checked against the client’s registered address and capture all six federal EVV elements the moment a visit begins — with telephony and offline fallback so no home is left uncovered.', points: ['Six federal elements per visit', 'Geofenced to the client’s registered address', 'Offline capture with automatic retry'] },
   { key: 'audit', kicker: 'Compliance & audit', title: 'An audit trail that defends itself.', body: 'Every state change is appended to a tamper-evident log — actor, action, outcome, timestamp — scoped per agency. What used to take a week of binders takes an afternoon.', points: ['Append-only, tamper-evident log', 'Filter by actor, client, or action', 'Export-ready for DHS review'] },
 ];
 

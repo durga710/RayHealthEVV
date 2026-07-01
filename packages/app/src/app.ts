@@ -45,8 +45,54 @@ import exportRoutes from './routes/export-routes.js';
 import importRoutes from './routes/import-routes.js';
 import recurringScheduleRoutes from './routes/recurring-schedule-routes.js';
 import superadminRoutes from './routes/superadmin-routes.js';
+import documentRoutes from './routes/documents.js';
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
+
+/**
+ * TOTP second-factor verification. The 6-digit code has a ~10^6 keyspace and
+ * verifies fast, so an attacker who already has valid first-factor credentials
+ * could otherwise brute force the code within a single challenge-token window.
+ * 10 attempts per 15-min window per IP makes that infeasible while leaving room
+ * for a user fat-fingering the code a few times.
+ */
+const twoFaLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many verification attempts. Try again in a few minutes.' },
+  skip: () => process.env.NODE_ENV === 'test',
+});
+
+/**
+ * Password reset request + completion. Unauthenticated. Without a limit,
+ * /forgot-password can be scripted to email-bomb any address and run up SES
+ * cost, and both endpoints become an account-enumeration / token-guessing
+ * surface. 10 per 15-min window per IP is ample for a real reset.
+ */
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests. Please try again in a few minutes.' },
+  skip: () => process.env.NODE_ENV === 'test',
+});
+
+/**
+ * Public, unauthenticated marketing lead-capture (contact form). Writes to the
+ * DB on every submit, so it's an obvious spam/flood target. 10 per 15-min
+ * window per IP is well above genuine use.
+ */
+const marketingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests. Please try again in a few minutes.' },
+  skip: () => process.env.NODE_ENV === 'test',
+});
 
 /**
  * Default rate limit for the authenticated API surface. 300 requests per
@@ -128,6 +174,17 @@ export function createApp() {
   if (isProd && !process.env.ALLOWED_ORIGINS) {
     throw new Error('ALLOWED_ORIGINS env var must be set in production');
   }
+
+  // Defense-in-depth for the "no non-BAA AI vendor" guarantee. The Gemini
+  // fallback was removed from the code path, but a lingering Google AI key in
+  // the prod environment is a signal something is misconfigured — refuse to
+  // boot rather than risk any future code path reaching a non-BAA AI vendor
+  // with PHI. (The removed client read either variable.)
+  if (isProd && (process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY)) {
+    throw new Error(
+      'GOOGLE_AI_API_KEY / GEMINI_API_KEY must not be set in production: AI runs on AWS Bedrock (BAA-covered) only',
+    );
+  }
   const allowedOrigins =
     process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) ??
     ['http://localhost:5173'];
@@ -187,10 +244,13 @@ export function createApp() {
   app.use(express.json({ limit: '100kb' }));
 
   for (const prefix of ['', '/api']) {
+    app.use(`${prefix}/auth/login/2fa`, twoFaLimiter);
     app.use(`${prefix}/auth/login`, authLimiter);
     app.use(`${prefix}/auth/mobile/login`, authLimiter);
     app.use(`${prefix}/auth/bootstrap`, authLimiter);
     app.use(`${prefix}/auth/signup`, authLimiter);
+    app.use(`${prefix}/auth/forgot-password`, passwordResetLimiter);
+    app.use(`${prefix}/auth/reset-password`, passwordResetLimiter);
     app.use(`${prefix}/auth`, authRoutes);
     // Public invitation lookup + accept. Mounted before authContext so a
     // caregiver clicking the email link can hit them without a session.
@@ -199,7 +259,7 @@ export function createApp() {
     // on purpose — the public /status page polls these. Mounted BEFORE
     // authContext, behind their own tighter rate limit (60 / 15-min per IP).
     app.use(`${prefix}/health`, healthLimiter, healthRoutes);
-    app.use(`${prefix}/marketing`, marketingRoutes);
+    app.use(`${prefix}/marketing`, marketingLimiter, marketingRoutes);
     app.use(`${prefix}/onboarding`, onboardingRoutes);
     // Public marketing-site support chat ("RayHealthAssist"). Mounted before
     // authContext so the anonymous widget reaches it without a session; behind
@@ -251,6 +311,7 @@ export function createApp() {
     app.use(`${prefix}/settings`, settingsRoutes);
     app.use(`${prefix}/compliance-engine`, complianceEngineRoutes);
     app.use(`${prefix}/command-center`, commandCenterRoutes);
+    app.use(`${prefix}/documents`, documentRoutes);
   }
 
   return app;

@@ -18,8 +18,19 @@ export declare class EvvRepository {
      * the two cases (intentional: leaks neither existence nor tenancy).
      */
     updateVisit(id: string, agencyId: string, visit: Partial<EvvVisit>): Promise<EvvVisit | null>;
-    /** All visits within an agency. */
-    getVisitsForAgency(agencyId: string): Promise<EvvVisit[]>;
+    /**
+     * Visits within an agency, most-recent first. This table grows without bound
+     * over time, and this method backs a display list (GET /evv/visits) — not the
+     * aggregator export (see getVisitsForExport, which is date-ranged). A generous
+     * safety ceiling caps the response so a single request can't stream the entire
+     * multi-year visit corpus (PHI + GPS) or exhaust memory as the table grows;
+     * ordering by clock-in keeps the cap meaningful (the newest visits). Pass a
+     * smaller `limit`/`offset` to page; the ceiling is always enforced.
+     */
+    getVisitsForAgency(agencyId: string, opts?: {
+        limit?: number;
+        offset?: number;
+    }): Promise<EvvVisit[]>;
     /**
      * One caregiver's visits, tenant-scoped to an agency (for the admin
      * per-caregiver activity view). Combines the agency join

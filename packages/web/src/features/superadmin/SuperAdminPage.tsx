@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { startRegistration, startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { BrandLogo } from '../../components/brand/BrandLogo.js';
 
 /**
  * Hidden platform super-admin command center for Durga Ghimeray (Founder & CEO).
  * Not linked from any nav. Password + device-biometric (WebAuthn) login, then a
- * cross-agency monitoring console. Token (scope:'platform') lives in
- * sessionStorage, separate from the agency cookie session.
+ * cross-agency monitoring console. The platform token (scope:'platform') is held
+ * ONLY in an httpOnly cookie set by the server — never in JS-readable storage —
+ * so an XSS anywhere in the SPA cannot exfiltrate it.
  */
 
-const TOKEN_KEY = 'rayhealth_platform_token';
 const CEO_NAME = 'Durga Ghimeray';
 const CEO_TITLE = 'Founder & CEO';
 const CEO_INITIALS = 'DG';
@@ -92,10 +92,13 @@ const EVENT_TONE: Record<string, string> = {
 };
 const eventTone = (e: string): string => EVENT_TONE[e] ?? (e.includes('fail') || e.includes('denied') ? C.amber : C.ink3);
 
-async function api<T>(path: string, token: string, init?: RequestInit): Promise<T> {
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/superadmin${path}`, {
     ...init,
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}`, accept: 'application/json', ...(init?.headers ?? {}) },
+    // Auth rides on the httpOnly `rayhealth_platform` cookie (set at login); the
+    // token is never held in JS. credentials:'include' sends that cookie.
+    credentials: 'include',
+    headers: { 'content-type': 'application/json', accept: 'application/json', ...(init?.headers ?? {}) },
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { message?: string };
@@ -212,7 +215,12 @@ function UserRowView({ u, busy, onToggle }: { u: UserRow; busy: boolean; onToggl
 
 // ============================================================
 export function SuperAdminPage() {
-  const [token, setToken] = useState<string | null>(() => sessionStorage.getItem(TOKEN_KEY));
+  // Auth is a boolean, never the token itself — the platform token lives only in
+  // the httpOnly `rayhealth_platform` cookie. `checking` covers the initial
+  // cookie probe on mount so we don't flash the login screen for an already-
+  // authenticated founder returning to the tab.
+  const [authed, setAuthed] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginErr, setLoginErr] = useState<string | null>(null);
@@ -230,41 +238,50 @@ export function SuperAdminPage() {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [clock, setClock] = useState(new Date());
 
-  const logout = useCallback(() => {
-    sessionStorage.removeItem(TOKEN_KEY);
-    setToken(null); setStats(null); setAgencies([]); setUsers([]); setActivity([]); setDetail(null);
+  const clearData = () => {
+    setStats(null); setAgencies([]); setUsers([]); setActivity([]); setDetail(null);
+  };
+
+  const logout = useCallback(async () => {
+    // Best-effort: clear the httpOnly cookie server-side. Local state resets
+    // regardless of the network result.
+    try { await fetch('/api/superadmin/logout', { method: 'POST', credentials: 'include' }); } catch { /* ignore */ }
+    setAuthed(false); clearData();
   }, []);
 
-  const load = useCallback(async (t: string) => {
+  // Loads the console datasets. Success implies the platform cookie is valid, so
+  // it also confirms authed; a 401 means no/expired cookie -> show login.
+  const load = useCallback(async () => {
     setLoadErr(null);
     try {
       const [s, a, u, act] = await Promise.all([
-        api<Stats>('/stats', t), api<AgencyRow[]>('/agencies', t),
-        api<UserRow[]>('/users', t), api<ActivityRow[]>('/activity?limit=50', t),
+        api<Stats>('/stats'), api<AgencyRow[]>('/agencies'),
+        api<UserRow[]>('/users'), api<ActivityRow[]>('/activity?limit=50'),
       ]);
       setStats(s); setAgencies(a); setUsers(u); setActivity(act); setLastSync(new Date());
+      setAuthed(true);
     } catch (err) {
       const e = err as Error & { status?: number };
-      if (e.status === 401) { logout(); setLoginErr('Session expired. Sign in again.'); }
+      if (e.status === 401) { setAuthed(false); clearData(); }
       else setLoadErr(e.message);
     }
-  }, [logout]);
+  }, []);
 
-  useEffect(() => { if (token) void load(token); }, [token, load]);
+  // Initial cookie probe on mount.
+  useEffect(() => { void load().finally(() => setChecking(false)); }, [load]);
   useEffect(() => { const c = setInterval(() => setClock(new Date()), 1000); return () => clearInterval(c); }, []);
-  const tokenRef = useRef(token); tokenRef.current = token;
   useEffect(() => {
-    if (!token) return;
-    const r = setInterval(() => { if (tokenRef.current) void load(tokenRef.current); }, 30000);
+    if (!authed) return;
+    const r = setInterval(() => { void load(); }, 30000);
     return () => clearInterval(r);
-  }, [token, load]);
+  }, [authed, load]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoggingIn(true); setLoginErr(null); setBioStatus(null);
     try {
       const res = await fetch('/api/superadmin/login', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
+        method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'include',
         body: JSON.stringify({ username, password }),
       });
       const body = (await res.json().catch(() => ({}))) as { stage?: 'enroll' | '2fa'; stageToken?: string; options?: unknown; message?: string };
@@ -282,32 +299,43 @@ export function SuperAdminPage() {
         verifyPath = '/api/superadmin/webauthn/authenticate/verify';
         verifyBody = { stageToken: body.stageToken, response: asr };
       }
-      const vres = await fetch(verifyPath, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(verifyBody) });
+      // credentials:'include' so the httpOnly platform cookie the server sets on
+      // success is stored by the browser. The token in the response body is
+      // ignored — it is never persisted in JS.
+      const vres = await fetch(verifyPath, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'include', body: JSON.stringify(verifyBody) });
       const vbody = (await vres.json().catch(() => ({}))) as { token?: string; message?: string };
       if (!vres.ok || !vbody.token) { setLoginErr(vbody.message || 'Biometric verification failed.'); return; }
-      sessionStorage.setItem(TOKEN_KEY, vbody.token); setPassword(''); setToken(vbody.token);
+      setPassword(''); setAuthed(true); void load();
     } catch (err) {
       setLoginErr((err as Error)?.message || 'Biometric prompt was cancelled.');
     } finally { setLoggingIn(false); setBioStatus(null); }
   };
 
   const reviewAgency = async (id: string, action: 'approve' | 'reject') => {
-    if (!token) return; setBusy(id);
-    try { await api(`/agencies/${id}/${action}`, token, { method: 'POST', body: JSON.stringify({}) }); await load(token); if (detail?.id === id) void openDetail(id); }
+    if (!authed) return; setBusy(id);
+    try { await api(`/agencies/${id}/${action}`, { method: 'POST', body: JSON.stringify({}) }); await load(); if (detail?.id === id) void openDetail(id); }
     catch (err) { setLoadErr((err as Error).message); } finally { setBusy(null); }
   };
   const toggleSuspend = async (u: UserRow) => {
-    if (!token) return; setBusy(u.id);
-    try { await api(`/users/${u.id}/${u.suspendedAt ? 'reactivate' : 'suspend'}`, token, { method: 'POST', body: JSON.stringify({}) }); await load(token); if (detail) void openDetail(detail.id); }
+    if (!authed) return; setBusy(u.id);
+    try { await api(`/users/${u.id}/${u.suspendedAt ? 'reactivate' : 'suspend'}`, { method: 'POST', body: JSON.stringify({}) }); await load(); if (detail) void openDetail(detail.id); }
     catch (err) { setLoadErr((err as Error).message); } finally { setBusy(null); }
   };
   const openDetail = async (id: string) => {
-    if (!token) return;
-    try { setDetail(await api<AgencyDetail>(`/agencies/${id}`, token)); } catch (err) { setLoadErr((err as Error).message); }
+    if (!authed) return;
+    try { setDetail(await api<AgencyDetail>(`/agencies/${id}`)); } catch (err) { setLoadErr((err as Error).message); }
   };
 
+  // Initial cookie probe in flight — don't flash the login form at a founder
+  // who is already authenticated via the httpOnly cookie.
+  if (checking) {
+    return (
+      <div style={{ minHeight: '100vh', background: C.sidebar, display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
+    );
+  }
+
   // ===================== LOGIN =====================
-  if (!token) {
+  if (!authed) {
     return (
       <div style={{ minHeight: '100vh', background: C.sidebar, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, -apple-system, system-ui, sans-serif', padding: '1rem' }}>
         <form onSubmit={handleLogin} style={{ background: C.surface, borderRadius: 16, padding: '2.25rem', width: 400, display: 'flex', flexDirection: 'column', gap: '1.05rem', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
@@ -406,7 +434,7 @@ export function SuperAdminPage() {
               <div style={{ fontVariantNumeric: 'tabular-nums', fontSize: '1.15rem', fontWeight: 650, color: C.ink }}>{fmtTime}</div>
               <div style={{ color: C.ink3, fontSize: '0.76rem' }}>{fmtDate}</div>
             </div>
-            <button type="button" onClick={() => token && load(token)} style={btn('default')} title={lastSync ? `Synced ${timeAgo(lastSync.toISOString())}` : 'Refresh'}>
+            <button type="button" onClick={() => void load()} style={btn('default')} title={lastSync ? `Synced ${timeAgo(lastSync.toISOString())}` : 'Refresh'}>
               <Icon name="refresh" size={15} />Refresh
             </button>
           </div>

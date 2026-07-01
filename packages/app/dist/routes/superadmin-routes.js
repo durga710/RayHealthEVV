@@ -23,6 +23,7 @@ import { generateRegistrationOptions, verifyRegistrationResponse, generateAuthen
 import { AuditEventRepository, PlatformAdminRepository, PlatformCredentialRepository, SUPER_ADMIN_ACTOR_ID, } from '@rayhealth/core';
 import { requirePlatformAdmin } from '../middleware/require-platform-admin.js';
 import { safeError } from '../security/safe-log.js';
+import { PLATFORM_COOKIE_NAME, platformCookieOptions, clearPlatformCookieOptions, } from '../security/cookies.js';
 const router = Router();
 const loginSchema = z.object({
     username: z.string().min(1).max(100),
@@ -170,7 +171,9 @@ router.post('/webauthn/register/verify', async (req, res) => {
             transports: credential.transports ?? [],
             deviceLabel: parsed.data.deviceLabel ?? null,
         });
-        res.json({ token: signPlatformToken(stage.username, secret), username: stage.username });
+        const token = signPlatformToken(stage.username, secret);
+        res.cookie(PLATFORM_COOKIE_NAME, token, platformCookieOptions());
+        res.json({ token, username: stage.username });
     }
     catch (err) {
         safeError('webauthn register verify failed', err);
@@ -218,12 +221,21 @@ router.post('/webauthn/authenticate/verify', async (req, res) => {
             return;
         }
         await credRepo.updateCounter(stored.credentialId, verification.authenticationInfo.newCounter);
-        res.json({ token: signPlatformToken(stage.username, secret), username: stage.username });
+        const token = signPlatformToken(stage.username, secret);
+        res.cookie(PLATFORM_COOKIE_NAME, token, platformCookieOptions());
+        res.json({ token, username: stage.username });
     }
     catch (err) {
         safeError('webauthn authenticate verify failed', err);
         res.status(401).json({ message: 'Biometric verification failed' });
     }
+});
+// Logout clears the platform cookie. Requires a valid platform token so a
+// cross-site actor can't force-expire the session, and is safe to call with an
+// already-expired cookie (still returns 204 after the gate).
+router.post('/logout', requirePlatformAdmin, (_req, res) => {
+    res.clearCookie(PLATFORM_COOKIE_NAME, clearPlatformCookieOptions());
+    res.status(204).end();
 });
 // ---------- Everything below requires a platform token ----------
 router.use(requirePlatformAdmin);

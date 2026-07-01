@@ -6,8 +6,8 @@
  *
  * Mounted in app.ts BEFORE `authContext` so the anonymous marketing widget can
  * reach it without a session, behind its own rate limit. Uses the shared
- * provider-agnostic `askAI` (Bedrock/Claude primary, Gemini fallback) so it
- * rides the same verified credentials as the authenticated copilot.
+ * `askAI` (AWS Bedrock / Claude only — no non-BAA fallback) so it rides the
+ * same verified credentials as the authenticated copilot.
  *
  * Every turn is appended to `support_conversations` (two rows per exchange).
  * The table is NOT agency-scoped and has no FK to PHI tables; the system

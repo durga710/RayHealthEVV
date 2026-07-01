@@ -57,9 +57,8 @@ router.get('/status', async (req: Request, res: Response) => {
       data: {
         enabled: features.aiCopilot.enabled,
         plan: features.aiCopilot.plan,
-        // Field name kept for frontend back-compat; now reflects whichever AI
-        // provider is configured (Bedrock preferred, Gemini fallback).
-        geminiConfigured: isAIConfigured(),
+        // True when the (BAA-covered, Bedrock-only) AI provider is configured.
+        aiConfigured: isAIConfigured(),
       },
     })
   } catch (error: unknown) {
@@ -251,7 +250,7 @@ router.post('/ask', async (req: Request, res: Response) => {
       res.status(503).json({ success: false, code: 'COPILOT_NOT_CONFIGURED', error: error.message })
       return
     }
-    // A thrown error from the model provider (Bedrock/Gemini) is an upstream
+    // A thrown error from the model provider (Bedrock) is an upstream
     // failure, not a bug in our handler — surface it as 502 so the client can
     // distinguish "try again" from a hard 500.
     const message = error instanceof Error ? error.message : 'unexpected error'

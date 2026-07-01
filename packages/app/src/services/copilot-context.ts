@@ -13,9 +13,10 @@
  *   - family:            no caregiver/course context — they only see visits
  *                        for a single client, which is queried elsewhere
  *
- * The blob is serialized as JSON inside a fenced block so Gemini parses it as
- * structured data rather than freeform prose. Names are included so the model
- * can resolve a free-text mention like "Maria" to a UUID without a round-trip.
+ * The blob is serialized as JSON inside a fenced block so the model parses it
+ * as structured data rather than freeform prose. Names are included so the
+ * model can resolve a free-text mention like "Maria" to a UUID without a
+ * round-trip.
  */
 
 import type { Knex } from 'knex'

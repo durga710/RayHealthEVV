@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireCapability } from '../middleware/require-capability.js';
+import { safeError } from '../security/safe-log.js';
 import {
   AUDIT_DEFENSE_PACKET_COLUMNS,
   AuditEventRepository,
@@ -112,7 +113,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Audit defense preview failed:', error);
+      safeError('Audit defense preview failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -227,7 +228,7 @@ router.get(
         );
       }
     } catch (error) {
-      console.error('Audit defense packet build failed:', error);
+      safeError('Audit defense packet build failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -281,7 +282,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Authorization oversight failed:', error);
+      safeError('Authorization oversight failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -346,7 +347,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Authorization list failed:', error);
+      safeError('Authorization list failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -378,7 +379,7 @@ router.get(
         counts,
       });
     } catch (error) {
-      console.error('Compliance Engine summary failed:', error);
+      safeError('Compliance Engine summary failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -424,7 +425,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Credentials compliance overview failed:', error);
+      safeError('Credentials compliance overview failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -459,7 +460,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Claim matching overview failed:', error);
+      safeError('Claim matching overview failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -485,7 +486,7 @@ router.get(
       const result = await repo.getClaimReadinessBlockers(req.auth.agencyId);
       res.json({ asOf: new Date().toISOString(), ...result });
     } catch (error) {
-      console.error('Claim readiness blockers failed:', error);
+      safeError('Claim readiness blockers failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -520,7 +521,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Payroll reconciliation overview failed:', error);
+      safeError('Payroll reconciliation overview failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -572,7 +573,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Medicaid workflow overview failed:', error);
+      safeError('Medicaid workflow overview failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -609,7 +610,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Exception resolution overview failed:', error);
+      safeError('Exception resolution overview failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -666,7 +667,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Exception list failed:', error);
+      safeError('Exception list failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -753,7 +754,7 @@ router.post(
         acknowledgedBy: req.auth.userId,
       });
     } catch (error) {
-      console.error('Exception acknowledge failed:', error);
+      safeError('Exception acknowledge failed:', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },

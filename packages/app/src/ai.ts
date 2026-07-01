@@ -1,10 +1,5 @@
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { generateText, type LanguageModel } from 'ai';
-import {
-  askGemini,
-  isGeminiConfigured,
-  type GeminiModel,
-} from './services/gemini-client.js';
 
 const bedrock = createAmazonBedrock({
   region: process.env.AWS_REGION ?? 'us-east-1',
@@ -36,16 +31,23 @@ export function isBedrockConfigured(): boolean {
   );
 }
 
-/** True when ANY AI provider is usable (Bedrock preferred, Gemini fallback). */
+/**
+ * True when the AI provider is usable.
+ *
+ * Bedrock (Claude) is the ONLY provider. PHI flows through these AI surfaces
+ * (copilot, command-center briefing) and AWS is the only AI vendor under a
+ * signed BAA, so there is deliberately no non-BAA fallback — if Bedrock is
+ * not configured, the AI surfaces fail closed rather than routing PHI
+ * elsewhere. The public Privacy policy states this; do not reintroduce a
+ * fallback provider without legal/BAA review and a copy update.
+ */
 export function isAIConfigured(): boolean {
-  return isBedrockConfigured() || isGeminiConfigured();
+  return isBedrockConfigured();
 }
 
 export class AINotConfiguredError extends Error {
   constructor() {
-    super(
-      'No AI provider configured (set AWS_BEARER_TOKEN_BEDROCK or GOOGLE_AI_API_KEY).',
-    );
+    super('No AI provider configured (set AWS_BEARER_TOKEN_BEDROCK).');
     this.name = 'AINotConfiguredError';
   }
 }
@@ -72,68 +74,45 @@ export interface AskAIOutput {
   text: string;
   usageTokens: number;
   model: string;
-  provider: 'bedrock' | 'gemini';
+  provider: 'bedrock';
 }
 
 /**
- * Provider-agnostic single-turn ask used by the Copilot.
+ * Single-turn ask used by the Copilot and command-center briefing.
  *
- * Bedrock (Claude) is the primary provider; Gemini is retained as a fallback so
- * a missing Bedrock key or a transient Bedrock outage degrades gracefully
- * instead of 500ing the Copilot. Returns the same { text, usageTokens, model }
- * contract the route already relied on, plus which provider answered.
+ * Bedrock (Claude) is the ONLY provider — see {@link isAIConfigured}. There
+ * is intentionally no non-BAA fallback: PHI passes through here, and routing
+ * it to a vendor without a signed BAA would be an unauthorized disclosure.
+ * When Bedrock is not configured this throws {@link AINotConfiguredError} and
+ * callers fail closed. Returns { text, usageTokens, model, provider }.
  */
 export async function askAI(input: AskAIInput): Promise<AskAIOutput> {
   const maxOutputTokens = input.maxOutputTokens ?? 800;
 
-  if (isBedrockConfigured()) {
-    const modelId =
-      input.tier === 'pro' && process.env.BEDROCK_MODEL_ID_PRO
-        ? process.env.BEDROCK_MODEL_ID_PRO
-        : BEDROCK_MODEL_ID;
-    const model = modelId === BEDROCK_MODEL_ID ? aiModel : bedrock(modelId);
-
-    const result = await generateText({
-      model,
-      system: input.systemInstruction,
-      // Multi-turn history when provided, else the single prompt.
-      ...(input.messages ? { messages: input.messages } : { prompt: input.prompt ?? '' }),
-      maxOutputTokens,
-      temperature: 0.4,
-    });
-
-    const usage = result.usage as
-      | { totalTokens?: number; inputTokens?: number; outputTokens?: number }
-      | undefined;
-    const usageTokens =
-      usage?.totalTokens ?? (usage?.inputTokens ?? 0) + (usage?.outputTokens ?? 0);
-
-    return { text: result.text, usageTokens, model: modelId, provider: 'bedrock' };
+  if (!isBedrockConfigured()) {
+    throw new AINotConfiguredError();
   }
 
-  if (isGeminiConfigured()) {
-    const geminiModel: GeminiModel =
-      input.tier === 'pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
-    // Gemini fallback is single-prompt; flatten any multi-turn history into a
-    // labelled transcript so context is preserved across the provider switch.
-    const geminiPrompt = input.messages
-      ? input.messages
-          .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
-          .join('\n\n')
-      : (input.prompt ?? '');
-    const r = await askGemini({
-      prompt: geminiPrompt,
-      systemInstruction: input.systemInstruction,
-      model: geminiModel,
-      maxOutputTokens,
-    });
-    return {
-      text: r.text,
-      usageTokens: r.usageTokens,
-      model: r.model,
-      provider: 'gemini',
-    };
-  }
+  const modelId =
+    input.tier === 'pro' && process.env.BEDROCK_MODEL_ID_PRO
+      ? process.env.BEDROCK_MODEL_ID_PRO
+      : BEDROCK_MODEL_ID;
+  const model = modelId === BEDROCK_MODEL_ID ? aiModel : bedrock(modelId);
 
-  throw new AINotConfiguredError();
+  const result = await generateText({
+    model,
+    system: input.systemInstruction,
+    // Multi-turn history when provided, else the single prompt.
+    ...(input.messages ? { messages: input.messages } : { prompt: input.prompt ?? '' }),
+    maxOutputTokens,
+    temperature: 0.4,
+  });
+
+  const usage = result.usage as
+    | { totalTokens?: number; inputTokens?: number; outputTokens?: number }
+    | undefined;
+  const usageTokens =
+    usage?.totalTokens ?? (usage?.inputTokens ?? 0) + (usage?.outputTokens ?? 0);
+
+  return { text: result.text, usageTokens, model: modelId, provider: 'bedrock' };
 }
