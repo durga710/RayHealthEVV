@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import ScreenHeader from '../common/ScreenHeader';
 import EmptyState from '../common/EmptyState';
 import { showAppAlert } from '../common/alerts/appAlert';
@@ -411,9 +412,16 @@ export default function HelpScreen() {
             {visible.map((section) => {
               const isOpen = effectiveExpanded === section.key;
               return (
-                <View key={section.key} style={styles.sectionCard}>
+                <Animated.View
+                  key={section.key}
+                  style={styles.sectionCard}
+                  layout={LinearTransition.springify().damping(18)}
+                >
                   <Pressable
-                    onPress={() => setExpanded(isOpen ? null : section.key)}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      setExpanded(isOpen ? null : section.key);
+                    }}
                     style={({ pressed }) => [styles.sectionHead, pressed && styles.sectionHeadPressed]}
                     accessibilityRole="button"
                     accessibilityState={{ expanded: isOpen }}
@@ -433,13 +441,17 @@ export default function HelpScreen() {
                     />
                   </Pressable>
                   {isOpen ? (
-                    <Animated.View entering={FadeIn.duration(220)} style={styles.sectionBody}>
+                    <Animated.View
+                      entering={FadeIn.duration(220)}
+                      exiting={FadeOut.duration(160)}
+                      style={styles.sectionBody}
+                    >
                       {section.blocks.map((block, i) => (
                         <Block key={i} block={block} tint={section.tint} />
                       ))}
                     </Animated.View>
                   ) : null}
-                </View>
+                </Animated.View>
               );
             })}
           </View>

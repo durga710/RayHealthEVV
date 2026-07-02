@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
 import ScreenHeader from '../common/ScreenHeader';
@@ -18,6 +19,55 @@ import { showAppAlert, showAppToast } from '../common/alerts/appAlert';
 import { colors, typography, radii, shadow } from '../common/tokens';
 
 const MIN_PASSWORD = 12;
+
+// ── Password strength ─────────────────────────────────────────────────────────
+// Derived from the password value during render — no focus/blur state.
+
+const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'] as const;
+const STRENGTH_COLORS = [
+  colors.border,
+  colors.danger,
+  colors.amber,
+  colors.brandBlue,
+  colors.success,
+] as const;
+
+function passwordScore(pw: string): number {
+  let score = 0;
+  if (pw.length >= MIN_PASSWORD) score += 1;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score += 1;
+  if (/\d/.test(pw)) score += 1;
+  if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+  return score;
+}
+
+function StrengthSegment({ filled, color }: { filled: boolean; color: string }) {
+  const fillStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(filled ? 1 : 0, { duration: 200 }),
+  }));
+  return (
+    <View style={styles.strengthSegment}>
+      <Animated.View style={[styles.strengthSegmentFill, { backgroundColor: color }, fillStyle]} />
+    </View>
+  );
+}
+
+function StrengthMeter({ password }: { password: string }) {
+  const score = passwordScore(password);
+  const activeColor = STRENGTH_COLORS[score];
+  return (
+    <View style={styles.strengthRow}>
+      <View style={styles.strengthSegments}>
+        {[1, 2, 3, 4].map((step) => (
+          <StrengthSegment key={step} filled={score >= step} color={activeColor} />
+        ))}
+      </View>
+      <Text style={[styles.strengthLabel, { color: score > 0 ? activeColor : colors.textMuted }]}>
+        {STRENGTH_LABELS[score]}
+      </Text>
+    </View>
+  );
+}
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
@@ -89,6 +139,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.onGradientFaint} />
               </Pressable>
             </View>
+            {newPassword.length > 0 ? <StrengthMeter password={newPassword} /> : null}
             {tooShort ? <Text style={styles.errHint}>{MIN_PASSWORD - newPassword.length} more character(s) needed</Text> : null}
 
             <Text style={styles.label}>Confirm new password</Text>
@@ -141,6 +192,14 @@ const styles = StyleSheet.create({
   pwInput: { flex: 1, height: 50, paddingHorizontal: 14, fontSize: 16, color: colors.inputText },
   eyeBtn: { padding: 4 },
   errHint: { color: colors.danger, fontSize: 12, marginBottom: 6 },
+
+  strengthRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8, marginTop: 2 },
+  strengthSegments: { flex: 1, flexDirection: 'row', gap: 5 },
+  strengthSegment: {
+    flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden',
+  },
+  strengthSegmentFill: { flex: 1, borderRadius: 2 },
+  strengthLabel: { ...typography.caption, minWidth: 42, textAlign: 'right' },
 
   primaryBtn: { height: 52, borderRadius: radii.md, backgroundColor: colors.brandBlue, justifyContent: 'center', alignItems: 'center', marginTop: 16 },
   primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },

@@ -11,6 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFocusEffect, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
 import ErrorRetry from '../common/ErrorRetry';
@@ -154,7 +156,7 @@ export default function VisitsScreen() {
     return visits.filter((v) => v.status === filter);
   }, [visits, filter]);
 
-  const renderItem = ({ item }: { item: EvvVisit }) => {
+  const renderItem = ({ item, index }: { item: EvvVisit; index: number }) => {
     const ms = durationMs(item);
     const inProgress = !item.clockOutTime;
     const statusColor =
@@ -170,6 +172,7 @@ export default function VisitsScreen() {
     const client = item.clientId ? names[item.clientId] : undefined;
 
     return (
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 60).duration(300)}>
       <Pressable
         onPress={() =>
           router.push({
@@ -211,6 +214,7 @@ export default function VisitsScreen() {
           </View>
         ) : null}
       </Pressable>
+      </Animated.View>
     );
   };
 
@@ -241,8 +245,16 @@ export default function VisitsScreen() {
         {(['all', 'verified', 'flagged'] as Filter[]).map((f) => (
           <Pressable
             key={f}
-            onPress={() => setFilter(f)}
-            style={[styles.filterChip, filter === f && styles.filterChipActive]}
+            onPress={() => {
+              if (filter === f) return;
+              void Haptics.selectionAsync();
+              setFilter(f);
+            }}
+            style={({ pressed }) => [
+              styles.filterChip,
+              filter === f && styles.filterChipActive,
+              pressed && { transform: [{ scale: 0.96 }] },
+            ]}
             accessibilityRole="button"
             accessibilityState={{ selected: filter === f }}
             accessibilityLabel={`Show ${f === 'all' ? 'all' : f} visits`}

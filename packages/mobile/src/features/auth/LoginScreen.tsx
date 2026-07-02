@@ -16,12 +16,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../lib/AuthContext';
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { colors, typography, radii, shadow, gradients } from '../common/tokens';
 
 export default function LoginScreen() {
   const { login, isAuthenticated, needsAgencySelection } = useAuth();
-  const router = useRouter();
   const passwordRef = useRef<TextInput>(null);
   const scrollRef = useRef<ScrollView>(null);
   const [email, setEmail] = useState('');

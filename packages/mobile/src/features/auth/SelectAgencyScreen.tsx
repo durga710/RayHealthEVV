@@ -262,7 +262,7 @@ export default function SelectAgencyScreen() {
               <View style={styles.handoffCheck}>
                 <Ionicons name="checkmark" size={18} color={colors.onGradient} />
               </View>
-              <Text style={styles.handoffStatusDone}>You're all set</Text>
+              <Text style={styles.handoffStatusDone}>{"You're all set"}</Text>
             </Animated.View>
           ) : (
             <View style={styles.handoffStatusRow}>

@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '../../lib/AuthContext';
 import { useFocusEffect, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
@@ -231,13 +232,14 @@ export default function DashboardScreen() {
   const nowCount = assignments.filter(a => getVisitStatus(a.time) === 'now').length;
   const upcomingCount = assignments.filter(a => getVisitStatus(a.time) === 'upcoming').length;
 
-  const renderItem = ({ item }: { item: Assignment }) => {
+  const renderItem = ({ item, index }: { item: Assignment; index: number }) => {
     const status = getVisitStatus(item.time);
     const hasGeolock = item.clientLat != null && item.clientLng != null;
     const isNow = status === 'now';
     const isPast = status === 'past';
 
     return (
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 60).duration(300)}>
       <Pressable
         style={({ pressed }) => [styles.card, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
         onPress={() =>
@@ -280,6 +282,7 @@ export default function DashboardScreen() {
           isNow ? styles.stripeNow : isPast ? styles.stripePast : styles.stripeUpcoming,
         ]} />
       </Pressable>
+      </Animated.View>
     );
   };
 

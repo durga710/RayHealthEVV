@@ -12,6 +12,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useFocusEffect, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
 import ErrorRetry from '../common/ErrorRetry';
@@ -98,6 +105,26 @@ export default function ScheduleScreen() {
   const [rows, setRows] = useState<ScheduleRow[]>([]);
   const [mode, setMode] = useState<ViewMode>('list');
   const [error, setError] = useState<string | null>(null);
+
+  // Animated segmented control: the active pill slides between the two halves
+  // of the measured track instead of the background swapping instantly.
+  const [trackWidth, setTrackWidth] = useState(0);
+  const activeIndex = useSharedValue(0);
+  // Track border (1pt each side) + padding (3pt each side) → two equal halves.
+  const pillWidth = trackWidth > 0 ? (trackWidth - 8) / 2 : 0;
+  const pillStyle = useAnimatedStyle(() => ({
+    width: pillWidth,
+    transform: [
+      { translateX: withSpring(activeIndex.value * pillWidth, { damping: 18, stiffness: 220 }) },
+    ],
+  }));
+
+  const selectMode = (next: ViewMode) => {
+    if (next === mode) return;
+    void Haptics.selectionAsync();
+    activeIndex.value = next === 'list' ? 0 : 1;
+    setMode(next);
+  };
 
   const today = useMemo(() => new Date(), []);
   const [month, setMonth] = useState({ year: today.getFullYear(), m: today.getMonth() });
@@ -189,13 +216,16 @@ export default function ScheduleScreen() {
     });
   };
 
-  const renderCard = (item: ScheduleRow) => {
+  const renderCard = (item: ScheduleRow, index: number) => {
     const address = [item.clientAddressLine1, item.clientCity, item.clientState].filter(Boolean).join(', ');
     const inProgress = item.currentVisitId && !item.currentClockOutTime;
     const completed = !!item.currentClockOutTime;
     return (
-      <Pressable
+      <Animated.View
         key={item.assignmentId}
+        entering={FadeInDown.delay(Math.min(index, 8) * 60).duration(300)}
+      >
+      <Pressable
         onPress={() => openVisit(item)}
         style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
       >
@@ -229,6 +259,7 @@ export default function ScheduleScreen() {
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
       </Pressable>
+      </Animated.View>
     );
   };
 
@@ -319,7 +350,7 @@ export default function ScheduleScreen() {
 
       <Text style={styles.dayHeading}>{dateLabel(selectedDate)}</Text>
       {selectedVisits.length > 0 ? (
-        selectedVisits.map(renderCard)
+        selectedVisits.map((item, index) => renderCard(item, index))
       ) : (
         <View style={styles.dayEmpty}>
           <Ionicons name="calendar-outline" size={20} color={colors.textMuted} />
@@ -335,10 +366,14 @@ export default function ScheduleScreen() {
       <LinearGradient colors={gradients.header} style={[styles.header, { paddingTop: insets.top + 14 }]}>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Schedule</Text>
-          <View style={styles.toggle}>
+          <View
+            style={styles.toggle}
+            onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+          >
+            {pillWidth > 0 ? <Animated.View style={[styles.togglePill, pillStyle]} /> : null}
             <Pressable
-              onPress={() => setMode('list')}
-              style={[styles.toggleBtn, mode === 'list' && styles.toggleBtnActive]}
+              onPress={() => selectMode('list')}
+              style={styles.toggleBtn}
               accessibilityRole="button"
               accessibilityState={{ selected: mode === 'list' }}
               accessibilityLabel="List view"
@@ -347,8 +382,8 @@ export default function ScheduleScreen() {
               <Text style={[styles.toggleText, mode === 'list' && styles.toggleTextActive]}>List</Text>
             </Pressable>
             <Pressable
-              onPress={() => setMode('calendar')}
-              style={[styles.toggleBtn, mode === 'calendar' && styles.toggleBtnActive]}
+              onPress={() => selectMode('calendar')}
+              style={styles.toggleBtn}
               accessibilityRole="button"
               accessibilityState={{ selected: mode === 'calendar' }}
               accessibilityLabel="Calendar view"
@@ -372,7 +407,7 @@ export default function ScheduleScreen() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.assignmentId}
-          renderItem={({ item }) => renderCard(item)}
+          renderItem={({ item, index }) => renderCard(item, index)}
           renderSectionHeader={({ section }) => <Text style={styles.sectionHeader}>{section.title}</Text>}
           contentContainerStyle={styles.list}
           stickySectionHeadersEnabled={false}
@@ -401,11 +436,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row', backgroundColor: '#ffffff1f', borderRadius: radii.pill, padding: 3,
     borderWidth: 1, borderColor: '#ffffff2b',
   },
-  toggleBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: radii.pill,
+  togglePill: {
+    position: 'absolute', left: 3, top: 3, bottom: 3,
+    borderRadius: radii.pill, backgroundColor: colors.cardBg,
   },
-  toggleBtnActive: { backgroundColor: colors.cardBg },
+  toggleBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
+    width: 100, paddingVertical: 6, borderRadius: radii.pill,
+  },
   toggleText: { fontSize: 12, fontWeight: '800', color: '#cfe2f5' },
   toggleTextActive: { color: colors.brandBlue },
 
