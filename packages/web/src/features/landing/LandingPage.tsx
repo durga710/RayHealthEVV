@@ -236,8 +236,8 @@ html{scroll-behavior:smooth;}
 .rh-display .em{color:var(--accent-deep);}
 .rh-sublede{margin:20px 0 0; max-width:46ch; font-size:1.125rem; line-height:1.6; color:var(--body-c);}
 .rh-herocta{margin-top:28px; display:flex; gap:.75rem; flex-wrap:wrap;}
-.rh-herotrust{list-style:none; margin:26px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:10px 22px;}
-.rh-herotrust li{display:inline-flex; align-items:center; gap:.45rem; font-size:.875rem; font-weight:500; color:var(--ink-soft);}
+.rh-herotrust{list-style:none; margin:26px 0 0; padding:0; display:flex; flex-direction:column; gap:13px;}
+.rh-herotrust li{display:flex; align-items:center; gap:.55rem; font-size:.9rem; font-weight:500; color:var(--ink-soft);}
 .rh-herotrust svg{width:17px; height:17px; color:var(--accent); flex-shrink:0;}
 .rh-heromedia{position:relative;}
 @media(max-width:880px){ .rh-heroin{grid-template-columns:1fr; gap:36px; padding-top:52px;} .rh-herotext{max-width:none;} }
@@ -255,11 +255,11 @@ html{scroll-behavior:smooth;}
 /* fact strip */
 .rh-factband{border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--paper);}
 .rh-factgrid{max-width:var(--maxw); margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr);}
-.rh-fact{padding:36px 28px; border-right:1px solid var(--line);}
+.rh-fact{padding:34px 28px; border-right:1px solid var(--line);}
 .rh-fact:last-child{border-right:none;}
-.rh-fact .v{font-size:1.65rem; font-weight:700; letter-spacing:-.02em; color:var(--ink); line-height:1.15;}
+.rh-fact .v{font-size:1.5rem; font-weight:600; letter-spacing:-.015em; color:var(--ink); line-height:1.2;}
 .rh-fact .l{margin-top:10px; font-size:.875rem; line-height:1.5; color:var(--muted);}
-@media(max-width:760px){ .rh-factgrid{grid-template-columns:1fr 1fr;} .rh-fact:nth-child(2){border-right:none;} .rh-fact:nth-child(1),.rh-fact:nth-child(2){border-bottom:1px solid var(--line);} }
+@media(max-width:760px){ .rh-factgrid{grid-template-columns:1fr 1fr;} .rh-fact{padding:26px 22px;} .rh-fact:nth-child(2){border-right:none;} .rh-fact:nth-child(1),.rh-fact:nth-child(2){border-bottom:1px solid var(--line);} }
 
 /* mockups (shared "browser chrome" card used by hero + product theater) */
 .rh-spotvis{border:1px solid var(--line); border-radius:18px; background:var(--surface2); padding:18px; box-shadow:0 34px 70px -44px rgba(10,30,20,.4); min-height:220px;}
