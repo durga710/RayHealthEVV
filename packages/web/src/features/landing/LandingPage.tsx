@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SupportChat } from '../support/SupportChat.js';
 import { BrandLogo } from '../../components/brand/BrandLogo.js';
-import { MetricCard, StatusPill, DataTable, Timeline, TrustBadge, WorkflowStepper, type WorkflowStep } from '../../components/index.js';
+import { MetricCard, StatusPill, DataTable, Timeline, TrustBadge, WorkflowStepper, Icon, type IconName, type WorkflowStep } from '../../components/index.js';
 import { RayVerifySection } from './RayVerifySection.js';
 
 /* ─────────────────────────────────────────────────────────────
@@ -90,13 +90,13 @@ const timelineSteps: WorkflowStep[] = [
 ];
 
 // ── Trust Center teaser items — approved HIPAA phrasing only. ──
-const trustTeaserItems = [
-  { icon: '🔒', label: 'HIPAA-ready architecture', detail: 'Encryption in transit, per-agency data isolation, immutable audit logging.', tone: 'primary' as const },
-  { icon: '🗓️', label: 'Operational HIPAA readiness in progress', detail: 'Vendor BAAs and readiness milestones are published on a dated status table — see exactly where we stand.', tone: 'accent' as const },
-  { icon: '🛡️', label: 'Role-based access control', detail: 'Capability-scoped roles gate every admin action — never a client-supplied permission.', tone: 'primary' as const },
-  { icon: '📜', label: 'Tamper-evident audit logging', detail: 'Every state change is appended to a log that cannot be edited — not even by us.', tone: 'accent' as const },
-  { icon: '📱', label: 'Mobile secure auth', detail: 'Mobile sessions are individually revocable — a lost phone is a two-click problem.', tone: 'primary' as const },
-  { icon: '🤖', label: 'AI/PHI boundaries', detail: 'The copilot proposes, a human approves; inference runs only through BAA-covered vendors.', tone: 'accent' as const },
+const trustTeaserItems: { icon: IconName; label: string; detail: string; tone: 'primary' | 'accent' }[] = [
+  { icon: 'lock', label: 'HIPAA-ready architecture', detail: 'Encryption in transit, per-agency data isolation, immutable audit logging.', tone: 'primary' },
+  { icon: 'calendar', label: 'Operational HIPAA readiness in progress', detail: 'Vendor BAAs and readiness milestones are published on a dated status table — see exactly where we stand.', tone: 'accent' },
+  { icon: 'shield-check', label: 'Role-based access control', detail: 'Capability-scoped roles gate every admin action — never a client-supplied permission.', tone: 'primary' },
+  { icon: 'file-text', label: 'Tamper-evident audit logging', detail: 'Every state change is appended to a log that cannot be edited — not even by us.', tone: 'accent' },
+  { icon: 'smartphone', label: 'Mobile secure auth', detail: 'Mobile sessions are individually revocable — a lost phone is a two-click problem.', tone: 'primary' },
+  { icon: 'cpu', label: 'AI/PHI boundaries', detail: 'The copilot proposes, a human approves; inference runs only through BAA-covered vendors.', tone: 'accent' },
 ];
 
 const pricingTiers = [
@@ -402,10 +402,40 @@ html{scroll-behavior:smooth;}
 .rh-footbar{max-width:var(--maxw); margin:48px auto 0; padding:24px 24px 0; border-top:1px solid var(--line); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:.82rem; color:var(--muted);}
 @media(max-width:760px){ .rh-footgrid{grid-template-columns:1fr 1fr;} }
 
+/* hero entrance — a calm, staggered rise on first paint (not a bounce) */
+@keyframes rh-rise{from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;}}
+.rh-herotext > *{animation:rh-rise .7s cubic-bezier(.2,.7,.2,1) both;}
+.rh-herotext > .rh-eyebrow{animation-delay:.04s;}
+.rh-herotext > .rh-display{animation-delay:.12s;}
+.rh-herotext > .rh-sublede{animation-delay:.22s;}
+.rh-herotext > .rh-herocta{animation-delay:.32s;}
+.rh-herotext > .rh-herotrust{animation-delay:.42s;}
+.rh-heromedia{animation:rh-rise .8s cubic-bezier(.2,.7,.2,1) both; animation-delay:.28s;}
+
+/* hero bloom — an almost-imperceptible slow breathe, so the page feels alive
+   without ever calling attention to itself */
+@keyframes rh-breathe{from{opacity:.72; transform:scale(1);} to{opacity:1; transform:scale(1.05);}}
+.rh-hero-bloom{animation:rh-breathe 16s ease-in-out infinite alternate;}
+
+/* staggered scroll-reveal — cards in a row cascade in rather than snapping
+   as a block */
+.rh-roles .rh-rv:nth-child(2){transition-delay:.07s;}
+.rh-roles .rh-rv:nth-child(3){transition-delay:.14s;}
+.rh-roles .rh-rv:nth-child(4){transition-delay:.21s;}
+.rh-pricing .rh-rv:nth-child(2){transition-delay:.07s;}
+.rh-pricing .rh-rv:nth-child(3){transition-delay:.14s;}
+
+/* hover-lift for the pricing + EVV mockup cards, matching the role cards */
+.rh-price{transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;}
+.rh-price:hover{transform:translateY(-3px); box-shadow:0 26px 54px -32px rgba(10,30,20,.42);}
+.rh-price.feat:hover{box-shadow:0 44px 88px -44px color-mix(in srgb, var(--accent) 60%, transparent);}
+.rh-evvi{transition:border-color .18s ease, background .18s ease, transform .18s ease;}
+.rh-evvi:hover{border-color:var(--accent); background:var(--accent-tint); transform:translateY(-1px);}
+
 /* reveal */
 .rh-rv{opacity:0; transform:translateY(16px); transition:opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1);}
 .rh-rv.in{opacity:1; transform:none;}
-@media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} .rh-rv{opacity:1; transform:none; transition:none;} .rh-btn,.rh-rolecard,.rh-price{transition:none;} .rh-eyebrow .pip{animation:none;} }
+@media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} .rh-rv{opacity:1; transform:none; transition:none;} .rh-btn,.rh-rolecard,.rh-price,.rh-evvi{transition:none;} .rh-eyebrow .pip,.rh-hero-bloom,.rh-herotext > *,.rh-heromedia{animation:none;} }
 `,
     }}
     />
@@ -865,7 +895,7 @@ export function LandingPage() {
         </div>
         <div className="rh-trustgrid rh-rv">
           {trustTeaserItems.map((t) => (
-            <TrustBadge key={t.label} icon={<span aria-hidden>{t.icon}</span>} label={t.label} detail={t.detail} tone={t.tone} />
+            <TrustBadge key={t.label} icon={<Icon name={t.icon} size={20} />} label={t.label} detail={t.detail} tone={t.tone} />
           ))}
         </div>
         <div className="rh-trustcta rh-rv">

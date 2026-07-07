@@ -10,6 +10,7 @@ export { CommandPanel } from './CommandPanel.js';
 export { DataTable, type DataTableColumn } from './DataTable.js';
 export { Timeline, type TimelineItem, type TimelineTone } from './Timeline.js';
 export { TrustBadge } from './TrustBadge.js';
+export { Icon, type IconName } from './Icon.js';
 export { WorkflowStepper, type WorkflowStep, type WorkflowStepStatus } from './WorkflowStepper.js';
 export { EmptyState, ErrorRetry, LoadingSkeleton } from './state/index.js';
 export { BrandLogo, type BrandLogoVariant } from './brand/BrandLogo.js';

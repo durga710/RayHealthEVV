@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { SiteLayout } from './SiteLayout.js';
-import { SectionCard, TrustBadge, WorkflowStepper, StatusPill, type WorkflowStep } from '../../../components/index.js';
+import { SectionCard, TrustBadge, WorkflowStepper, StatusPill, Icon, type IconName, type WorkflowStep } from '../../../components/index.js';
 
 /**
  * Public-facing Trust Center at `/trust`.
@@ -27,7 +27,7 @@ import { SectionCard, TrustBadge, WorkflowStepper, StatusPill, type WorkflowStep
 const LAST_UPDATED = '2026-07-06';
 
 interface SecurityControl {
-  icon: string;
+  icon: IconName;
   label: string;
   detail: string;
   tone: 'primary' | 'accent';
@@ -37,43 +37,43 @@ interface SecurityControl {
 // architecture reports — presented as "claim → mechanism".
 const securityControls: readonly SecurityControl[] = [
   {
-    icon: '🍪',
+    icon: 'app-window',
     label: 'HttpOnly web sessions',
     detail: 'The admin web session lives in an HttpOnly cookie, never in browser storage — so a cross-site script cannot read it.',
     tone: 'primary',
   },
   {
-    icon: '🛡️',
+    icon: 'shield-check',
     label: 'CSRF protection on state changes',
     detail: 'Every mutating web request carries a CSRF token; failures are rejected and logged as discrete events.',
     tone: 'accent',
   },
   {
-    icon: '📱',
+    icon: 'smartphone',
     label: 'Mobile secure storage',
     detail: 'Caregiver mobile tokens are held in the device secure store (hardware-backed where supported) and cleared on logout.',
     tone: 'primary',
   },
   {
-    icon: '🔑',
+    icon: 'key',
     label: 'Capability-based RBAC',
     detail: 'Each protected route checks a least-privilege capability, scoped per agency and per role, before any read or write.',
     tone: 'accent',
   },
   {
-    icon: '📜',
+    icon: 'file-text',
     label: 'Append-only audit log',
     detail: 'Every state change is written to an audit table a Postgres trigger refuses to UPDATE or DELETE — the log cannot be edited, even by us.',
     tone: 'primary',
   },
   {
-    icon: '⏱️',
+    icon: 'gauge',
     label: 'Rate limits on sensitive endpoints',
     detail: 'Login, bootstrap, and other sensitive surfaces are rate-limited to blunt credential-stuffing and abuse.',
     tone: 'accent',
   },
   {
-    icon: '🤖',
+    icon: 'cpu',
     label: 'Production AI provider guardrails',
     detail: 'AI inference runs only through a BAA-covered vendor; non-BAA AI provider keys are blocked in production by code, and the AI surfaces fail closed.',
     tone: 'primary',
@@ -255,7 +255,7 @@ export function TrustCenterPage() {
                 {securityControls.map((c) => (
                   <TrustBadge
                     key={c.label}
-                    icon={<span aria-hidden>{c.icon}</span>}
+                    icon={<Icon name={c.icon} size={20} />}
                     label={c.label}
                     detail={c.detail}
                     tone={c.tone}

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Icon } from './Icon.js';
 
 interface CommandPanelProps {
   /** Small uppercase label, e.g. "AI briefing". */
@@ -16,7 +17,7 @@ interface CommandPanelProps {
  * shared `--gradient-panel-dark` token instead of a component-local gradient
  * hex pair.
  */
-export function CommandPanel({ eyebrow, icon = '✨', action, children }: CommandPanelProps) {
+export function CommandPanel({ eyebrow, icon = <Icon name="sparkles" size={16} />, action, children }: CommandPanelProps) {
   return (
     <section className="command-panel">
       <div className="command-panel__header">
