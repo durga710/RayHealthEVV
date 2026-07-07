@@ -19,6 +19,7 @@ import {
   type PlayerStep,
 } from '../../lib/course-player';
 import { emptyAnswers, gradeQuiz, type QuizGrade } from '../../lib/quiz';
+import { parseLessonContent, sectionIcon, type LessonBlock } from '../../lib/lesson-format';
 import {
   parsePreset,
   PRESET_LABELS,
@@ -350,18 +351,72 @@ export default function CoursePlayerScreen() {
     );
   };
 
+  const renderBlock = (block: LessonBlock, key: number) => {
+    switch (block.kind) {
+      case 'paragraph':
+        return (
+          <Text key={key} style={[styles.readingText, readingBody]}>
+            {block.text}
+          </Text>
+        );
+      case 'steps':
+        return (
+          <View key={key} style={styles.stepList}>
+            {block.items.map((item, i) => (
+              <View key={i} style={styles.stepRow}>
+                <View style={styles.stepBadge}>
+                  <Text style={styles.stepBadgeText}>{i + 1}</Text>
+                </View>
+                <Text style={[styles.stepText, readingBody]}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        );
+      case 'bullets':
+        return (
+          <View key={key} style={styles.stepList}>
+            {block.items.map((item, i) => (
+              <View key={i} style={styles.stepRow}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={20}
+                  color={colors.brandBlue}
+                  style={styles.bulletIcon}
+                />
+                <Text style={[styles.stepText, readingBody]}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        );
+      case 'terms':
+        return (
+          <View key={key} style={styles.termList}>
+            {block.items.map((item, i) => (
+              <View key={i} style={styles.termBlock}>
+                <Text style={[styles.termLabel, { fontSize: readingBody.fontSize - 1 }]}>
+                  {item.term}
+                </Text>
+                <Text style={[styles.readingText, readingBody]}>{item.text}</Text>
+              </View>
+            ))}
+          </View>
+        );
+    }
+  };
+
   const renderSection = (sectionIndex: number) => {
     const section = modules.sections[sectionIndex];
     if (!section) return null;
-    const paragraphs = section.content.split(/\n{2,}/).filter((p) => p.trim().length > 0);
+    const blocks = parseLessonContent(section.content);
     return (
       <View style={styles.card}>
-        <Text style={[styles.sectionTitle, readingHeading]}>{section.title}</Text>
-        {paragraphs.map((p, i) => (
-          <Text key={i} style={[styles.readingText, readingBody]}>
-            {p.trim()}
-          </Text>
-        ))}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionIconCircle}>
+            <Ionicons name={sectionIcon(section.title) as never} size={22} color={colors.brandBlue} />
+          </View>
+          <Text style={[styles.sectionTitle, readingHeading, { flex: 1 }]}>{section.title}</Text>
+        </View>
+        {blocks.map(renderBlock)}
       </View>
     );
   };
@@ -733,6 +788,38 @@ const styles = StyleSheet.create({
   overviewTitle: { ...typography.title, color: colors.textPrimary },
   readingText: { color: colors.textPrimary },
   sectionTitle: { color: colors.textPrimary },
+
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  sectionIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: `${colors.brandBlue}${alpha.tint}`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepList: { gap: space.md, marginTop: space.xs },
+  stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  stepBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: `${colors.brandBlue}${alpha.tint}`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  stepBadgeText: { ...typography.body, color: colors.brandBlue, fontWeight: '900' },
+  stepText: { flex: 1, color: colors.textPrimary },
+  bulletIcon: { marginTop: 4 },
+  termList: { gap: space.lg, marginTop: space.xs },
+  termBlock: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.brandBlueLight,
+    paddingLeft: space.md,
+    gap: space.xs,
+  },
+  termLabel: { color: colors.brandBlue, fontWeight: '900', letterSpacing: 0.2 },
 
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.md },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
