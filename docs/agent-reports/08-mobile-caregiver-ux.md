@@ -15,10 +15,25 @@ new dependencies, no hardcoded colors outside the token/alpha system.
 
 - `packages/mobile/src/features/evv/DashboardScreen.tsx` — dashboard UX.
 - `packages/mobile/src/features/evv/ClockInScreen.tsx` — clock-in copy/UX + completion actions.
+- `packages/mobile/src/lib/evv-location.ts` — extracted pure clock-out location resolver (new).
+- `packages/mobile/src/lib/evv-location.test.ts` — tests for the weak-GPS fallback + honesty flag (new).
 - `docs/agent-reports/08-mobile-caregiver-ux.md` — this report.
 
 No changes to `src/lib/visit-state.ts`, `src/lib/geofence.ts`, their tests, the
 clock-in/clock-out network calls, or any threshold.
+
+### EVV clock-out hardening (test coverage)
+
+Per Agent 00 #4 (mobile EVV hardening), the weak-GPS clock-out decision — which
+was previously inline in `handleClockOut` — was extracted, **behavior-preserving**,
+into a pure `resolveClockOutLocation(live, lastKnown)` helper and covered by
+tests. It encodes the two guarantees the caregiver relies on: (1) clock-out is
+never blocked (zeroed payload fallback when no coordinate exists), and (2) the
+`captured` flag — which drives the GPS-honesty completion badge — is true only
+when a real live or last-known coordinate backed the payload. The screen now
+calls this helper instead of open-coding the same logic, so the always-able-to-
+clock-out fallback and the honesty badge are identical at runtime but now
+regression-tested.
 
 ---
 
@@ -136,6 +151,8 @@ client can't know, consistent with that same honesty principle.
 |---|---|
 | `npx tsc --noEmit -p packages/mobile/tsconfig.json` | **PASS** (exit 0) |
 | `npm run lint --workspace=@rayhealth/mobile` (`eslint app src`) | **PASS** (exit 0, no warnings) |
-| `npm run test --workspace=@rayhealth/mobile` (vitest) | **PASS** — 2 files, 14 tests (`visit-state.test.ts` 6, `geofence.test.ts` 8) |
+| `npm run test --workspace=@rayhealth/mobile` (vitest) | **PASS** — 3 files, 19 tests (`visit-state` 6, `geofence` 8, `evv-location` 5) |
 
-The EVV logic tests stayed green; no test files were modified or deleted.
+The pre-existing EVV logic tests stayed green; no test files were modified or
+deleted. The new `evv-location.test.ts` adds 5 tests around the clock-out
+fallback + GPS-honesty flag.

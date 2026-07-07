@@ -32,6 +32,7 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
 import { haversineM, formatDistance } from '../../lib/geofence';
+import { resolveClockOutLocation, type FixCoords } from '../../lib/evv-location';
 import { showAppAlert } from '../common/alerts/appAlert';
 import { colors, typography, radii, shadow, gradients } from '../common/tokens';
 
@@ -503,30 +504,34 @@ export default function ClockInScreen() {
       // A caregiver must always be able to END a shift. Use the live fix if we
       // have one, otherwise fall back to last-known (they almost certainly had
       // GPS when they clocked in at this client) so a stale/denied watch can't
-      // trap them in an open visit.
-      let coords = currentCoords;
-      let acc = accuracy;
-      if (!coords) {
+      // trap them in an open visit. The live-vs-last-known-vs-zeroed decision
+      // and the honesty flag live in the pure, tested resolveClockOutLocation.
+      const live: FixCoords | null = currentCoords
+        ? { lat: currentCoords.lat, lng: currentCoords.lng, accuracy }
+        : null;
+      let lastKnown: FixCoords | null = null;
+      if (!live) {
         try {
           const last = await Location.getLastKnownPositionAsync();
           if (last) {
-            coords = { lat: last.coords.latitude, lng: last.coords.longitude };
-            acc = last.coords.accuracy ?? null;
+            lastKnown = {
+              lat: last.coords.latitude,
+              lng: last.coords.longitude,
+              accuracy: last.coords.accuracy ?? null,
+            };
           }
         } catch {
-          // ignore — send a zeroed location below and let the server decide
+          // ignore — resolveClockOutLocation sends a zeroed location and lets
+          // the server decide, so clock-out still proceeds.
         }
       }
-      await apiClient.post(`/api/evv/clock-out/${visit.id}`, {
-        location: coords
-          ? { lat: coords.lat, lng: coords.lng, accuracy: acc ?? 0 }
-          : { lat: 0, lng: 0, accuracy: 0 },
-      });
+      const resolved = resolveClockOutLocation(live, lastKnown);
+      await apiClient.post(`/api/evv/clock-out/${visit.id}`, { location: resolved.payload });
       const totalElapsed = elapsed;
       const clockInTime = visit.clockInTime;
       const clockOutTime = new Date().toISOString();
       setVisit(null);
-      setCompleted({ totalElapsed, clockInTime, clockOutTime, locationCaptured: Boolean(coords) });
+      setCompleted({ totalElapsed, clockInTime, clockOutTime, locationCaptured: resolved.captured });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       const resp = (err as {
