@@ -100,7 +100,7 @@ router.post('/login', async (req, res) => {
       return;
     }
 
-    // If the user has TOTP 2FA enabled, do not establish a session yet — issue a
+    // If the user has TOTP 2FA enabled, do not establish a session yet, issue a
     // short-lived challenge token and require a second factor via /login/2fa.
     // `totpEnabled` rides along on findByEmail, so no second query is needed.
     if (user.totpEnabled) {
@@ -266,13 +266,13 @@ async function listMobileAgencies(
       return memberships.map((m) => ({ agencyId: m.agencyId, agencyName: m.agencyName, role: m.role }));
     }
   } catch {
-    /* pre-migration database — fall through to the home agency */
+    /* pre-migration database, fall through to the home agency */
   }
   let agencyName = '';
   try {
     agencyName = (await new AgencyRepository(db).findById(user.agencyId))?.name ?? '';
   } catch {
-    /* name is cosmetic — never block login on it */
+    /* name is cosmetic, never block login on it */
   }
   return [{ agencyId: user.agencyId, agencyName, role: user.role }];
 }
@@ -282,7 +282,7 @@ const MOBILE_TOKEN_TTL_SECONDS = 8 * 60 * 60;
 /**
  * Issue a revocable mobile bearer token. Each token carries a `jti` backed by a
  * `mobile_sessions` row, so logout and password-reset can terminate it
- * server-side — a valid signature alone is no longer sufficient to authenticate
+ * server-side, a valid signature alone is no longer sufficient to authenticate
  * (see authContext). Returns the signed JWT.
  */
 async function issueMobileToken(
@@ -329,7 +329,7 @@ router.post('/mobile/login', async (req, res) => {
       return;
     }
 
-    // If the user enrolled TOTP 2FA, do not mint a bearer token yet — issue a
+    // If the user enrolled TOTP 2FA, do not mint a bearer token yet, issue a
     // short-lived challenge and require the second factor via /mobile/login/2fa.
     // This mirrors the web /login flow so 2FA is enforced on mobile too.
     if (user.totpEnabled) {
@@ -492,7 +492,7 @@ router.post('/signup', async (req, res) => {
     });
 
     // A self-serve signup creates the agency in `review_status='pending'`. We do
-    // NOT establish a session here — the agency must be approved by a platform
+    // NOT establish a session here, the agency must be approved by a platform
     // super-admin before anyone on it can sign in. Issuing a cookie at this point
     // would let an unapproved tenant operate the system, bypassing the review gate.
     await recordAuditEvent(db, {
@@ -522,7 +522,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// One-time admin bootstrap — serialized via advisory lock so concurrent requests cannot both succeed.
+// One-time admin bootstrap, serialized via advisory lock so concurrent requests cannot both succeed.
 router.post('/bootstrap', async (req, res) => {
   // Secret gate (documented in .env.example): the endpoint is DISABLED unless
   // BOOTSTRAP_SECRET is set, and requires a matching bootstrapSecret in the
@@ -677,7 +677,7 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
-    // Always 200 — never disclose whether the email is registered
+    // Always 200, never disclose whether the email is registered
     res.json({ message: 'If that email is registered, a reset link has been sent.' });
   } catch (err) {
     safeError('POST /auth/forgot-password failed', err);
@@ -711,7 +711,7 @@ router.post('/reset-password', async (req, res) => {
       const nowIso = new Date().toISOString();
       await trx('users').where('id', resetToken.userId).update({ password_hash: passwordHash });
       await resetRepo.markUsed(resetToken.id);
-      // Revoke all active sessions for security — both web cookie sessions and
+      // Revoke all active sessions for security, both web cookie sessions and
       // mobile bearer tokens, so a reset terminates every active session.
       await trx('sessions').where('user_id', resetToken.userId).whereNull('revoked_at').update({
         revoked_at: nowIso,
@@ -741,7 +741,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// Protected — authContext applied directly so this route isn't bypassed by mount order.
+// Protected, authContext applied directly so this route isn't bypassed by mount order.
 async function sendAuthProfile(req: Request, res: Response): Promise<void> {
   const { userId, role, agencyId, caregiverId } = req.auth;
   const db = req.app.get('db');
@@ -772,7 +772,7 @@ async function sendAuthProfile(req: Request, res: Response): Promise<void> {
 router.get('/me', authContext, async (req, res) => sendAuthProfile(req, res));
 router.get('/mobile/me', authContext, async (req, res) => sendAuthProfile(req, res));
 
-// GET /auth/mobile/agencies — every agency the signed-in user may act in,
+// GET /auth/mobile/agencies, every agency the signed-in user may act in,
 // plus which one the current token is scoped to. Powers the "Linked agencies"
 // screen and the post-login picker on token-restore.
 router.get('/mobile/agencies', authContext, async (req, res) => {
@@ -788,7 +788,7 @@ router.get('/mobile/agencies', authContext, async (req, res) => {
 
 const switchAgencySchema = z.object({ agencyId: z.string().uuid() });
 
-// POST /auth/mobile/switch-agency — re-scope the caller's bearer token to
+// POST /auth/mobile/switch-agency, re-scope the caller's bearer token to
 // another agency they hold an active membership in. Issues a fresh JWT whose
 // agencyId/role/caregiverId claims come from that membership, so every
 // downstream tenant check keeps reading req.auth exactly as before.

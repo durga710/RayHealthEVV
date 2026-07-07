@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
 
 /**
- * /launch — rebuilt on the shared SiteLayout (teal/orange brand). The
+ * /launch, rebuilt on the shared SiteLayout (teal/orange brand). The
  * "RayHealthEVV™ is live" launch / what's-new narrative. Live capabilities
  * use teal check tiles; roadmap items carry an orange "Roadmap" pill so we
  * tell agencies straight what runs in production today vs. what's committed.
@@ -25,11 +25,11 @@ const liveItems: readonly string[] = [
 ] as const;
 
 const roadmapItems: readonly string[] = [
-  'Billing readiness — claim-blocker detection before submission',
-  'Payroll readiness — pay-period approvals, exports, authorized provider handoff',
-  'Quality assurance — audits, corrective actions, documentation review',
-  'RayHealthEVV™ Academy — caregiver lessons, quizzes, certificate renewals',
-  'Family portal — calm, real-time visibility, no alarm-bell alerts',
+  'Billing readiness, claim-blocker detection before submission',
+  'Payroll readiness, pay-period approvals, exports, authorized provider handoff',
+  'Quality assurance, audits, corrective actions, documentation review',
+  'RayHealthEVV™ Academy, caregiver lessons, quizzes, certificate renewals',
+  'Family portal, calm, real-time visibility, no alarm-bell alerts',
 ] as const;
 
 export function LaunchPage() {
@@ -39,9 +39,9 @@ export function LaunchPage() {
         <div className="mk-hero-grid" aria-hidden />
         <div className="mk-heroin">
           <span className="mk-eyebrow">Launch</span>
-          <h1 className="mk-h1">RayHealthEVV™ is live — care, finally on the same page.</h1>
+          <h1 className="mk-h1">RayHealthEVV™ is live, care, finally on the same page.</h1>
           <p className="mk-lead">
-            Today we're launching <strong>RayHealthEVV™</strong> — an operations-grade home care
+            Today we're launching <strong>RayHealthEVV™</strong>, an operations-grade home care
             platform that brings scheduling, EVV, billing readiness, payroll, caregiver training,
             and family visibility into one calm workspace.
           </p>
@@ -62,7 +62,7 @@ export function LaunchPage() {
             </p>
             <p>
               We didn't want to bolt one more dashboard onto that pile. We wanted a platform that
-              takes the operations of running a home care agency seriously — without taking the
+              takes the operations of running a home care agency seriously, without taking the
               humanity out of it.
             </p>
           </div>
@@ -149,17 +149,17 @@ export function LaunchPage() {
               <li>
                 <span className="mk-ck">{mkic(MK_CHECK)}</span>
                 <span>
-                  <strong>Agency owners and operators</strong> — <Link to="/contact" style={{ color: 'var(--accent-deep)', fontWeight: 600 }}>book a demo</Link> and we'll walk you through the live workflow on real data.
+                  <strong>Agency owners and operators</strong>, <Link to="/contact" style={{ color: 'var(--accent-deep)', fontWeight: 600 }}>book a demo</Link> and we'll walk you through the live workflow on real data.
                 </span>
               </li>
               <li>
                 <span className="mk-ck">{mkic(MK_CHECK)}</span>
-                <span><strong>Caregivers</strong> — your agency can invite you in once they're set up.</span>
+                <span><strong>Caregivers</strong>, your agency can invite you in once they're set up.</span>
               </li>
               <li>
                 <span className="mk-ck">{mkic(MK_CHECK)}</span>
                 <span>
-                  <strong>Families</strong> — a portal experience is on the immediate roadmap; submit the contact form to be notified when it ships.
+                  <strong>Families</strong>, a portal experience is on the immediate roadmap; submit the contact form to be notified when it ships.
                 </span>
               </li>
             </ul>

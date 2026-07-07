@@ -8,23 +8,23 @@
  * claims (by the patient control number we put in CLM01 → echoed in CLP01).
  *
  * Pragmatic scope: we read the segments that carry claim-level money and
- * identity — BPR (total paid), TRN (check/EFT trace), CLP (claim payment), and
+ * identity. BPR (total paid), TRN (check/EFT trace), CLP (claim payment), and
  * CAS (adjustments). Service-line (SVC) detail is summarized at the claim level
  * via CAS. Separators are auto-detected from the ISA envelope when present, and
  * otherwise default to '*' (element) and '~' (segment); newlines are tolerated.
  */
 
 export interface Era835Adjustment {
-  group: string; // CAS01 — CO (contractual), PR (patient resp), OA, PI, CR
-  reasonCode: string; // CAS02 — CARC code (e.g. 45, 97, 16)
+  group: string; // CAS01. CO (contractual), PR (patient resp), OA, PI, CR
+  reasonCode: string; // CAS02. CARC code (e.g. 45, 97, 16)
   amountCents: number; // CAS03
 }
 
 export type Era835DerivedStatus = 'paid' | 'partial' | 'denied' | 'reversed';
 
 export interface Era835Claim {
-  controlNumber: string; // CLP01 — our patient control number
-  statusCode: string; // CLP02 — 1 paid, 2/3 secondary/tertiary, 4 denied, 22 reversal
+  controlNumber: string; // CLP01, our patient control number
+  statusCode: string; // CLP02, 1 paid, 2/3 secondary/tertiary, 4 denied, 22 reversal
   chargeCents: number; // CLP03
   paidCents: number; // CLP04
   patientResponsibilityCents: number; // CLP05
@@ -55,7 +55,7 @@ function deriveStatus(statusCode: string, chargeCents: number, paidCents: number
 
 /**
  * Parse 835 EDI text into a structured remittance. Throws if the file contains
- * no CLP (claim payment) segments — i.e. it isn't a recognizable 835.
+ * no CLP (claim payment) segments, i.e. it isn't a recognizable 835.
  */
 export function parse835(text: string): Era835 {
   const trimmed = text.replace(/^﻿/, '').trim();
@@ -121,7 +121,7 @@ export function parse835(text: string): Era835 {
   }
 
   if (claims.length === 0) {
-    throw new Error('No claim payment (CLP) segments found — not a recognizable 835 file');
+    throw new Error('No claim payment (CLP) segments found, not a recognizable 835 file');
   }
 
   return { traceNumber, totalPaidCents, claims };

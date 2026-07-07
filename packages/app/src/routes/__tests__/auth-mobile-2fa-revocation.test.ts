@@ -40,8 +40,8 @@ function mockUserByEmail(overrides: Record<string, unknown> = {}) {
   return findByEmail;
 }
 
-describe('POST /auth/mobile/login — TOTP second factor (finding #1)', () => {
-  it('does NOT mint a bearer token when TOTP is enrolled — returns a 2FA challenge instead', async () => {
+describe('POST /auth/mobile/login. TOTP second factor (finding #1)', () => {
+  it('does NOT mint a bearer token when TOTP is enrolled, returns a 2FA challenge instead', async () => {
     mockUserByEmail({ totpEnabled: true });
 
     const res = await request(createApp())

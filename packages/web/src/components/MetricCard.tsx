@@ -10,16 +10,16 @@ interface MetricCardProps {
   sub?: ReactNode;
   /** Category color for the top border accent. Defaults to brand primary. */
   tone?: MetricCardTone;
-  /** Forces the danger tone regardless of `tone` — for "this needs eyes now" cards. */
+  /** Forces the danger tone regardless of `tone`, for "this needs eyes now" cards. */
   alert?: boolean;
-  /** Optional destination — renders the card as a click-through link. */
+  /** Optional destination, renders the card as a click-through link. */
   to?: string;
 }
 
 /**
  * A single KPI tile: label, big number, optional caption, and a tone-colored
  * top border. This is the generalized form of the `Kpi` helper that used to
- * live inline in CommandCenterPage — every color comes from a CSS variable
+ * live inline in CommandCenterPage, every color comes from a CSS variable
  * via `data-tone`/`data-alert`, never a hardcoded hex.
  */
 export function MetricCard({ label, value, sub, tone = 'primary', alert, to }: MetricCardProps) {

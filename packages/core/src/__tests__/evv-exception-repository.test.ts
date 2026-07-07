@@ -3,7 +3,7 @@ import { createDb, EvvExceptionRepository } from '../index.js';
 
 /**
  * Agency-scoped exception read (Agent 06 audit packet). `findExceptionsByVisitForAgency`
- * joins evv_exceptions -> evv_visits -> caregivers.agency_id — the same
+ * joins evv_exceptions -> evv_visits -> caregivers.agency_id, the same
  * authorization pattern documented on this repository (see the NOTE above
  * the deleted unscoped findByVisit). A visit id from another tenant must
  * return [] rather than that tenant's exceptions.

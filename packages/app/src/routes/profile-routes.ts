@@ -19,7 +19,7 @@ const changePasswordSchema = z.object({
   newPassword:     z.string().min(12, 'Password must be at least 12 characters'),
 });
 
-// GET /profile — current user's profile
+// GET /profile, current user's profile
 router.get('/', async (req, res) => {
   try {
     const db  = req.app.get('db');
@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// PATCH /profile — update name / phone / avatar
+// PATCH /profile, update name / phone / avatar
 router.patch('/', async (req, res) => {
   const parse = profileSchema.safeParse(req.body);
   if (!parse.success) {

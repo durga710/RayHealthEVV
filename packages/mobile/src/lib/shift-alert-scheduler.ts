@@ -14,7 +14,7 @@ import { Platform } from 'react-native';
  * call on every dashboard refresh.
  *
  * Foreground path is handled separately in DashboardScreen with a
- * useEffect interval + Haptics.notificationAsync — see that file.
+ * useEffect interval + Haptics.notificationAsync, see that file.
  */
 
 const SCHEDULED_IDS_KEY = 'rayhealth_scheduled_shift_alerts_v1';
@@ -24,7 +24,7 @@ export const SHIFT_ALERT_CHANNEL_ID = 'shift-alerts';
 const LEAD_TIME_MS = 30 * 1000;
 /** Skip scheduling for triggers too close to "now" to avoid the OS firing instantly. */
 const SCHEDULING_BUFFER_MS = 5_000;
-/** Vibration pattern for the notification (Android — iOS uses default vibration). */
+/** Vibration pattern for the notification (Android, iOS uses default vibration). */
 const VIBRATION_PATTERN: number[] = [0, 500, 200, 500, 200, 500];
 
 export interface Assignment {
@@ -70,7 +70,7 @@ async function cancelTrackedNotifications(): Promise<void> {
       try {
         await Notifications.cancelScheduledNotificationAsync(id);
       } catch {
-        // Notification may have already fired or been canceled — fine to ignore.
+        // Notification may have already fired or been canceled, fine to ignore.
       }
     })
   );
@@ -79,7 +79,7 @@ async function cancelTrackedNotifications(): Promise<void> {
 /**
  * Register the Android notification channel for shift alerts. Required for
  * the vibration pattern + MAX importance to take effect on Android. iOS
- * ignores channels. Safe to call repeatedly — Android coalesces.
+ * ignores channels. Safe to call repeatedly. Android coalesces.
  */
 export async function ensureShiftAlertChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
@@ -153,7 +153,7 @@ export async function scheduleShiftAlerts(assignments: Assignment[]): Promise<vo
       });
       newIds.push(id);
     } catch (err) {
-      // Don't fail the whole batch if one notification fails to schedule —
+      // Don't fail the whole batch if one notification fails to schedule , 
       // e.g. permission revoked between requestPermissionsAsync and now.
       if (__DEV__) {
         console.log('Failed to schedule shift alert', a.id, err);

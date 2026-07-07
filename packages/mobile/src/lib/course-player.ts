@@ -52,7 +52,7 @@ export function buildSteps(modules: CourseModules): PlayerStep[] {
   return steps;
 }
 
-/** Header meta line for a step, e.g. "Section 2 of 5" — null renders nothing. */
+/** Header meta line for a step, e.g. "Section 2 of 5", null renders nothing. */
 export function stepMeta(step: PlayerStep, modules: CourseModules): string | null {
   switch (step.kind) {
     case 'overview':
@@ -82,7 +82,7 @@ export function canAdvance(step: PlayerStep, answers: (number | null)[]): boolea
   return answers[step.questionIndex] != null;
 }
 
-/** Index of the first quiz question — the "Try again" jump target. -1 when quizless. */
+/** Index of the first quiz question, the "Try again" jump target. -1 when quizless. */
 export function firstQuizIndex(steps: PlayerStep[]): number {
   return steps.findIndex((s) => s.kind === 'quiz-question');
 }

@@ -25,7 +25,7 @@ function kinds(blocks: LessonBlock[]): string[] {
   return blocks.map((b) => b.kind);
 }
 
-describe('parseLessonContent — inline numbered steps', () => {
+describe('parseLessonContent, inline numbered steps', () => {
   it('extracts the 7 handwashing steps with lead-in and trailing prose', () => {
     const blocks = parseLessonContent(HAND_HYGIENE);
     expect(kinds(blocks)).toEqual(['paragraph', 'steps', 'paragraph']);
@@ -51,7 +51,7 @@ describe('parseLessonContent — inline numbered steps', () => {
   });
 });
 
-describe('parseLessonContent — term definitions', () => {
+describe('parseLessonContent, term definitions', () => {
   it('extracts Gloves/Masks/Gowns/Goggles as terms', () => {
     const blocks = parseLessonContent(PPE);
     const terms = blocks.find((b) => b.kind === 'terms') as Extract<LessonBlock, { kind: 'terms' }>;
@@ -60,7 +60,7 @@ describe('parseLessonContent — term definitions', () => {
   });
 });
 
-describe('parseLessonContent — colon lists become bullets', () => {
+describe('parseLessonContent, colon lists become bullets', () => {
   it('turns "This includes: a, b, c" into a lead paragraph plus bullets', () => {
     const blocks = parseLessonContent(STANDARD_PRECAUTIONS);
     const bulletsIdx = blocks.findIndex((b) => b.kind === 'bullets');
@@ -80,7 +80,7 @@ describe('parseLessonContent — colon lists become bullets', () => {
   });
 });
 
-describe('parseLessonContent — conditional callouts', () => {
+describe('parseLessonContent, conditional callouts', () => {
   it('turns "If X: a, b, c" sentences into callout blocks with items', () => {
     const blocks = parseLessonContent(RESPIRATORY);
     const callouts = blocks.filter((b) => b.kind === 'callout') as Extract<LessonBlock, { kind: 'callout' }>[];
@@ -100,7 +100,7 @@ describe('parseLessonContent — conditional callouts', () => {
   });
 });
 
-describe('parseLessonContent — checklists and key points', () => {
+describe('parseLessonContent, checklists and key points', () => {
   it('turns a run of short rules into a checklist with a Never key point', () => {
     const blocks = parseLessonContent(PROTECTING_PHI);
     expect(blocks.some((b) => b.kind === 'keypoint')).toBe(true);
@@ -123,7 +123,7 @@ describe('parseLessonContent — checklists and key points', () => {
   });
 });
 
-describe('parseLessonContent — plain prose behavior', () => {
+describe('parseLessonContent, plain prose behavior', () => {
   it('leaves short paragraphs untouched', () => {
     expect(parseLessonContent('Short and sweet.')).toEqual([{ kind: 'paragraph', text: 'Short and sweet.' }]);
   });

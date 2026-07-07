@@ -73,7 +73,7 @@ export function TemplatesPage() {
   };
 
   const fillSampleData = () => {
-    setName('Personal care — morning');
+    setName('Personal care, morning');
     const sampleDuties = availableTasks.slice(0, 3).map(t => t.duty);
     if (sampleDuties.length > 0) {
       setSelectedTasks(new Set(sampleDuties));

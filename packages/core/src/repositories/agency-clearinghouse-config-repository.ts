@@ -7,7 +7,7 @@
  * in shape to the Sandata / HHAeXchange config repos.
  *
  * `findByAgency` returns a partial view with a `hasCredentials` flag for the
- * admin UI — the plaintext secret is never returned there. `findSubmissionConfig`
+ * admin UI, the plaintext secret is never returned there. `findSubmissionConfig`
  * decrypts and is for the clearinghouse client only.
  */
 
@@ -46,7 +46,7 @@ export interface PartialClearinghouseConfig {
   endpoint: string | null
   settings: Record<string, unknown>
   enabled: boolean
-  /** Read-only indicator — plaintext credentials are never returned to callers. */
+  /** Read-only indicator, plaintext credentials are never returned to callers. */
   hasCredentials: boolean
 }
 
@@ -87,7 +87,7 @@ export class AgencyClearinghouseConfigRepository {
   }
 
   /**
-   * Returns the full submission config WITH decrypted credentials — for the
+   * Returns the full submission config WITH decrypted credentials, for the
    * clearinghouse client only. Never expose this to an API response.
    */
   async findSubmissionConfig(agencyId: string): Promise<ClearinghouseClientConfig | undefined> {

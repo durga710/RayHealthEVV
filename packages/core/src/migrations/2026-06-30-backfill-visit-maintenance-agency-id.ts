@@ -7,7 +7,7 @@
  * caregivers.agency_id) used so compliance-engine queue/audit-defense
  * queries don't have to join through that chain on every read. Until this
  * migration, VisitMaintenanceRepository.requestUnlock() never set the
- * column, so every row had agency_id = NULL — `WHERE agency_id = $1` never
+ * column, so every row had agency_id = NULL, `WHERE agency_id = $1` never
  * matches NULL, so those corrections were silently excluded from the PA
  * DHS audit-defense packet.
  *

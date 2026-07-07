@@ -21,7 +21,7 @@ import { colors, typography, radii, shadow } from '../common/tokens';
 const MIN_PASSWORD = 12;
 
 // ── Password strength ─────────────────────────────────────────────────────────
-// Derived from the password value during render — no focus/blur state.
+// Derived from the password value during render, no focus/blur state.
 
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'] as const;
 const STRENGTH_COLORS = [
@@ -94,7 +94,7 @@ export default function ChangePasswordScreen() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirm('');
-      showAppToast({ message: "Password updated — you're all set.", variant: 'success' });
+      showAppToast({ message: "Password updated, you're all set.", variant: 'success' });
       router.back();
     } catch (err: unknown) {
       const msg =

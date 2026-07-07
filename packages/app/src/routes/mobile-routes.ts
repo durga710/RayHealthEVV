@@ -15,7 +15,7 @@ const router = Router();
  * use case. Coordinators / admins use the existing /assignments endpoint.
  * A 403 here is a deliberate scope guard, not a permissions bug.
  *
- * `serverTime` is included so the client can detect device clock skew —
+ * `serverTime` is included so the client can detect device clock skew , 
  * the geofence + scheduled-time UI both depend on agreement with the
  * server's wall clock.
  */
@@ -38,7 +38,7 @@ router.get('/caregiver/today', requireCapability('evv.read'), async (req, res) =
 });
 
 /**
- * Forward-looking schedule for the mobile "Schedule" tab — the caregiver's
+ * Forward-looking schedule for the mobile "Schedule" tab, the caregiver's
  * assignments from the start of today through `?days` days ahead (default 7,
  * clamped 1..30). Same row shape as /caregiver/today so the client can reuse
  * its schedule-row model; `serverTime` included for the same clock-skew reason.

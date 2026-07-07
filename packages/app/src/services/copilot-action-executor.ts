@@ -9,7 +9,7 @@
  *
  * The route handler wraps every execution in a try/catch and writes a
  * `copilot.action.confirmed` audit event on success or
- * `copilot.action.declined` (with the error message) on failure — but the
+ * `copilot.action.declined` (with the error message) on failure, but the
  * executor itself never writes audit. Keeps the executor pure-ish and the
  * route in charge of side-effect logging.
  */
@@ -26,11 +26,11 @@ import { createEmailClient } from '../email/email-client.js'
 
 export interface ExecutionContext {
   db: Knex
-  /** The actor's agency — used to scope every repository read. */
+  /** The actor's agency, used to scope every repository read. */
   agencyId: string
-  /** The actor's role — used to gate elevated actions. */
+  /** The actor's role, used to gate elevated actions. */
   actorRole: 'admin' | 'coordinator' | 'caregiver' | 'family'
-  /** The actor's user id — written to audit payload. */
+  /** The actor's user id, written to audit payload. */
   actorUserId: string
 }
 
@@ -95,7 +95,7 @@ async function executeEnrollCaregiver(
     throw new ActionAuthorizationError('Course belongs to a different agency.')
   }
 
-  // Enroll via the existing repository. Idempotent — re-running on an
+  // Enroll via the existing repository. Idempotent, re-running on an
   // already-enrolled caregiver returns the existing enrollment.
   const enrollment = await learningRepo.enroll({
     agencyId: ctx.agencyId,
@@ -119,7 +119,7 @@ async function executeEnrollCaregiver(
 
 // ---------- send_reminder ----------
 // Dispatches a real reminder. Email delivery is live (via the configured email
-// provider — SMTP/Resend/SES). Push delivery is not built yet, so a push-only
+// provider. SMTP/Resend/SES). Push delivery is not built yet, so a push-only
 // request is declined honestly rather than silently "queued".
 
 async function executeSendReminder(

@@ -8,7 +8,7 @@ interface TrustBadgeProps {
 }
 
 /**
- * A single trust-mechanism callout for marketing/trust-center surfaces —
+ * A single trust-mechanism callout for marketing/trust-center surfaces , 
  * pairs a claim ("The log cannot be edited") with room for the mechanism
  * that backs it, per Agent 00/02's "claim → mechanism → where to see it"
  * pattern. Not wired into any page yet (no marketing screen was in this

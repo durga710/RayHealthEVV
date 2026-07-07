@@ -9,7 +9,7 @@ const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
  * Cookie for the platform super-admin token. httpOnly so an XSS anywhere in the
  * SPA cannot read the highest-privilege credential in the system (it must never
  * live in JS-readable storage). SameSite=strict is the CSRF defense for the
- * hidden console — cross-site requests never carry it. maxAge matches the 2h
+ * hidden console, cross-site requests never carry it. maxAge matches the 2h
  * platform-token expiry.
  */
 export function platformCookieOptions(): CookieOptions {
@@ -35,7 +35,7 @@ export function sessionCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    // strict, not lax — the admin UI never receives top-level navigations
+    // strict, not lax, the admin UI never receives top-level navigations
     // from third-party origins as part of a real flow. Strict prevents
     // even GET-based CSRF on the rare auth-sensitive read endpoints.
     sameSite: 'strict',
@@ -48,7 +48,7 @@ export function clearSessionCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    // strict, not lax — the admin UI never receives top-level navigations
+    // strict, not lax, the admin UI never receives top-level navigations
     // from third-party origins as part of a real flow. Strict prevents
     // even GET-based CSRF on the rare auth-sensitive read endpoints.
     sameSite: 'strict',

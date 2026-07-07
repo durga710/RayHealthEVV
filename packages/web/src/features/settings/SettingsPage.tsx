@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getJson, postJson, patchJson, deleteJson } from '../../lib/api-client.js';
 
 /**
- * Account settings — Security (TOTP 2FA + active sessions), Notifications,
+ * Account settings. Security (TOTP 2FA + active sessions), Notifications,
  * Preferences (appearance/locale), and Account & data (export, deletion).
  * Mounted at both /admin/settings and /portal/settings. Talks to /api/settings.
  */
@@ -186,7 +186,7 @@ export function SettingsPage() {
         {backupCodes && (
           <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '10px', padding: '1rem', marginBottom: '1rem' }}>
             <div style={{ fontWeight: 700, color: '#92400E', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Save your backup codes</div>
-            <p style={{ fontSize: '0.8125rem', color: '#92400E', margin: '0 0 0.75rem' }}>Each code works once if you lose your authenticator. Store them somewhere safe — they won&rsquo;t be shown again.</p>
+            <p style={{ fontSize: '0.8125rem', color: '#92400E', margin: '0 0 0.75rem' }}>Each code works once if you lose your authenticator. Store them somewhere safe, they won&rsquo;t be shown again.</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', fontFamily: 'monospace', fontSize: '0.875rem', color: '#0F172A' }}>
               {backupCodes.map((c) => <span key={c}>{c}</span>)}
             </div>
@@ -243,7 +243,7 @@ export function SettingsPage() {
                 <div style={{ fontSize: '0.8125rem', color: '#0F172A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {s.userAgent ?? 'Unknown device'} {s.current && <span style={{ color: '#15803D', fontWeight: 700 }}>· This device</span>}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{s.ipAddress ?? '—'} · expires {new Date(s.expiresAt).toLocaleDateString()}</div>
+                <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{s.ipAddress ?? ', '} · expires {new Date(s.expiresAt).toLocaleDateString()}</div>
               </div>
               {!s.current && <button type="button" style={btnGhost} onClick={() => void revokeSession(s.id)}>Revoke</button>}
             </div>

@@ -144,7 +144,7 @@ const supportChatLimiter = rateLimit({
 });
 
 /**
- * Invite-acceptance rate limit — both the GET (token lookup) and POST
+ * Invite-acceptance rate limit, both the GET (token lookup) and POST
  * (access-code submission). The token in the URL is cryptographically
  * unguessable, but an attacker who phishes a token can still try to
  * brute-force the 8-char access code. 20 attempts per 15-min window
@@ -159,7 +159,7 @@ const inviteAcceptanceLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'Too many attempts. Try again in 15 minutes.' },
-  // Skip rate limiting under vitest — supertest fires from the same IP and the
+  // Skip rate limiting under vitest, supertest fires from the same IP and the
   // limiter is module-scoped, so the cumulative request count across tests
   // could trip the limit. Production still gets the protection.
   skip: () => process.env.NODE_ENV === 'test',
@@ -178,7 +178,7 @@ export function createApp() {
 
   // Defense-in-depth for the "no non-BAA AI vendor" guarantee. The Gemini
   // fallback was removed from the code path, but a lingering Google AI key in
-  // the prod environment is a signal something is misconfigured — refuse to
+  // the prod environment is a signal something is misconfigured, refuse to
   // boot rather than risk any future code path reaching a non-BAA AI vendor
   // with PHI. (The removed client read either variable.)
   if (isProd && (process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY)) {
@@ -203,7 +203,7 @@ export function createApp() {
   // ---------- Security headers (helmet) ----------
   app.use(
     helmet({
-      // HSTS — force HTTPS for one year, including subdomains, and submit
+      // HSTS, force HTTPS for one year, including subdomains, and submit
       // to browser preload lists. Only meaningful in production where
       // we're behind HTTPS; harmless in dev.
       hsts: {
@@ -211,12 +211,12 @@ export function createApp() {
         includeSubDomains: true,
         preload: true,
       },
-      // The API does not render HTML — strip framing and referrer leakage
+      // The API does not render HTML, strip framing and referrer leakage
       // to the safest defaults.
       frameguard: { action: 'deny' },
       referrerPolicy: { policy: 'no-referrer' },
       // CSP doesn't apply to a pure JSON API but helmet's restrictive
-      // default doesn't hurt — it still hardens the rare static error
+      // default doesn't hurt, it still hardens the rare static error
       // pages Express might serve.
       contentSecurityPolicy: {
         useDefaults: true,
@@ -232,7 +232,7 @@ export function createApp() {
   // ---------- CORS ----------
   app.use(cors({ origin: allowedOrigins, credentials: true }));
 
-  // Stripe webhook needs the raw body for signature verification — must be
+  // Stripe webhook needs the raw body for signature verification, must be
   // mounted BEFORE express.json() so the buffer is untouched.
   for (const prefix of ['', '/api']) {
     app.use(`${prefix}/billing/webhook`, express.raw({ type: 'application/json' }), billingRoutes);
@@ -257,7 +257,7 @@ export function createApp() {
     // caregiver clicking the email link can hit them without a session.
     app.use(`${prefix}/invitations`, inviteAcceptanceLimiter, invitationsRoutes);
     // Public health endpoints (liveness, DB, audit-pipeline). Unauthenticated
-    // on purpose — the public /status page polls these. Mounted BEFORE
+    // on purpose, the public /status page polls these. Mounted BEFORE
     // authContext, behind their own tighter rate limit (60 / 15-min per IP).
     app.use(`${prefix}/health`, healthLimiter, healthRoutes);
     app.use(`${prefix}/marketing`, marketingLimiter, marketingRoutes);

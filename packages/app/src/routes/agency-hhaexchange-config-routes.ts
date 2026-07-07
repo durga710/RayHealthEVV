@@ -1,15 +1,15 @@
 /**
  * Agency HHAeXchange config routes.
  *
- *   GET  /agencies/me/hhaexchange-config  — read the agency's HHAeXchange identity
+ *   GET  /agencies/me/hhaexchange-config , read the agency's HHAeXchange identity
  *                                            + mappings (returns nullable identity
  *                                            fields when the agency is mid-onboarding)
- *   PUT  /agencies/me/hhaexchange-config  — admin-only update
+ *   PUT  /agencies/me/hhaexchange-config , admin-only update
  *
  * The PUT validates against the existing
  * `hhaexchangeCaregiverMappingSchema` / `hhaexchangeServiceMappingSchema`
  * Zod schemas so caregivers/services that the agency has never mapped get
- * rejected cleanly — the EVV export pipeline can then trust that a stored
+ * rejected cleanly, the EVV export pipeline can then trust that a stored
  * config has well-formed mappings.
  */
 
@@ -28,7 +28,7 @@ import { requireCapability } from '../middleware/require-capability.js'
 
 const router = Router()
 
-// https + public-host only — same SSRF guard as the Sandata config route.
+// https + public-host only, same SSRF guard as the Sandata config route.
 const safeAggregatorUrl = z
   .string()
   .max(255)

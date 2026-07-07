@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Visit Maintenance Unlock Request (VMUR) — the structured record of a
+ * Visit Maintenance Unlock Request (VMUR), the structured record of a
  * post-hoc visit correction submitted by an agency to its EVV aggregator.
  *
  * PA DHS via Sandata requires correction submissions to carry a reason
@@ -9,7 +9,7 @@ import { z } from 'zod';
  * correction code identifying what specifically changed about the visit.
  *
  * The lists below are the most commonly-cited PA DHS / Sandata codes.
- * Verify against the current Provider Spec before live submissions —
+ * Verify against the current Provider Spec before live submissions , 
  * Sandata revises this list periodically.
  */
 
@@ -19,29 +19,29 @@ import { z } from 'zod';
  * `reason`.
  */
 export const visitMaintenanceReasonCodes = [
-  /** MTLB — Mobile (no internet at start of visit). */
+  /** MTLB. Mobile (no internet at start of visit). */
   'MTLB',
-  /** DCDB — Device damaged/broken. */
+  /** DCDB. Device damaged/broken. */
   'DCDB',
-  /** MFLB — Manual entry, late submission. */
+  /** MFLB. Manual entry, late submission. */
   'MFLB',
-  /** MFLA — Manual entry, visit added after the fact. */
+  /** MFLA. Manual entry, visit added after the fact. */
   'MFLA',
-  /** ACLN — Client refused to use the app. */
+  /** ACLN. Client refused to use the app. */
   'ACLN',
-  /** ATGL — GPS lookup failed at clock-in or clock-out. */
+  /** ATGL. GPS lookup failed at clock-in or clock-out. */
   'ATGL',
-  /** AGRS — Aggregator/system upstream issue. */
+  /** AGRS. Aggregator/system upstream issue. */
   'AGRS',
-  /** WKAP — Worker not available (substitute deployed). */
+  /** WKAP. Worker not available (substitute deployed). */
   'WKAP',
-  /** CNCL — Visit cancelled by client. */
+  /** CNCL. Visit cancelled by client. */
   'CNCL',
-  /** HOLI — Holiday-related scheduling adjustment. */
+  /** HOLI. Holiday-related scheduling adjustment. */
   'HOLI',
-  /** WKLI — Worker called in late. */
+  /** WKLI. Worker called in late. */
   'WKLI',
-  /** OTHR — Other (requires free-text reason). */
+  /** OTHR. Other (requires free-text reason). */
   'OTHR',
 ] as const;
 
@@ -49,7 +49,7 @@ export const visitMaintenanceReasonCodeSchema = z.enum(visitMaintenanceReasonCod
 export type VisitMaintenanceReasonCode = z.infer<typeof visitMaintenanceReasonCodeSchema>;
 
 /**
- * Aggregator correction codes — what specifically changed about the visit.
+ * Aggregator correction codes, what specifically changed about the visit.
  * Sandata's "VisitChange" schema is the canonical source; HHAeXchange uses
  * roughly parallel codes that map at export time.
  */

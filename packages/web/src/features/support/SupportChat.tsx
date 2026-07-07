@@ -13,7 +13,7 @@ interface ChatMessage {
 const greeting: ChatMessage = {
   role: 'assistant',
   content:
-    "Hi — I'm RayHealthAssist. I can answer questions about EVV, scheduling, pricing, and what ships at launch. What brings you here today?"
+    "Hi. I'm RayHealthAssist. I can answer questions about EVV, scheduling, pricing, and what ships at launch. What brings you here today?"
 };
 
 export function SupportChat() {

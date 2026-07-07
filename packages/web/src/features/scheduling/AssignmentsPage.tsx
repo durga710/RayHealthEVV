@@ -82,7 +82,7 @@ export function AssignmentsPage() {
 
   const templateLabel = (id: string) => {
     const t = templates.find(x => x.id === id);
-    return t ? `${t.name} — ${clientName(t.clientId)}` : id.slice(0, 8) + '…';
+    return t ? `${t.name}, ${clientName(t.clientId)}` : id.slice(0, 8) + '…';
   };
 
   const caregivers = staff.filter(s => s.role === 'caregiver' || s.role === 'coordinator');
@@ -134,7 +134,7 @@ export function AssignmentsPage() {
     try {
       if (editingId) {
         // Reschedule / reassign. The client is derived from the template, so we
-        // send caregiver, template, and date — the server re-validates tenancy.
+        // send caregiver, template, and date, the server re-validates tenancy.
         const { warnings, ...updated } = await putJson<AssignmentCreated>(`/api/assignments/${editingId}`, {
           caregiverId,
           visitTemplateId,
@@ -220,7 +220,7 @@ export function AssignmentsPage() {
                 <select id="assignTemplateId" value={visitTemplateId} onChange={e => setVisitTemplateId(e.target.value)} required className="select-field">
                   <option value="">Select a template…</option>
                   {templates.map(t => (
-                    <option key={t.id} value={t.id}>{t.name} — {clientName(t.clientId)}</option>
+                    <option key={t.id} value={t.id}>{t.name}, {clientName(t.clientId)}</option>
                   ))}
                 </select>
               </div>
@@ -310,7 +310,7 @@ export function AssignmentsPage() {
                           {a.visitDate ? (
                             <span className="badge badge-success" style={{ fontFamily: 'var(--font-mono)', textTransform: 'none', letterSpacing: 0 }}>{a.visitDate}</span>
                           ) : (
-                            <span style={{ color: '#94A3B8', fontSize: '0.8125rem' }}>—</span>
+                            <span style={{ color: '#94A3B8', fontSize: '0.8125rem' }}>, </span>
                           )}
                         </td>
                         <td style={{ color: '#94A3B8' }}>{isExpanded ? '▾' : '▸'}</td>

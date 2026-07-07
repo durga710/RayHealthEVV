@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
 
 /**
- * Platform › RayVerify — the verification / trust engine that powers RayHealthEVV.
+ * Platform › RayVerify, the verification / trust engine that powers RayHealthEVV.
  *
  * Positioning: what Radar is to Stripe, RayVerify is to EVV. It layers identity,
  * location, device and fraud intelligence on top of every visit and produces an
@@ -10,7 +10,7 @@ import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
  *
  * TRUTH GUARDRAIL (see docs/rayverify-integration.md §7): only GPS/geofencing and
  * fraud intelligence run on production data today. Identity, liveness and
- * device-trust are flagged "Rolling out" everywhere they appear — never sold as live.
+ * device-trust are flagged "Rolling out" everywhere they appear, never sold as live.
  */
 
 type Status = 'live' | 'soon';
@@ -43,15 +43,15 @@ interface Layer {
 const layers: Layer[] = [
   { t: 'Location verification', s: 'live', b: 'GPS at clock-in and clock-out, checked against the client’s geofenced service address with a per-client radius.',
     i: mkic(<><circle cx="12" cy="10" r="3" /><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z" /></>) },
-  { t: 'Fraud intelligence', s: 'live', b: 'Impossible-travel, duplicate visits, shared-device patterns and over-billing anomalies — scored on every visit with a plain-English reason.',
+  { t: 'Fraud intelligence', s: 'live', b: 'Impossible-travel, duplicate visits, shared-device patterns and over-billing anomalies, scored on every visit with a plain-English reason.',
     i: mkic(<><path d="M12 3l8 4v5c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7l8-4Z" /><path d="m9 12 2 2 4-4" /></>) },
-  { t: 'Identity verification', s: 'soon', b: 'A selfie match confirming the person clocking in is the authorized caregiver on the assignment — not a borrowed phone.',
+  { t: 'Identity verification', s: 'soon', b: 'A selfie match confirming the person clocking in is the authorized caregiver on the assignment, not a borrowed phone.',
     i: mkic(<><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6" /></>) },
-  { t: 'Liveness detection', s: 'soon', b: 'Confirms a real, present person — defeating photos, screen replays and deepfakes at the moment of capture.',
+  { t: 'Liveness detection', s: 'soon', b: 'Confirms a real, present person, defeating photos, screen replays and deepfakes at the moment of capture.',
     i: mkic(<><path d="M12 3v2M12 19v2M3 12h2M19 12h2" /><circle cx="12" cy="12" r="4" /></>) },
-  { t: 'Device trust', s: 'soon', b: 'Flags emulators, rooted/jailbroken devices and one phone shared across many caregivers — the tells of coordinated fraud.',
+  { t: 'Device trust', s: 'soon', b: 'Flags emulators, rooted/jailbroken devices and one phone shared across many caregivers, the tells of coordinated fraud.',
     i: mkic(<><rect x="6" y="3" width="12" height="18" rx="2" /><path d="M11 18h2" /></>) },
-  { t: 'Evidence package', s: 'live', b: 'Every verified visit yields a tamper-evident record — location, signals, score and reasons — your agency can stand behind in an audit.',
+  { t: 'Evidence package', s: 'live', b: 'Every verified visit yields a tamper-evident record, location, signals, score and reasons, your agency can stand behind in an audit.',
     i: mkic(<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="m9 15 2 2 4-4" /></>) },
 ];
 
@@ -61,11 +61,11 @@ interface Signal {
 }
 
 const signals: Signal[] = [
-  { t: 'Impossible travel', b: 'Two visits too far apart to reach in the elapsed time — the caregiver could not physically have been at both.' },
+  { t: 'Impossible travel', b: 'Two visits too far apart to reach in the elapsed time, the caregiver could not physically have been at both.' },
   { t: 'Geofence breach', b: 'Clock-in or clock-out recorded outside the client’s authorized service-address radius.' },
   { t: 'Duplicate visit', b: 'The same visit window submitted more than once, or overlapping visits for one caregiver.' },
   { t: 'Over-billing', b: 'Units billed beyond the visit’s actual duration or the authorization’s allowance.' },
-  { t: 'Shared device', b: 'One device clocking in caregivers who shouldn’t share hardware — a classic collusion signal.' },
+  { t: 'Shared device', b: 'One device clocking in caregivers who shouldn’t share hardware, a classic collusion signal.' },
   { t: 'Off-hours anomaly', b: 'A visit pattern that breaks the caregiver’s and client’s normal schedule baseline.' },
 ];
 
@@ -78,7 +78,7 @@ interface Step {
 const steps: Step[] = [
   { n: '01', t: 'Capture', b: 'The caregiver clocks in from the RayHealth app. Location, time, device and visit context are captured at the door.' },
   { n: '02', t: 'Verify', b: 'RayVerify runs each signal against the authorization, the geofence, and the caregiver’s and client’s history.' },
-  { n: '03', t: 'Score', b: 'Signals combine into a 0–100 trust score with a human-readable reason for everything that fired.' },
+  { n: '03', t: 'Score', b: 'Signals combine into a 0-100 trust score with a human-readable reason for everything that fired.' },
   { n: '04', t: 'Decide', b: 'Clean visits pass straight through; risky ones are flagged for review before they ever reach a claim.' },
 ];
 
@@ -88,7 +88,7 @@ interface Stat {
 }
 
 const stats: Stat[] = [
-  { v: '0–100', l: 'Explainable trust score on every visit' },
+  { v: '0-100', l: 'Explainable trust score on every visit' },
   { v: 'GPS', l: 'Geofence-anchored at clock-in and clock-out' },
   { v: '6+', l: 'Fraud signals scored per visit today' },
   { v: 'Audit', l: 'Tamper-evident evidence package on file' },
@@ -100,10 +100,10 @@ interface Faq {
 }
 
 const faqs: Faq[] = [
-  { q: 'What is RayVerify?', a: 'RayVerify is the verification engine inside RayHealthEVV. Where EVV proves a phone was near an address at a time, RayVerify adds a trust layer — location, device and fraud intelligence today, with identity and liveness rolling out — and turns each visit into an explainable trust score with an audit-ready evidence package.' },
+  { q: 'What is RayVerify?', a: 'RayVerify is the verification engine inside RayHealthEVV. Where EVV proves a phone was near an address at a time, RayVerify adds a trust layer, location, device and fraud intelligence today, with identity and liveness rolling out, and turns each visit into an explainable trust score with an audit-ready evidence package.' },
   { q: 'What is live today versus rolling out?', a: 'Live today: GPS geofencing and the fraud-intelligence signals (impossible travel, geofence breach, duplicates, over-billing, shared-device and schedule anomalies), plus the evidence package. Rolling out: biometric identity verification, liveness detection and device-trust scoring. We flag those clearly everywhere so you always know what is running on real visit data.' },
-  { q: 'How is the trust score explainable?', a: 'Every signal that contributes to a visit’s score comes with a plain-English reason — not a black-box number. Reviewers see exactly why a visit was flagged, which is what makes the score defensible in front of an auditor.' },
-  { q: 'Do I need RayVerify to use RayHealthEVV?', a: 'No. GPS-verified EVV works on its own. RayVerify is the trust layer on top — turn it on per agency when you want fraud scoring and verification evidence beyond a basic location ping.' },
+  { q: 'How is the trust score explainable?', a: 'Every signal that contributes to a visit’s score comes with a plain-English reason, not a black-box number. Reviewers see exactly why a visit was flagged, which is what makes the score defensible in front of an auditor.' },
+  { q: 'Do I need RayVerify to use RayHealthEVV?', a: 'No. GPS-verified EVV works on its own. RayVerify is the trust layer on top, turn it on per agency when you want fraud scoring and verification evidence beyond a basic location ping.' },
 ];
 
 const Chrome = ({ url }: { url: string }) => (
@@ -174,7 +174,7 @@ export function RayVerifyPage() {
         </div>
       </section>
 
-      {/* The score, explained — crafted visual */}
+      {/* The score, explained, crafted visual */}
       <section className="mk-sec mk-alt">
         <div className="mk-wrap">
           <div className="mk-feat">
@@ -182,7 +182,7 @@ export function RayVerifyPage() {
               <p className="mk-eylabel">Explainable by design</p>
               <h3>A trust score you can defend, signal by signal.</h3>
               <p>
-                RayVerify scores each visit from 0 to 100 and shows exactly why. No black box — every signal
+                RayVerify scores each visit from 0 to 100 and shows exactly why. No black box, every signal
                 that fired comes with a plain-English reason, so a reviewer (or an auditor) sees the evidence,
                 not just a number.
               </p>
@@ -224,7 +224,7 @@ export function RayVerifyPage() {
         <div className="mk-wrap">
           <p className="mk-eylabel">Fraud intelligence &middot; live today</p>
           <h2 className="mk-h2">The signals RayVerify scores on every visit.</h2>
-          <p className="mk-deck">These run on real visit data now — each one contributes to the trust score with a reason a human can read.</p>
+          <p className="mk-deck">These run on real visit data now, each one contributes to the trust score with a reason a human can read.</p>
           <div className="mk-grid">
             {signals.map((s) => (
               <div className="mk-card" key={s.t}>
@@ -259,7 +259,7 @@ export function RayVerifyPage() {
         <div className="mk-wrap">
           <p className="mk-eylabel">Honest roadmap</p>
           <h2 className="mk-h2">What’s running on real visits today.</h2>
-          <p className="mk-deck">We tell you exactly what’s live and what’s rolling out — so you never have to guess what the badge means.</p>
+          <p className="mk-deck">We tell you exactly what’s live and what’s rolling out, so you never have to guess what the badge means.</p>
           <table className="mk-tbl" style={{ marginTop: 28 }}>
             <thead>
               <tr><th>Capability</th><th>Status</th><th>What it does</th></tr>

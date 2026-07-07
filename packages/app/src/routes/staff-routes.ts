@@ -28,11 +28,11 @@ const credentialBodySchema = z.object({
 });
 
 /**
- * GET /staff — lists all staff for the caller's agency.
+ * GET /staff, lists all staff for the caller's agency.
  *
  * Returns a unified view of:
  *  - active caregivers from the caregivers table (id = caregivers.id,
- *    which is the FK used by assignments — not users.id)
+ *    which is the FK used by assignments, not users.id)
  *  - active coordinator / admin users from the users table
  *  - pending (non-expired) invites from staff_invites
  *
@@ -94,7 +94,7 @@ router.get('/', requireCapability('staff.read'), async (req, res) => {
   }
 });
 
-// PATCH /staff/caregivers/:id — set a caregiver's NPI (rendering provider).
+// PATCH /staff/caregivers/:id, set a caregiver's NPI (rendering provider).
 // Mounted before /:id so the literal segment wins over the param route.
 router.patch('/caregivers/:id', requireCapability('staff.write'), async (req, res) => {
   const rawId = req.params.id;
@@ -119,16 +119,16 @@ router.patch('/caregivers/:id', requireCapability('staff.write'), async (req, re
 });
 
 // ── Caregiver credentialing ───────────────────────────────────────────────
-// GET    /staff/caregivers/:id/credentials            — list + compliance roll-up
-// POST   /staff/caregivers/:id/credentials            — add a credential
-// DELETE /staff/caregivers/:id/credentials/:credId    — expire a credential
+// GET    /staff/caregivers/:id/credentials           , list + compliance roll-up
+// POST   /staff/caregivers/:id/credentials           , add a credential
+// DELETE /staff/caregivers/:id/credentials/:credId   , expire a credential
 //
 // Every route validates the caregiver belongs to the caller's agency before
 // touching credential rows (getCredentials/expireCredential already join
 // caregivers on agency_id, but the POST path inserts by caregiver_id and so
 // needs the explicit guard to prevent cross-agency writes).
 
-// GET /staff/caregivers/:id — one caregiver's full profile (agency-scoped).
+// GET /staff/caregivers/:id, one caregiver's full profile (agency-scoped).
 // Exposes hasNpi (boolean) rather than the decrypted NPI, mirroring the list
 // endpoint's deliberate non-disclosure of the raw value.
 router.get('/caregivers/:id', requireCapability('staff.read'), async (req, res) => {
@@ -157,7 +157,7 @@ router.get('/caregivers/:id', requireCapability('staff.read'), async (req, res) 
   }
 });
 
-// GET /staff/caregivers/:id/visits — one caregiver's visit history for the
+// GET /staff/caregivers/:id/visits, one caregiver's visit history for the
 // admin activity view. findById proves the caregiver is in the caller's agency
 // (404 otherwise) before reading visits.
 router.get('/caregivers/:id/visits', requireCapability('staff.read'), async (req, res) => {
@@ -305,7 +305,7 @@ router.delete(
   },
 );
 
-// PATCH /staff/:id — change role for a coordinator or admin user
+// PATCH /staff/:id, change role for a coordinator or admin user
 router.patch('/:id', requireCapability('staff.write'), async (req, res) => {
   const rawId = req.params.id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
@@ -334,7 +334,7 @@ router.patch('/:id', requireCapability('staff.write'), async (req, res) => {
   }
 });
 
-// DELETE /staff/:id?type=user|caregiver — remove a staff member
+// DELETE /staff/:id?type=user|caregiver, remove a staff member
 // - type=caregiver: soft-delete (status → inactive)
 // - type=user: hard-delete coordinator/admin (sessions CASCADE)
 router.delete('/:id', requireCapability('staff.write'), async (req, res) => {
@@ -365,7 +365,7 @@ router.delete('/:id', requireCapability('staff.write'), async (req, res) => {
         return;
       }
     } else {
-      // Only allow removing other coordinators/admins — not caregivers through this path
+      // Only allow removing other coordinators/admins, not caregivers through this path
       const deleted: number = await db('users')
         .where({ id, agency_id: req.auth.agencyId })
         .whereIn('role', CHANGEABLE_ROLES)

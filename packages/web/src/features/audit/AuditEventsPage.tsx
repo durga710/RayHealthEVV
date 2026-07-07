@@ -38,7 +38,7 @@ interface ListResponse {
 }
 
 // Subset that powers the filter dropdown. Keep aligned with
-// `auditEventTypes` in packages/core/src/domain/audit.ts — listed here as a
+// `auditEventTypes` in packages/core/src/domain/audit.ts, listed here as a
 // finite enum rather than fetched dynamically so the filter remains stable.
 const EVENT_TYPE_OPTIONS = [
   'auth.login.success',

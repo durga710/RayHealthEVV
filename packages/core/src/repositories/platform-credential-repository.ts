@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 /**
  * WebAuthn (passkey) credentials for the platform super-admin's second factor.
- * Stores only the public key + signature counter — never biometric data. Keyed
+ * Stores only the public key + signature counter, never biometric data. Keyed
  * by `username` (the env SUPER_ADMIN_USERNAME) because the super-admin is not a
  * `users` row.
  */

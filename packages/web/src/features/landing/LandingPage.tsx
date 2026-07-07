@@ -6,10 +6,10 @@ import { MetricCard, StatusPill, DataTable, Timeline, TrustBadge, WorkflowSteppe
 import { RayVerifySection } from './RayVerifySection.js';
 
 /* ─────────────────────────────────────────────────────────────
-   RayHealth landing — premium, honest, buyer-conversion page.
+   RayHealth landing, premium, honest, buyer-conversion page.
    Self-contained: the scoped <style> block below is the landing's
    own layout/typography layer, but every color it defines is an
-   alias of a shared token from ../../index.css (:root) — no brand
+   alias of a shared token from ../../index.css (:root), no brand
    hex lives here. Structural surfaces (MetricCard, StatusPill,
    DataTable, Timeline, TrustBadge, WorkflowStepper) are imported
    straight from the design system so the "product mockups" below
@@ -22,7 +22,7 @@ const ic = (d: React.ReactNode) => (
 
 const check = ic(<path d="M20 6 9 17l-5-5" />);
 
-// ── Hero trust row — facts and alignments only, no endorsements, no counts ──
+// ── Hero trust row, facts and alignments only, no endorsements, no counts ──
 const heroTrust = [
   'PA-first, built for Pennsylvania homecare',
   'Six federal EVV elements, every visit',
@@ -30,13 +30,13 @@ const heroTrust = [
   'Caregiver mobile app for GPS clock-in',
 ];
 
-// ── Trust/fact strip — replaces the old fabricated "40% fewer denials" /
+// ── Trust/fact strip, replaces the old fabricated "40% fewer denials" /
 // "100% aligned" metric band. Every value here is a verifiable capability,
 // never an invented outcome number. ──
 const trustFacts = [
   { value: '6/6', label: 'Federal EVV elements captured on every visit' },
-  { value: 'Server-verified', label: 'GPS clock-in decision made on our servers — never the phone' },
-  { value: 'Append-only', label: 'Audit trail by database design — corrections are new events' },
+  { value: 'Server-verified', label: 'GPS clock-in decision made on our servers, never the phone' },
+  { value: 'Append-only', label: 'Audit trail by database design, corrections are new events' },
   { value: 'PA DHS-aligned', label: 'Aligned with PA DHS EVV requirements and the Cures Act' },
 ];
 
@@ -49,53 +49,53 @@ const painToOutcome = [
   { label: 'Systems', before: 'Five disconnected tools and a coordinator’s memory', after: 'Scheduling, EVV, compliance, and billing in one place' },
 ];
 
-// ── Role-based sections — condensed from the persona messaging in
+// ── Role-based sections, condensed from the persona messaging in
 // docs/agent-reports/02-product-strategy.md §2. These are role-based
 // outcome statements, not fabricated customer quotes. ──
 const roles = [
   {
     role: 'Agency owners & administrators',
-    body: 'One screen that says “you’re fine” or “here’s the one thing that isn’t” — in ten seconds. Proof on demand when the audit letter arrives.',
-    quote: 'You’ll know in ten seconds if anything’s wrong — and when the audit letter comes, you’re ready that afternoon.',
+    body: 'One screen that says “you’re fine” or “here’s the one thing that isn’t”, in ten seconds. Proof on demand when the audit letter arrives.',
+    quote: 'You’ll know in ten seconds if anything’s wrong, and when the audit letter comes, you’re ready that afternoon.',
     points: ['A live command center, no scrolling required', 'A Go-Live Readiness checklist for onboarding', 'One audit trail across the whole agency'],
   },
   {
     role: 'Schedulers & coordinators',
-    body: 'Build the week and let the platform catch the conflicts — expired credentials, drained authorizations, double-bookings — before you publish.',
-    quote: 'Publish with confidence — conflicts, credentials, and authorizations are checked before the schedule goes out, not after.',
-    points: ['Conflict-aware weekly scheduling', 'Draft and publish modes', 'A live Today Board — no phone calls needed'],
+    body: 'Build the week and let the platform catch the conflicts, expired credentials, drained authorizations, double-bookings, before you publish.',
+    quote: 'Publish with confidence, conflicts, credentials, and authorizations are checked before the schedule goes out, not after.',
+    points: ['Conflict-aware weekly scheduling', 'Draft and publish modes', 'A live Today Board, no phone calls needed'],
   },
   {
     role: 'Compliance officers',
-    body: 'Every exception, resolution, and correction is a permanent record — actor, timestamp, reason — the moment it happens.',
-    quote: 'Every action is logged, the log can’t be edited — even by us — and corrections are new events, never overwrites.',
+    body: 'Every exception, resolution, and correction is a permanent record, actor, timestamp, reason, the moment it happens.',
+    quote: 'Every action is logged, the log can’t be edited, even by us, and corrections are new events, never overwrites.',
     points: ['Exception queues that drain to zero', 'An append-only audit event browser', 'Aggregator submission status in one place'],
   },
   {
     role: 'Caregivers in the field',
     body: 'A phone app built around one job: clock in confidently, see exactly where to be, and never get stuck.',
-    quote: 'Clock in with confidence — the app shows you exactly where you stand, and you’re never locked out of clocking out.',
+    quote: 'Clock in with confidence, the app shows you exactly where you stand, and you’re never locked out of clocking out.',
     points: ['A live map with your geofence distance', 'Clock-out that always works as a fallback', 'Training built into the same app'],
   },
 ];
 
 // ── Implementation timeline (Day 1 → Week 2) ──
 const timelineSteps: WorkflowStep[] = [
-  { id: 'day1', label: 'Day 1 — Agency setup', description: 'Configure your agency profile, users, and PA task codes.', status: 'active' },
-  { id: 'day2', label: 'Day 2 — Import caregivers & clients', description: 'Bulk import from your existing system — no manual re-entry.', status: 'upcoming' },
-  { id: 'day3', label: 'Day 3 — Authorizations & task codes', description: 'Load authorizations and confirm PA task-code mapping.', status: 'upcoming' },
-  { id: 'day4', label: 'Day 4 — Caregiver training', description: 'Caregivers complete onboarding and EVV training in the mobile app.', status: 'upcoming' },
-  { id: 'day5', label: 'Day 5 — Pilot visits', description: 'Run real visits with GPS clock-in before full rollout.', status: 'upcoming' },
-  { id: 'week2', label: 'Week 2 — Live rollout', description: 'The full schedule runs on RayHealthEVV.', status: 'upcoming' },
+  { id: 'day1', label: 'Day 1. Agency setup', description: 'Configure your agency profile, users, and PA task codes.', status: 'active' },
+  { id: 'day2', label: 'Day 2. Import caregivers & clients', description: 'Bulk import from your existing system, no manual re-entry.', status: 'upcoming' },
+  { id: 'day3', label: 'Day 3. Authorizations & task codes', description: 'Load authorizations and confirm PA task-code mapping.', status: 'upcoming' },
+  { id: 'day4', label: 'Day 4. Caregiver training', description: 'Caregivers complete onboarding and EVV training in the mobile app.', status: 'upcoming' },
+  { id: 'day5', label: 'Day 5. Pilot visits', description: 'Run real visits with GPS clock-in before full rollout.', status: 'upcoming' },
+  { id: 'week2', label: 'Week 2. Live rollout', description: 'The full schedule runs on RayHealthEVV.', status: 'upcoming' },
 ];
 
-// ── Trust Center teaser items — approved HIPAA phrasing only. ──
+// ── Trust Center teaser items, approved HIPAA phrasing only. ──
 const trustTeaserItems: { icon: IconName; label: string; detail: string; tone: 'primary' | 'accent' }[] = [
   { icon: 'lock', label: 'HIPAA-ready architecture', detail: 'Encryption in transit, per-agency data isolation, immutable audit logging.', tone: 'primary' },
-  { icon: 'calendar', label: 'Operational HIPAA readiness in progress', detail: 'Vendor BAAs and readiness milestones are published on a dated status table — see exactly where we stand.', tone: 'accent' },
-  { icon: 'shield-check', label: 'Role-based access control', detail: 'Capability-scoped roles gate every admin action — never a client-supplied permission.', tone: 'primary' },
-  { icon: 'file-text', label: 'Tamper-evident audit logging', detail: 'Every state change is appended to a log that cannot be edited — not even by us.', tone: 'accent' },
-  { icon: 'smartphone', label: 'Mobile secure auth', detail: 'Mobile sessions are individually revocable — a lost phone is a two-click problem.', tone: 'primary' },
+  { icon: 'calendar', label: 'Operational HIPAA readiness in progress', detail: 'Vendor BAAs and readiness milestones are published on a dated status table, see exactly where we stand.', tone: 'accent' },
+  { icon: 'shield-check', label: 'Role-based access control', detail: 'Capability-scoped roles gate every admin action, never a client-supplied permission.', tone: 'primary' },
+  { icon: 'file-text', label: 'Tamper-evident audit logging', detail: 'Every state change is appended to a log that cannot be edited, not even by us.', tone: 'accent' },
+  { icon: 'smartphone', label: 'Mobile secure auth', detail: 'Mobile sessions are individually revocable, a lost phone is a two-click problem.', tone: 'primary' },
   { icon: 'cpu', label: 'AI/PHI boundaries', detail: 'The copilot proposes, a human approves; inference runs only through BAA-covered vendors.', tone: 'accent' },
 ];
 
@@ -106,11 +106,11 @@ const pricingTiers = [
 ];
 
 const faqs = [
-  { q: 'Are you HIPAA compliant?', a: 'We build to HIPAA-ready architecture — per-agency data isolation, encryption in transit, and an append-only audit log enforced today. Our operational HIPAA readiness, including vendor business associate agreements, is in progress and published openly on our compliance page — we execute a BAA with every agency before any PHI is processed.' },
+  { q: 'Are you HIPAA compliant?', a: 'We build to HIPAA-ready architecture, per-agency data isolation, encryption in transit, and an append-only audit log enforced today. Our operational HIPAA readiness, including vendor business associate agreements, is in progress and published openly on our compliance page, we execute a BAA with every agency before any PHI is processed.' },
   { q: 'Does RayHealthEVV submit to the Pennsylvania EVV aggregator?', a: 'Visits are captured against the federal six-element schema and mapped for downstream submission through Sandata Alt-EVV and HHAeXchange, the aggregators PA DHS uses.' },
-  { q: 'What happens if a caregiver has no signal in the home?', a: 'Caregiver clock-in relies on the mobile app’s GPS and connection today. We’re validating full offline capture and a telephony fallback before advertising them as guaranteed in every dead zone — if your caregivers regularly work without signal, that’s one of the first things we test with you during the pilot week.' },
-  { q: 'How do we get our data out?', a: 'Exports are a feature, not a hostage negotiation — payroll-ready and claim exports are built in, and your records leave with you if you ever do.' },
-  { q: 'How long does implementation take?', a: 'Most agencies import authorizations and onboard their first caregivers within a week, with full rollout by week two. See the timeline above — we handle the data migration with you.' },
+  { q: 'What happens if a caregiver has no signal in the home?', a: 'Caregiver clock-in relies on the mobile app’s GPS and connection today. We’re validating full offline capture and a telephony fallback before advertising them as guaranteed in every dead zone, if your caregivers regularly work without signal, that’s one of the first things we test with you during the pilot week.' },
+  { q: 'How do we get our data out?', a: 'Exports are a feature, not a hostage negotiation, payroll-ready and claim exports are built in, and your records leave with you if you ever do.' },
+  { q: 'How long does implementation take?', a: 'Most agencies import authorizations and onboard their first caregivers within a week, with full rollout by week two. See the timeline above, we handle the data migration with you.' },
   { q: 'Is RayHealthEVV only for Pennsylvania?', a: 'Today we are purpose-built for Pennsylvania personal-assistance and home-health programs. The compliance core is designed to extend to additional states.' },
 ];
 
@@ -152,7 +152,7 @@ function CSS() {
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 .rh{
-  /* Every custom property below aliases a shared token from index.css —
+  /* Every custom property below aliases a shared token from index.css , 
      no brand hex is defined in this file. */
   --ink: var(--color-text);
   --ink-soft: var(--color-text-secondary);
@@ -286,7 +286,7 @@ html{scroll-behavior:smooth;}
 .rh-theater-tab:focus-visible{outline:none; box-shadow:var(--shadow-focus);}
 .rh-theater-panels{max-width:var(--maxw); margin:20px auto 0; padding:0 24px;}
 .rh-theater-panel{min-height:340px;}
-/* each panel swaps a different component in, so it mounts fresh — crossfade it
+/* each panel swaps a different component in, so it mounts fresh, crossfade it
    up so switching tabs feels responsive instead of a hard cut */
 .rh-theater-inner{padding:.35rem; animation:rh-panelin .42s cubic-bezier(.2,.7,.2,1);}
 @keyframes rh-panelin{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:none;}}
@@ -299,7 +299,7 @@ html{scroll-behavior:smooth;}
 .rh-theater-map::before{content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(10,40,30,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(10,40,30,.05) 1px,transparent 1px); background-size:22px 22px;}
 .rh-theater-map .zone{position:absolute; left:50%; top:50%; width:96px; height:96px; border-radius:50%; transform:translate(-50%,-50%); border:2px dashed var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent);}
 .rh-theater-map .pin{position:absolute; left:50%; top:50%; width:14px; height:14px; border-radius:50%; background:var(--accent); border:3px solid white; transform:translate(-50%,-50%); box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent); z-index:2;}
-/* live GPS radar ping — a ring that continuously sweeps out from the pin, so
+/* live GPS radar ping, a ring that continuously sweeps out from the pin, so
    the geofence reads as an active location check rather than a static mockup */
 .rh-theater-map .pin::after{content:""; position:absolute; left:50%; top:50%; width:14px; height:14px; border-radius:50%; border:2px solid var(--accent); transform:translate(-50%,-50%); animation:rh-radar 2.8s cubic-bezier(.2,.6,.3,1) infinite;}
 @keyframes rh-radar{0%{width:14px; height:14px; opacity:.65;}70%{opacity:0;}100%{width:150px; height:150px; opacity:0;}}
@@ -413,7 +413,7 @@ html{scroll-behavior:smooth;}
 .rh-footbar{max-width:var(--maxw); margin:48px auto 0; padding:24px 24px 0; border-top:1px solid var(--line); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:.82rem; color:var(--muted);}
 @media(max-width:760px){ .rh-footgrid{grid-template-columns:1fr 1fr;} }
 
-/* hero entrance — a calm, staggered rise on first paint (not a bounce) */
+/* hero entrance, a calm, staggered rise on first paint (not a bounce) */
 @keyframes rh-rise{from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;}}
 .rh-herotext > *{animation:rh-rise .7s cubic-bezier(.2,.7,.2,1) both;}
 .rh-herotext > .rh-eyebrow{animation-delay:.04s;}
@@ -423,12 +423,12 @@ html{scroll-behavior:smooth;}
 .rh-herotext > .rh-herotrust{animation-delay:.42s;}
 .rh-heromedia{animation:rh-rise .8s cubic-bezier(.2,.7,.2,1) both; animation-delay:.28s;}
 
-/* hero bloom — an almost-imperceptible slow breathe, so the page feels alive
+/* hero bloom, an almost-imperceptible slow breathe, so the page feels alive
    without ever calling attention to itself */
 @keyframes rh-breathe{from{opacity:.72; transform:scale(1);} to{opacity:1; transform:scale(1.05);}}
 .rh-hero-bloom{animation:rh-breathe 16s ease-in-out infinite alternate;}
 
-/* staggered scroll-reveal — cards in a row cascade in rather than snapping
+/* staggered scroll-reveal, cards in a row cascade in rather than snapping
    as a block */
 .rh-roles .rh-rv:nth-child(2){transition-delay:.07s;}
 .rh-roles .rh-rv:nth-child(3){transition-delay:.14s;}
@@ -485,7 +485,7 @@ function HeroMock() {
           </div>
         </div>
       </div>
-      <p className="rh-mockcaption">Illustrative preview on a seeded demo agency — not a customer’s live data.</p>
+      <p className="rh-mockcaption">Illustrative preview on a seeded demo agency, not a customer’s live data.</p>
     </>
   );
 }
@@ -530,7 +530,7 @@ function TheaterClockIn() {
       <div className="rh-theater-clockin-copy">
         <StatusPill tone="success" label="Inside the geofence" />
         <h4>You’re 12m from the client’s registered address.</h4>
-        <p>The map is feedback — the actual clock-in decision is made on our servers, so a modified phone can’t fake a visit. All six federal EVV elements are captured the moment the caregiver taps Clock In.</p>
+        <p>The map is feedback, the actual clock-in decision is made on our servers, so a modified phone can’t fake a visit. All six federal EVV elements are captured the moment the caregiver taps Clock In.</p>
         <div className="rh-theater-clockin-actions">
           <span className="rh-btn rh-btn-pri" aria-hidden style={{ pointerEvents: 'none' }}>Clock In</span>
           <StatusPill tone="neutral" label="Clock-out always available" />
@@ -571,7 +571,7 @@ function TheaterAudit() {
           { id: 't1', timestamp: '09:02:14', title: 'visit.verified', description: 'Six of six EVV elements present', tone: 'success' },
           { id: 't2', timestamp: '08:41:09', title: 'exception.resolved', description: 'Actor: office admin · reason code recorded', tone: 'info' },
           { id: 't3', timestamp: '08:12:55', title: 'credential.renewed', tone: 'neutral' },
-          { id: 't4', timestamp: '07:58:30', title: 'claim.flagged', description: 'Denial-risk check — held before submission', tone: 'warning' },
+          { id: 't4', timestamp: '07:58:30', title: 'claim.flagged', description: 'Denial-risk check, held before submission', tone: 'warning' },
         ]}
       />
     </div>
@@ -584,7 +584,7 @@ export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [theaterTab, setTheaterTab] = useState<TheaterTab>('command');
 
-  // ROI calculator inputs — a real, controlled component ready for future
+  // ROI calculator inputs, a real, controlled component ready for future
   // interactivity. Outputs intentionally stay as honest placeholders: per
   // the brief, we never show a fabricated result number as if it were real.
   const [caregivers, setCaregivers] = useState(10);
@@ -657,7 +657,7 @@ export function LandingPage() {
             <h1 className="rh-display">The calm command center for <span className="em">Pennsylvania homecare</span>.</h1>
             <p className="rh-sublede">
               Scheduling, GPS-verified EVV, compliance, billing readiness, caregiver training, and audit
-              defense — one platform, one login, one answer to “is anything wrong today?”
+              defense, one platform, one login, one answer to “is anything wrong today?”
             </p>
             <div className="rh-herocta">
               <Link to="/demo" className="rh-btn rh-btn-pri">Book a demo</Link>
@@ -673,7 +673,7 @@ export function LandingPage() {
         </div>
       </header>
 
-      {/* Trust / fact strip — honest replacement for the old fabricated metrics */}
+      {/* Trust / fact strip, honest replacement for the old fabricated metrics */}
       <div className="rh-factband">
         <div className="rh-factgrid">
           {trustFacts.map((m) => (
@@ -722,7 +722,7 @@ export function LandingPage() {
             {theaterTab === 'exceptions' && <TheaterExceptions />}
             {theaterTab === 'audit' && <TheaterAudit />}
           </div>
-          <p className="rh-mockcaption">Illustrative preview on a seeded demo agency — not a customer’s live data.</p>
+          <p className="rh-mockcaption">Illustrative preview on a seeded demo agency, not a customer’s live data.</p>
         </div>
       </section>
 
@@ -769,7 +769,7 @@ export function LandingPage() {
             </div>
           ))}
         </div>
-        <p className="rh-rolefoot rh-rv">These are role-based outcome statements describing product capabilities — not fabricated customer quotes. We’ll feature named agencies once our first customers go live.</p>
+        <p className="rh-rolefoot rh-rv">These are role-based outcome statements describing product capabilities, not fabricated customer quotes. We’ll feature named agencies once our first customers go live.</p>
       </section>
 
       {/* 5. EVV audit defense */}
@@ -783,11 +783,11 @@ export function LandingPage() {
             <div className="rh-spottext rh-rv">
               <p className="rh-eyelabel">How it holds up under audit</p>
               <h3>An audit trail that defends itself.</h3>
-              <p>Six federal elements are captured automatically at clock-in and clock-out. The geofence decision is made on our servers, never trusted from the phone. Every correction is a new event, not an overwrite — and every exception carries a reason code on its way into a queue that drains to zero.</p>
+              <p>Six federal elements are captured automatically at clock-in and clock-out. The geofence decision is made on our servers, never trusted from the phone. Every correction is a new event, not an overwrite, and every exception carries a reason code on its way into a queue that drains to zero.</p>
               <ul className="rh-spotpts">
                 <li><span className="rh-ck">{check}</span>All six federal EVV elements captured on every visit</li>
-                <li><span className="rh-ck">{check}</span>GPS proof — the clock-in decision is server-verified</li>
-                <li><span className="rh-ck">{check}</span>Append-only edit trail — corrections are new events</li>
+                <li><span className="rh-ck">{check}</span>GPS proof, the clock-in decision is server-verified</li>
+                <li><span className="rh-ck">{check}</span>Append-only edit trail, corrections are new events</li>
                 <li><span className="rh-ck">{check}</span>Every exception carries a reason code and an owner</li>
                 <li><span className="rh-ck">{check}</span>Pick a date range and get a structured, exportable evidence packet</li>
               </ul>
@@ -820,7 +820,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* RayVerify — deeper dive on verification, already honest/labeled live-vs-rolling-out */}
+      {/* RayVerify, deeper dive on verification, already honest/labeled live-vs-rolling-out */}
       <RayVerifySection />
 
       {/* 6. Implementation timeline */}
@@ -828,7 +828,7 @@ export function LandingPage() {
         <div className="rh-sechead">
           <p className="rh-eyelabel rh-rv">Switching systems</p>
           <h2 className="rh-h2 rh-rv">Live in days, not months.</h2>
-          <p className="rh-deck rh-rv">A structured onboarding plan, not a sales calendar — you go live when the checklist says you’re ready.</p>
+          <p className="rh-deck rh-rv">A structured onboarding plan, not a sales calendar, you go live when the checklist says you’re ready.</p>
         </div>
         <div className="rh-wrap rh-rv" style={{ marginTop: '32px' }}>
           <WorkflowStepper orientation="vertical" steps={timelineSteps} />
@@ -840,7 +840,7 @@ export function LandingPage() {
         <div className="rh-sechead">
           <p className="rh-eyelabel rh-rv">Estimate your impact</p>
           <h2 className="rh-h2 rh-rv">See what a calmer operation could look like.</h2>
-          <p className="rh-deck rh-rv">A quick starting point — plug in your numbers. We’ll build your real estimate together, from your own data, during a walkthrough.</p>
+          <p className="rh-deck rh-rv">A quick starting point, plug in your numbers. We’ll build your real estimate together, from your own data, during a walkthrough.</p>
         </div>
         <div className="rh-roi rh-rv">
           <div className="rh-roi-card">
@@ -878,13 +878,13 @@ export function LandingPage() {
             </div>
             <div>
               <div className="rh-roi-outputs">
-                <MetricCard label="EVV cleanup hours saved / month" value="—" tone="neutral" sub="Estimated live during your walkthrough" />
-                <MetricCard label="Denial-risk issues caught pre-billing" value="—" tone="neutral" sub="Illustrative — not a guaranteed outcome" />
-                <MetricCard label="Coordinator time recovered / week" value="—" tone="neutral" sub="Calculated from your real schedule" />
+                <MetricCard label="EVV cleanup hours saved / month" value=", " tone="neutral" sub="Estimated live during your walkthrough" />
+                <MetricCard label="Denial-risk issues caught pre-billing" value=", " tone="neutral" sub="Illustrative, not a guaranteed outcome" />
+                <MetricCard label="Coordinator time recovered / week" value=", " tone="neutral" sub="Calculated from your real schedule" />
               </div>
               <div className="rh-roi-cta">
                 <Link to="/demo" className="rh-btn rh-btn-pri">Get your custom estimate</Link>
-                <p className="rh-roi-note">This calculator previews the inputs we’ll use — {caregivers} caregivers, {visitsPerWeek} visits/week, {cleanupHours} cleanup hours/month today — to build a real, agency-specific estimate. We don’t publish a formula-based number here because we haven’t measured it on your data yet.</p>
+                <p className="rh-roi-note">This calculator previews the inputs we’ll use, {caregivers} caregivers, {visitsPerWeek} visits/week, {cleanupHours} cleanup hours/month today, to build a real, agency-specific estimate. We don’t publish a formula-based number here because we haven’t measured it on your data yet.</p>
               </div>
             </div>
           </div>
@@ -899,8 +899,8 @@ export function LandingPage() {
           <p className="rh-deck rh-rv">
             RayHealthEVV is engineered to HIPAA Security Rule controls: per-agency data isolation enforced
             on every request, an audit trail that is append-only by database design, revocable mobile
-            sessions, and server-side verification of every clock-in. Our operational HIPAA readiness —
-            including vendor business associate agreements — is in progress, and we publish its status
+            sessions, and server-side verification of every clock-in. Our operational HIPAA readiness , 
+            including vendor business associate agreements, is in progress, and we publish its status
             openly. We’ll execute a BAA with every agency before any PHI is processed.
           </p>
         </div>
@@ -961,7 +961,7 @@ export function LandingPage() {
         <div className="rh-final">
           <div className="rh-finalcard rh-rv">
             <h2>See your agency calm.</h2>
-            <p>A focused walkthrough of the admin platform and the caregiver app. Bring a real case — we’ll run it live.</p>
+            <p>A focused walkthrough of the admin platform and the caregiver app. Bring a real case, we’ll run it live.</p>
             <div className="rh-herocta">
               <Link to="/demo" className="rh-btn rh-btn-dark">Book a RayHealth walkthrough</Link>
               <Link to="/resources/audit-checklist" className="rh-btn rh-btn-ghost rh-btn-outline-dark">See PA EVV readiness checklist</Link>

@@ -18,7 +18,7 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable(TABLE, (table) => {
     table.uuid('agency_id').primary().references('id').inTable('agencies').onDelete('CASCADE')
-    // Sandata Provider ID — 9-digit numeric string, but stored as text to avoid
+    // Sandata Provider ID, 9-digit numeric string, but stored as text to avoid
     // leading-zero loss and to allow staged onboarding (NULL until issued).
     table.string('provider_id', 9).nullable()
     table.string('timezone', 64).notNullable().defaultTo('America/New_York')

@@ -9,7 +9,7 @@ interface JwtPayload {
   agencyId: string;
   role: AppRole;
   caregiverId?: string;
-  /** Standard JWT id — matches a mobile_sessions row so the token is revocable. */
+  /** Standard JWT id, matches a mobile_sessions row so the token is revocable. */
   jti?: string;
 }
 
@@ -49,7 +49,7 @@ export async function authContext(req: Request, res: Response, next: NextFunctio
   }
 
   const token = authHeader.slice(7);
-  // JWT_SECRET is validated at startup in createApp() — safe to assert here.
+  // JWT_SECRET is validated at startup in createApp(), safe to assert here.
   const secret = process.env.JWT_SECRET!;
 
   try {

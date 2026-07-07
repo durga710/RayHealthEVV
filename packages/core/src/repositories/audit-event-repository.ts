@@ -61,7 +61,7 @@ export class AuditEventRepository {
   /**
    * Agency-scoped variant of {@link findByEntity}. `findByEntity` filters only
    * by entity type/id and is therefore forbidden for any surface that reads
-   * across tenants — a visit id or assignment id guessed (or leaked) from
+   * across tenants, a visit id or assignment id guessed (or leaked) from
    * another agency would otherwise return that agency's audit rows. The
    * audit packet route (`GET /admin/audit-packet/:visitId`) uses this
    * method exclusively.
@@ -88,7 +88,7 @@ export class AuditEventRepository {
   /**
    * Paginated timeline list for the admin Audit Events page.
    *
-   * Always filters by `agencyId` (agency isolation — a required argument,
+   * Always filters by `agencyId` (agency isolation, a required argument,
    * never optional). Optional filters narrow by `event_type`, `actor_id`,
    * `outcome`, and an `occurred_at` range. Ordered by `occurred_at` DESC.
    *
@@ -143,13 +143,13 @@ export class AuditEventRepository {
   /**
    * Aggregate retention status for the agency's audit_events. Used by
    * the admin /admin/audit-retention/status endpoint as HIPAA evidence
-   * (45 CFR §164.530(j) — 6-year retention floor for audit logs).
+   * (45 CFR §164.530(j), 6-year retention floor for audit logs).
    *
    * Returns:
    *   - totalRows         : every audit_event for this agency
    *   - oldestOccurredAt  : ISO timestamp of the earliest record
    *   - eventsLast30Days  : recent activity sanity-check
-   *   - eventsApproachingSixYearLimit : rows older than 5y 9m — the
+   *   - eventsApproachingSixYearLimit : rows older than 5y 9m, the
    *                                     bucket that needs cold-storage
    *                                     extraction in the next 90 days
    *

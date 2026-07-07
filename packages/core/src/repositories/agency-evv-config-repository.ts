@@ -1,7 +1,7 @@
 /**
  * Repository for the `agency_evv_config` table.
  *
- * Single row per agency. `findOrInitialize` is the typical entry point —
+ * Single row per agency. `findOrInitialize` is the typical entry point , 
  * returns a stored row if one exists, otherwise synthesizes a default that
  * matches the state registry's defaults (without persisting). Callers that
  * want to persist must call `upsert`.
@@ -41,7 +41,7 @@ export class AgencyEvvConfigRepository {
 
   /**
    * Look up the config, or compute a sensible default from the agency's
-   * state. Does NOT persist — the caller decides whether to write back.
+   * state. Does NOT persist, the caller decides whether to write back.
    */
   async findOrInitialize(agencyId: string, stateCode: string): Promise<AgencyEvvConfig> {
     const existing = await this.findByAgency(agencyId)

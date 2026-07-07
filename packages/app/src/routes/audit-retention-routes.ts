@@ -1,11 +1,11 @@
 /**
  * Audit retention routes.
  *
- *   GET  /admin/audit-retention/status  — admin-only, returns counts and floor info
- *   POST /admin/audit-retention/sweep   — cron-callable sweep trigger
+ *   GET  /admin/audit-retention/status , admin-only, returns counts and floor info
+ *   POST /admin/audit-retention/sweep  , cron-callable sweep trigger
  *
  * The sweep endpoint is authenticated via a shared secret in the
- * Authorization header (Bearer <CRON_SECRET>) — Vercel Cron sets this
+ * Authorization header (Bearer <CRON_SECRET>). Vercel Cron sets this
  * automatically. Falls back to admin capability check if the secret is
  * not configured, so a human admin can trigger a manual run from a
  * privileged session.
@@ -109,7 +109,7 @@ function assertCronAuthorized(req: Request): boolean {
 router.post('/sweep', async (req: Request, res: Response) => {
   const cronAuthorized = assertCronAuthorized(req)
   // `auth` is attached by auth-context middleware; in the cron path the
-  // middleware may not have populated it (no session/bearer), which is fine —
+  // middleware may not have populated it (no session/bearer), which is fine , 
   // the cron secret check above is sufficient.
   const human = req.auth ? hasCapability(req.auth.role, 'audit.write') : false
 

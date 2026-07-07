@@ -328,7 +328,7 @@ export function LearningHubPage() {
                       {!c.modules?.sections?.length && !c.modules?.quiz?.length ? <span style={{ color: '#B45309' }}>· no content yet</span> : null}
                     </div>
                     {c.agencyId === null ? (
-                      <span className="badge badge-info" title="Shared across all agencies — read only">Global</span>
+                      <span className="badge badge-info" title="Shared across all agencies, read only">Global</span>
                     ) : (
                       <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
                         <button

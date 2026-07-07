@@ -16,7 +16,7 @@ import {
 } from '../../components/index.js';
 
 /**
- * Per-visit deep audit packet — the print-friendly companion to Audit Defense
+ * Per-visit deep audit packet, the print-friendly companion to Audit Defense
  * (which covers a date range with counts + a manifest hash). This page
  * renders GET /admin/audit-packet/:visitId exactly (see
  * docs/agent-reports/06-audit-packet-architecture.md §3.3): a whitelist of
@@ -128,16 +128,16 @@ const OUTCOME_TONE: Record<'success' | 'failure' | 'denied', 'success' | 'danger
 };
 
 function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return ', ';
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
 }
 
 function shortId(id: string | null | undefined): string {
-  return id ? `${id.slice(0, 8)}…` : '—';
+  return id ? `${id.slice(0, 8)}…` : ', ';
 }
 
-/** Small label/value grid used for the visit summary and packet metadata. Uses only CSS-variable colors — no inline hex, per the design-system token rule. */
+/** Small label/value grid used for the visit summary and packet metadata. Uses only CSS-variable colors, no inline hex, per the design-system token rule. */
 function KeyValueGrid({ items }: { items: Array<{ label: string; value: React.ReactNode }> }) {
   return (
     <dl
@@ -179,9 +179,9 @@ function GeofenceCard({ label, facts }: { label: string; facts: GeofenceFacts })
       <KeyValueGrid
         items={[
           { label: 'Captured', value: facts.captured ? 'Yes' : 'No' },
-          { label: 'GPS accuracy', value: facts.accuracyM != null ? `${facts.accuracyM} m` : '—' },
-          { label: 'Distance from client', value: facts.distanceM != null ? `${facts.distanceM} m` : '—' },
-          { label: 'Allowed radius', value: facts.allowedM != null ? `${facts.allowedM} m` : '—' }
+          { label: 'GPS accuracy', value: facts.accuracyM != null ? `${facts.accuracyM} m` : ', ' },
+          { label: 'Distance from client', value: facts.distanceM != null ? `${facts.distanceM} m` : ', ' },
+          { label: 'Allowed radius', value: facts.allowedM != null ? `${facts.allowedM} m` : ', ' }
         ]}
       />
     </div>
@@ -230,7 +230,7 @@ export function AuditPacketPage() {
       <PageShell>
         <PageHeader
           title="Audit Packet"
-          subtitle="Look up a single visit to assemble its EVV audit-defense evidence — counts, statuses, hashes, and the accountability trail. Never a PHI dump."
+          subtitle="Look up a single visit to assemble its EVV audit-defense evidence, counts, statuses, hashes, and the accountability trail. Never a PHI dump."
         />
         <SectionCard title="Find a visit" bordered>
           <form
@@ -320,9 +320,9 @@ export function AuditPacketPage() {
 
       {!loading && !notFound && !error && data && (
         <div className="audit-packet">
-          {/* Print-only running header — hidden on screen, shown on every printed page (index.css @media print). */}
+          {/* Print-only running header, hidden on screen, shown on every printed page (index.css @media print). */}
           <div className="audit-packet__print-header" aria-hidden="true">
-            <span>RayHealth EVV — Audit Packet</span>
+            <span>RayHealth EVV. Audit Packet</span>
             <span>Visit {data.visit.id}</span>
             <span>Generated {formatDateTime(data.packet.generatedAt)}</span>
             <span>SHA-256 {data.packet.integritySha256.slice(0, 16)}…</span>
@@ -337,14 +337,14 @@ export function AuditPacketPage() {
                   {' · '}
                   Client{' '}
                   <strong style={{ color: 'var(--color-text)' }}>
-                    {data.client.name ?? (data.client.id ? shortId(data.client.id) : '—')}
+                    {data.client.name ?? (data.client.id ? shortId(data.client.id) : ', ')}
                   </strong>
                 </span>
               </div>
               <KeyValueGrid
                 items={[
-                  { label: 'Service code', value: data.visit.serviceCode ?? '—' },
-                  { label: 'Service description', value: data.visit.serviceDescription ?? '—' },
+                  { label: 'Service code', value: data.visit.serviceCode ?? ', ' },
+                  { label: 'Service description', value: data.visit.serviceDescription ?? ', ' },
                   { label: 'Scheduled start', value: formatDateTime(data.visit.scheduledStartTime) },
                   { label: 'Scheduled end', value: formatDateTime(data.visit.scheduledEndTime) },
                   { label: 'Clock-in', value: formatDateTime(data.visit.clockInTime) },
@@ -403,8 +403,8 @@ export function AuditPacketPage() {
                 },
                 { key: 'requester', header: 'Requester', render: (r) => r.requesterName ?? shortId(r.requesterId) },
                 { key: 'reason', header: 'Reason', render: (r) => r.reason },
-                { key: 'category', header: 'Category', render: (r) => r.reasonCategoryCode ?? '—' },
-                { key: 'correction', header: 'Correction', render: (r) => r.correctionCode ?? '—' },
+                { key: 'category', header: 'Category', render: (r) => r.reasonCategoryCode ?? ', ' },
+                { key: 'correction', header: 'Correction', render: (r) => r.correctionCode ?? ', ' },
                 { key: 'approver', header: 'Approver', render: (r) => r.approverName ?? shortId(r.approverId) },
                 { key: 'approvedAt', header: 'Approved at', render: (r) => formatDateTime(r.approvedAt) },
                 { key: 'adjustedStart', header: 'Adjusted start', render: (r) => formatDateTime(r.adjustedStartTime) },
@@ -425,9 +425,9 @@ export function AuditPacketPage() {
               <KeyValueGrid
                 items={[
                   { label: 'Sandata status', value: data.aggregator.sandataStatus ?? 'Not submitted' },
-                  { label: 'Sandata confirmation', value: data.aggregator.sandataConfirmationId ?? '—' },
+                  { label: 'Sandata confirmation', value: data.aggregator.sandataConfirmationId ?? ', ' },
                   { label: 'HHAeXchange status', value: data.aggregator.hhaexchangeStatus ?? 'Not submitted' },
-                  { label: 'HHAeXchange confirmation', value: data.aggregator.hhaexchangeConfirmationId ?? '—' }
+                  { label: 'HHAeXchange confirmation', value: data.aggregator.hhaexchangeConfirmationId ?? ', ' }
                 ]}
               />
             </div>
@@ -450,7 +450,7 @@ export function AuditPacketPage() {
               ]}
             />
             <p style={{ marginTop: '0.75rem', fontSize: '0.78rem', fontStyle: 'italic', color: 'var(--color-text-muted)' }}>
-              An auditor can re-derive this hash from the packet contents alone — server signatures are not trusted.
+              An auditor can re-derive this hash from the packet contents alone, server signatures are not trusted.
             </p>
           </SectionCard>
         </div>

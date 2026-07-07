@@ -1,13 +1,13 @@
 /**
- * Migration: Learning Hub — courses, enrollments, completions.
+ * Migration: Learning Hub, courses, enrollments, completions.
  *
  * Three tables:
  *
- *   learning_courses        — catalog. agency_id NULL = global course shared
+ *   learning_courses       , catalog. agency_id NULL = global course shared
  *                             across all agencies (e.g. HIPAA refresh).
- *   course_enrollments      — one row per (caregiver, course). Tracks the
- *                             current state — last completion, expiry.
- *   course_completions      — append-only event log of completion records.
+ *   course_enrollments     , one row per (caregiver, course). Tracks the
+ *                             current state, last completion, expiry.
+ *   course_completions     , append-only event log of completion records.
  *
  * Idempotent.
  */
@@ -58,7 +58,7 @@ export async function up(knex: Knex): Promise<void> {
       table.uuid('caregiver_id').references('id').inTable('caregivers').onDelete('CASCADE').notNullable()
       table.uuid('course_id').references('id').inTable('learning_courses').onDelete('CASCADE').notNullable()
       table.timestamp('completed_at').notNullable()
-      table.integer('score') // 0–100, null for non-quiz courses
+      table.integer('score') // 0-100, null for non-quiz courses
       table.text('notes')
       table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
       table.index(['caregiver_id', 'course_id'])

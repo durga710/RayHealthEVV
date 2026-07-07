@@ -74,7 +74,7 @@ describe('GET /auth/mobile/me', () => {
             email: 'admin@rayhealth.example',
             passwordHash: 'unused',
             role: 'admin'
-            // no caregiverId — admin-only user
+            // no caregiverId, admin-only user
           })
         }) as unknown as core.UserRepository
     );

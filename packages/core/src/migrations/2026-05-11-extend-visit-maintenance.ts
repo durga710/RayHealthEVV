@@ -5,20 +5,20 @@
  * requires every correction to carry:
  *
  *   - A reason category code drawn from the PA DHS / Sandata approved list
- *     (e.g. MTLB, MFLA, AGRS, OTHR) — not free-text.
+ *     (e.g. MTLB, MFLA, AGRS, OTHR), not free-text.
  *   - An aggregator correction code identifying *what changed*
  *     (TIME_CHANGE, VISIT_ADDED, VISIT_CANCELED, TASK_CHANGE...).
- *   - The originator role — caregiver-initiated corrections from the mobile
+ *   - The originator role, caregiver-initiated corrections from the mobile
  *     app are routed to a coordinator review queue, separate from
  *     coordinator-initiated corrections that fast-path to approve.
- *   - Signature completeness — PA DHS allows incomplete-signature submission
+ *   - Signature completeness. PA DHS allows incomplete-signature submission
  *     with a flag so the agency can submit a visit when the client refuses
  *     to sign (the explicit user-preference behavior).
- *   - Approver ID + approval timestamp — distinct from requester.
+ *   - Approver ID + approval timestamp, distinct from requester.
  *
  * Idempotent: uses `hasColumn` guards. Safe to re-run.
  *
- * Reference: PA DHS / Sandata "Provider EVV Spec" — verify the live reason
+ * Reference: PA DHS / Sandata "Provider EVV Spec", verify the live reason
  * code list against the current spec before going to production.
  */
 
@@ -43,7 +43,7 @@ export async function up(knex: Knex): Promise<void> {
       table.string('correction_code', 32).nullable()
     }
     if (!(await knex.schema.hasColumn(TABLE, 'originator_role'))) {
-      // 'caregiver' | 'coordinator' | 'admin' — which actor initiated.
+      // 'caregiver' | 'coordinator' | 'admin', which actor initiated.
       table.string('originator_role', 16).nullable()
     }
     if (!(await knex.schema.hasColumn(TABLE, 'caregiver_signature_present'))) {
@@ -53,7 +53,7 @@ export async function up(knex: Knex): Promise<void> {
       table.boolean('client_signature_present').nullable()
     }
     if (!(await knex.schema.hasColumn(TABLE, 'incomplete_signature_reason'))) {
-      // Free-text — only required when one of the signatures is absent
+      // Free-text, only required when one of the signatures is absent
       // and the agency still wants to submit the correction. Sandata
       // accepts this with appropriate documentation per PA DHS guidance.
       table.text('incomplete_signature_reason').nullable()

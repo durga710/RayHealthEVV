@@ -5,8 +5,8 @@ import { getJson } from '../../lib/api-client.js';
 /**
  * Go-Live Readiness checklist.
  *
- * Surfaces the silent onboarding gates — most importantly the fee schedule,
- * which otherwise lets claims generate $0 charges with no visible warning — and
+ * Surfaces the silent onboarding gates, most importantly the fee schedule,
+ * which otherwise lets claims generate $0 charges with no visible warning, and
  * links each unfinished item to the page that fixes it. Read-only: it fetches
  * the agency's billing identity, fee schedule, EVV aggregator config, and whether
  * any clients/staff exist, then computes pass/fail per item.
@@ -97,7 +97,7 @@ export function computeReadinessChecklist(input: ReadinessInputs): ChecklistItem
       required: true,
       detail: feeComplete
         ? 'All four PA service codes have a contracted rate.'
-        : `Only ${pricedCodes.length} of ${FEE_CODES.length} service codes are priced. Claims for unpriced codes generate $0 charges and will be flagged at denial risk — set a rate for every code before billing.`,
+        : `Only ${pricedCodes.length} of ${FEE_CODES.length} service codes are priced. Claims for unpriced codes generate $0 charges and will be flagged at denial risk, set a rate for every code before billing.`,
       fixTo: '/admin/agency',
       fixLabel: 'Agency Setup → Fee schedule',
     },
@@ -217,7 +217,7 @@ export function GoLiveReadinessPage() {
             }}
           >
             {ready
-              ? `✓ Ready to onboard — all ${total} items complete.`
+              ? `✓ Ready to onboard, all ${total} items complete.`
               : `${done} of ${total} complete · ${blockers} ${blockers === 1 ? 'item' : 'items'} left before go-live.`}
           </div>
 

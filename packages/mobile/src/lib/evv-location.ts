@@ -5,7 +5,7 @@
  *
  *  1. A caregiver must ALWAYS be able to end a shift. If neither a live fix nor
  *     a last-known position is available, we still send a payload (zeroed) so
- *     the clock-out request can proceed and the server decides — the caregiver
+ *     the clock-out request can proceed and the server decides, the caregiver
  *     is never trapped in an open visit by a stale or denied GPS watch.
  *  2. Honesty about what was captured. `captured` is true only when a REAL
  *     coordinate (live or last-known) backed the payload. It drives the

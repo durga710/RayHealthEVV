@@ -9,7 +9,7 @@ beforeAll(() => setTestJwtSecret());
 // Route-level gating for the real Sandata Alternate-EVV endpoints. The async
 // transport itself (sequencing, load-order deferral, poll) is covered by the
 // core unit tests (sandata-transmission-service / sandata-alt-evv-api); these
-// tests verify config gating, auth, and validation — the route's own logic,
+// tests verify config gating, auth, and validation, the route's own logic,
 // which never reaches the DB-backed state repository.
 
 function mockConfig(value: unknown) {
@@ -18,7 +18,7 @@ function mockConfig(value: unknown) {
   } as any));
 }
 
-describe('Sandata Alternate-EVV routes — submit gating', () => {
+describe('Sandata Alternate-EVV routes, submit gating', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -71,7 +71,7 @@ describe('Sandata Alternate-EVV routes — submit gating', () => {
   });
 });
 
-describe('Sandata Alternate-EVV routes — poll gating', () => {
+describe('Sandata Alternate-EVV routes, poll gating', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();

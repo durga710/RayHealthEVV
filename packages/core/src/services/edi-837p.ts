@@ -1,5 +1,5 @@
 /**
- * X12 837P (Professional) EDI generator — ASC X12N 005010X222A1.
+ * X12 837P (Professional) EDI generator. ASC X12N 005010X222A1.
  *
  * Produces a structurally valid 837P interchange (ISA/GS/ST … SE/GE/IEA) from
  * a batch of claims. This is the real Health Care Claim: Professional format
@@ -10,7 +10,7 @@
  * credentials the agency provides). The generated file is what an agency
  * uploads to that clearinghouse portal, or what an automated SFTP/API
  * connector would send once configured. Dollar amounts come straight from each
- * line's chargeCents — if an agency hasn't loaded a fee schedule, charges are
+ * line's chargeCents, if an agency hasn't loaded a fee schedule, charges are
  * 0.00 and the upstream validation flags that before submission.
  *
  * Pure + deterministic: all control numbers and the interchange timestamp are
@@ -32,7 +32,7 @@ export interface Edi837Submitter {
 
 export interface Edi837Receiver {
   name: string;
-  /** Receiver id (ISA08 + NM1*40 id) — clearinghouse / payer interchange id. */
+  /** Receiver id (ISA08 + NM1*40 id), clearinghouse / payer interchange id. */
   id: string;
 }
 
@@ -86,7 +86,7 @@ export interface Edi837Claim {
    * 005010X222A1 requires at least one diagnosis on a professional claim, and
    * every service line's diagnosis pointer must reference one of these. When
    * empty/omitted, NO HI segment is written and NO service-line diagnosis
-   * pointer is emitted — so the file never carries a dangling pointer, though
+   * pointer is emitted, so the file never carries a dangling pointer, though
    * such a claim will be rejected by the payer for the missing diagnosis until
    * the agency captures one.
    */
@@ -270,7 +270,7 @@ export function generate837P(input: Edi837Input): Edi837Result {
 
     // 2300 Health Care Diagnosis Code (HI). Required for a professional claim:
     // the principal diagnosis rides in ABK, each additional in ABF. We only
-    // emit the segment — and the matching service-line diagnosis pointer below —
+    // emit the segment, and the matching service-line diagnosis pointer below , 
     // when at least one valid code is present, so the file never contains a
     // pointer to a diagnosis that isn't declared.
     const diagnoses = (claim.diagnosisCodes ?? []).map(icd10).filter(Boolean);
@@ -280,7 +280,7 @@ export function generate837P(input: Edi837Input): Edi837Result {
         .map((code, idx) => `${idx === 0 ? 'ABK' : 'ABF'}${SUBELEMENT}${code}`);
       tx.push(seg('HI', ...hiElements));
     }
-    // SV107 composite diagnosis-code pointer — points at the principal
+    // SV107 composite diagnosis-code pointer, points at the principal
     // diagnosis (position 1 in the HI segment). Omitted entirely when the claim
     // has no diagnosis, leaving no dangling reference.
     const diagnosisPointer = diagnoses.length > 0 ? '1' : '';

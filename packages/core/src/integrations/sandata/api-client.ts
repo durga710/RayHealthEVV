@@ -7,7 +7,7 @@
  * / EXCEPTION results once Sandata has processed them.
  *
  * Authentication is HTTP Basic; multi-agency (MCO / vendor) transmissions add an
- * `EntityGuid` header. The client performs NO validation or persistence — it is
+ * `EntityGuid` header. The client performs NO validation or persistence, it is
  * pure transport; the transmission service owns sequencing, state, and retries.
  */
 
@@ -98,7 +98,7 @@ export class SandataApiClient {
     }
 
     // Sandata returns 404 (or a "not ready" message) while the batch is still
-    // being processed — that is not an error, just keep polling.
+    // being processed, that is not an error, just keep polling.
     if (res.status === 404) return { kind: 'not_ready' };
     if (!res.ok) {
       const detail = res.text ? res.text.slice(0, 300) : `HTTP ${res.status}`;

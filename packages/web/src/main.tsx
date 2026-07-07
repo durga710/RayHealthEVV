@@ -17,10 +17,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       </BrowserRouter>
     </AuthProvider>
     {/*
-      Vercel Analytics — public marketing pageviews only. Vercel is a
+      Vercel Analytics, public marketing pageviews only. Vercel is a
       subprocessor whose BAA is still in progress (see /privacy, /trust), so
-      authenticated route paths — which carry entity identifiers like
-      /admin/audit-packet/:visitId — must never reach it. `beforeSend` drops
+      authenticated route paths, which carry entity identifiers like
+      /admin/audit-packet/:visitId, must never reach it. `beforeSend` drops
       every event on an authenticated prefix, so no ID-bearing path is
       disclosed to a non-BAA vendor even after real PHI enters the system.
     */}

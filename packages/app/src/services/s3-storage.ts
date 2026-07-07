@@ -4,7 +4,7 @@
  *
  * AWS S3 is used because it is the project's BAA-covered storage vendor (the
  * same AWS account already used for Bedrock and SES). Objects are written with
- * server-side encryption (SSE-S3 / AES-256) and are never public — reads go
+ * server-side encryption (SSE-S3 / AES-256) and are never public, reads go
  * through short-lived presigned URLs only.
  *
  * Credentials follow the same env convention as the email client: explicit

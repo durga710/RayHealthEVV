@@ -13,7 +13,7 @@ interface WorkflowStepperProps {
 }
 
 /**
- * A numbered step progress indicator — built for Go-Live Readiness / onboarding
+ * A numbered step progress indicator, built for Go-Live Readiness / onboarding
  * flows where an owner needs to see exactly what's done, what's next, and
  * what's blocked. Purely presentational (no navigation); the checklist
  * itself decides what "complete"/"blocked" means.

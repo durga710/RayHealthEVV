@@ -5,7 +5,7 @@
  * the dashboard shows "Clock in", "In progress" (resume), or "Completed".
  *
  * Without this, the app dropped the server's open-visit info and always offered
- * "Clock in" — so a caregiver who reopened the app mid-visit could double clock
+ * "Clock in", so a caregiver who reopened the app mid-visit could double clock
  * in and had no way to clock OUT. Resuming requires knowing the open visit id.
  */
 

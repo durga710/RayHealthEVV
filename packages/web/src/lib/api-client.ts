@@ -41,7 +41,7 @@ async function extractError(response: Response): Promise<ApiError> {
       }
     }
   } catch {
-    // Body wasn't JSON — leave message undefined.
+    // Body wasn't JSON, leave message undefined.
   }
   return new ApiError(response.status, message, body);
 }

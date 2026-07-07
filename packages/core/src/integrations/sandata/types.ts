@@ -1,9 +1,9 @@
 /**
- * RayHealth EVV → Sandata Alt EVV Integration — type definitions.
+ * RayHealth EVV → Sandata Alt EVV Integration, type definitions.
  *
  * Ported from the Sandata Open EVV / Alt EVV REST API reference (PA Alt EVV
  * Technical Specification v1.4). Field names below are CASE SENSITIVE and must
- * match Sandata's published specification EXACTLY — do not rename or recase.
+ * match Sandata's published specification EXACTLY, do not rename or recase.
  * Confirm required/optional flags and PA-specific code values against the
  * credentialed PA addendum before production.
  */
@@ -36,14 +36,14 @@ export enum SandataCallType {
   OTHER = 'Other',
 }
 
-// ── CLIENT entity (CMS element #2 — individual receiving service) ────────────
+// ── CLIENT entity (CMS element #2, individual receiving service) ────────────
 
 export interface SandataClient {
   /** Sandata-assigned payer ID (from implementation). */
   PayerID?: string;
   PayerProgram?: string;
 
-  /** RayHealth internal client ID — reused as the link key on visits. */
+  /** RayHealth internal client ID, reused as the link key on visits. */
   ClientCustomID: string;
 
   /** Member / Medicaid identifier. */
@@ -76,10 +76,10 @@ export interface SandataClientAddress {
   ClientLongitude?: number;
 }
 
-// ── EMPLOYEE entity (CMS element #5 — individual providing service) ──────────
+// ── EMPLOYEE entity (CMS element #5, individual providing service) ──────────
 
 export interface SandataEmployee {
-  /** RayHealth internal caregiver ID — reused as the link key on visits. */
+  /** RayHealth internal caregiver ID, reused as the link key on visits. */
   EmployeeCustomID: string;
 
   /** Identifier or Medicaid ID for the caregiver. */
@@ -105,7 +105,7 @@ export interface SandataVisit {
   /** MUST reference an already-accepted Employee. */
   EmployeeCustomID: string;
 
-  /** CMS #1 — type of service. */
+  /** CMS #1, type of service. */
   ProcedureCode: string; // HCPCS, per PA addendum
   Modifier1?: string;
   Modifier2?: string;
@@ -114,7 +114,7 @@ export interface SandataVisit {
 
   VisitTimeZone?: string;
 
-  /** CMS #6 — adjusted in/out if manual, else actual. UTC. */
+  /** CMS #6, adjusted in/out if manual, else actual. UTC. */
   AdjInDateTime?: string; // ISO 8601 UTC
   AdjOutDateTime?: string; // ISO 8601 UTC
 
@@ -131,7 +131,7 @@ export interface SandataVisit {
   /** Acknowledgements for resolvable exceptions. */
   Exceptions?: SandataExceptionAck[];
 
-  /** Conditional — present when visit was manually entered/adjusted. */
+  /** Conditional, present when visit was manually entered/adjusted. */
   VisitChanges?: SandataVisitChange[];
 
   SequenceID: number;
@@ -139,11 +139,11 @@ export interface SandataVisit {
 
 export interface SandataCall {
   CallExternalID: string;
-  /** CMS #6 — event timestamp. UTC. */
+  /** CMS #6, event timestamp. UTC. */
   CallDateTime: string;
   CallAssignment?: 'Time In' | 'Time Out';
   CallType: SandataCallType;
-  /** CMS #4 — location. Required for Mobile calls. */
+  /** CMS #4, location. Required for Mobile calls. */
   CallLatitude?: number;
   CallLongitude?: number;
   /** Required if CallType = Telephony. */
@@ -176,10 +176,10 @@ export interface SandataVisitChange {
 
 // ── API request / response envelopes ─────────────────────────────────────────
 
-/** A batch of 1–5,000 records of a single entity type. */
+/** A batch of 1-5,000 records of a single entity type. */
 export type SandataBatch<T> = T[];
 
-/** Immediate response to a POST — NOT a validation result. */
+/** Immediate response to a POST. NOT a validation result. */
 export interface SandataPostResponse {
   uuid: string;
   status: string; // e.g. "RECEIVED"
@@ -217,6 +217,6 @@ export interface SandataAltEvvConfig {
   maxBatchSize: number; // 5000
   /** Delay before first status poll (Sandata recommends ~5 min). */
   statusPollDelayMs: number; // 300000
-  /** 'UAT' | 'PROD' — recorded on each transmission row. */
+  /** 'UAT' | 'PROD', recorded on each transmission row. */
   environment: 'UAT' | 'PROD';
 }

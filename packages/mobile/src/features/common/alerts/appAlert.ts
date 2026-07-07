@@ -1,6 +1,6 @@
 import type { AlertButton, AlertOptions, QueuedDialog, QueuedToast, ToastOptions } from './types';
 
-// Module-level controller registered by <AppAlertProvider/> in app/_layout.tsx —
+// Module-level controller registered by <AppAlertProvider/> in app/_layout.tsx , 
 // mirrors the setUnauthorizedHandler pattern in ../../../lib/api-client.ts.
 // An imperative singleton (not a hook) is required, not just convenient:
 // notification-permissions.ts calls showAppAlert from a plain async module

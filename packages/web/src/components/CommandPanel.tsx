@@ -4,7 +4,7 @@ import { Icon } from './Icon.js';
 interface CommandPanelProps {
   /** Small uppercase label, e.g. "AI briefing". */
   eyebrow: ReactNode;
-  /** Decorative glyph next to the eyebrow — purely visual, hidden from AT. */
+  /** Decorative glyph next to the eyebrow, purely visual, hidden from AT. */
   icon?: ReactNode;
   /** Right-aligned control, usually a call-to-action button. */
   action?: ReactNode;

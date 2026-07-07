@@ -115,7 +115,7 @@ export default function TrainingScreen() {
       if (row.course.externalUrl) {
         await Linking.openURL(row.course.externalUrl);
       } else {
-        showAppToast({ message: "You're on your way — this course is now in progress.", variant: 'success', icon: 'play-circle' });
+        showAppToast({ message: "You're on your way, this course is now in progress.", variant: 'success', icon: 'play-circle' });
       }
       await load();
     } catch {

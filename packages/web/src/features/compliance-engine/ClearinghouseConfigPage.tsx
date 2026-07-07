@@ -99,7 +99,7 @@ export function ClearinghouseConfigPage() {
   };
 
   const kpis: KpiTile[] = [
-    { label: 'Transport', value: config ? (config.transport || 'sftp').toUpperCase() : '—', tone: 'neutral' },
+    { label: 'Transport', value: config ? (config.transport || 'sftp').toUpperCase() : ', ', tone: 'neutral' },
     { label: 'Endpoint', value: config?.endpoint ? 'Set' : 'Missing', tone: config?.endpoint ? 'success' : 'warning' },
     { label: 'Credentials', value: config?.hasCredentials ? 'Stored' : 'Missing', tone: config?.hasCredentials ? 'success' : 'warning' },
     { label: 'Status', value: config?.enabled ? 'Enabled' : 'Disabled', tone: config?.enabled ? 'success' : 'neutral' },

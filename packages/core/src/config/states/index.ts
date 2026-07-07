@@ -1,5 +1,5 @@
 /**
- * State registry — single source of truth for per-state operational config.
+ * State registry, single source of truth for per-state operational config.
  *
  * Lookup: `getStateConfig('PA')` returns the StateConfig.
  * Add a state: create a new file in this folder, export from here.
@@ -23,7 +23,7 @@ const REGISTRY: Record<string, StateConfig> = {
 
 /**
  * Look up a state config by 2-letter code. Returns `undefined` for unknown
- * states — callers should error explicitly rather than silently falling back.
+ * states, callers should error explicitly rather than silently falling back.
  */
 export function getStateConfig(code: string): StateConfig | undefined {
   return REGISTRY[code.toUpperCase()]

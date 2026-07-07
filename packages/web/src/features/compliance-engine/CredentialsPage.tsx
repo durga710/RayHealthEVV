@@ -126,10 +126,10 @@ export function CredentialsPage() {
         },
       ]
     : [
-        { label: 'Active credentials', value: '—' },
-        { label: 'Expiring 30d', value: '—', tone: 'warning' },
-        { label: 'Expiring 90d', value: '—' },
-        { label: 'Expired (active list)', value: '—', tone: 'warning', hint: 'must be renewed' },
+        { label: 'Active credentials', value: ', ' },
+        { label: 'Expiring 30d', value: ', ', tone: 'warning' },
+        { label: 'Expiring 90d', value: ', ' },
+        { label: 'Expired (active list)', value: ', ', tone: 'warning', hint: 'must be renewed' },
       ];
 
   return (

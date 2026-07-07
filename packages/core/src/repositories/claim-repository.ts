@@ -39,7 +39,7 @@ export interface ClaimListFilter {
   offset?: number;
 }
 
-/** A claim header plus its line count (no lines) — for list views. */
+/** A claim header plus its line count (no lines), for list views. */
 export interface ClaimSummary extends Omit<Claim, 'lines'> {
   lineCount: number;
 }
@@ -273,7 +273,7 @@ export class ClaimRepository {
 
   /**
    * Which of these patient-control-numbers match an existing claim for the
-   * agency. Read-only — used to preview an 835 before posting it.
+   * agency. Read-only, used to preview an 835 before posting it.
    */
   async matchControlNumbers(agencyId: string, controlNumbers: string[]): Promise<Set<string>> {
     const unique = [...new Set(controlNumbers.filter(Boolean))];
@@ -326,8 +326,8 @@ export class ClaimRepository {
 
   /**
    * Post an 835 remittance: for every CLP claim in the file, record a
-   * `claim_remittances` row and — when its control_number matches one of our
-   * claims — advance that claim's status (paid / denied / rejected), paid_cents,
+   * `claim_remittances` row and, when its control_number matches one of our
+   * claims, advance that claim's status (paid / denied / rejected), paid_cents,
    * payer_claim_id, and a CAS-derived status_reason. Unmatched postings are
    * kept with claim_id NULL so nothing in the file is silently dropped. Runs in
    * one transaction (all-or-nothing).
@@ -397,7 +397,7 @@ export class ClaimRepository {
   }
 
   /**
-   * Units already billed (non-void claims) per client/service-code/date — used
+   * Units already billed (non-void claims) per client/service-code/date, used
    * to reconstruct remaining authorized units across prior generation runs.
    */
   async getBilledLineUnits(agencyId: string): Promise<BilledLineUnits[]> {

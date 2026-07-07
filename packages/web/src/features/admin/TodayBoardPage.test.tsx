@@ -58,7 +58,7 @@ describe('TodayBoardPage', () => {
 
     await screen.findByText('Anita Late');
 
-    // Click the "Completed" filter tab — only the completed visit should remain.
+    // Click the "Completed" filter tab, only the completed visit should remain.
     fireEvent.click(screen.getByRole('button', { name: /Completed/i }));
 
     await waitFor(() => expect(screen.queryByText('Anita Late')).not.toBeInTheDocument());

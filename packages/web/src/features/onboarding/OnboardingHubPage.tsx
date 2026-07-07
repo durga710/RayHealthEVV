@@ -53,7 +53,7 @@ function formatStatus(s: string): string {
 }
 
 function formatDate(iso?: string): string {
-  if (!iso) return '—';
+  if (!iso) return ', ';
   try {
     return new Date(iso).toLocaleDateString('en-US', {
       month: 'short',
@@ -387,7 +387,7 @@ export function OnboardingHubPage() {
                           {a.aiScore}/10
                         </span>
                       ) : (
-                        '—'
+                        ', '
                       )}
                     </td>
                   </tr>

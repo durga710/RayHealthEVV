@@ -12,7 +12,7 @@
  *
  * The schema lives in core so the LLM-side prompt-builder, the UI's
  * confirm-block renderer, and the backend executor all reference the same
- * shape. If the schema changes, all three need a coordinated update — that's
+ * shape. If the schema changes, all three need a coordinated update, that's
  * intentional.
  */
 
@@ -32,7 +32,7 @@ export const enrollCaregiverActionSchema = z.object({
 export type EnrollCaregiverAction = z.infer<typeof enrollCaregiverActionSchema>
 
 // ----- send_reminder -----
-// Stub for v2 — logs the intent + writes audit, but doesn't actually send.
+// Stub for v2, logs the intent + writes audit, but doesn't actually send.
 // Real send (email/push) wires up when the notification service is in place.
 
 export const sendReminderActionSchema = z.object({
@@ -57,7 +57,7 @@ export type CopilotAction = z.infer<typeof copilotActionSchema>
 export interface CopilotActionResult {
   /** Echo of the action that ran, after schema-level defaults applied. */
   action: CopilotAction
-  /** Action-specific outcome data — caller can render or ignore. */
+  /** Action-specific outcome data, caller can render or ignore. */
   outcome: Record<string, unknown>
   /** Human-readable summary for the UI. */
   summary: string

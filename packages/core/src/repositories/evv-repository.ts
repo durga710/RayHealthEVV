@@ -14,7 +14,7 @@ export class EvvRepository {
 
   /**
    * The open (not-yet-clocked-out) visit for an assignment, if any. Used to
-   * stop a second concurrent clock-in on the same assignment — duplicate open
+   * stop a second concurrent clock-in on the same assignment, duplicate open
    * visits produce overlapping/duplicate billed EVV time. Returns undefined
    * when there is no open visit.
    */
@@ -33,7 +33,7 @@ export class EvvRepository {
         id: visit.id ?? crypto.randomUUID(),
         assignment_id: visit.assignmentId,
         caregiver_id: visit.caregiverId,
-        // Cures-Act #1 / #2 — service code and beneficiary snapshotted at
+        // Cures-Act #1 / #2, service code and beneficiary snapshotted at
         // clock-in. Both are nullable in the column but the Cures-Act
         // submission to PA aggregators requires both, so the route layer
         // supplies them on creation.
@@ -50,7 +50,7 @@ export class EvvRepository {
 
   /**
    * Update a visit only if it belongs to the agency. Returns null when the
-   * visit does not exist OR is on another tenant — callers cannot distinguish
+   * visit does not exist OR is on another tenant, callers cannot distinguish
    * the two cases (intentional: leaks neither existence nor tenancy).
    */
   async updateVisit(
@@ -80,7 +80,7 @@ export class EvvRepository {
 
   /**
    * Visits within an agency, most-recent first. This table grows without bound
-   * over time, and this method backs a display list (GET /evv/visits) — not the
+   * over time, and this method backs a display list (GET /evv/visits), not the
    * aggregator export (see getVisitsForExport, which is date-ranged). A generous
    * safety ceiling caps the response so a single request can't stream the entire
    * multi-year visit corpus (PHI + GPS) or exhaust memory as the table grows;
@@ -150,7 +150,7 @@ export class EvvRepository {
   }
 
   /**
-   * COUNT of visits in an agency — for dashboard tiles. Avoids pulling every
+   * COUNT of visits in an agency, for dashboard tiles. Avoids pulling every
    * (PHI-bearing) visit row across the wire just to read `.length`.
    */
   async countVisitsForAgency(agencyId: string): Promise<number> {
@@ -318,7 +318,7 @@ export class EvvRepository {
    * cannot update a visit from a different agency.
    */
   /**
-   * Bulk-mark every verified visit in a date range as `submitted` — the
+   * Bulk-mark every verified visit in a date range as `submitted`, the
    * write-back for "this batch was sent to the Sandata aggregator". Only
    * advances visits that are not yet in the aggregator pipeline
    * (sandata_status IS NULL or 'pending'); never downgrades an already

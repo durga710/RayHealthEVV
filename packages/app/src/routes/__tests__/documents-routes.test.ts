@@ -31,7 +31,7 @@ function stubClientInAgency(belongs: boolean) {
   );
 }
 
-describe('documents routes — prior-auth upload', () => {
+describe('documents routes, prior-auth upload', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('blocks caregivers (client.write required)', async () => {

@@ -3,7 +3,7 @@ import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
 
 /**
  * Platform › AI automation.
- * ACCURATE framing: the RayHealth copilot is a SHIPPED, LIVE feature — a
+ * ACCURATE framing: the RayHealth copilot is a SHIPPED, LIVE feature, a
  * Claude-powered conversational assistant for admins and coordinators. It
  * runs human-in-the-loop by design: the model only *proposes* a structured
  * action; a person reviews and confirms before anything happens. Today it can
@@ -43,7 +43,7 @@ interface Faq {
 const capabilities: readonly Capability[] = [
   {
     title: 'A conversational copilot',
-    body: 'Admins and coordinators ask in plain language — “enroll Maria in EVV Fundamentals” — and the copilot answers, then proposes the structured action to carry it out.',
+    body: 'Admins and coordinators ask in plain language, “enroll Maria in EVV Fundamentals”, and the copilot answers, then proposes the structured action to carry it out.',
     i: mkic(<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></>),
   },
   {
@@ -53,12 +53,12 @@ const capabilities: readonly Capability[] = [
   },
   {
     title: 'Send a caregiver reminder',
-    body: 'Ask the copilot to remind a caregiver — a lapsing credential, an upcoming visit, a required course — and after you confirm, it sends a branded email to the caregiver on file. Email delivery is live today; push and SMS are next.',
+    body: 'Ask the copilot to remind a caregiver, a lapsing credential, an upcoming visit, a required course, and after you confirm, it sends a branded email to the caregiver on file. Email delivery is live today; push and SMS are next.',
     i: mkic(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></>),
   },
   {
     title: 'Grounded in your agency',
-    body: 'The copilot is given your agency context — active caregivers and available courses — so its suggestions are tied to real records in your account, not generic guesses.',
+    body: 'The copilot is given your agency context, active caregivers and available courses, so its suggestions are tied to real records in your account, not generic guesses.',
     i: mkic(<><path d="M3 3v18h18" /><rect x="7" y="11" width="3" height="6" /><rect x="13" y="7" width="3" height="10" /></>),
   },
   {
@@ -68,12 +68,12 @@ const capabilities: readonly Capability[] = [
   },
   {
     title: 'Every interaction logged',
-    body: 'Each question writes a copilot.query audit event, and each decision writes a confirmed or declined event — so there is a defensible record of what was asked and what a person approved.',
+    body: 'Each question writes a copilot.query audit event, and each decision writes a confirmed or declined event, so there is a defensible record of what was asked and what a person approved.',
     i: mkic(<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M9 15l2 2 4-4" /></>),
   },
   {
     title: 'Opt-in per agency',
-    body: 'The copilot is off until you turn it on. Each agency enables it through its plan — a fast model on Starter, a more capable model on Pro, running on Claude via Amazon Bedrock — so you decide whether AI is part of your workflow.',
+    body: 'The copilot is off until you turn it on. Each agency enables it through its plan, a fast model on Starter, a more capable model on Pro, running on Claude via Amazon Bedrock, so you decide whether AI is part of your workflow.',
     i: mkic(<><path d="M12 2 4 5v6c0 6 8 10 8 10s8-4 8-10V5z" /><path d="M9 12l2 2 4-4" /></>),
   },
 ];
@@ -81,12 +81,12 @@ const capabilities: readonly Capability[] = [
 const trustPoints: readonly TrustPoint[] = [
   {
     t: 'You approve, not the AI',
-    b: 'The model proposes a structured action; a coordinator confirms it before it runs. The AI has no authority to change your data on its own — the decision is always a person’s.',
+    b: 'The model proposes a structured action; a coordinator confirms it before it runs. The AI has no authority to change your data on its own, the decision is always a person’s.',
     i: mkic(<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></>),
   },
   {
     t: 'Prompts are hashed, not stored',
-    b: 'When you ask the copilot a question, the prompt is recorded as a hash in the audit log — never kept in plaintext — so you get an auditable trail without warehousing what your team typed.',
+    b: 'When you ask the copilot a question, the prompt is recorded as a hash in the audit log, never kept in plaintext, so you get an auditable trail without warehousing what your team typed.',
     i: mkic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>),
   },
   {
@@ -100,7 +100,7 @@ const roadmap: readonly RoadmapItem[] = [
   {
     status: 'Coming soon',
     title: 'Push & SMS reminders',
-    body: 'Email reminder dispatch is live today — the copilot sends a branded email after you confirm. Push and SMS are the next delivery channels: the intent, confirmation, and audit trail are already wired; we’re connecting the push/SMS providers.',
+    body: 'Email reminder dispatch is live today, the copilot sends a branded email after you confirm. Push and SMS are the next delivery channels: the intent, confirmation, and audit trail are already wired; we’re connecting the push/SMS providers.',
   },
   {
     status: 'On the roadmap',
@@ -110,7 +110,7 @@ const roadmap: readonly RoadmapItem[] = [
   {
     status: 'On the roadmap',
     title: 'Claim-readiness triage',
-    body: 'Flagging what a payer is likely to reject before a claim is submitted. On our roadmap — and, like everything here, it would stay human-in-the-loop.',
+    body: 'Flagging what a payer is likely to reject before a claim is submitted. On our roadmap, and, like everything here, it would stay human-in-the-loop.',
   },
 ];
 
@@ -125,15 +125,15 @@ const faqs: readonly Faq[] = [
   },
   {
     q: 'Does the AI ever act on its own?',
-    a: 'No. The copilot only proposes. It returns an answer and, when relevant, a structured action — but a person reviews and confirms that action before anything happens. If you decline, nothing is executed. Human-in-the-loop is enforced, not optional.',
+    a: 'No. The copilot only proposes. It returns an answer and, when relevant, a structured action, but a person reviews and confirms that action before anything happens. If you decline, nothing is executed. Human-in-the-loop is enforced, not optional.',
   },
   {
     q: 'How do I turn it on?',
-    a: 'The copilot is opt-in per agency and requires enabling the AI plan. It’s powered by Claude on Amazon Bedrock — a fast model on the Starter plan and a more capable model on the Pro plan. Until your agency’s plan enables it, the copilot stays off. See pricing for the plan details.',
+    a: 'The copilot is opt-in per agency and requires enabling the AI plan. It’s powered by Claude on Amazon Bedrock, a fast model on the Starter plan and a more capable model on the Pro plan. Until your agency’s plan enables it, the copilot stays off. See pricing for the plan details.',
   },
   {
     q: 'What does it know about my agency, and what gets stored?',
-    a: 'The copilot is given context about your agency — active caregivers and available courses — so its suggestions are grounded in your real records. Every question is audit-logged as a copilot.query event with the prompt stored as a hash, never in plaintext, and every confirm or decline is logged too.',
+    a: 'The copilot is given context about your agency, active caregivers and available courses, so its suggestions are grounded in your real records. Every question is audit-logged as a copilot.query event with the prompt stored as a hash, never in plaintext, and every confirm or decline is logged too.',
   },
 ];
 
@@ -174,7 +174,7 @@ function CopilotVisual() {
           Maria Santos is an active caregiver at your agency and EVV Fundamentals is available. I’ve prepared the enrollment for your review.
         </div>
 
-        {/* Proposed action card — review required */}
+        {/* Proposed action card, review required */}
         <div style={{ border: '1px solid var(--accent2)', borderRadius: 12, padding: 14, background: 'var(--accent2-tint)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.85rem' }}>Proposed action</div>
@@ -202,7 +202,7 @@ function CopilotVisual() {
 
 const loopSteps: readonly { n: string; t: string; b: string }[] = [
   { n: '01', t: 'You ask', b: 'A coordinator types a request in natural language. The copilot has your agency context to ground its answer.' },
-  { n: '02', t: 'It proposes', b: 'Claude answers and, when there’s an action to take, returns a structured proposal — validated against your agency first.' },
+  { n: '02', t: 'It proposes', b: 'Claude answers and, when there’s an action to take, returns a structured proposal, validated against your agency first.' },
   { n: '03', t: 'You approve', b: 'You review the proposed action and confirm or decline. Nothing runs until a person says yes.' },
   { n: '04', t: 'It’s recorded', b: 'The question and your decision are written to the audit log, with the prompt stored as a hash.' },
 ];
@@ -224,7 +224,7 @@ export function AiAutomationPage() {
           <h1 className="mk-h1">An AI copilot that proposes. Your team approves.</h1>
           <p className="mk-lead">
             RayHealth&rsquo;s copilot is live in the app today. Ask it in plain language and it answers,
-            grounded in your agency&rsquo;s caregivers and courses — then proposes a structured action for a
+            grounded in your agency&rsquo;s caregivers and courses, then proposes a structured action for a
             person to review. It&rsquo;s <strong>human-in-the-loop by design</strong>: the AI never acts on its
             own, and every interaction is audit-logged. Powered by Claude on Amazon Bedrock.
           </p>
@@ -244,12 +244,12 @@ export function AiAutomationPage() {
               <h3>Ask in plain language. Approve the action.</h3>
               <p>
                 The copilot is conversational. A coordinator asks a question; Claude answers and, when there&rsquo;s
-                something to do, returns a proposed action. A person confirms it before anything happens — and the
+                something to do, returns a proposed action. A person confirms it before anything happens, and the
                 whole exchange is written to the audit trail.
               </p>
               <ul className="mk-checks">
                 <li><span className="mk-ck">{mkic(MK_CHECK)}</span>Natural-language questions, grounded in your agency</li>
-                <li><span className="mk-ck">{mkic(MK_CHECK)}</span>The AI proposes — it never executes on its own</li>
+                <li><span className="mk-ck">{mkic(MK_CHECK)}</span>The AI proposes, it never executes on its own</li>
                 <li><span className="mk-ck">{mkic(MK_CHECK)}</span>You confirm or decline; nothing runs until you do</li>
                 <li><span className="mk-ck">{mkic(MK_CHECK)}</span>Ask and decision both logged, prompt stored as a hash</li>
               </ul>
@@ -277,7 +277,7 @@ export function AiAutomationPage() {
           <h2 className="mk-h2">What the copilot does now.</h2>
           <p className="mk-deck">
             Shipped and available in-app to admins and coordinators on agencies that have enabled it. No vaporware
-            on this list — everything here works today.
+            on this list, everything here works today.
           </p>
           <div className="mk-grid">
             {capabilities.map((c) => (
@@ -291,7 +291,7 @@ export function AiAutomationPage() {
         </div>
       </section>
 
-      {/* Built on trust — dark section */}
+      {/* Built on trust, dark section */}
       <section className="mk-sec mk-dark">
         <div className="mk-wrap">
           <div className="mk-center">
@@ -318,13 +318,13 @@ export function AiAutomationPage() {
         </div>
       </section>
 
-      {/* On the roadmap — clearly separated */}
+      {/* On the roadmap, clearly separated */}
       <section className="mk-sec">
         <div className="mk-wrap">
           <p className="mk-eylabel" style={{ color: 'var(--accent2-deep)' }}>Not yet live</p>
           <h2 className="mk-h2">On the roadmap.</h2>
           <p className="mk-deck">
-            We&rsquo;d rather be clear about what hasn&rsquo;t shipped than oversell it. These are honestly scoped — and
+            We&rsquo;d rather be clear about what hasn&rsquo;t shipped than oversell it. These are honestly scoped, and
             every one of them would stay human-in-the-loop.
           </p>
           <div className="mk-grid">
@@ -358,7 +358,7 @@ export function AiAutomationPage() {
             <h2>See the copilot, live.</h2>
             <p>
               Book a walkthrough and we&rsquo;ll show you the copilot answer a real question and propose an action you
-              approve — then check the pricing plan that turns it on for your agency.
+              approve, then check the pricing plan that turns it on for your agency.
             </p>
             <div className="mk-herocta">
               <Link to="/demo" className="mk-btn mk-white">Book a demo</Link>

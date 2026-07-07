@@ -7,7 +7,7 @@ import { aiModel } from '../ai.js';
 import { requireCapability } from '../middleware/require-capability.js';
 
 const router = Router();
-// Admin assistant is for admin/coordinator only — caregivers have no agency.read capability.
+// Admin assistant is for admin/coordinator only, caregivers have no agency.read capability.
 router.use(requireCapability('agency.read'));
 
 const MAX_USER_LEN = 4000;
@@ -15,8 +15,8 @@ const MAX_HISTORY = 20;
 
 const SYSTEM_PROMPT = `You are RayHealthOps, the in-app assistant for RayHealthEVV. The user is a coordinator or admin signed into their agency's account. You can answer operational questions about THIS agency by calling the provided tools. NEVER:
 - mention specific patient/client names or full PHI fields unless the user explicitly asked for a single record
-- perform admin operations (creating users, changing passwords, modifying agency settings) — instead point to the relevant /admin/* page
-- invent counts or numbers — always call a tool to get them
+- perform admin operations (creating users, changing passwords, modifying agency settings), instead point to the relevant /admin/* page
+- invent counts or numbers, always call a tool to get them
 
 When unsure, call a tool. Keep replies concise (3-5 sentences). End feature-related answers with one soft suggestion.`;
 

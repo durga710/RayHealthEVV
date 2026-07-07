@@ -23,7 +23,7 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable(TABLE, (table) => {
     table.uuid('agency_id').primary().references('id').inTable('agencies').onDelete('CASCADE')
-    // 'sandata' | 'hhaexchange' | 'none' — kept as text rather than an
+    // 'sandata' | 'hhaexchange' | 'none', kept as text rather than an
     // enum so future aggregators (state-run portals etc.) can be added
     // without a migration.
     table.string('aggregator', 16).notNullable().defaultTo('none')

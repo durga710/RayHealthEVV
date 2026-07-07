@@ -2,10 +2,10 @@
  * Provider-agnostic email client used by the invite flow.
  *
  * Provider selection (first match wins):
- *   1. SMTP/Gmail — set GMAIL_USER + GMAIL_APP_PASSWORD in Vercel.
- *   2. Resend — set RESEND_API_KEY in Vercel environment variables.
- *   3. Amazon SES — set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY.
- *   4. No-op fallback — returns EMAIL_NOT_CONFIGURED.
+ *   1. SMTP/Gmail, set GMAIL_USER + GMAIL_APP_PASSWORD in Vercel.
+ *   2. Resend, set RESEND_API_KEY in Vercel environment variables.
+ *   3. Amazon SES, set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY.
+ *   4. No-op fallback, returns EMAIL_NOT_CONFIGURED.
  */
 
 import nodemailer from 'nodemailer';
@@ -239,13 +239,13 @@ function createSesClient(client: SESv2Client, from: string): EmailClient {
  * Construct the email client from environment variables.
  *
  * Provider selection (first match wins):
- *   RESEND_API_KEY         — Resend (preferred, already set in Vercel)
+ *   RESEND_API_KEY        . Resend (preferred, already set in Vercel)
  *   AWS_ACCESS_KEY_ID +
- *   AWS_SECRET_ACCESS_KEY  — Amazon SES fallback
+ *   AWS_SECRET_ACCESS_KEY . Amazon SES fallback
  *
  * Optional:
- *   EMAIL_FROM     — override sender address
- *   AWS_SES_REGION — override SES region (default: us-east-1)
+ *   EMAIL_FROM    , override sender address
+ *   AWS_SES_REGION, override SES region (default: us-east-1)
  */
 export function createEmailClient(): EmailClient {
   const from = process.env.EMAIL_FROM?.trim() || DEFAULT_FROM;
@@ -278,7 +278,7 @@ export function createEmailClient(): EmailClient {
  * Build the absolute invite URL the recipient will click.
  *
  * Resolution order:
- *  1. Explicit `INVITE_URL_BASE` env (preferred — set in Vercel to
+ *  1. Explicit `INVITE_URL_BASE` env (preferred, set in Vercel to
  *     `https://rayhealthevv.com` or your custom domain).
  *  2. `APP_URL` env (already used elsewhere in the codebase).
  *  3. `BASE_URL` env (last fallback before localhost).

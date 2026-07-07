@@ -18,7 +18,7 @@ interface TimelineProps {
 }
 
 /**
- * A vertical event trail — built for audit-trail / audit-defense style views
+ * A vertical event trail, built for audit-trail / audit-defense style views
  * where every row is "who did what, when" and the chain of custody matters.
  * Purely presentational: it renders whatever items it's given in order, it
  * does not fetch, sort, or paginate.

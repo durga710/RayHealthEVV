@@ -24,7 +24,7 @@ const SEVERITY_LABEL: Record<AttentionSeverity, string> = {
 };
 
 /**
- * A single row in an "attention queue" — the master list of things a coordinator
+ * A single row in an "attention queue", the master list of things a coordinator
  * or owner needs to act on today. Every fear gets a queue (Agent 00 §5); this
  * is the shared row for that queue wherever it appears.
  */

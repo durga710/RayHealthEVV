@@ -2,7 +2,7 @@
  * Audit retention sweep.
  *
  * Moves audit_events rows older than the configured retention floor (default
- * 7 years — PA_RETENTION_YEARS, which exceeds the HIPAA §164.530(j)(2) 6-year
+ * 7 years. PA_RETENTION_YEARS, which exceeds the HIPAA §164.530(j)(2) 6-year
  * floor and is the conservative nationwide default) from the hot
  * `audit_events` table to the cold `audit_events_archive` table, then deletes
  * them from `audit_events`.
@@ -28,7 +28,7 @@ import { PA_RETENTION_YEARS } from '../config/pennsylvania.js'
 
 export interface AuditRetentionSweepOptions {
   /**
-   * Retention floor in years. Default {@link PA_RETENTION_YEARS} (7) — PA's
+   * Retention floor in years. Default {@link PA_RETENTION_YEARS} (7). PA's
    * statutory floor is the longest in the nation and exceeds the HIPAA
    * §164.530(j)(2) 6-year floor, so it is the conservative default that keeps
    * every state compliant.
@@ -126,7 +126,7 @@ interface ChunkResult {
 /**
  * Process one chunk inside a single transaction. The append-only trigger on
  * `audit_events` is temporarily disabled inside this transaction's scope
- * so we can DELETE rows — without ever permitting application code to do so.
+ * so we can DELETE rows, without ever permitting application code to do so.
  *
  * Postgres `SET LOCAL session_replication_role = replica` is scoped to the
  * transaction and reverts on commit/rollback. It is the standard pattern for

@@ -49,7 +49,7 @@ describe('AssignmentsPage', () => {
 
     render(<AssignmentsPage />);
 
-    // Templates and clients load in the same Promise.all — Morning Routine
+    // Templates and clients load in the same Promise.all. Morning Routine
     // appearing confirms all data is available.
     await screen.findByRole('option', { name: /Morning Routine/i });
 

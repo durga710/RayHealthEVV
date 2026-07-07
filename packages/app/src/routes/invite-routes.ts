@@ -44,12 +44,12 @@ interface DeliveryOutcome {
 }
 
 /**
- * Drive the email send + audit for one invite. Pure side-effects — never
+ * Drive the email send + audit for one invite. Pure side-effects, never
  * throws. Returns a small object the route handler can attach to the
  * response and the UI can switch on.
  *
  * NOTE: callers MUST pass `inviteUrl` already built via `buildInviteUrl()`.
- * We do not log it here and the audit payload deliberately omits it —
+ * We do not log it here and the audit payload deliberately omits it , 
  * the URL contains the share-token and is treated as the equivalent of
  * a temporary password.
  */
@@ -104,7 +104,7 @@ async function deliverInviteEmail(
 
   // EMAIL_NOT_CONFIGURED is a distinct UX outcome (operator hasn't set
   // AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY yet) rather than a transient
-  // failure — log it as a
+  // failure, log it as a
   // failure event so it shows up in the audit feed, but tag the
   // response with the dedicated status so the UI shows the manual-copy
   // fallback rather than a scary error.
@@ -138,14 +138,14 @@ async function deliverInviteEmail(
 }
 
 /**
- * Resend-email rate limit — 5 attempts per 15-min per IP.
+ * Resend-email rate limit, 5 attempts per 15-min per IP.
  *
  * Bounded so a compromised admin session can't be turned into a free
  * email-spam relay against an arbitrary inbox. Each call requires a
  * valid CSRF token + admin capability, but the rate limit is the
  * defense-in-depth layer if the other two are bypassed.
  *
- * Skipped under tests — supertest hits from the same IP and this
+ * Skipped under tests, supertest hits from the same IP and this
  * limiter is module-scoped, so cumulative test request counts could
  * trip it.
  */
@@ -160,19 +160,19 @@ const resendLimiter = rateLimit({
 
 /**
  * Admin/coordinator-only. Persists a `staff_invites` row and returns the
- * row id (which IS the share-token — UUID v4 has ~122 bits of entropy,
+ * row id (which IS the share-token. UUID v4 has ~122 bits of entropy,
  * enough to be unguessable). The admin shares the resulting URL with
  * the new staff member, who hits POST /invitations/accept with it.
  *
  * After the row is persisted we trigger the email send. The send is a
- * best-effort side-effect — its outcome is surfaced via `emailDelivery`
+ * best-effort side-effect, its outcome is surfaced via `emailDelivery`
  * in the response but never causes the request to fail. This keeps the
  * manual-copy fallback flow working when:
  *  - AWS SES credentials are unset (returns `emailDelivery: 'not_configured'`)
  *  - The upstream API is having a bad day (returns `'failed'`)
  *
  * Security note: we never log the invite URL or the access token in any
- * logger — they're equivalent to a temporary password.
+ * logger, they're equivalent to a temporary password.
  */
 router.post('/', requireCapability('staff.write'), async (req, res) => {
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -224,7 +224,7 @@ router.post('/', requireCapability('staff.write'), async (req, res) => {
 
     // ---------- Email delivery (best effort) ----------
     // Resolve display metadata for the email body. Both lookups are
-    // optional — if they fail we still send the email with sensible
+    // optional, if they fail we still send the email with sensible
     // defaults; the invite itself is already persisted.
     let agencyName = 'your care agency';
     let invitedByName: string | undefined;
@@ -281,11 +281,11 @@ router.post('/', requireCapability('staff.write'), async (req, res) => {
  *  - admin/coordinator capability (`staff.write`)
  *  - invite must exist and belong to the caller's agency
  *  - invite must be `status='pending'` (already-accepted invites can't
- *    be re-emailed — the token is single-use and burned)
+ *    be re-emailed, the token is single-use and burned)
  *  - invite must not be expired
  *  - rate-limited to 5 / 15-min per IP (anti-spam)
  *
- * The endpoint never returns the invite URL in the response body —
+ * The endpoint never returns the invite URL in the response body , 
  * the inviter already has the original via `acceptPath` if they need it.
  * Returning it here would create a second, less-audited disclosure path.
  */
@@ -309,7 +309,7 @@ router.post(
       const repo = new CaregiverRepository(db);
       const invite = await repo.findInviteById(inviteId);
 
-      // Generic 404 for cross-agency or unknown ids — don't confirm
+      // Generic 404 for cross-agency or unknown ids, don't confirm
       // whether an unknown UUID was ever issued.
       if (!invite || invite.agencyId !== req.auth.agencyId) {
         res.status(404).json({ message: 'invite not found' });
@@ -373,7 +373,7 @@ router.post(
   }
 );
 
-// DELETE /invites/:id — revoke one pending invite
+// DELETE /invites/:id, revoke one pending invite
 router.delete('/:id', requireCapability('staff.write'), async (req, res) => {
   const rawId = req.params.id;
   const inviteId = Array.isArray(rawId) ? rawId[0] : rawId;
@@ -412,7 +412,7 @@ router.delete('/:id', requireCapability('staff.write'), async (req, res) => {
   }
 });
 
-// DELETE /invites?all=true — revoke all pending invites for the agency
+// DELETE /invites?all=true, revoke all pending invites for the agency
 router.delete('/', requireCapability('staff.write'), async (req, res) => {
   if (req.query.all !== 'true') {
     res.status(400).json({ message: 'pass ?all=true to revoke all pending invites' });

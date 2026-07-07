@@ -180,7 +180,7 @@ export function EvvSubmissionPage() {
 
   return (
     <ComplianceModuleLayout
-      title="EVV Submission — Sandata"
+      title="EVV Submission. Sandata"
       tagline="Configure the agency's Sandata Alternate-EVV connection and transmit verified visits to the state aggregator."
       status="beta"
       kpis={kpis}
@@ -220,7 +220,7 @@ export function EvvSubmissionPage() {
 
         <div style={{ ...fieldRow, borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: '1rem' }}>
           <label style={label}>API credentials {config?.hasCredentials && <span style={{ color: 'var(--color-success, #047857)', fontWeight: 600 }}>· stored</span>}</label>
-          <div style={hint}>Provide either an API key, or a username + password — whichever Sandata issued for this agency.</div>
+          <div style={hint}>Provide either an API key, or a username + password, whichever Sandata issued for this agency.</div>
           <div style={{ marginTop: '0.6rem' }}>
             <input style={input} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="API key (optional)" autoComplete="off" type="password" />
           </div>
@@ -264,7 +264,7 @@ export function EvvSubmissionPage() {
           </button>
         </div>
         {submitError && banner('error', submitError)}
-        {submitResult && banner('success', `Batch ${submitResult.batchId} sent — ${submitResult.accepted} accepted, ${submitResult.submitted} submitted, ${submitResult.rejected} rejected.`)}
+        {submitResult && banner('success', `Batch ${submitResult.batchId} sent, ${submitResult.accepted} accepted, ${submitResult.submitted} submitted, ${submitResult.rejected} rejected.`)}
       </form>
     </ComplianceModuleLayout>
   );

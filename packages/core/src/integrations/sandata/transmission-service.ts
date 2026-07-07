@@ -11,7 +11,7 @@
  * employees, polls until they verify, then transmits visits.
  *
  * Pure orchestration over the `SandataStateRepo` interface + `SandataApiClient`
- * — no direct DB or HTTP — so it is fully unit-testable with in-memory fakes.
+ *, no direct DB or HTTP, so it is fully unit-testable with in-memory fakes.
  */
 
 import { createHash } from 'node:crypto';

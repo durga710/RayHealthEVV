@@ -6,7 +6,7 @@ import { SiteLayout } from './SiteLayout.js';
  * brand) to match the rest of the marketing site. Replaces the old
  * MarketingShell version.
  *
- * Polls three real backend probes — liveness, DB, audit pipeline — and
+ * Polls three real backend probes, liveness, DB, audit pipeline, and
  * renders a card per service plus a roll-up header. Refresh interval is
  * 30s. All three endpoints are unauthenticated and sit behind their own
  * rate limiter (60 / 15-min per IP).
@@ -53,7 +53,7 @@ interface ServiceCard {
 interface PageState {
   cards: ServiceCard[];
   loading: boolean;
-  /** True only when every single probe failed — distinguishes "API down"
+  /** True only when every single probe failed, distinguishes "API down"
    *  from "API up but DB stale". */
   allFailed: boolean;
   lastChecked: number | null;
@@ -78,7 +78,7 @@ async function fetchJsonSafe<T>(url: string): Promise<{ ok: boolean; body: T | n
 }
 
 function formatUptime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '—';
+  if (!Number.isFinite(seconds) || seconds < 0) return ', ';
   const d = Math.floor(seconds / 86_400);
   const h = Math.floor((seconds % 86_400) / 3_600);
   const m = Math.floor((seconds % 3_600) / 60);
@@ -89,7 +89,7 @@ function formatUptime(seconds: number): string {
 }
 
 function formatAge(seconds: number | null | undefined): string {
-  if (seconds == null) return '—';
+  if (seconds == null) return ', ';
   if (seconds < 60) return `${seconds}s ago`;
   if (seconds < 3_600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86_400) return `${Math.floor(seconds / 3_600)}h ago`;
@@ -117,7 +117,7 @@ function toCard(name: string, body: unknown, networkOk: boolean): ServiceCard {
       name,
       status: rawStatus === 'ok' ? 'ok' : 'error',
       metricLabel: 'Uptime',
-      metricValue: r.uptimeSeconds != null ? formatUptime(r.uptimeSeconds) : '—',
+      metricValue: r.uptimeSeconds != null ? formatUptime(r.uptimeSeconds) : ', ',
       detail: r.version ? `v${r.version}` : undefined,
       lastChecked: now,
     };
@@ -129,7 +129,7 @@ function toCard(name: string, body: unknown, networkOk: boolean): ServiceCard {
       name,
       status,
       metricLabel: 'Latency',
-      metricValue: r.latencyMs != null ? `${r.latencyMs} ms` : '—',
+      metricValue: r.latencyMs != null ? `${r.latencyMs} ms` : ', ',
       detail: status === 'down' ? 'Connection failed' : undefined,
       lastChecked: now,
     };
@@ -150,7 +150,7 @@ function toCard(name: string, body: unknown, networkOk: boolean): ServiceCard {
         ? formatAge(r.ageSeconds)
         : status === 'empty'
           ? 'No events yet'
-          : '—',
+          : ', ',
     detail: status === 'down' ? 'Probe failed' : undefined,
     lastChecked: now,
   };
@@ -173,9 +173,9 @@ function overallStatus(cards: ServiceCard[]): ProbeStatus {
 
 const OVERALL_TITLE: Record<ProbeStatus, string> = {
   ok: 'All systems operational.',
-  stale: 'Degraded — investigating.',
-  empty: 'Degraded — investigating.',
-  down: 'Outage — investigating.',
+  stale: 'Degraded, investigating.',
+  empty: 'Degraded, investigating.',
+  down: 'Outage, investigating.',
   error: 'Unable to reach status API.',
 };
 
@@ -268,7 +268,7 @@ export function StatusPage() {
                   ? `Last checked ${new Date(state.lastChecked).toLocaleTimeString()}`
                   : state.loading
                     ? 'Checking…'
-                    : '—'}
+                    : ', '}
               </span>
             </div>
 

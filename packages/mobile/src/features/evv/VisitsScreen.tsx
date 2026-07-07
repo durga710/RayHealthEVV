@@ -66,15 +66,15 @@ function formatDay(iso: string): string {
   const d = new Date(iso);
   return Number.isFinite(d.getTime())
     ? d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
-    : '—';
+    : ', ';
 }
 
 function formatTime(iso: string | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return ', ';
   const d = new Date(iso);
   return Number.isFinite(d.getTime())
     ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
-    : '—';
+    : ', ';
 }
 
 function startOfWeek(): number {
@@ -199,16 +199,16 @@ export default function VisitsScreen() {
         {client ? <Text style={styles.cardClient} numberOfLines={1}>{client}</Text> : null}
         <View style={styles.cardMetaRow}>
           <Text style={styles.cardTime}>
-            {formatTime(item.clockInTime)} – {inProgress ? 'now' : formatTime(item.clockOutTime)}
+            {formatTime(item.clockInTime)}, {inProgress ? 'now' : formatTime(item.clockOutTime)}
           </Text>
-          <Text style={styles.cardDuration}>{ms != null ? formatHm(ms) : '—'}</Text>
+          <Text style={styles.cardDuration}>{ms != null ? formatHm(ms) : ', '}</Text>
         </View>
         <Text style={styles.cardService}>{service}</Text>
         {item.status === 'flagged' ? (
           <View style={styles.flagRow}>
             <Ionicons name="alert-circle" size={14} color={colors.amber} />
             <Text style={styles.flagText} numberOfLines={2}>
-              {item.flagReason ?? 'Flagged for review — tap to see why'}
+              {item.flagReason ?? 'Flagged for review, tap to see why'}
             </Text>
             <Ionicons name="chevron-forward" size={14} color={colors.amber} />
           </View>

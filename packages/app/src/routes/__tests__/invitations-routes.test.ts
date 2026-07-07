@@ -267,7 +267,7 @@ describe('POST /invitations/accept (public redemption)', () => {
   });
 });
 
-describe('POST /invitations/accept — existing account at another agency (multi-agency link)', () => {
+describe('POST /invitations/accept, existing account at another agency (multi-agency link)', () => {
   const PASSWORD = 'existing-account-pw-2026';
   const validBody = {
     token: VALID_UUID,
@@ -347,7 +347,7 @@ describe('POST /invitations/accept — existing account at another agency (multi
     expect(mocks.caregiverCreate).toHaveBeenCalledWith(
       expect.objectContaining({ agencyId: 'agency-1', email: 'invitee@keystone.example' })
     );
-    // …and a membership links the EXISTING user — no new user account.
+    // …and a membership links the EXISTING user, no new user account.
     expect(mocks.membershipCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-existing',

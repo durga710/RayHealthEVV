@@ -4,13 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 import healthRoutes, { healthLimiter } from '../health-routes.js';
 
 /**
- * The health router is the only piece under test here — we mount it on a
+ * The health router is the only piece under test here, we mount it on a
  * bare Express app with a hand-rolled fake `db` so we don't have to spin
  * up the full createApp() (which would re-introduce authContext and force
  * us to mint tokens for every test). The fake db mirrors the small subset
  * of the knex surface that the router actually calls:
- *   - `db.raw('select 1')`                  — for /health/db
- *   - `db('audit_events').max(...).first()` — for /health/audit
+ *   - `db.raw('select 1')`                 , for /health/db
+ *   - `db('audit_events').max(...).first()`, for /health/audit
  */
 
 interface FakeDbOpts {

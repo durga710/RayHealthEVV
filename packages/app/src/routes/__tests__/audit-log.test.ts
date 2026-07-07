@@ -49,7 +49,7 @@ describe('audit logging middleware', () => {
     // Regression for the audit gap: /mobile/* was excluded from PHI_GET_PATHS,
     // so the most-frequent PHI read in the product (a caregiver opening their
     // day, which returns client names, home addresses, and home GPS) wrote no
-    // audit row — contradicting the published "every PHI read is logged" claim.
+    // audit row, contradicting the published "every PHI read is logged" claim.
     const createAuditEvent = vi.fn().mockResolvedValue({});
     vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create: createAuditEvent }) as unknown as core.AuditEventRepository);
     vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
@@ -72,7 +72,7 @@ describe('audit logging middleware', () => {
 
   it('records a genuine authorization denial (403) as permission.denied', async () => {
     // A caregiver lacks agency.read, so the Command Center board 403s. The
-    // board IS a PHI path (client names), so the middleware logs the attempt —
+    // board IS a PHI path (client names), so the middleware logs the attempt , 
     // and a real authz denial is the one case that stays `permission.denied`.
     const createAuditEvent = vi.fn().mockResolvedValue({});
     vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create: createAuditEvent }) as unknown as core.AuditEventRepository);
@@ -91,7 +91,7 @@ describe('audit logging middleware', () => {
   });
 
   it('records a non-authorization failure (500) with the lifecycle type + outcome=failure, not permission.denied', async () => {
-    // A 404/422/5xx is the same lifecycle action that failed — not an access
+    // A 404/422/5xx is the same lifecycle action that failed, not an access
     // denial. Tagging it permission.denied would pollute the forensic taxonomy.
     const createAuditEvent = vi.fn().mockResolvedValue({});
     vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create: createAuditEvent }) as unknown as core.AuditEventRepository);

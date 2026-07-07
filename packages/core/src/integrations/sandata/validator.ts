@@ -5,7 +5,7 @@
  * BEFORE mapping/posting. Two severities:
  *  - HARD_BLOCK: the record cannot be transmitted; fix the source data first.
  *  - SOFT_WARN:  Sandata will likely accept it but flag an exception (e.g. a
- *                mobile visit with no GPS) — surfaced, not blocking.
+ *                mobile visit with no GPS), surfaced, not blocking.
  *
  * `validate*` returns `ok = true` only when there are zero HARD_BLOCK issues.
  * Pure functions over domain entities; no I/O.

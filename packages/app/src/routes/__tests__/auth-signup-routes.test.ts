@@ -12,7 +12,7 @@ afterEach(() => {
 
 /**
  * Self-serve signup creates the agency in `review_status='pending'`. It must NOT
- * authenticate the new tenant — no session row, no session cookie — otherwise an
+ * authenticate the new tenant, no session row, no session cookie, otherwise an
  * unapproved agency could operate the system and bypass the super-admin review
  * gate. These tests lock that behavior in.
  */

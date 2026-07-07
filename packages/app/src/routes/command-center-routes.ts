@@ -57,14 +57,14 @@ async function composeCommandCenter(db: Knex, agencyId: string) {
 }
 
 /**
- * GET /command-center/summary — the agency owner's daily operating picture in a
+ * GET /command-center/summary, the agency owner's daily operating picture in a
  * single round-trip. Composes the existing agency-scoped aggregations (today's
  * visit ops, EVV exceptions, authorization oversight, credential compliance,
  * claim readiness, payroll reconciliation, training rollup, coverage forecast)
  * and runs the deterministic attention engine over them.
  *
  * agency.read = admin + coordinator only (caregivers/family are excluded). The
- * response is counts + a prioritized attention list — NO PHI rows are returned.
+ * response is counts + a prioritized attention list. NO PHI rows are returned.
  */
 router.get('/summary', requireCapability('agency.read'), async (req, res) => {
   try {
@@ -83,7 +83,7 @@ router.get('/summary', requireCapability('agency.read'), async (req, res) => {
 });
 
 /**
- * POST /command-center/briefing — an AI-written, plain-English prioritization of
+ * POST /command-center/briefing, an AI-written, plain-English prioritization of
  * the same snapshot. Gated on a configured AI provider (platform level); when no
  * provider is set up it returns { available: false } so the UI degrades quietly.
  * The prompt is COUNT-ONLY (no PHI), built by the pure buildBriefingPrompt.
@@ -121,14 +121,14 @@ router.post('/briefing', requireCapability('agency.read'), async (req, res) => {
 });
 
 /**
- * GET /command-center/today — the actionable drill-down behind the "late to
+ * GET /command-center/today, the actionable drill-down behind the "late to
  * start" attention item. Returns one row per visit scheduled today (client +
  * caregiver name, scheduled/clock times) with a derived status, plus the same
  * bucket counts the summary shows. Sorted so late + in-progress rows surface
  * first, then by scheduled time.
  *
  * agency.read = admin + coordinator only. Identity here (client/caregiver names)
- * is operational roster data the assigned office staff already manage — no
+ * is operational roster data the assigned office staff already manage, no
  * clinical/PHI fields are included.
  */
 router.get('/today', requireCapability('agency.read'), async (req, res) => {

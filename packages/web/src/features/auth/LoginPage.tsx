@@ -8,7 +8,7 @@ const ADMIN_ROLES = new Set(['admin', 'coordinator']);
 const trustPoints = [
   'HIPAA-aware infrastructure with HttpOnly cookie sessions.',
   'Double-submit CSRF protection on every state-changing request.',
-  'Append-only audit trail — every login, logout, and access is logged.',
+  'Append-only audit trail, every login, logout, and access is logged.',
 ];
 
 export function LoginPage() {
@@ -103,7 +103,7 @@ export function LoginPage() {
           overflow: 'hidden',
         }}
       >
-        {/* Subtle ambient highlight — single soft indigo glow, no dual-color gradient. */}
+        {/* Subtle ambient highlight, single soft indigo glow, no dual-color gradient. */}
         <div
           aria-hidden
           style={{

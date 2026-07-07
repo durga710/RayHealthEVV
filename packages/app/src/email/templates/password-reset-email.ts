@@ -31,11 +31,11 @@ export function renderPasswordResetEmail(fields: PasswordResetEmailFields): Pass
     'Open this link to set a new password (expires in 1 hour):',
     fields.resetUrl,
     '',
-    "If you didn't request this, you can safely ignore this email — your password won't change.",
+    "If you didn't request this, you can safely ignore this email, your password won't change.",
     '',
     `Questions? Reach us at ${support}.`,
     '',
-    '— The RayHealth EVV team',
+    ',  The RayHealth EVV team',
   ].join('\n');
 
   const html = `<!DOCTYPE html>
@@ -84,7 +84,7 @@ export function renderPasswordResetEmail(fields: PasswordResetEmailFields): Pass
         </tr>
         <tr>
           <td style="background-color:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;font-size:12px;line-height:1.55;color:#64748b;">
-            If you didn't request a password reset, you can safely ignore this email — your password won't change.
+            If you didn't request a password reset, you can safely ignore this email, your password won't change.
             <br /><br />
             Questions? Reach us at <a href="mailto:${safeSupport}" style="color:#0b2a4a;">${safeSupport}</a>.
           </td>

@@ -1,5 +1,5 @@
 /**
- * Staff-invite email template — both HTML and plain-text payloads.
+ * Staff-invite email template, both HTML and plain-text payloads.
  *
  * Design rules:
  *  - Inline styles only. Outlook, Gmail, Yahoo all strip <style> blocks
@@ -92,11 +92,11 @@ export function renderInviteEmail(fields: InviteEmailFields): InviteEmailPayload
     '',
     `This invite expires on ${expires}. After that you'll need a new invite.`,
     '',
-    'If you didn\'t expect this email, you can safely ignore it — your address won\'t be added to anything until you click the link and set a password.',
+    'If you didn\'t expect this email, you can safely ignore it, your address won\'t be added to anything until you click the link and set a password.',
     '',
     `Questions? Reach us at ${support}.`,
     '',
-    '— The RayHealth EVV team'
+    ',  The RayHealth EVV team'
   ];
   const text = textLines.join('\n');
 
@@ -164,7 +164,7 @@ export function renderInviteEmail(fields: InviteEmailFields): InviteEmailPayload
         </tr>
         <tr>
           <td style="background-color:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;font-size:12px;line-height:1.55;color:#64748b;">
-            If you didn't expect this email, you can safely ignore it — your address won't be added to anything until you click the link and set a password.
+            If you didn't expect this email, you can safely ignore it, your address won't be added to anything until you click the link and set a password.
             <br /><br />
             Questions? Reach us at
             <a href="mailto:${safeSupport}" style="color:#0b2a4a;">${safeSupport}</a>.

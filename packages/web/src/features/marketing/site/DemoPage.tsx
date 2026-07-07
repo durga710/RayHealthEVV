@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
 
 /**
- * Demo — rebuilt on the shared SiteLayout (teal/orange brand). Replaces the
+ * Demo, rebuilt on the shared SiteLayout (teal/orange brand). Replaces the
  * old MarketingShell version that mixed leftover blue shadows/borders with
  * the new palette. Crafted visuals use only brand vars (--accent teal,
  * --accent2 orange) and neutral hairlines.
@@ -16,15 +16,15 @@ interface Step {
 
 const steps: readonly Step[] = [
   { label: 'Step 1 · Caregiver', title: 'Clock in, gloves on', caption: 'GPS-verified one-tap clock-in. Works offline; queues and retries when signal returns.' },
-  { label: 'Step 2 · Verify', title: 'Six elements captured', caption: 'Every federal EVV element is captured the moment the visit begins — no extra taps.' },
+  { label: 'Step 2 · Verify', title: 'Six elements captured', caption: 'Every federal EVV element is captured the moment the visit begins, no extra taps.' },
   { label: 'Step 3 · Coordinator', title: 'Visit review queue', caption: 'Exceptions surface with the data points alongside. Approve, file, or escalate in one click.' },
-  { label: 'Step 4 · Export', title: 'State aggregator file', caption: 'A Sandata-aligned export with 6/6 federal elements — reconciliation-ready.' },
+  { label: 'Step 4 · Export', title: 'State aggregator file', caption: 'A Sandata-aligned export with 6/6 federal elements, reconciliation-ready.' },
 ];
 
 const audiences: readonly { who: string; title: string; body: string }[] = [
-  { who: 'For caregivers', title: 'One-tap, gloves on', body: 'Tap clock-in. Phone confirms within 30 seconds. Done — even with no signal at the door.' },
+  { who: 'For caregivers', title: 'One-tap, gloves on', body: 'Tap clock-in. Phone confirms within 30 seconds. Done, even with no signal at the door.' },
   { who: 'For coordinators', title: 'One queue per day', body: 'Visit Review surfaces every exception with the federal data points alongside it.' },
-  { who: 'For owners', title: 'One vendor', body: 'Scheduling, EVV, and the audit trail in one workflow — stop reconciling four spreadsheets.' },
+  { who: 'For owners', title: 'One vendor', body: 'Scheduling, EVV, and the audit trail in one workflow, stop reconciling four spreadsheets.' },
 ];
 
 /** Small browser-chrome wrapper, brand-neutral hairlines only. */
@@ -58,7 +58,7 @@ export function DemoPage() {
           <span className="mk-eyebrow">Demo</span>
           <h1 className="mk-h1">See a real visit, end-to-end.</h1>
           <p className="mk-lead">
-            From a caregiver's one-tap clock-in to a state-aggregator export — the whole verified
+            From a caregiver's one-tap clock-in to a state-aggregator export, the whole verified
             visit, in about two minutes. Book a walkthrough on your own caseload.
           </p>
           <div className="mk-herocta">
@@ -156,7 +156,7 @@ export function DemoPage() {
         <div className="mk-wrap">
           <div className="mk-callout">
             <h2>Book a live walkthrough.</h2>
-            <p>30 minutes with your authorizations, task codes, and a real verified visit — not a generic slideshow.</p>
+            <p>30 minutes with your authorizations, task codes, and a real verified visit, not a generic slideshow.</p>
             <div className="mk-herocta">
               <Link to="/contact" className="mk-btn mk-white">Talk to sales</Link>
               <Link to="/pricing" className="mk-btn mk-outline">See pricing</Link>

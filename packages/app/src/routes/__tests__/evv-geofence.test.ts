@@ -4,7 +4,7 @@ import { createApp } from '../../app.js';
 import * as core from '@rayhealth/core';
 import { makeToken, setTestJwtSecret } from './test-helpers.js';
 
-// Pennsylvania State Capitol — used as the "client address" anchor in
+// Pennsylvania State Capitol, used as the "client address" anchor in
 // these tests. New York City coordinates are far outside any reasonable
 // geofence and are used to simulate an off-site clock-in attempt.
 const PA_CAPITOL = { lat: 40.2647, lng: -76.8839, accuracy: 10 };

@@ -40,7 +40,7 @@ function agencyInitials(name: string): string {
 }
 
 // Gentle spring pop (scale 0.8 → 1) for the handoff overlay's avatar and
-// success check — softer than ZoomIn's full 0 → 1 blowup.
+// success check, softer than ZoomIn's full 0 → 1 blowup.
 const SpringPopIn: EntryExitAnimationFunction = () => {
   'worklet';
   return {
@@ -77,7 +77,7 @@ export default function SelectAgencyScreen() {
         const fresh = await refreshAgencies();
         if (active && fresh.length > 0) setList(fresh);
       } catch {
-        // Offline / older API — the cached list (or login payload) stands.
+        // Offline / older API, the cached list (or login payload) stands.
       } finally {
         if (active) setIsRefreshing(false);
       }
@@ -102,7 +102,7 @@ export default function SelectAgencyScreen() {
       if (switchingTo) return;
       void Haptics.selectionAsync();
       const alreadyActive = agency.agencyId === currentAgencyId;
-      // Re-picking the current agency from Settings just pops back — no
+      // Re-picking the current agency from Settings just pops back, no
       // handoff moment for a no-op.
       const showHandoff = !(isSwitch && alreadyActive);
       setSwitchingTo(agency.agencyId);
@@ -134,7 +134,7 @@ export default function SelectAgencyScreen() {
     <LinearGradient colors={gradients.hero} style={styles.gradient}>
       <StatusBar style="light" />
 
-      {/* Top bar — back affordance only when switching from Settings; a fresh
+      {/* Top bar, back affordance only when switching from Settings; a fresh
           sign-in must pick an agency, there is nothing to go back to. */}
       <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
         {isSwitch ? (
@@ -235,13 +235,13 @@ export default function SelectAgencyScreen() {
         <Animated.View entering={FadeIn.delay(300)} style={styles.noteCard}>
           <Ionicons name="shield-checkmark-outline" size={18} color={colors.onGradientSoft} style={styles.noteIcon} />
           <Text style={styles.noteText}>
-            Everything you see during this session — schedules, visits, messages, and patients —
+            Everything you see during this session, schedules, visits, messages, and patients , 
             belongs only to the agency you select.
           </Text>
         </Animated.View>
       </ScrollView>
 
-      {/* Workspace handoff — a deliberate full-screen beat while the switch
+      {/* Workspace handoff, a deliberate full-screen beat while the switch
           lands, replacing a toast that used to clip against the nav
           transition. Unmounting on error handles the fade-out. */}
       {handoff ? (

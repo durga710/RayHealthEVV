@@ -14,7 +14,7 @@
  *   claim_lines, evv_exceptions, visit_maintenance, sandata_exception_queue
  *   → evv_visits → assignments.
  *
- * SAFETY GUARD — refuses to run against the prod default branch unless
+ * SAFETY GUARD. refuses to run against the prod default branch unless
  * RAYHEALTH_ALLOW_PROD_FIXTURE_CLEANUP=1 is set (same shape as the seeder).
  *
  * Usage:

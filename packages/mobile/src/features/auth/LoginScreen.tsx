@@ -34,7 +34,7 @@ export default function LoginScreen() {
 
   // Keep the focused field visible above the soft keyboard. When the keyboard
   // opens, scroll the (short) form to the end so both inputs and the sign-in
-  // button sit above it. This uses a scroll ref only — no state change — so it
+  // button sit above it. This uses a scroll ref only, no state change, so it
   // can't reintroduce the focus-blur bug we fixed earlier.
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -63,7 +63,7 @@ export default function LoginScreen() {
     try {
       await login(email.trim(), password);
       // Navigation is handled by the Redirect above once isAuthenticated
-      // flips — it routes to /select-agency for multi-agency accounts and to
+      // flips, it routes to /select-agency for multi-agency accounts and to
       // the dashboard otherwise, so there's no race between the two paths.
     } catch {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

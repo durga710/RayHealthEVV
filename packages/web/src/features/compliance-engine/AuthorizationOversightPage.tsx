@@ -203,10 +203,10 @@ export function AuthorizationOversightPage() {
         },
       ]
     : [
-        { label: 'Active authorizations', value: '—' },
-        { label: 'Expiring 14d', value: '—', tone: 'warning' },
-        { label: 'Expiring 30d', value: '—' },
-        { label: 'Recently expired', value: '—', tone: 'warning' },
+        { label: 'Active authorizations', value: ', ' },
+        { label: 'Expiring 14d', value: ', ', tone: 'warning' },
+        { label: 'Expiring 30d', value: ', ' },
+        { label: 'Recently expired', value: ', ', tone: 'warning' },
       ];
 
   return (
@@ -328,8 +328,8 @@ export function AuthorizationOversightPage() {
               ) : null}
               {overview.counts.recentlyExpired > 0 ? (
                 <li>
-                  <strong>{overview.counts.recentlyExpired}</strong> recently expired (last 14 days)
-                  — review for renewal or backdating.
+                  <strong>{overview.counts.recentlyExpired}</strong> recently expired (last 14 days).
+                  Review for renewal or backdating.
                 </li>
               ) : null}
             </ul>
@@ -367,7 +367,7 @@ export function AuthorizationOversightPage() {
             >
               Sorted by earliest end date. <strong>Units used</strong> = sum of EVV-verified
               hours (clock_out − clock_in) for visits whose date fell inside the authorization
-              window — 1 unit ≈ 1 hour for PA personal-care/home-health codes.
+              window, 1 unit ≈ 1 hour for PA personal-care/home-health codes.
             </p>
           </div>
           <div role="tablist" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -500,10 +500,10 @@ export function AuthorizationOversightPage() {
                               style={{
                                 backgroundColor:
                                   pct >= 90
-                                    ? 'var(--color-accent)'       /* ≥90% used — deep red regulatory signal */
+                                    ? 'var(--color-accent)'       /* ≥90% used, deep red regulatory signal */
                                     : pct >= 70
-                                    ? 'var(--color-warning)'      /* ≥70% used — amber attention */
-                                    : 'var(--color-primary)',     /* normal — purple brand */
+                                    ? 'var(--color-warning)'      /* ≥70% used, amber attention */
+                                    : 'var(--color-primary)',     /* normal, purple brand */
                                 height: '100%',
                                 width: `${pct}%`,
                               }}

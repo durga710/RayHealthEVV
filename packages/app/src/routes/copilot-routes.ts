@@ -1,8 +1,8 @@
 /**
  * AI Workflow Copilot routes.
  *
- *   GET  /copilot/status     — has the agency enabled the add-on + is an AI provider configured
- *   POST /copilot/ask        — answer a conversational question with role-appropriate context
+ *   GET  /copilot/status    , has the agency enabled the add-on + is an AI provider configured
+ *   POST /copilot/ask       , answer a conversational question with role-appropriate context
  *
  * Gating:
  *   - All routes require an authenticated user.
@@ -10,7 +10,7 @@
  *
  * Audit:
  *   - Every /ask writes a copilot.query audit event with the prompt hash
- *     (not the prompt itself — prompts can contain PHI; hashes give a
+ *     (not the prompt itself, prompts can contain PHI; hashes give a
  *     correlation ID without retention liability) and the model used.
  */
 
@@ -72,7 +72,7 @@ router.get('/status', async (req: Request, res: Response) => {
 const SYSTEM_PROMPTS: Record<AppRole, string> = {
   admin: `You are the RayHealth EVV agency owner's copilot. You help the owner run their home-care agency.
 You see the full picture: compliance posture, training, scheduling, billing readiness, BAAs.
-When you propose an action — assigning a caregiver, sending a reminder, exporting a CSV — describe it
+When you propose an action, assigning a caregiver, sending a reminder, exporting a CSV, describe it
 in plain English and END YOUR RESPONSE WITH two lines in this exact format:
   PROPOSE_ACTION: <short imperative sentence>
   PROPOSE_ACTION_DATA: <JSON object>
@@ -80,7 +80,7 @@ Where PROPOSE_ACTION_DATA is one of:
   {"type": "enroll_caregiver", "caregiverId": "<UUID>", "courseId": "<UUID>", "dueAt": "<ISO date or null>"}
   {"type": "send_reminder", "caregiverId": "<UUID>", "channel": "email|push|both", "message": "<text>"}
 The user message will be preceded by an "Agency context" JSON blob listing every
-available caregiver and course with its real UUID — use those exact UUIDs in
+available caregiver and course with its real UUID, use those exact UUIDs in
 PROPOSE_ACTION_DATA. Match free-text names to UUIDs by case-insensitive
 substring match on the caregiver name field. If you cannot find a match, skip
 the PROPOSE_ACTION_DATA line and only emit PROPOSE_ACTION as plain English.
@@ -157,7 +157,7 @@ router.post('/ask', async (req: Request, res: Response) => {
 
     // Build the per-request context blob so the model has real UUIDs to
     // reference when emitting PROPOSE_ACTION_DATA. Failures degrade to an
-    // empty blob — the model can still answer questions, it just won't have
+    // empty blob, the model can still answer questions, it just won't have
     // structured action proposals.
     const db = req.app.get('db') as Knex
     const context = await buildCopilotContext({
@@ -179,7 +179,7 @@ router.post('/ask', async (req: Request, res: Response) => {
 
     // Parse out the trailing PROPOSE_ACTION (plain English) and optional
     // PROPOSE_ACTION_DATA (structured JSON) lines. The data line is
-    // validated against copilotActionSchema — if invalid we drop it and
+    // validated against copilotActionSchema, if invalid we drop it and
     // keep the natural-language proposal so the UI can still show
     // advisory-mode confirm/decline.
     const actionMatch = /\bPROPOSE_ACTION:\s*(.+?)\s*$/m.exec(result.text)
@@ -195,7 +195,7 @@ router.post('/ask', async (req: Request, res: Response) => {
           proposedActionData = validated.data
         }
       } catch {
-        /* invalid JSON — leave proposedActionData null */
+        /* invalid JSON, leave proposedActionData null */
       }
     }
 
@@ -204,7 +204,7 @@ router.post('/ask', async (req: Request, res: Response) => {
     if (actionMatch) answerText = answerText.replace(actionMatch[0], '').trim()
     if (dataMatch) answerText = answerText.replace(dataMatch[0], '').trim()
 
-    // Audit the query. We hash the prompt rather than store it — prompts can
+    // Audit the query. We hash the prompt rather than store it, prompts can
     // contain PHI, hashes give a forensic correlation ID without retention.
     const promptHash = createHash('sha256').update(prompt).digest('hex').slice(0, 32)
     try {
@@ -251,7 +251,7 @@ router.post('/ask', async (req: Request, res: Response) => {
       return
     }
     // A thrown error from the model provider (Bedrock) is an upstream
-    // failure, not a bug in our handler — surface it as 502 so the client can
+    // failure, not a bug in our handler, surface it as 502 so the client can
     // distinguish "try again" from a hard 500.
     const message = error instanceof Error ? error.message : 'unexpected error'
     res.status(502).json({ success: false, code: 'COPILOT_UPSTREAM_ERROR', error: message })
@@ -342,7 +342,7 @@ router.post('/execute', async (req: Request, res: Response) => {
           },
         })
       } catch {
-        /* swallow — we're already in the error path */
+        /* swallow, we're already in the error path */
       }
     }
 

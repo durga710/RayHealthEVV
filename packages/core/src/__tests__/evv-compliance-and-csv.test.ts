@@ -19,7 +19,7 @@ function visit(overrides: Partial<EvvVisit> = {}): EvvVisit {
   } as EvvVisit;
 }
 
-describe('EvvComplianceService — coordinate 0 handling (finding #15)', () => {
+describe('EvvComplianceService, coordinate 0 handling (finding #15)', () => {
   it('does NOT treat lat/lng of exactly 0 as a missing location', () => {
     const result = new EvvComplianceService().validate(
       visit({ clockInLocation: { lat: 0, lng: 0, accuracy: 10 } }),

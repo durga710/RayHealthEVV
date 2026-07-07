@@ -39,7 +39,7 @@ describe('isSafeOutboundUrl (SSRF guard, finding #11)', () => {
   });
 
   it('isBlockedOutboundHost flags the public 172.32/8 (outside private range) as allowed', () => {
-    // 172.32.x is NOT in 172.16.0.0/12 — must not be blocked.
+    // 172.32.x is NOT in 172.16.0.0/12, must not be blocked.
     expect(isBlockedOutboundHost('172.32.0.1')).toBe(false);
     expect(isBlockedOutboundHost('8.8.8.8')).toBe(false);
   });

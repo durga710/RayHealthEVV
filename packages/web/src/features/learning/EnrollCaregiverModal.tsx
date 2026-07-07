@@ -35,7 +35,7 @@ interface EnrollCaregiverModalProps {
 }
 
 /**
- * Default due-date offset by cadence — smart defaults that coordinators can override.
+ * Default due-date offset by cadence, smart defaults that coordinators can override.
  *   one_time / certification: due in 30 days (give them time to schedule it)
  *   annual / biennial:        due in 90 days (lenient, matches typical agency policy)
  */
@@ -206,7 +206,7 @@ export function EnrollCaregiverModal({
                 onChange={(e) => setSelectedCourseId(e.target.value)}
                 style={inputStyle}
               >
-                <option value="">— Select a course —</option>
+                <option value="">,  Select a course , </option>
                 {courses.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.title} {c.required ? '(required)' : ''}

@@ -4,7 +4,7 @@ import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-na
 /**
  * Web shim for react-native-maps.
  *
- * react-native-maps is native-only — it imports react-native internals
+ * react-native-maps is native-only, it imports react-native internals
  * (codegenNativeCommands) that don't exist on web, so bundling it for web
  * breaks `expo export`. metro.config.cjs redirects `react-native-maps` to this
  * file for the web platform only; iOS/Android keep the real package.

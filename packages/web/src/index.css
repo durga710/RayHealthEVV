@@ -1,30 +1,30 @@
 /* ==========================================================================
-   RayHealth EVV — Design System
+   RayHealth EVV. Design System
    Dark sidebar + light content (inspired by Linear/Rippling/Gusto)
    ========================================================================== */
 
 :root {
-  /* Brand colors — Purple primary + Deep Red accent (2026-05-26 rebrand).
+  /* Brand colors. Purple primary + Deep Red accent (2026-05-26 rebrand).
      Replaces the prior indigo + indigo-alias system. Contrast against the
      #F8FAFC content bg: primary 5.61:1, primary-dark 6.66:1, accent 6.44:1
-     — all clear WCAG AA for body text and AAA for UI surfaces. */
-  --color-primary: #107480;        /* violet-600 — strong, regal, healthcare-trustworthy */
-  --color-primary-dark: #0c5d66;   /* violet-700 — headings, focus, hover */
-  --color-primary-light: #7fc7cf;  /* violet-300 — soft tints, sidebar-active */
+     All clear WCAG AA for body text and AAA for UI surfaces. */
+  --color-primary: #107480;        /* violet-600, strong, regal, healthcare-trustworthy */
+  --color-primary-dark: #0c5d66;   /* violet-700, headings, focus, hover */
+  --color-primary-light: #7fc7cf;  /* violet-300, soft tints, sidebar-active */
   --color-primary-bg: rgba(16, 116, 128, 0.08);
 
-  /* Deep Red accent. Distinct from the danger semantic — accent is the
+  /* Deep Red accent. Distinct from the danger semantic, accent is the
      secondary brand color (CTAs, badges, attention chips) while danger is
      reserved for error states. */
-  --color-accent: #ee6c2c;         /* RayHealth orange — brand accent */
-  --color-accent-dark: #d8551b;    /* deep orange — pressed/hover */
-  --color-accent-light: #fcd9c2;   /* soft orange — accent-bg tints */
+  --color-accent: #ee6c2c;         /* RayHealth orange, brand accent */
+  --color-accent-dark: #d8551b;    /* deep orange, pressed/hover */
+  --color-accent-light: #fcd9c2;   /* soft orange, accent-bg tints */
   --color-accent-bg: rgba(238, 108, 44, 0.08);
 
   /* Surfaces */
-  --color-bg: #F8FAFC;             /* slate-50 — main content bg */
+  --color-bg: #F8FAFC;             /* slate-50, main content bg */
   --color-surface: #FFFFFF;        /* card/form bg */
-  --color-sidebar: #0F172A;        /* slate-900 — dark sidebar (kept) */
+  --color-sidebar: #0F172A;        /* slate-900, dark sidebar (kept) */
   --color-sidebar-hover: rgba(255, 255, 255, 0.06);
   --color-sidebar-active: rgba(16, 116, 128, 0.22);  /* purple-tinted active */
   --color-sidebar-text: #94A3B8;
@@ -37,15 +37,15 @@
   /* Text */
   --color-text: #0F172A;           /* slate-900 */
   --color-text-secondary: #475569; /* slate-600 */
-  --color-text-muted: #64748B;     /* slate-500 — kept richer than design spec for legibility */
+  --color-text-muted: #64748B;     /* slate-500, kept richer than design spec for legibility */
 
-  /* Semantic — kept independent of brand colors. Danger uses red-600 (not the
+  /* Semantic, kept independent of brand colors. Danger uses red-600 (not the
      accent red-700) so a true error state reads distinct from brand chrome. */
   --color-success: #10B981;        /* emerald-500 */
   --color-success-bg: #ECFDF5;
   --color-success-border: #A7F3D0;
   --color-success-text: #047857;   /* readable emerald-700 for text on -bg */
-  --color-danger: #dc2626;         /* red-600 — slightly brighter than accent */
+  --color-danger: #dc2626;         /* red-600, slightly brighter than accent */
   --color-danger-bg: #FEF2F2;
   --color-danger-border: #FECACA;
   --color-danger-text: #BE123C;    /* readable rose-700 for text on -bg */
@@ -58,7 +58,7 @@
   --color-info-text: var(--color-primary-dark);
   --color-info-border: rgba(16, 116, 128, 0.25);
 
-  /* Neutrals used by primitives (skeletons, dark panels, dividers) — named so
+  /* Neutrals used by primitives (skeletons, dark panels, dividers), named so
      no component reaches for a bare hex literal. */
   --color-slate-800: #1E293B;
   --color-slate-100: #F1F5F9;
@@ -68,7 +68,7 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
 
-  /* Spacing — 8px base grid, named so layout primitives (PageShell, SectionCard,
+  /* Spacing, 8px base grid, named so layout primitives (PageShell, SectionCard,
      card padding, gaps) stop re-deriving the same rem values ad hoc. */
   --space-1: 0.25rem;   /* 4px */
   --space-2: 0.5rem;    /* 8px */
@@ -92,7 +92,7 @@
   --shadow-lg: 0 10px 24px -8px rgba(15, 23, 42, 0.12), 0 4px 8px -2px rgba(15, 23, 42, 0.05);
   --shadow-focus: 0 0 0 3px rgba(16, 116, 128, 0.28);
 
-  /* Dark "command panel" surface (AI briefing, callouts on light pages) —
+  /* Dark "command panel" surface (AI briefing, callouts on light pages) , 
      named gradient so no component hardcodes the sidebar-adjacent hex pair. */
   --gradient-panel-dark: linear-gradient(135deg, var(--color-sidebar) 0%, var(--color-slate-800) 100%);
 }
@@ -583,7 +583,7 @@ button:disabled {
 }
 
 /* ==========================================================================
-   Admin shell — dark sidebar + light content
+   Admin shell, dark sidebar + light content
    ========================================================================== */
 
 .admin-shell {
@@ -791,7 +791,7 @@ button:disabled {
   padding: 2.5rem;
 }
 
-/* Legacy class compat — kept so any straggling references don't break. */
+/* Legacy class compat, kept so any straggling references don't break. */
 .admin-nav { display: none; }
 .card { background: transparent; }
 .brand { display: none; }
@@ -817,10 +817,10 @@ button:disabled {
 
 /* ==========================================================================
    Design system primitives (Agent 03)
-   Shared building blocks for admin/portal screens — PageShell, PageHeader,
+   Shared building blocks for admin/portal screens. PageShell, PageHeader,
    SectionCard, MetricCard, StatusPill, AttentionCard, CommandPanel, DataTable,
    Timeline, TrustBadge, WorkflowStepper. All colors/spacing/radii/shadows are
-   pulled from the :root tokens above — no hardcoded hex in these rules.
+   pulled from the :root tokens above, no hardcoded hex in these rules.
    ========================================================================== */
 
 .sr-only {
@@ -1106,7 +1106,7 @@ button:disabled {
   border-color: var(--color-info-border);
 }
 
-/* Small solid status dot — used inside AttentionCard rows and standalone in
+/* Small solid status dot, used inside AttentionCard rows and standalone in
    the "all clear" banner. `data-tone` is set directly on the dot so it works
    whether or not it's nested inside another toned component. */
 .status-dot {
@@ -1484,7 +1484,7 @@ button:disabled {
 }
 
 /* ==========================================================================
-   Landing page (kept somewhat working — landing renders independently)
+   Landing page (kept somewhat working, landing renders independently)
    ========================================================================== */
 
 .landing-shell { min-height: 100vh; background-color: var(--color-bg); }
@@ -1628,7 +1628,7 @@ button:disabled {
    Responsive
    ========================================================================== */
 
-/* Mobile top bar with hamburger — hidden on desktop, shown when the sidebar
+/* Mobile top bar with hamburger, hidden on desktop, shown when the sidebar
    collapses into a slide-in drawer. */
 .admin-mobilebar {
   display: none;
@@ -1693,7 +1693,7 @@ button:disabled {
 }
 
 /* ==========================================================================
-   Utility — scrollbar styling for the dark sidebar
+   Utility, scrollbar styling for the dark sidebar
    ========================================================================== */
 
 .admin-sidebar::-webkit-scrollbar {
@@ -1714,7 +1714,7 @@ button:disabled {
 }
 
 /* ==========================================================================
-   Motion — respect the OS-level reduced-motion preference for every
+   Motion, respect the OS-level reduced-motion preference for every
    transition/animation in this file (skeleton shimmer, card hover-lift,
    sidebar drawer slide, etc.), not just the primitives introduced above.
    ========================================================================== */
@@ -1731,9 +1731,9 @@ button:disabled {
 }
 
 /* ==========================================================================
-   Print — Audit Packet (packages/web/src/features/compliance-engine/
+   Print. Audit Packet (packages/web/src/features/compliance-engine/
    AuditPacketPage.tsx). Browser print-to-PDF is the MVP export path (Agent
-   06 audit-packet architecture §5) — no server-side PDF pipeline exists or
+   06 audit-packet architecture Â§5), no server-side PDF pipeline exists or
    is introduced. Hides the admin chrome, forces a light printable surface,
    keeps the packet's tables/timeline intact, and repeats a compact header
    (agency, visit id, generated-at, integrity hash) via a fixed-position

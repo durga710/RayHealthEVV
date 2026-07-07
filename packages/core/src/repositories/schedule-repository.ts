@@ -89,7 +89,7 @@ export class ScheduleRepository {
    * assignments -> visit_templates -> clients.agency_id (same join used by
    * {@link assignmentInAgency}). Used by the audit packet route to show
    * scheduled-vs-actual alongside a visit's clock-in/out. Null when the
-   * assignment is unknown / cross-tenant — the caller treats that as "no
+   * assignment is unknown / cross-tenant, the caller treats that as "no
    * schedule data", not an error.
    */
   async getAssignmentScheduleForAgency(
@@ -133,7 +133,7 @@ export class ScheduleRepository {
   }
 
   /**
-   * Existing (template, date) pairs for a caregiver — for duplicate detection.
+   * Existing (template, date) pairs for a caregiver, for duplicate detection.
    * `excludeAssignmentId` omits one assignment from the result so a reschedule of
    * an existing assignment doesn't flag itself as a duplicate.
    */
@@ -215,7 +215,7 @@ export class ScheduleRepository {
   async getAssignmentsByCaregiver(caregiverId: string, agencyId?: string): Promise<any[]> {
     // A client can have several authorization rows (different service codes,
     // renewed/overlapping date ranges). The LEFT JOIN to authorizations would
-    // otherwise emit one assignment row per authorization — duplicating each
+    // otherwise emit one assignment row per authorization, duplicating each
     // visit on the caregiver's schedule. DISTINCT ON collapses to a single row
     // per assignment, picking the authorization with the latest end_date
     // (matching getAssignmentForCaregiver, which uses .first() over the same
@@ -292,14 +292,14 @@ export class ScheduleRepository {
   }
 
   /**
-   * Today's schedule for one caregiver — every assignment whose
+   * Today's schedule for one caregiver, every assignment whose
    * `scheduled_start_time` falls in a 36-hour window around now (12 h back,
    * 24 h forward), joined with the client + visit template, plus an optional
    * LEFT-JOINed `evv_visits` row from earlier in the UTC day so the mobile
    * dashboard can surface "you're already clocked in" state.
    *
    * Tenant scope: enforced by joining `caregivers` and asserting
-   * `caregivers.agency_id = ?`. We do NOT scope only by caregiver_id —
+   * `caregivers.agency_id = ?`. We do NOT scope only by caregiver_id , 
    * doing so would let a caregiver row that's been moved between agencies
    * leak its old assignments. Agency must match on the caregiver row that
    * owns the assignment.
@@ -406,7 +406,7 @@ export class ScheduleRepository {
   }
 
   /**
-   * Forward-looking schedule for one caregiver — every assignment whose
+   * Forward-looking schedule for one caregiver, every assignment whose
    * `scheduled_start_time` falls between the start of today and `daysAhead`
    * days from now. Same row shape, joins, and tenant scope as
    * getTodaysScheduleForCaregiver, but a wider window so the mobile app can
@@ -607,7 +607,7 @@ export class ScheduleRepository {
 
   /**
    * Delete (cancel) an assignment, tenant-scoped. Refuses ('has_dependencies')
-   * when an EVV visit already exists for it — those carry verified clock-in/out
+   * when an EVV visit already exists for it, those carry verified clock-in/out
    * history. 'not_found' for unknown / cross-tenant id.
    */
   async deleteAssignment(

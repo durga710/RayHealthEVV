@@ -4,7 +4,7 @@ const path = require('path');
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
 
-// react@19.1.0 lives here — matches the renderer bundled in react-native@0.81.5
+// react@19.1.0 lives here. matches the renderer bundled in react-native@0.81.5
 const LOCAL_REACT = path.resolve(projectRoot, 'node_modules/react');
 
 // react-native-maps is native-only; on web it imports react-native internals

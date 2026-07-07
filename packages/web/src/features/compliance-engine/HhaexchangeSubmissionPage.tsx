@@ -145,7 +145,7 @@ export function HhaexchangeSubmissionPage() {
 
   return (
     <ComplianceModuleLayout
-      title="EVV Submission — HHAeXchange"
+      title="EVV Submission. HHAeXchange"
       tagline="Configure the agency's HHAeXchange connection. Configuration and CSV export are live; automated API transmission is not yet implemented."
       status="scaffold"
       kpis={kpis}
@@ -154,7 +154,7 @@ export function HhaexchangeSubmissionPage() {
         'Enter the HHAeXchange Tax ID, Provider ID, API base URL, and credentials, then enable the integration.',
         'Until automated transmission ships, export the HHAeXchange CSV and upload it to the HHAeXchange portal.',
       ]}
-      related={[{ label: 'EVV Submission — Sandata', to: '/admin/compliance-engine/evv-submission' }, { label: 'Go-Live Checklist', to: '/admin/readiness' }]}
+      related={[{ label: 'EVV Submission. Sandata', to: '/admin/compliance-engine/evv-submission' }, { label: 'Go-Live Checklist', to: '/admin/readiness' }]}
     >
       {loadError && banner('error', loadError)}
 
@@ -181,7 +181,7 @@ export function HhaexchangeSubmissionPage() {
 
         <div style={{ ...fieldRow, borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: '1rem' }}>
           <label style={label}>API credentials {config?.hasCredentials && <span style={{ color: 'var(--color-success, #047857)', fontWeight: 600 }}>· stored</span>}</label>
-          <div style={hint}>Provide either an API key, or a username + password — whichever HHAeXchange issued for this agency.</div>
+          <div style={hint}>Provide either an API key, or a username + password, whichever HHAeXchange issued for this agency.</div>
           <div style={{ marginTop: '0.6rem' }}>
             <input style={input} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="API key (optional)" autoComplete="off" type="password" />
           </div>
@@ -204,7 +204,7 @@ export function HhaexchangeSubmissionPage() {
 
       <form style={card} onSubmit={onSubmitBatch}>
         <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', color: 'var(--color-text, #0F172A)' }}>Submit a batch</h3>
-        <p style={{ ...hint, marginTop: 0, marginBottom: '1rem' }}>Automated API transmission is not yet implemented — submitting reports the integration status honestly. For now, use the HHAeXchange CSV export and upload it to the portal.</p>
+        <p style={{ ...hint, marginTop: 0, marginBottom: '1rem' }}>Automated API transmission is not yet implemented, submitting reports the integration status honestly. For now, use the HHAeXchange CSV export and upload it to the portal.</p>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div>
             <label style={label} htmlFor="from">From</label>
@@ -217,7 +217,7 @@ export function HhaexchangeSubmissionPage() {
           <button type="submit" style={{ ...primaryBtn, opacity: submitting ? 0.7 : 1 }} disabled={submitting}>{submitting ? 'Submitting…' : 'Submit to HHAeXchange'}</button>
         </div>
         {submitError && banner('info', submitError)}
-        {submitResult && banner('success', `Batch ${submitResult.batchId} sent — ${submitResult.accepted} accepted, ${submitResult.submitted} submitted, ${submitResult.rejected} rejected.`)}
+        {submitResult && banner('success', `Batch ${submitResult.batchId} sent, ${submitResult.accepted} accepted, ${submitResult.submitted} submitted, ${submitResult.rejected} rejected.`)}
       </form>
     </ComplianceModuleLayout>
   );

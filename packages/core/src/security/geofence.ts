@@ -6,7 +6,7 @@
  * starts and ends. We enforce that by comparing the GPS lat/lng captured
  * by the mobile app against the client's registered address coordinates,
  * within a per-client `geofence_radius_m` (defaulting to 150 m at the
- * column level — this module treats `null` radius as "use 150").
+ * column level, this module treats `null` radius as "use 150").
  *
  * Distance is computed via the Haversine formula on a spherical Earth,
  * which is accurate to ~0.5% over the distances we care about. Anything
@@ -52,7 +52,7 @@ export function haversineMeters(
  * gap is observable.
  *
  * Note: GPS `accuracy` (meters of reported uncertainty) is intentionally
- * NOT subtracted from the distance here — accuracy values reported by
+ * NOT subtracted from the distance here, accuracy values reported by
  * mobile OSes are noisy and would let a caregiver "borrow" 50 m by
  * spoofing low confidence. We treat the reported point as authoritative.
  */

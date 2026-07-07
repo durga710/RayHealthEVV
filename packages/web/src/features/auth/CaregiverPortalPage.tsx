@@ -90,7 +90,7 @@ export function CaregiverPortalPage() {
           }}
         >
           <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#107480', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Signed in as</span>
-          <span style={{ color: '#E2E8F0', fontSize: '0.875rem', fontWeight: 500, textTransform: 'capitalize' }}>{user?.role ?? '—'}</span>
+          <span style={{ color: '#E2E8F0', fontSize: '0.875rem', fontWeight: 500, textTransform: 'capitalize' }}>{user?.role ?? ', '}</span>
           <span style={{ color: '#475569', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>{user?.userId?.slice(0, 12)}…</span>
         </div>
 

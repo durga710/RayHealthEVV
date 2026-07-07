@@ -25,12 +25,12 @@ async function audit(db: AuditDb, event: NewAuditEvent): Promise<void> {
 }
 
 /**
- * GET /invitations/:token — public, no auth.
+ * GET /invitations/:token, public, no auth.
  *
  * Looks up an invite by its UUID share-token. Returns a small
  * `{isValid, status, ...}` envelope so the accept-screen UI can either
  * show "you're joining <Agency>" or a friendly "invalid or expired"
- * message — without ever leaking whether the underlying token was
+ * message, without ever leaking whether the underlying token was
  * once-real-but-now-redeemed vs never-issued. Both cases return
  * `isValid: false`; the `status` field is purely informational for the
  * UI and is the same string the row had at lookup time.
@@ -68,7 +68,7 @@ router.get('/:token', async (req, res) => {
 });
 
 /**
- * POST /invitations/accept — public, no auth.
+ * POST /invitations/accept, public, no auth.
  *
  * Single-use token redemption. Validates the invite, creates a
  * `caregivers` row (if role=caregiver) and a `users` row in one
@@ -141,10 +141,10 @@ router.post('/accept', async (req, res) => {
       try {
         hasMemberships = await trx.schema.hasTable('user_agencies');
       } catch {
-        /* schema introspection unavailable — behave as pre-migration */
+        /* schema introspection unavailable, behave as pre-migration */
       }
 
-      // A user may already exist under this email at ANOTHER agency — a
+      // A user may already exist under this email at ANOTHER agency, a
       // caregiver can work for multiple agencies with one mobile identity.
       // In that case this accept links the inviting agency to the existing
       // account instead of creating a new one. The person accepting must

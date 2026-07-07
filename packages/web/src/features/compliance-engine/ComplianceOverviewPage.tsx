@@ -49,7 +49,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/medicaid',
     kpiLabel: 'Active MA cases',
-    fallbackValue: '—',
+    fallbackValue: ', ',
     summaryKey: 'activeMaCases',
   },
   {
@@ -58,7 +58,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/audit-defense',
     kpiLabel: 'Audit events (30d)',
-    fallbackValue: '—',
+    fallbackValue: ', ',
     summaryKey: 'auditEventsLast30d',
   },
   {
@@ -67,7 +67,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/payroll',
     kpiLabel: 'Verified hours (7d)',
-    fallbackValue: '—',
+    fallbackValue: ', ',
     summaryKey: 'verifiedHoursLast7d',
     format: formatHours,
   },
@@ -77,7 +77,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/claims',
     kpiLabel: 'Claim-ready (7d)',
-    fallbackValue: '—',
+    fallbackValue: ', ',
     summaryKey: 'claimReadyLast7d',
   },
   {
@@ -86,7 +86,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/authorizations',
     kpiLabel: 'Active authorizations',
-    fallbackValue: '—',
+    fallbackValue: ', ',
     summaryKey: 'activeAuthorizations',
   },
   {
@@ -95,7 +95,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/exceptions',
     kpiLabel: 'Open exceptions',
-    fallbackValue: '—',
+    fallbackValue: ', ',
     summaryKey: 'openExceptions',
   },
   {
@@ -104,7 +104,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/credentials',
     kpiLabel: 'Active credentials',
-    fallbackValue: '—',
+    fallbackValue: ', ',
     summaryKey: 'activeCredentials',
   },
 ];
@@ -129,7 +129,7 @@ export function ComplianceOverviewPage() {
       } catch (err) {
         if (!mounted) return;
         // 403 (coordinator without audit.read) and network failures both
-        // fall back to the static placeholder view — Overview must stay useful.
+        // fall back to the static placeholder view. Overview must stay useful.
         setSummary(null);
         setSummaryUnavailable(true);
         setSummaryError(err instanceof Error ? err.message : 'Summary unavailable');
@@ -176,7 +176,7 @@ export function ComplianceOverviewPage() {
         >
           Operational compliance across Medicaid workflow, audit defense, payroll, claims,
           authorizations, exceptions, and credentials. Every module reads from the existing EVV and
-          audit trail — no PHI is created here.
+          audit trail, no PHI is created here.
         </p>
         {summary ? (
           <p
@@ -215,7 +215,7 @@ export function ComplianceOverviewPage() {
             }}
           />
           <p style={{ color: 'var(--color-warning)', fontSize: '0.9rem', fontWeight: 700, margin: 0 }}>
-            Live summary unavailable for this role — open a module below for its specific KPIs.
+            Live summary unavailable for this role, open a module below for its specific KPIs.
             PA regulatory spec at <code>docs/compliance/states/pennsylvania.md</code>.
             {summaryError ? <> ({summaryError})</> : null}
           </p>

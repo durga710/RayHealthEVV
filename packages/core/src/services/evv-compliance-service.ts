@@ -23,7 +23,7 @@ export class EvvComplianceService {
     if (!visit.caregiverId) missing.push('individual');
     if (!visit.clockInTime) missing.push('date');
 
-    // A location is "missing" only when a coordinate is absent or non-numeric —
+    // A location is "missing" only when a coordinate is absent or non-numeric , 
     // NOT when it is falsy. Latitude 0 / longitude 0 are valid coordinates (the
     // equator / prime meridian); a falsy test would misclassify a genuine fix
     // there as missing and file a spurious exception.

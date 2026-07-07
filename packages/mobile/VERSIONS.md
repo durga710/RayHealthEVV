@@ -1,10 +1,10 @@
-# Mobile dependency versions — read before bumping
+# Mobile dependency versions. read before bumping
 
 The native-module versions in this package are **pinned to match the installed
 Expo SDK** (currently **SDK 54**). They are not arbitrary, and they are **not a
 "downgrade for Expo Go."** Every Expo SDK is built and tested against one exact
 React Native version; mixing in a newer RN (or reanimated/worklets/screens/etc.)
-breaks the Metro bundler and native runtime for **all** build types — Expo Go
+breaks the Metro bundler and native runtime for **all** build types. Expo Go
 *and* production EAS dev/prod builds.
 
 ## The pinned set (Expo SDK 54)
@@ -23,7 +23,7 @@ breaks the Metro bundler and native runtime for **all** build types — Expo Go
 > These were realigned after a Dependabot bump pushed RN to `0.85.3` / react to
 > `19.2.6`, which is **incompatible with SDK 54** and broke the bundle
 > (`VirtualViewNativeComponent: Unable to determine event arguments`). The app on
-> a clean install must resolve the versions above — verify with
+> a clean install must resolve the versions above. verify with
 > `npx expo install --check`.
 
 ## Do NOT bump these individually
@@ -34,7 +34,7 @@ on its own will break the build. These move **together, with an Expo SDK upgrade
 
 ## The correct way to upgrade React Native (later)
 
-Upgrade the whole SDK as a unit — don't touch RN directly:
+Upgrade the whole SDK as a unit. don't touch RN directly:
 
 ```bash
 # from packages/mobile
@@ -48,5 +48,5 @@ Then rebuild and re-test (Expo Go for the new SDK, or an EAS dev build).
 ## Dependabot
 
 Keep Dependabot from independently bumping the Expo-managed native packages
-above — group or ignore them so they only change via an intentional
+above. group or ignore them so they only change via an intentional
 `expo install` SDK upgrade. See `.github/dependabot.yml`.

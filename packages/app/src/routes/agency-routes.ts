@@ -25,7 +25,7 @@ const billingIdentitySchema = z
   })
   .partial();
 
-/** Return only the authenticated admin's own agency — never cross-agency data. */
+/** Return only the authenticated admin's own agency, never cross-agency data. */
 router.get('/', requireCapability('agency.read'), async (req, res) => {
   if (req.auth.role !== 'admin') {
     res.status(403).json({ message: 'Forbidden' });
@@ -87,7 +87,7 @@ const feeScheduleSchema = z.record(
   z.number().int().min(0).max(1_000_000),
 );
 
-// GET /agencies/current/fee-schedule — cents per unit, by service code.
+// GET /agencies/current/fee-schedule, cents per unit, by service code.
 router.get('/current/fee-schedule', requireCapability('billing.read'), async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -98,7 +98,7 @@ router.get('/current/fee-schedule', requireCapability('billing.read'), async (re
   }
 });
 
-// PUT /agencies/current/fee-schedule — replace the fee schedule (admin only).
+// PUT /agencies/current/fee-schedule, replace the fee schedule (admin only).
 router.put('/current/fee-schedule', requireCapability('agency.write'), async (req, res) => {
   const parsed = feeScheduleSchema.safeParse(req.body ?? {});
   if (!parsed.success) {
@@ -121,7 +121,7 @@ router.put('/current/fee-schedule', requireCapability('agency.write'), async (re
   }
 });
 
-// GET /agencies/current/billing — the agency's 837 billing-provider identity.
+// GET /agencies/current/billing, the agency's 837 billing-provider identity.
 router.get('/current/billing', requireCapability('agency.read'), async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -136,7 +136,7 @@ router.get('/current/billing', requireCapability('agency.read'), async (req, res
   }
 });
 
-// PUT /agencies/current/billing — update the 837 billing-provider identity.
+// PUT /agencies/current/billing, update the 837 billing-provider identity.
 router.put('/current/billing', requireCapability('agency.write'), async (req, res) => {
   const parsed = billingIdentitySchema.safeParse(req.body ?? {});
   if (!parsed.success) {

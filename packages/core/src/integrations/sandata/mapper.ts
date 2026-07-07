@@ -4,7 +4,7 @@
  * Pure functions: a domain entity + its per-record SequenceID in, a Sandata
  * wire record out. No I/O, no clock access. Timestamps are emitted as the
  * ISO-8601 UTC strings already stored on the domain rows; date-only fields are
- * rendered CCYYMMDD per the Sandata spec. The mapper does NOT validate — run
+ * rendered CCYYMMDD per the Sandata spec. The mapper does NOT validate, run
  * `validateClient` / `validateEmployee` / `validateVisit` first.
  */
 
@@ -89,7 +89,7 @@ export interface MapVisitOptions {
 /**
  * Map an internal EvvVisit to a Sandata VISIT record, deriving Time In / Time
  * Out calls from the visit's clock events. The referenced Client and Employee
- * MUST already be VERIFIED by Sandata (load-order dependency) — that gate lives
+ * MUST already be VERIFIED by Sandata (load-order dependency), that gate lives
  * in the transmission service, not here.
  */
 export function mapVisit(visit: EvvVisit, sequenceId: number, opts: MapVisitOptions = {}): SandataVisit {

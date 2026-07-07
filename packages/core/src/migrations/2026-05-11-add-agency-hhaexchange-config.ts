@@ -6,13 +6,13 @@
  * agency that picks HHAeXchange via the EVV aggregator picker.
  *
  * Key fields:
- *   - agency_tax_id  — 9-digit EIN registered with HHAeXchange (text to
+ *   - agency_tax_id , 9-digit EIN registered with HHAeXchange (text to
  *                      preserve leading zeros; pattern enforced in Zod).
- *   - hha_provider_id — HHAeXchange's per-agency provider identifier.
- *   - timezone       — drives ServiceStart / ServiceEnd formatting.
- *   - caregiver_mappings — JSONB array of {caregiverId, employeeId}.
- *   - service_mappings   — JSONB array of {internalServiceCode, hhaServiceCode, label}.
- *   - enabled        — gates whether the export pipeline actually emits to HHAeXchange.
+ *   - hha_provider_id. HHAeXchange's per-agency provider identifier.
+ *   - timezone      , drives ServiceStart / ServiceEnd formatting.
+ *   - caregiver_mappings. JSONB array of {caregiverId, employeeId}.
+ *   - service_mappings  . JSONB array of {internalServiceCode, hhaServiceCode, label}.
+ *   - enabled       , gates whether the export pipeline actually emits to HHAeXchange.
  *
  * Idempotent: uses `hasTable` guard. Safe to re-run.
  */
@@ -26,7 +26,7 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable(TABLE, (table) => {
     table.uuid('agency_id').primary().references('id').inTable('agencies').onDelete('CASCADE')
-    // 9-digit EIN, no dash — stored as text to preserve leading zeros and to
+    // 9-digit EIN, no dash, stored as text to preserve leading zeros and to
     // allow staged onboarding (NULL until issued).
     table.string('agency_tax_id', 9).nullable()
     table.string('hha_provider_id', 32).nullable()

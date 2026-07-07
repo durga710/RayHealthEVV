@@ -38,7 +38,7 @@ const ENTITIES: { value: ImportEntity; label: string; blurb: string }[] = [
   {
     value: 'authorizations',
     label: 'Authorizations',
-    blurb: 'Service-code units per client. Links to a client via client_external_id — import clients first.',
+    blurb: 'Service-code units per client. Links to a client via client_external_id, import clients first.',
   },
 ];
 
@@ -158,7 +158,7 @@ export function ImportPage() {
         </div>
       </header>
 
-      {/* Step 1 — choose dataset */}
+      {/* Step 1, choose dataset */}
       <div style={card}>
         <h3 className="section-title" style={{ marginTop: 0 }}>1 · Choose a dataset</h3>
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
@@ -184,7 +184,7 @@ export function ImportPage() {
         </p>
       </div>
 
-      {/* Step 2 — upload + preview */}
+      {/* Step 2, upload + preview */}
       <div style={card}>
         <h3 className="section-title" style={{ marginTop: 0 }}>2 · Upload &amp; preview</h3>
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -236,7 +236,7 @@ export function ImportPage() {
         )}
       </div>
 
-      {/* Step 3 — commit */}
+      {/* Step 3, commit */}
       <div style={card}>
         <h3 className="section-title" style={{ marginTop: 0 }}>3 · Commit</h3>
         <p style={{ color: '#64748B', fontSize: '0.875rem', marginTop: 0 }}>

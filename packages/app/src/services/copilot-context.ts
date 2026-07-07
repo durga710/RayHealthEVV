@@ -3,14 +3,14 @@
  * model can propose typed actions with real UUIDs.
  *
  * Without this, the system prompt tells the model to "only emit a JSON action
- * line when you have real UUIDs from prior conversation context" — and since
+ * line when you have real UUIDs from prior conversation context", and since
  * there is no prior conversation context, the model never emits one, so the
  * structured-action runner stays dead code in practice.
  *
  * We deliberately keep the blob tight to bound prompt-token cost:
  *   - admin/coordinator: up to 50 active caregivers + all agency courses
  *   - caregiver:         only their own profile + their own enrollments
- *   - family:            no caregiver/course context — they only see visits
+ *   - family:            no caregiver/course context, they only see visits
  *                        for a single client, which is queried elsewhere
  *
  * The blob is serialized as JSON inside a fenced block so the model parses it
@@ -47,7 +47,7 @@ export interface CopilotContext {
   /** Compact text to inject before the user prompt. Empty string when the
    * role has no shareable context (e.g. family role). */
   text: string
-  /** Structured form — exposed for tests and for future tool-calling APIs
+  /** Structured form, exposed for tests and for future tool-calling APIs
    * that may want the raw shape rather than the rendered text. */
   caregivers: CaregiverSummary[]
   courses: CourseSummary[]
@@ -63,7 +63,7 @@ export interface CopilotContextOptions {
 }
 
 /**
- * Gather the structured context for this caller. Pure read — never mutates.
+ * Gather the structured context for this caller. Pure read, never mutates.
  * Failures are caught and degrade to an empty context so a transient DB hiccup
  * doesn't take the copilot offline.
  */
@@ -104,7 +104,7 @@ export async function buildCopilotContext(
   // `id` on the domain schemas is technically optional (new entities pre-insert
   // have no UUID yet) but in practice anything returned from a repository
   // already has one. Filter defensively so the UUID-typed summaries stay
-  // honest — a row missing an ID is useless to the model anyway.
+  // honest, a row missing an ID is useless to the model anyway.
   const caregiverSummaries: CaregiverSummary[] = caregivers
     .filter((c): c is Caregiver & { id: string } => typeof c.id === 'string' && c.id.length > 0)
     .map((c) => ({
@@ -148,7 +148,7 @@ function renderContextText(
   return lines.join('\n')
 }
 
-/** Number of context items used in the blob — handy for audit payloads. */
+/** Number of context items used in the blob, handy for audit payloads. */
 export function contextSizeSummary(context: CopilotContext): {
   caregivers: number
   courses: number

@@ -3,13 +3,13 @@
  *
  * Stores per-agency HHAeXchange identity (Tax ID, Provider ID, timezone) plus
  * the per-caregiver and per-service mappings as JSONB. Parallel in shape to
- * the Sandata config (which doesn't have its own repo yet — reads/writes go
+ * the Sandata config (which doesn't have its own repo yet, reads/writes go
  * through `sandata-mapping.ts` + ad-hoc knex).
  *
  * The JSONB payloads are validated against the existing
  * `hhaexchangeCaregiverMappingSchema` / `hhaexchangeServiceMappingSchema` Zod
  * schemas exported from `services/hhaexchange-mapping.ts`. Invalid stored
- * data degrades gracefully — `readConfig()` returns the row with the bad
+ * data degrades gracefully, `readConfig()` returns the row with the bad
  * arrays replaced by empty arrays so the application can still load.
  */
 
@@ -75,7 +75,7 @@ function parseServices(value: unknown): HhaexchangeServiceMapping[] {
 function rowToConfig(row: AgencyHhaexchangeConfigRow): HhaexchangeConfig | undefined {
   // The HhaexchangeConfig type requires both agencyTaxId and hhaProviderId.
   // If either is missing we return `undefined` so callers know the agency
-  // isn't onboarded yet — emitting an HHAeXchange row without those would
+  // isn't onboarded yet, emitting an HHAeXchange row without those would
   // be silently rejected by the aggregator.
   if (!row.agency_tax_id || !row.hha_provider_id) return undefined
   return {
@@ -98,7 +98,7 @@ export interface PartialHhaexchangeConfig {
   services: HhaexchangeServiceMapping[]
   enabled: boolean
   apiBaseUrl: string | null
-  /** Read-only indicator — plaintext credentials are never returned to callers. */
+  /** Read-only indicator, plaintext credentials are never returned to callers. */
   hasCredentials: boolean
 }
 
@@ -121,7 +121,7 @@ export interface HhaexchangeConfigUpsert {
 }
 
 /**
- * Repository-shaped read for the admin UI — returns the row even when
+ * Repository-shaped read for the admin UI, returns the row even when
  * identity fields are missing, so the UI can show a partially-filled form.
  * Use `findValid()` when you need a config that can actually emit rows.
  */
@@ -151,7 +151,7 @@ export class AgencyHhaexchangeConfigRepository {
   }
 
   /** Returns the fully-typed config only when both Tax ID and Provider ID
-   * are present. Use this in the export pipeline — emitting an HHAeXchange
+   * are present. Use this in the export pipeline, emitting an HHAeXchange
    * row without these fields would be rejected by the aggregator. */
   async findValid(agencyId: string): Promise<HhaexchangeConfig | undefined> {
     const row = (await this.db('agency_hhaexchange_config')
@@ -161,7 +161,7 @@ export class AgencyHhaexchangeConfigRepository {
   }
 
   /**
-   * Returns the full submission config WITH decrypted credentials — for the
+   * Returns the full submission config WITH decrypted credentials, for the
    * HHAeXchange client only. Never expose this to an API response; the admin UI
    * uses `findByAgency` (which carries `hasCredentials`, not the secret).
    */

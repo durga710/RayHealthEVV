@@ -1,5 +1,5 @@
 /**
- * Billing — claims + payroll routes.
+ * Billing, claims + payroll routes.
  *
  * Mounted at /api/billing alongside the Stripe billing-routes (distinct
  * subpaths: /claims/*, /payroll/*). Turns GPS-verified EVV visits into Medicaid
@@ -10,7 +10,7 @@
  *
  * Honesty: claim generation, 837 file creation, denial scoring and payroll
  * export run here in full. Actually transmitting the 837 to a payer needs a
- * clearinghouse trading-partner account (external credential) — the file this
+ * clearinghouse trading-partner account (external credential), the file this
  * produces is what the agency uploads there, or what an automated connector
  * would send once configured.
  */
@@ -113,7 +113,7 @@ async function audit(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /billing/claims/generate — generate draft claims for a period
+// POST /billing/claims/generate, generate draft claims for a period
 // ─────────────────────────────────────────────────────────────────────────────
 router.post('/claims/generate', requireCapability('billing.write'), async (req: Request, res: Response) => {
   const parsed = generateBodySchema.safeParse(req.body ?? {});
@@ -176,7 +176,7 @@ router.post('/claims/generate', requireCapability('billing.write'), async (req: 
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /billing/claims — list claims (optional status filter)
+// GET /billing/claims, list claims (optional status filter)
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/claims', requireCapability('billing.read'), async (req: Request, res: Response) => {
   try {
@@ -197,7 +197,7 @@ router.get('/claims', requireCapability('billing.read'), async (req: Request, re
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /billing/claims/:id — claim detail with lines
+// GET /billing/claims/:id, claim detail with lines
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/claims/:id', requireCapability('billing.read'), async (req: Request, res: Response) => {
   try {
@@ -214,7 +214,7 @@ router.get('/claims/:id', requireCapability('billing.read'), async (req: Request
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /billing/claims/:id/validate — gate draft → ready
+// POST /billing/claims/:id/validate, gate draft → ready
 // ─────────────────────────────────────────────────────────────────────────────
 router.post('/claims/:id/validate', requireCapability('billing.write'), async (req: Request, res: Response) => {
   try {
@@ -256,7 +256,7 @@ router.post('/claims/:id/validate', requireCapability('billing.write'), async (r
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /billing/claims/:id/status — manual status transition
+// POST /billing/claims/:id/status, manual status transition
 // ─────────────────────────────────────────────────────────────────────────────
 router.post('/claims/:id/status', requireCapability('billing.write'), async (req: Request, res: Response) => {
   const parsed = statusBodySchema.safeParse(req.body ?? {});
@@ -302,7 +302,7 @@ router.post('/claims/:id/status', requireCapability('billing.write'), async (req
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /billing/claims/:id/837 — download the X12 837P for one claim
+// GET /billing/claims/:id/837, download the X12 837P for one claim
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/claims/:id/837', requireCapability('billing.read'), async (req: Request, res: Response) => {
   try {
@@ -340,7 +340,7 @@ router.get('/claims/:id/837', requireCapability('billing.read'), async (req: Req
       .map(([, label]) => label);
     if (missing.length > 0) {
       res.status(422).json({
-        message: `Agency billing profile is incomplete — set ${missing.join(', ')} under Settings → Billing & Clearinghouse before generating an 837.`,
+        message: `Agency billing profile is incomplete, set ${missing.join(', ')} under Settings → Billing & Clearinghouse before generating an 837.`,
         code: 'BILLING_PROFILE_INCOMPLETE',
         missing,
       });
@@ -421,7 +421,7 @@ router.get('/claims/:id/837', requireCapability('billing.read'), async (req: Req
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /billing/payroll/export?from=&to= — payroll CSV from verified hours
+// GET /billing/payroll/export?from=&to=, payroll CSV from verified hours
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/payroll/export', requireCapability('billing.read'), async (req: Request, res: Response) => {
   const from = req.query.from as string | undefined;
@@ -500,7 +500,7 @@ function toClaimDetailResponse(claim: Claim): Record<string, unknown> {
 
 // ── ERA / 835 remittance posting ────────────────────────────────────────────
 
-/** GET /billing/remittances — recent remittance postings. */
+/** GET /billing/remittances, recent remittance postings. */
 router.get('/remittances', requireCapability('billing.read'), async (req: Request, res: Response) => {
   try {
     const db = req.app.get('db') as Knex;
@@ -513,7 +513,7 @@ router.get('/remittances', requireCapability('billing.read'), async (req: Reques
 });
 
 /**
- * POST /billing/remittances/preview — parse an 835 and report, per claim,
+ * POST /billing/remittances/preview, parse an 835 and report, per claim,
  * whether its control number matches one of our claims. No writes.
  */
 router.post(
@@ -562,7 +562,7 @@ router.post(
 );
 
 /**
- * POST /billing/remittances/post — parse an 835 and post it: record each
+ * POST /billing/remittances/post, parse an 835 and post it: record each
  * remittance and advance matched claims (paid / denied / rejected).
  */
 router.post(

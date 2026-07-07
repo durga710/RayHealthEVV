@@ -19,7 +19,7 @@ function token() {
   return `Bearer ${makeToken('admin', agencyId, userId)}`;
 }
 
-describe('POST /maintenance/approve-unlock/:id — validation + accountability (findings #4, #6)', () => {
+describe('POST /maintenance/approve-unlock/:id, validation + accountability (findings #4, #6)', () => {
   it('rejects adjusted times where end is not after start (400)', async () => {
     const approveUnlock = vi.fn();
     vi.spyOn(core, 'VisitMaintenanceRepository').mockImplementation(

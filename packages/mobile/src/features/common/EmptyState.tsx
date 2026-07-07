@@ -5,8 +5,8 @@ import { colors } from './tokens';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-// Shared "nothing here yet" treatment — icon-in-tinted-circle + title +
-// subtitle — generalized from DashboardScreen's original EmptyVisits so
+// Shared "nothing here yet" treatment, icon-in-tinted-circle + title +
+// subtitle, generalized from DashboardScreen's original EmptyVisits so
 // Visits/Schedule/Training stop each reinventing their own variant.
 export default function EmptyState({
   icon,

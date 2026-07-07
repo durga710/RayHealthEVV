@@ -63,8 +63,8 @@ interface BlockersResponse {
 }
 
 const BLOCKER_META: Record<BlockerReason, { label: string; detail: string; fg: string; bg: string; to: string }> = {
-  open: { label: 'Not clocked out', detail: 'Caregiver clocked in but never clocked out — no duration to bill or pay.', fg: '#991B1B', bg: '#FEF2F2', to: '/admin/review' },
-  flagged: { label: 'Flagged', detail: 'Failed an EVV check — review before it can be billed.', fg: '#92400E', bg: '#FFFBEB', to: '/admin/compliance-engine/exceptions' },
+  open: { label: 'Not clocked out', detail: 'Caregiver clocked in but never clocked out, no duration to bill or pay.', fg: '#991B1B', bg: '#FEF2F2', to: '/admin/review' },
+  flagged: { label: 'Flagged', detail: 'Failed an EVV check, review before it can be billed.', fg: '#92400E', bg: '#FFFBEB', to: '/admin/compliance-engine/exceptions' },
   pending: { label: 'Pending verification', detail: 'Awaiting verification before it becomes claim-ready.', fg: '#155E75', bg: '#ECFEFF', to: '/admin/review' },
 };
 
@@ -256,9 +256,9 @@ export function ClaimMatchingPage() {
         { label: 'Claims generated', value: claims.length.toLocaleString(), tone: 'accent', hint: 'this agency' },
       ]
     : [
-        { label: 'Claim-ready (7d)', value: '—', tone: 'success' },
-        { label: 'Claim-ready (30d)', value: '—' },
-        { label: 'Flagged (7d)', value: '—', tone: 'warning' },
+        { label: 'Claim-ready (7d)', value: ', ', tone: 'success' },
+        { label: 'Claim-ready (30d)', value: ', ' },
+        { label: 'Flagged (7d)', value: ', ', tone: 'warning' },
         { label: 'Claims generated', value: claims.length.toLocaleString(), tone: 'accent' },
       ];
 
@@ -313,7 +313,7 @@ export function ClaimMatchingPage() {
             Generated <strong style={{ color: 'var(--color-text)' }}>{genResult.generated}</strong> claim(s).{' '}
             {genResult.unbillable.length > 0 ? (
               <span>
-                {genResult.unbillable.length} visit(s) could not be billed — most commonly missing an
+                {genResult.unbillable.length} visit(s) could not be billed, most commonly missing an
                 active authorization.
               </span>
             ) : (
@@ -323,7 +323,7 @@ export function ClaimMatchingPage() {
         ) : null}
       </div>
 
-      {/* Readiness blockers — the actionable list behind the flagged/pending KPIs */}
+      {/* Readiness blockers, the actionable list behind the flagged/pending KPIs */}
       {blockers && blockers.counts.total > 0 ? (
         <div style={sectionCard}>
           <h3 style={{ color: 'var(--color-text)', fontSize: '1rem', fontWeight: 800, margin: 0 }}>
@@ -358,7 +358,7 @@ export function ClaimMatchingPage() {
                       <td style={{ padding: '0.5rem 0.6rem', fontWeight: 700, color: 'var(--color-text)' }}>{b.clientName}</td>
                       <td style={{ padding: '0.5rem 0.6rem', color: 'var(--color-text-muted)' }}>{b.caregiverName}</td>
                       <td style={{ padding: '0.5rem 0.6rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-                        {b.clockInTime ? new Date(b.clockInTime).toLocaleDateString() : '—'}
+                        {b.clockInTime ? new Date(b.clockInTime).toLocaleDateString() : ', '}
                       </td>
                       <td style={{ padding: '0.5rem 0.6rem' }}>
                         <Link to={m.to} style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'none' }}>
@@ -476,7 +476,7 @@ export function ClaimMatchingPage() {
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: 0 }}>
             Snapshot as of <strong style={{ color: 'var(--color-text)' }}>{snapshot.asOf}</strong>. Sandata
             submission window: <strong>{snapshot.policy.sandataSubmissionWindowDays} days</strong> from visit
-            date — verified visits should be submitted within this window for first-pass acceptance.
+            date, verified visits should be submitted within this window for first-pass acceptance.
           </p>
         </div>
       ) : null}

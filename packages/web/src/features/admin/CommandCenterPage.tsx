@@ -41,7 +41,7 @@ interface CommandCenterSummary {
   attention: AttentionItem[];
 }
 
-// The six actions an owner or coordinator reaches for most — per the Command
+// The six actions an owner or coordinator reaches for most, per the Command
 // Center priorities' Quick Action Dock. "Generate audit packet" links to the
 // existing Audit Defense screen (no dedicated /admin/audit-packet route
 // exists yet); update this `to` if/when that route ships.
@@ -81,7 +81,7 @@ export function CommandCenterPage() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 60_000); // refresh each minute — it's a live ops board
+    const t = setInterval(load, 60_000); // refresh each minute, it's a live ops board
     return () => clearInterval(t);
   }, [load]);
 
@@ -321,7 +321,7 @@ export function CommandCenterPage() {
             <div className="billing-readiness-row">
               <StatusPill
                 tone={claimsClean ? 'success' : 'warning'}
-                label={claimsClean ? 'Clean — ready to bill' : `${flaggedVisits} visit${flaggedVisits === 1 ? '' : 's'} need review`}
+                label={claimsClean ? 'Clean, ready to bill' : `${flaggedVisits} visit${flaggedVisits === 1 ? '' : 's'} need review`}
                 dot
               />
             </div>

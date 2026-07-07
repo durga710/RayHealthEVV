@@ -279,7 +279,7 @@ export class PlatformAdminRepository {
     };
   }
 
-  /** Global, cross-agency audit feed — newest first. The "monitor everything" tap. */
+  /** Global, cross-agency audit feed, newest first. The "monitor everything" tap. */
   async getRecentActivity(limit = 40): Promise<PlatformActivityRow[]> {
     const rows = (await this.db('audit_events as e')
       .leftJoin('agencies as a', 'a.id', 'e.agency_id')
@@ -307,7 +307,7 @@ export class PlatformAdminRepository {
     }));
   }
 
-  /** Deep drill-down on one agency — counts, its users, and its recent activity. */
+  /** Deep drill-down on one agency, counts, its users, and its recent activity. */
   async getAgencyDetail(agencyId: string): Promise<PlatformAgencyDetail | null> {
     const base = (await this.listAgencies()).find((a) => a.id === agencyId);
     if (!base) return null;

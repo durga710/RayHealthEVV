@@ -1,5 +1,5 @@
 /**
- * HHAeXchange aggregator mapping — config schema + lookup.
+ * HHAeXchange aggregator mapping, config schema + lookup.
  *
  * Parallel to sandata-mapping.ts. HHAeXchange is the second of two EVV
  * aggregators contracted by PA DHS (and the sole aggregator for NJ).
@@ -32,7 +32,7 @@ export type HhaexchangeServiceMapping = z.infer<typeof hhaexchangeServiceMapping
 
 export const hhaexchangeCaregiverMappingSchema = z.object({
   caregiverId: z.string().uuid(),
-  /** HHAeXchange "Employee ID" — opaque per-agency identifier. */
+  /** HHAeXchange "Employee ID", opaque per-agency identifier. */
   employeeId: z.string().min(1).max(32),
 })
 export type HhaexchangeCaregiverMapping = z.infer<typeof hhaexchangeCaregiverMappingSchema>
@@ -55,7 +55,7 @@ export type HhaexchangeConfig = z.infer<typeof hhaexchangeConfigSchema>
 export interface HhaexchangeVisitInput {
   visitId: string
   caregiverId: string
-  /** Client's HHAeXchange "Member ID" — distinct from Medicaid number. */
+  /** Client's HHAeXchange "Member ID", distinct from Medicaid number. */
   memberId: string
   clientFirstName: string
   clientLastName: string

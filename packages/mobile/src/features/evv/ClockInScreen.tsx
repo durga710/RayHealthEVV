@@ -75,7 +75,7 @@ function hexAlpha(a: number): string {
 // stay within, and the caregiver's own live location dot.
 //
 // On top of the solid boundary we render a radar "ping": a translucent ring
-// that swells from the centre out to the full radius and fades, looping — so
+// that swells from the centre out to the full radius and fades, looping, so
 // the map feels like it's actively scanning for the caregiver. Tinted green
 // inside / amber outside so the animation itself signals zone status. Purely
 // cosmetic; the inside/outside detection still comes from the GPS distance
@@ -112,7 +112,7 @@ function GeoMap({
     ? 'Location access denied'
     : 'Acquiring GPS…';
   // Fit the camera tightly to the geofence circle so the map opens framed on
-  // the zone — not zoomed out to the whole city. We compute the circle's
+  // the zone, not zoomed out to the whole city. We compute the circle's
   // bounding box (centre ± radius, with ~20% breathing room) and
   // fitToCoordinates onto it once the map is ready; that's exact regardless of
   // screen aspect ratio. initialRegion below is only a close first frame.
@@ -205,7 +205,7 @@ function GeoMap({
           coordinate={{ latitude: clientLat, longitude: clientLng }}
           title="Client location"
         />
-        {/* Radar ping — drawn under the solid boundary (lower zIndex). */}
+        {/* Radar ping, drawn under the solid boundary (lower zIndex). */}
         <Circle
           center={{ latitude: clientLat, longitude: clientLng }}
           radius={pulse.radius}
@@ -214,7 +214,7 @@ function GeoMap({
           fillColor={`${zoneColor}${hexAlpha(pulse.fade * 0.18)}`}
           zIndex={1}
         />
-        {/* Solid geofence boundary — always crisp, on top. */}
+        {/* Solid geofence boundary, always crisp, on top. */}
         <Circle
           center={{ latitude: clientLat, longitude: clientLng }}
           radius={radiusM}
@@ -225,7 +225,7 @@ function GeoMap({
         />
       </MapView>
 
-      {/* Floating status pill — overlaid on the map instead of a separate card. */}
+      {/* Floating status pill, overlaid on the map instead of a separate card. */}
       <View style={styles.mapPill}>
         <View style={[styles.mapPillDot, { backgroundColor: zoneColor }]} />
         <Text style={styles.mapPillText} numberOfLines={1}>{statusLabel}</Text>
@@ -239,7 +239,7 @@ function GeoMap({
         </View>
       ) : null}
 
-      {/* Recenter controls — jump to my location or back to the client zone. */}
+      {/* Recenter controls, jump to my location or back to the client zone. */}
       <View style={styles.mapControls}>
         <Pressable
           onPress={recenterMe}
@@ -265,7 +265,7 @@ function GeoMap({
 
 // ─── Motion helpers (Reanimated) ──────────────────────────────────────────────
 
-// Live "recording" dot next to "Visit in progress" — gently swells and dims on
+// Live "recording" dot next to "Visit in progress", gently swells and dims on
 // a loop so the running timer reads as alive, not a static badge.
 function PulseDot() {
   const pulse = useSharedValue(0);
@@ -286,7 +286,7 @@ function PulseDot() {
   return <Reanimated.View style={[styles.timerPulse, style]} />;
 }
 
-// Celebration sparkles around the completion check — same pattern as
+// Celebration sparkles around the completion check, same pattern as
 // AppDialog's SPARKLE_DOTS: tiny dots springing in on a stagger.
 // Positions are relative to the 96px doneCheck circle.
 const DONE_SPARKLES = [
@@ -352,7 +352,7 @@ export default function ClockInScreen() {
   const clientLat = params.clientLat ? parseFloat(firstParam(params.clientLat) ?? '') : null;
   const clientLng = params.clientLng ? parseFloat(firstParam(params.clientLng) ?? '') : null;
   // Guard against a "null"/garbage param (e.g. a null geofence stringified by
-  // the schedule path) parsing to NaN — which would make `d <= NaN` always
+  // the schedule path) parsing to NaN, which would make `d <= NaN` always
   // false and trap the user permanently outside the zone.
   const parsedGeofence = params.clientGeofenceM ? parseInt(firstParam(params.clientGeofenceM) ?? '', 10) : NaN;
   const clientGeofenceM = Number.isFinite(parsedGeofence) && parsedGeofence > 0 ? parsedGeofence : 150;
@@ -416,7 +416,7 @@ export default function ClockInScreen() {
       const fix = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       applyFix(fix);
     } catch {
-      // Ignore — the watch below is the source of truth once it emits.
+      // Ignore, the watch below is the source of truth once it emits.
     }
     locationSubRef.current = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, distanceInterval: 5, timeInterval: 4000 },
@@ -454,7 +454,7 @@ export default function ClockInScreen() {
       return;
     }
     if (!currentCoords) {
-      showAppAlert('Still finding your location', 'Hang tight while we lock onto GPS — this usually takes a few seconds.', undefined, {
+      showAppAlert('Still finding your location', 'Hang tight while we lock onto GPS, this usually takes a few seconds.', undefined, {
         variant: 'info',
         icon: 'locate-outline',
       });
@@ -485,7 +485,7 @@ export default function ClockInScreen() {
       } else {
         showAppAlert(
           "Clock-in didn't go through",
-          "Something interrupted your check-in. Give it another try — your visit hasn't started yet.",
+          "Something interrupted your check-in. Give it another try, your visit hasn't started yet.",
           undefined,
           { variant: 'error' },
         );
@@ -521,7 +521,7 @@ export default function ClockInScreen() {
             };
           }
         } catch {
-          // ignore — resolveClockOutLocation sends a zeroed location and lets
+          // ignore, resolveClockOutLocation sends a zeroed location and lets
           // the server decide, so clock-out still proceeds.
         }
       }
@@ -547,7 +547,7 @@ export default function ClockInScreen() {
       } else {
         showAppAlert(
           "Clock-out didn't go through",
-          'Something interrupted your check-out. Give it another try — your visit is still open.',
+          'Something interrupted your check-out. Give it another try, your visit is still open.',
           undefined,
           { variant: 'error' },
         );
@@ -559,7 +559,7 @@ export default function ClockInScreen() {
 
   const isClockedIn = visit !== null;
   const canClockIn = currentCoords != null && geoStatus === 'inside' && !isLoading;
-  // Clock-out is intentionally NOT gated on a live fix — see handleClockOut.
+  // Clock-out is intentionally NOT gated on a live fix, see handleClockOut.
   const canClockOut = isClockedIn && !isLoading;
 
   const initials = (clientName ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -573,7 +573,7 @@ export default function ClockInScreen() {
           <Text style={styles.avatarText}>{initials}</Text>
         </View>
         <View style={styles.clientInfo}>
-          <Text style={styles.clientName} numberOfLines={1}>{clientName ?? '—'}</Text>
+          <Text style={styles.clientName} numberOfLines={1}>{clientName ?? ', '}</Text>
           {clientAddress ? (
             <View style={styles.addrRow}>
               <Ionicons name="location-outline" size={13} color={colors.textSecondary} />
@@ -713,7 +713,7 @@ export default function ClockInScreen() {
     <Reanimated.View entering={FadeIn.duration(200)} style={styles.deniedBox}>
       <Text style={styles.deniedTitle}>Turn on location to clock in</Text>
       <Text style={styles.deniedNote}>
-        {"Pennsylvania EVV rules require confirming you're at the client's home when a visit starts — so location has to be on to clock in. It's used only at clock-in and clock-out, never to track you between visits. Enable location, then tap Retry."}
+        {"Pennsylvania EVV rules require confirming you're at the client's home when a visit starts, so location has to be on to clock in. It's used only at clock-in and clock-out, never to track you between visits. Enable location, then tap Retry."}
       </Text>
       <View style={styles.deniedActions}>
         <Pressable
@@ -740,7 +740,7 @@ export default function ClockInScreen() {
     <View style={styles.evvNote}>
       <Ionicons name="lock-closed" size={13} color={colors.textMuted} style={{ marginTop: 1 }} />
       <Text style={styles.evvNoteText}>
-        Your location is captured only at clock-in and clock-out — never in between — to meet PA EVV
+        Your location is captured only at clock-in and clock-out, never in between, to meet PA EVV
         requirements.{' '}
         {hasGeolock
           ? `Clock-in confirms you're within ${formatDistance(clientGeofenceM)} of the client's address; it's checked on our servers, so the map here is just your guide.`
@@ -750,7 +750,7 @@ export default function ClockInScreen() {
   );
 
   // Plain-language explanation of the button's state, so the caregiver never
-  // faces a disabled Clock In without knowing why. Purely UX — the server is
+  // faces a disabled Clock In without knowing why. Purely UX, the server is
   // still the geofence authority. Hidden once clocked in (Clock Out is never
   // gated on the fence, so a "move closer" nudge there would be misleading).
   const statusHint =
@@ -766,7 +766,7 @@ export default function ClockInScreen() {
         <View style={[styles.hintRow, styles.hintInside]}>
           <Ionicons name="checkmark-circle" size={16} color={colors.successDark} />
           <Text style={[styles.hintText, { color: colors.successDark }]}>
-            {"You're inside the client's zone — you're good to clock in."}
+            {"You're inside the client's zone, you're good to clock in."}
           </Text>
         </View>
       ) : (
@@ -852,7 +852,7 @@ export default function ClockInScreen() {
           <Pressable
             onPress={() =>
               // Route to the existing visit-detail screen (no separate summary
-              // route exists). Status is 'pending' — the visit was just recorded
+              // route exists). Status is 'pending', the visit was just recorded
               // and the office verifies it; claiming "verified" here would be
               // dishonest, consistent with the completion badge's GPS honesty.
               router.replace({
@@ -883,7 +883,7 @@ export default function ClockInScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Slim header — back + geofence pill; client detail lives in the card below */}
+      {/* Slim header, back + geofence pill; client detail lives in the card below */}
       <LinearGradient
         colors={gradients.header}
         style={[styles.topBar, { paddingTop: insets.top + 8 }]}
@@ -1051,7 +1051,7 @@ const styles = StyleSheet.create({
   },
   mapBtnDisabled: { backgroundColor: '#eef2f6' },
 
-  // Active timer (green-tinted shadow is intentional — matches the timer surface)
+  // Active timer (green-tinted shadow is intentional, matches the timer surface)
   timerCard: {
     borderRadius: radii.xl, paddingVertical: 24, paddingHorizontal: 20, alignItems: 'center',
     borderWidth: 1, borderColor: '#a7f3d0',

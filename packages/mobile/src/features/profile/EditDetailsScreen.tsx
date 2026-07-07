@@ -66,7 +66,7 @@ export default function EditDetailsScreen() {
         lastName: lastName.trim(),
         phone: phone.trim(),
       });
-      showAppToast({ message: "You're all set — your details have been updated.", variant: 'success' });
+      showAppToast({ message: "You're all set, your details have been updated.", variant: 'success' });
       router.back();
     } catch {
       showAppAlert('Could not save', 'Please check your connection and try again.', undefined, { variant: 'error' });

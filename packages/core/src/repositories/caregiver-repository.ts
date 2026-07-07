@@ -14,7 +14,7 @@ export class CaregiverRepository {
       last_name: data.lastName,
       email: data.email,
       phone: data.phone ?? null,
-      // Encrypt NPI at write. Column was varchar(10) — widened to text in
+      // Encrypt NPI at write. Column was varchar(10), widened to text in
       // the R5 schema migration so ciphertext (~76+ chars) fits.
       npi: encryptCell(data.npi),
       hire_date: data.hireDate ?? null,
@@ -57,7 +57,7 @@ export class CaregiverRepository {
 
   /**
    * Idempotent caregiver upsert for the migration importer. Matches an existing
-   * row first on (agency_id, external_id), then on (agency_id, email) — the
+   * row first on (agency_id, external_id), then on (agency_id, email), the
    * latter has a DB unique constraint, so this also prevents a duplicate-email
    * insert from a re-run that omitted external_id. NPI is encrypted at write.
    */
@@ -168,7 +168,7 @@ export class CaregiverRepository {
   }
 
   /**
-   * Mark an invite as redeemed. Idempotent only in the trivial sense —
+   * Mark an invite as redeemed. Idempotent only in the trivial sense , 
    * if `accepted_at` is already non-null the caller should treat the
    * invite as already-used and refuse to create another user. The route
    * layer enforces single-use; this method just persists the marker.

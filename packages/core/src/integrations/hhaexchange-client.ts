@@ -1,5 +1,5 @@
 /**
- * HHAeXchange EVV submission client — SCAFFOLD.
+ * HHAeXchange EVV submission client. SCAFFOLD.
  *
  * Mirrors the Sandata client's shape and gating so wiring it into the
  * `/exports/hhaexchange/submit` route is identical to Sandata. The HTTP payload
@@ -7,7 +7,7 @@
  * requires the agency's Tax ID + Provider ID and an HHAeXchange integration
  * account whose spec/sandbox is issued per-agency. `submitVisits` therefore
  * returns `not_configured` until setup is complete, and a clear, non-retryable
- * `error` once configured — never a fake success. Replace the marked block with
+ * `error` once configured, never a fake success. Replace the marked block with
  * the real transport when the HHAeXchange spec + credentials are in hand.
  */
 

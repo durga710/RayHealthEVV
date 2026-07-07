@@ -19,7 +19,7 @@ export class UserAgencyRepository {
   /**
    * Active memberships for a user, joined with the agency name so callers can
    * render a picker without a second query. Ordered by agency name for a
-   * stable list. Excludes disconnected memberships and non-approved agencies —
+   * stable list. Excludes disconnected memberships and non-approved agencies , 
    * the same gates loginGate applies to the home agency.
    */
   async listActiveForUser(userId: string): Promise<UserAgencyMembership[]> {
@@ -36,7 +36,7 @@ export class UserAgencyRepository {
     return rows.map(mapRow);
   }
 
-  /** One membership, regardless of status — callers decide how to gate. */
+  /** One membership, regardless of status, callers decide how to gate. */
   async findMembership(userId: string, agencyId: string): Promise<UserAgencyMembership | undefined> {
     const row = await this.db('user_agencies as ua')
       .join('agencies as a', 'a.id', 'ua.agency_id')

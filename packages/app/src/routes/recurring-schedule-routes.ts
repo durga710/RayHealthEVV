@@ -1,15 +1,15 @@
 /**
  * Recurring schedule routes.
  *
- *   GET    /recurring-schedules              — list patterns (with names)
- *   POST   /recurring-schedules              — create a weekly pattern
- *   PATCH  /recurring-schedules/:id/status   — active | paused | ended
- *   DELETE /recurring-schedules/:id          — delete a pattern
- *   POST   /recurring-schedules/:id/materialize  — generate assignments (one)
- *   POST   /recurring-schedules/materialize      — generate for all active
+ *   GET    /recurring-schedules             , list patterns (with names)
+ *   POST   /recurring-schedules             , create a weekly pattern
+ *   PATCH  /recurring-schedules/:id/status  , active | paused | ended
+ *   DELETE /recurring-schedules/:id         , delete a pattern
+ *   POST   /recurring-schedules/:id/materialize , generate assignments (one)
+ *   POST   /recurring-schedules/materialize     , generate for all active
  *
  * Materialization expands a pattern into concrete `assignments` over a rolling
- * horizon (default 14 days, max 90), idempotently — re-running never
+ * horizon (default 14 days, max 90), idempotently, re-running never
  * double-books a date. Reads use schedule.read; every mutation uses
  * schedule.write (admin + coordinator; caregivers excluded).
  */
@@ -51,7 +51,7 @@ router.get('/', requireCapability('schedule.read'), async (req: Request, res: Re
 });
 
 /**
- * GET /recurring-schedules/forecast?days=14 — read-only coverage forecast.
+ * GET /recurring-schedules/forecast?days=14, read-only coverage forecast.
  * Lists upcoming recurring occurrences that have NOT been generated into
  * assignments yet, so a coordinator can spot (and one-click fix) visits that
  * would otherwise silently never happen. Default horizon 14 days, max 90.
@@ -172,7 +172,7 @@ async function auditMaterialize(
 router.post('/:id/materialize', requireCapability('schedule.write'), async (req: Request, res: Response) => {
   const parsed = materializeSchema.safeParse(req.body ?? {});
   if (!parsed.success) {
-    res.status(400).json({ message: 'days must be an integer 1–90' });
+    res.status(400).json({ message: 'days must be an integer 1-90' });
     return;
   }
   const rawId = req.params.id;
@@ -198,7 +198,7 @@ router.post('/:id/materialize', requireCapability('schedule.write'), async (req:
 router.post('/materialize', requireCapability('schedule.write'), async (req: Request, res: Response) => {
   const parsed = materializeSchema.safeParse(req.body ?? {});
   if (!parsed.success) {
-    res.status(400).json({ message: 'days must be an integer 1–90' });
+    res.status(400).json({ message: 'days must be an integer 1-90' });
     return;
   }
   const { start, end } = horizonWindow(parsed.data.days);

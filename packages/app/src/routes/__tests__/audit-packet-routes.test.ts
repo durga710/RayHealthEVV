@@ -5,7 +5,7 @@ import * as core from '@rayhealth/core';
 import { createApp } from '../../app.js';
 import { makeToken, setTestJwtSecret } from './test-helpers.js';
 
-// Pennsylvania State Capitol — the "client address" anchor for in-fence
+// Pennsylvania State Capitol, the "client address" anchor for in-fence
 // fixtures. New York City is far outside any reasonable geofence and
 // simulates an off-site clock-in/out.
 const PA_CAPITOL = { lat: 40.2647, lng: -76.8839, accuracy: 10 };
@@ -162,7 +162,7 @@ describe('GET /admin/audit-packet/:visitId', () => {
 
   it('returns 404 for a visit belonging to another agency', async () => {
     // getVisitByIdForAgency is tenant-scoped and returns null for a
-    // cross-tenant id — simulate that here.
+    // cross-tenant id, simulate that here.
     installMocks({ visit: null });
     const response = await request(createApp())
       .get(`/admin/audit-packet/${visitId}`)

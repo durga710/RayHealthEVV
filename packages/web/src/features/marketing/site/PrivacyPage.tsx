@@ -6,7 +6,7 @@ import { SiteLayout } from './SiteLayout.js';
  * SiteLayout (teal/orange brand) so it matches the rest of the marketing
  * site. Replaces the old MarketingShell version.
  *
- * Required by Apple App Store / Google Play submission — both stores
+ * Required by Apple App Store / Google Play submission, both stores
  * block listings that don't link to a working privacy policy URL.
  *
  * This page is the customer-facing summary; the authoritative engineering
@@ -44,35 +44,35 @@ export function PrivacyPage() {
               are complete, no real PHI should be loaded into the
               platform. This page summarizes how that information is collected,
               used, stored, and protected. The full
-              engineering record — including subprocessor list, encryption
-              verification matrix, and incident-response plan — lives in our
+              engineering record, including subprocessor list, encryption
+              verification matrix, and incident-response plan, lives in our
               source repository under <code>docs/compliance/hipaa/</code>.
             </p>
 
             <h2>What we collect</h2>
             <ul>
               <li>
-                <strong>Caregiver and client names + contact info</strong> —
+                <strong>Caregiver and client names + contact info</strong> , 
                 entered by agency administrators when they set up clients,
                 assignments, and staff in their account.
               </li>
               <li>
                 <strong>Visit timestamps and GPS verification coordinates</strong>{' '}
-                — captured at clock-in and clock-out, required by the 21st Century
+                are captured at clock-in and clock-out, as required by the 21st Century
                 Cures Act (data point #4: location of services). Location is
                 never tracked in the background; only at clock-in and clock-out.
               </li>
               <li>
-                <strong>Visit notes and care-plan content</strong> — entered by
+                <strong>Visit notes and care-plan content</strong>, entered by
                 caregivers during or after a visit.
               </li>
               <li>
-                <strong>Authentication credentials</strong> — email and a
+                <strong>Authentication credentials</strong>, email and a
                 password (stored as a bcrypt hash, never plaintext) plus a
                 session token / bearer JWT.
               </li>
               <li>
-                <strong>Encrypted client identifiers</strong> — Medicaid IDs and
+                <strong>Encrypted client identifiers</strong>. Medicaid IDs and
                 caregiver NPIs are encrypted at the application layer with
                 AES-256-GCM before they're written to the database. We can
                 verify, in code, that no plaintext copy reaches storage.
@@ -130,8 +130,8 @@ export function PrivacyPage() {
                   />
                   <strong style={{ color: '#fff' }}>At rest:</strong>{' '}
                   Database storage is encrypted by our
-                  Postgres provider (Neon). Two especially sensitive fields —
-                  client Medicaid numbers and caregiver NPIs — get an additional
+                  Postgres provider (Neon). Two especially sensitive fields , 
+                  client Medicaid numbers and caregiver NPIs, get an additional
                   application-layer AES-256-GCM envelope so even a database
                   snapshot exfiltration would expose only ciphertext for those
                   columns.
@@ -159,7 +159,7 @@ export function PrivacyPage() {
 
             <h2>Audit trail</h2>
             <p>
-              Every PHI access — read, mutation, login, permission decision — is
+              Every PHI access, read, mutation, login, permission decision, is
               recorded in an append-only audit table. The append-only property
               is enforced at the database layer: a Postgres trigger refuses any
               attempt to UPDATE, DELETE, or TRUNCATE the audit log. Even a
@@ -175,7 +175,7 @@ export function PrivacyPage() {
               in-app assistant is configured to call only aggregate-count tools
               (e.g. "how many visits this week") and never returns names or
               patient-level data. There is no fallback to a non-BAA AI vendor in
-              the codebase — if Bedrock is unavailable, the AI surfaces fail
+              the codebase, if Bedrock is unavailable, the AI surfaces fail
               closed instead of routing elsewhere.
             </p>
 
@@ -189,26 +189,26 @@ export function PrivacyPage() {
             </p>
             <ul>
               <li>
-                <strong>Vercel</strong> — application compute (web app + API);
+                <strong>Vercel</strong>, application compute (web app + API);
                 BAA in progress
               </li>
               <li>
-                <strong>Neon</strong> — Postgres database; BAA active, running in
+                <strong>Neon</strong>. Postgres database; BAA active, running in
                 Neon’s HIPAA mode (pgAudit audit logging, encryption at rest)
               </li>
               <li>
-                <strong>AWS</strong> — Bedrock AI inference; BAA active
+                <strong>AWS</strong>. Bedrock AI inference; BAA active
               </li>
               <li>
-                <strong>Cloudflare</strong> — DNS + TLS termination (encrypted
+                <strong>Cloudflare</strong>. DNS + TLS termination (encrypted
                 transit only; not a Business Associate under HHS guidance)
               </li>
               <li>
-                <strong>Google Firebase</strong> — push notifications and auth;
+                <strong>Google Firebase</strong>, push notifications and auth;
                 BAA in progress
               </li>
               <li>
-                <strong>Resend</strong> — transactional email; BAA in progress
+                <strong>Resend</strong>, transactional email; BAA in progress
               </li>
             </ul>
 
@@ -268,7 +268,7 @@ export function PrivacyPage() {
               }}
             >
               <p style={{ margin: 0, lineHeight: 1.7 }}>
-                Privacy / Security Officer — RayHealthEVV™<br />
+                Privacy / Security Officer. RayHealthEVV™<br />
                 <a href="mailto:security@rayhealthevv.com">security@rayhealthevv.com</a>
                 <br />
                 Or via <Link to="/contact">/contact</Link> (the form routes to the same

@@ -6,7 +6,7 @@ export const auditEventTypes = [
   'caregiver.created', 'caregiver.status-changed',
   'assignment.created', 'assignment.cancelled',
   'exception.filed', 'exception.approved',
-  // Visit Maintenance Unlock Request (VMUR) lifecycle — the sanctioned path for
+  // Visit Maintenance Unlock Request (VMUR) lifecycle, the sanctioned path for
   // editing a finalized (immutability-locked) visit. `requested` records who
   // asked for the correction; `approved` records who authorized it and the
   // adjusted times, so a post-finalization billing change is always attributable.
@@ -33,7 +33,7 @@ export const auditEventTypes = [
   // `invite.email.failed` track automated email delivery via Resend so
   // an admin can audit which invites actually reached the recipient's
   // inbox (or fell back to manual-copy). Payload is delivery metadata
-  // only (`messageId`, `error` category) — never the URL or token.
+  // only (`messageId`, `error` category), never the URL or token.
   'invite.created', 'invite.accepted', 'invite.access_code_failed',
   'invite.email.sent', 'invite.email.failed',
   'invite.revoked', 'invite.revoked_all',
@@ -52,7 +52,7 @@ export const auditEventTypes = [
   // Real Alternate-EVV async transport: `submitted` = clients/employees/visits
   // POSTed in load order; `polled` = status results applied + exceptions queued.
   'evv.sandata.altevv.submitted', 'evv.sandata.altevv.polled',
-  // HHAeXchange aggregator submission lifecycle — mirror of the Sandata pair
+  // HHAeXchange aggregator submission lifecycle, mirror of the Sandata pair
   // for agencies routed through HHAeXchange instead of Sandata.
   'evv.hhaexchange.submitted', 'evv.hhaexchange.reconciled',
   // Bulk migration import (clients / caregivers / authorizations CSV load).

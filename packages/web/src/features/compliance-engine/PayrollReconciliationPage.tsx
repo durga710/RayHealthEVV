@@ -139,10 +139,10 @@ export function PayrollReconciliationPage() {
         },
       ]
     : [
-        { label: 'Verified hours (7d)', value: '—' },
-        { label: 'Verified hours (30d)', value: '—' },
-        { label: 'Completed visits (7d)', value: '—' },
-        { label: 'In-progress shifts', value: '—', tone: 'accent' },
+        { label: 'Verified hours (7d)', value: ', ' },
+        { label: 'Verified hours (30d)', value: ', ' },
+        { label: 'Completed visits (7d)', value: ', ' },
+        { label: 'In-progress shifts', value: ', ', tone: 'accent' },
       ];
 
   return (
@@ -226,7 +226,7 @@ export function PayrollReconciliationPage() {
           Export payroll
         </h3>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0.4rem 0 0.9rem' }}>
-          Download a payroll-ready CSV of EVV-verified hours per caregiver for a pay period — visit
+          Download a payroll-ready CSV of EVV-verified hours per caregiver for a pay period, visit
           time totaled per caregiver, ready to import into your payroll provider.
         </p>
         <div style={{ alignItems: 'flex-end', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>

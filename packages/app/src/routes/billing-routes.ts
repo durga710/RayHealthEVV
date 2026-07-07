@@ -17,7 +17,7 @@ function getStripe(): Stripe {
   return new Stripe(key, { apiVersion: '2026-04-22.dahlia' });
 }
 
-// GET /billing/status — subscription state for the authenticated agency.
+// GET /billing/status, subscription state for the authenticated agency.
 router.get('/status', authContext, async (req, res) => {
   try {
     const repo = new AgencyRepository(req.app.get('db'));
@@ -28,7 +28,7 @@ router.get('/status', authContext, async (req, res) => {
   }
 });
 
-// POST /billing/checkout-session — creates a Stripe Checkout session.
+// POST /billing/checkout-session, creates a Stripe Checkout session.
 // Body: { tier: string, successUrl: string, cancelUrl: string }
 router.post('/checkout-session', authContext, async (req, res) => {
   const { tier, successUrl, cancelUrl } = req.body ?? {};
@@ -72,7 +72,7 @@ router.post('/checkout-session', authContext, async (req, res) => {
   }
 });
 
-// GET /billing/portal — returns a Stripe Customer Portal URL.
+// GET /billing/portal, returns a Stripe Customer Portal URL.
 router.get('/portal', authContext, async (req, res) => {
   const returnUrl = (req.query.returnUrl as string | undefined)
     ?? `${process.env.APP_URL ?? 'https://rayhealthevv.com'}/admin`;
@@ -97,7 +97,7 @@ router.get('/portal', authContext, async (req, res) => {
   }
 });
 
-// POST /billing/webhook — Stripe webhook. This route is mounted BEFORE
+// POST /billing/webhook. Stripe webhook. This route is mounted BEFORE
 // express.json() so req.body is the raw Buffer Stripe needs for signature
 // verification. See app.ts for the special mounting order.
 router.post('/webhook', async (req, res) => {

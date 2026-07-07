@@ -41,7 +41,7 @@ async function writeCachedStatus(status: PersistedPermStatus): Promise<void> {
 
 /**
  * Resolve once the user dismisses the branded explainer dialog. Rendered
- * through the app's own AppDialog rather than a native Alert — no UI flash
+ * through the app's own AppDialog rather than a native Alert, no UI flash
  * on the calling component either way.
  */
 function showExplainer(): Promise<void> {
@@ -65,7 +65,7 @@ function showExplainer(): Promise<void> {
  *   2. Otherwise, show the explainer, then call requestPermissionsAsync,
  *      then persist the result.
  *
- * Never throws — callers can rely on the returned status.
+ * Never throws, callers can rely on the returned status.
  */
 export async function ensureNotificationPermission(): Promise<PersistedPermStatus> {
   // Step 1: respect the cached answer when we already have one.
@@ -85,7 +85,7 @@ export async function ensureNotificationPermission(): Promise<PersistedPermStatu
     return cached;
   }
 
-  // Step 2: first-launch flow. Check OS first — if it's already granted
+  // Step 2: first-launch flow. Check OS first, if it's already granted
   // (some platforms grant by default for managed expo), skip the prompt.
   try {
     const existing = await Notifications.getPermissionsAsync();

@@ -1,8 +1,8 @@
 /**
  * Agency Sandata config routes.
  *
- *   GET  /agencies/me/sandata-config   — read identity + mappings (nullable identity allowed)
- *   PUT  /agencies/me/sandata-config   — admin-only update
+ *   GET  /agencies/me/sandata-config  , read identity + mappings (nullable identity allowed)
+ *   PUT  /agencies/me/sandata-config  , admin-only update
  *
  * Sibling to `agency-hhaexchange-config-routes.ts`. Validates the per-mapping
  * shapes with the existing Zod schemas from `services/sandata-mapping.ts`
@@ -26,7 +26,7 @@ import { requireCapability } from '../middleware/require-capability.js'
 const router = Router()
 
 // Aggregator base URL must be https and must not point at a private, loopback,
-// link-local or localhost target — otherwise a tenant admin could turn a
+// link-local or localhost target, otherwise a tenant admin could turn a
 // transmission into an SSRF pivot into internal/cloud-metadata infrastructure.
 const safeAggregatorUrl = z
   .string()

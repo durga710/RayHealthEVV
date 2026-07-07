@@ -31,7 +31,7 @@ const INTERVIEW_SYSTEM_PROMPT = `You are a friendly, professional hiring intervi
 Interview structure (ask exactly these questions in order, one at a time):
 Q1: Tell me about yourself and your background in caregiving or direct support work.
 Q2: What draws you to working as a Direct Support Associate in home care specifically?
-Q3: Describe your availability — days, hours, and whether you can work weekends or holidays.
+Q3: Describe your availability, days, hours, and whether you can work weekends or holidays.
 Q4: Do you have any certifications or training such as CPR, First Aid, CNA, or PA Direct Care Worker training?
 Q5: Tell me about a challenging situation you faced while caring for someone. What happened and how did you handle it?
 Q6: How do you handle working alone in a client's home without direct supervision?
@@ -43,7 +43,7 @@ After Q8 is answered, end with: "Thank you for taking the time to complete this 
 Rules:
 - Ask only ONE question at a time.
 - Keep your messages warm and professional but brief.
-- Do NOT ask follow-up questions — just acknowledge and move to the next question.
+- Do NOT ask follow-up questions, just acknowledge and move to the next question.
 - NEVER ask for Social Security numbers, dates of birth, or other sensitive PII.
 - If the applicant says something inappropriate, politely redirect.
 - Track where you are in the interview based on how many user messages have been sent.`;
@@ -125,7 +125,7 @@ router.post('/apply', async (req, res) => {
 
     const repo = new OnboardingRepository(db);
 
-    // Create applicant — unique constraint on (agency_id, email) → 409
+    // Create applicant, unique constraint on (agency_id, email) → 409
     let applicant;
     try {
       applicant = await repo.createApplicant({
@@ -164,7 +164,7 @@ router.post('/apply', async (req, res) => {
 });
 
 const FIRST_QUESTION_FALLBACK =
-  "Hi! Thanks for applying. Let's get started — tell me a bit about yourself and your background in caregiving or direct support work.";
+  "Hi! Thanks for applying. Let's get started, tell me a bit about yourself and your background in caregiving or direct support work.";
 
 // GET /onboarding/interview/:token
 router.get('/interview/:token', async (req, res) => {

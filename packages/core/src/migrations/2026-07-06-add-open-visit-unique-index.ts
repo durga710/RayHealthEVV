@@ -9,7 +9,7 @@
  *
  * Best-effort: if legacy data already contains duplicate open visits the
  * unique index cannot be created. Rather than fail the whole migration run,
- * we log and continue — the application-level guard still prevents new
+ * we log and continue, the application-level guard still prevents new
  * duplicates, and the data can be reconciled before re-running.
  */
 

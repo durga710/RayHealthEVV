@@ -6,7 +6,7 @@ import { BrandLogo } from '../../components/brand/BrandLogo.js';
  * Hidden platform super-admin command center for Durga Ghimeray (Founder & CEO).
  * Not linked from any nav. Password + device-biometric (WebAuthn) login, then a
  * cross-agency monitoring console. The platform token (scope:'platform') is held
- * ONLY in an httpOnly cookie set by the server — never in JS-readable storage —
+ * ONLY in an httpOnly cookie set by the server, never in JS-readable storage , 
  * so an XSS anywhere in the SPA cannot exfiltrate it.
  */
 
@@ -77,7 +77,7 @@ function greeting(): string {
   return 'Good evening';
 }
 function timeAgo(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return ', ';
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return `${s}s ago`;
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
@@ -192,7 +192,7 @@ function ActivityItem({ ev }: { ev: ActivityRow }) {
       <span style={{ width: 7, height: 7, borderRadius: 99, background: eventTone(ev.eventType), marginTop: 6, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '0.82rem', fontWeight: 600, color: C.ink, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{ev.eventType}</div>
-        <div style={{ color: C.ink2, fontSize: '0.74rem', marginTop: 1 }}>{ev.agencyName ?? '—'} · {ev.actorType} · {ev.outcome}</div>
+        <div style={{ color: C.ink2, fontSize: '0.74rem', marginTop: 1 }}>{ev.agencyName ?? ', '} · {ev.actorType} · {ev.outcome}</div>
       </div>
       <span style={{ color: C.ink3, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{timeAgo(ev.occurredAt)}</span>
     </div>
@@ -215,7 +215,7 @@ function UserRowView({ u, busy, onToggle }: { u: UserRow; busy: boolean; onToggl
 
 // ============================================================
 export function SuperAdminPage() {
-  // Auth is a boolean, never the token itself — the platform token lives only in
+  // Auth is a boolean, never the token itself, the platform token lives only in
   // the httpOnly `rayhealth_platform` cookie. `checking` covers the initial
   // cookie probe on mount so we don't flash the login screen for an already-
   // authenticated founder returning to the tab.
@@ -289,7 +289,7 @@ export function SuperAdminPage() {
       if (!browserSupportsWebAuthn()) { setLoginErr('This browser lacks device biometrics. Use a device with Face ID / Windows Hello.'); return; }
       let verifyPath: string; let verifyBody: Record<string, unknown>;
       if (body.stage === 'enroll') {
-        setBioStatus('First sign-in on this device — set up Face ID / biometric…');
+        setBioStatus('First sign-in on this device, set up Face ID / biometric…');
         const att = await startRegistration({ optionsJSON: body.options as never });
         verifyPath = '/api/superadmin/webauthn/register/verify';
         verifyBody = { stageToken: body.stageToken, response: att, deviceLabel: navigator.platform || 'device' };
@@ -301,7 +301,7 @@ export function SuperAdminPage() {
       }
       // credentials:'include' so the httpOnly platform cookie the server sets on
       // success is stored by the browser. The token in the response body is
-      // ignored — it is never persisted in JS.
+      // ignored, it is never persisted in JS.
       const vres = await fetch(verifyPath, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'include', body: JSON.stringify(verifyBody) });
       const vbody = (await vres.json().catch(() => ({}))) as { token?: string; message?: string };
       if (!vres.ok || !vbody.token) { setLoginErr(vbody.message || 'Biometric verification failed.'); return; }
@@ -326,7 +326,7 @@ export function SuperAdminPage() {
     try { setDetail(await api<AgencyDetail>(`/agencies/${id}`)); } catch (err) { setLoadErr((err as Error).message); }
   };
 
-  // Initial cookie probe in flight — don't flash the login form at a founder
+  // Initial cookie probe in flight, don't flash the login form at a founder
   // who is already authenticated via the httpOnly cookie.
   if (checking) {
     return (
@@ -451,13 +451,13 @@ export function SuperAdminPage() {
         {loadErr && <div role="alert" style={{ color: C.red, background: C.redSoft, border: `1px solid ${C.red}22`, borderRadius: 10, padding: '0.7rem 1rem', marginBottom: '1rem' }}>{loadErr}</div>}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(208px, 1fr))', gap: '0.85rem', marginBottom: '1.6rem' }}>
-          <Kpi label="Agencies" icon="agencies" value={String(stats?.agencies.total ?? '—')} sub={`${stats?.agencies.approved ?? 0} active · ${stats?.agencies.pending ?? 0} pending`} subTone={(stats?.agencies.pending ?? 0) > 0 ? C.amber : undefined} />
-          <Kpi label="Users" icon="users" value={String(stats?.users.total ?? '—')} sub={`${stats?.users.suspended ?? 0} suspended`} subTone={(stats?.users.suspended ?? 0) > 0 ? C.red : undefined} />
-          <Kpi label="Clients" icon="client" value={String(stats?.clients ?? '—')} sub="across all agencies" />
-          <Kpi label="Caregivers" icon="caregiver" value={String(stats?.caregivers.total ?? '—')} sub={`${stats?.caregivers.active ?? 0} active`} />
-          <Kpi label="Visits today" icon="visit" value={String(stats?.visits.today ?? '—')} sub={`${stats?.visits.last7d ?? 0} this week · ${stats?.visits.total ?? 0} all-time`} />
-          <Kpi label="Open exceptions" icon="alert" value={String(stats?.exceptions.open ?? '—')} sub="awaiting resolution" subTone={(stats?.exceptions.open ?? 0) > 0 ? C.amber : C.green} />
-          <Kpi label="Claims" icon="claim" value={String(stats?.claims.total ?? '—')} sub={`${money(stats?.claims.chargedCents ?? 0)} billed`} />
+          <Kpi label="Agencies" icon="agencies" value={String(stats?.agencies.total ?? ', ')} sub={`${stats?.agencies.approved ?? 0} active · ${stats?.agencies.pending ?? 0} pending`} subTone={(stats?.agencies.pending ?? 0) > 0 ? C.amber : undefined} />
+          <Kpi label="Users" icon="users" value={String(stats?.users.total ?? ', ')} sub={`${stats?.users.suspended ?? 0} suspended`} subTone={(stats?.users.suspended ?? 0) > 0 ? C.red : undefined} />
+          <Kpi label="Clients" icon="client" value={String(stats?.clients ?? ', ')} sub="across all agencies" />
+          <Kpi label="Caregivers" icon="caregiver" value={String(stats?.caregivers.total ?? ', ')} sub={`${stats?.caregivers.active ?? 0} active`} />
+          <Kpi label="Visits today" icon="visit" value={String(stats?.visits.today ?? ', ')} sub={`${stats?.visits.last7d ?? 0} this week · ${stats?.visits.total ?? 0} all-time`} />
+          <Kpi label="Open exceptions" icon="alert" value={String(stats?.exceptions.open ?? ', ')} sub="awaiting resolution" subTone={(stats?.exceptions.open ?? 0) > 0 ? C.amber : C.green} />
+          <Kpi label="Claims" icon="claim" value={String(stats?.claims.total ?? ', ')} sub={`${money(stats?.claims.chargedCents ?? 0)} billed`} />
           <Kpi label="Collected" icon="money" value={money(stats?.claims.paidCents ?? 0)} sub="remittances posted" subTone={C.green} />
         </div>
 
@@ -465,7 +465,7 @@ export function SuperAdminPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)', gap: '1rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <Panel title="Needs your attention">
-                {pending.length === 0 ? <Empty>All clear — no agencies awaiting review.</Empty> : pending.map((a) => (
+                {pending.length === 0 ? <Empty>All clear, no agencies awaiting review.</Empty> : pending.map((a) => (
                   <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.75rem 0', borderBottom: `1px solid ${C.line}` }}>
                     <div>
                       <div style={{ fontWeight: 600, color: C.ink, fontSize: '0.9rem' }}>{a.name}</div>

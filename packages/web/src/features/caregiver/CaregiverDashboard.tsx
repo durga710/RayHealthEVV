@@ -328,7 +328,7 @@ export function CaregiverDashboard() {
                     </div>
                     <div style={{ color: '#64748B', fontSize: '0.75rem', marginTop: '0.1rem' }}>
                       {new Date(v.clockInTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                      {v.clockOutTime && ` – ${new Date(v.clockOutTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`}
+                      {v.clockOutTime && `, ${new Date(v.clockOutTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`}
                       {v.clockOutTime && ` (${formatHours(hoursFromVisit(v))})`}
                     </div>
                   </div>

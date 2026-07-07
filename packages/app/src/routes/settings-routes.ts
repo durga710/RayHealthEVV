@@ -7,7 +7,7 @@ import { SessionRepository } from '@rayhealth/core';
 import { safeError } from '../security/safe-log.js';
 
 /**
- * Account settings — security (TOTP 2FA), active sessions, notification
+ * Account settings, security (TOTP 2FA), active sessions, notification
  * preferences, appearance/locale preferences, data export, and account
  * deletion requests. Mounted under /settings on the authenticated surface,
  * so authContext + requireCsrf are already applied by app.ts.
@@ -55,7 +55,7 @@ function generateBackupCodes(): string[] {
   return codes;
 }
 
-// GET /settings — security + notification + preference summary
+// GET /settings, security + notification + preference summary
 router.get('/', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -127,7 +127,7 @@ router.patch('/preferences', async (req, res) => {
   }
 });
 
-// GET /settings/sessions — active sessions for this user
+// GET /settings/sessions, active sessions for this user
 router.get('/sessions', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -149,7 +149,7 @@ router.get('/sessions', async (req, res) => {
   }
 });
 
-// POST /settings/sessions/revoke-others — sign out everywhere else
+// POST /settings/sessions/revoke-others, sign out everywhere else
 router.post('/sessions/revoke-others', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -163,7 +163,7 @@ router.post('/sessions/revoke-others', async (req, res) => {
   }
 });
 
-// DELETE /settings/sessions/:id — revoke one of this user's sessions
+// DELETE /settings/sessions/:id, revoke one of this user's sessions
 router.delete('/sessions/:id', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -182,7 +182,7 @@ router.delete('/sessions/:id', async (req, res) => {
   }
 });
 
-// POST /settings/2fa/setup — generate a pending TOTP secret + QR
+// POST /settings/2fa/setup, generate a pending TOTP secret + QR
 router.post('/2fa/setup', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -209,7 +209,7 @@ router.post('/2fa/setup', async (req, res) => {
   }
 });
 
-// POST /settings/2fa/enable — verify a code, enable 2FA, return backup codes once
+// POST /settings/2fa/enable, verify a code, enable 2FA, return backup codes once
 router.post('/2fa/enable', async (req, res) => {
   const parse = z.object({ token: z.string().min(6).max(10) }).safeParse(req.body);
   if (!parse.success) {
@@ -242,7 +242,7 @@ router.post('/2fa/enable', async (req, res) => {
   }
 });
 
-// POST /settings/2fa/disable — requires current password
+// POST /settings/2fa/disable, requires current password
 router.post('/2fa/disable', async (req, res) => {
   const parse = z.object({ password: z.string().min(1) }).safeParse(req.body);
   if (!parse.success) {
@@ -273,7 +273,7 @@ router.post('/2fa/disable', async (req, res) => {
   }
 });
 
-// GET /settings/export — machine-readable export of the user's own data
+// GET /settings/export, machine-readable export of the user's own data
 router.get('/export', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -321,7 +321,7 @@ router.get('/export', async (req, res) => {
   }
 });
 
-// POST /settings/account/delete-request — record a deletion request
+// POST /settings/account/delete-request, record a deletion request
 router.post('/account/delete-request', async (req, res) => {
   try {
     const db = req.app.get('db');
@@ -333,7 +333,7 @@ router.post('/account/delete-request', async (req, res) => {
   }
 });
 
-// DELETE /settings/account/delete-request — cancel a pending deletion request
+// DELETE /settings/account/delete-request, cancel a pending deletion request
 router.delete('/account/delete-request', async (req, res) => {
   try {
     const db = req.app.get('db');

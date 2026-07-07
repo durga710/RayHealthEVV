@@ -136,7 +136,7 @@ export class LearningRepository {
 
   /**
    * Look up an enrollment by (caregiver, course). Always scoped by `agencyId`
-   * so it can never return — or dedup against — another tenant's enrollment row.
+   * so it can never return, or dedup against, another tenant's enrollment row.
    */
   async findEnrollment(
     caregiverId: string,
@@ -164,7 +164,7 @@ export class LearningRepository {
   }
 
   async enroll(data: NewCourseEnrollment): Promise<CourseEnrollment> {
-    // The caregiver must belong to the enrolling agency — prevents creating an
+    // The caregiver must belong to the enrolling agency, prevents creating an
     // enrollment row that points at another tenant's caregiver.
     const caregiver = await this.db('caregivers')
       .where({ id: data.caregiverId, agency_id: data.agencyId })
@@ -191,7 +191,7 @@ export class LearningRepository {
   async recordCompletion(data: NewCourseCompletion, agencyId: string): Promise<CourseCompletion> {
     return this.db.transaction(async (trx) => {
       // Scope the enrollment lookup by agency so a caller can only complete an
-      // enrollment owned by their own agency — the enrollment id alone is not a
+      // enrollment owned by their own agency, the enrollment id alone is not a
       // sufficient authorization token.
       const enrollment = await trx('course_enrollments')
         .where({ id: data.enrollmentId, agency_id: agencyId })
@@ -528,7 +528,7 @@ export class LearningRepository {
         status: effectiveStatus,
         reason:
           effectiveStatus === 'expired'
-            ? `${r.course_title} expired — recertify before scheduling`
+            ? `${r.course_title} expired, recertify before scheduling`
             : effectiveStatus === 'overdue'
             ? `${r.course_title} is overdue`
             : `${r.course_title} not yet completed`,

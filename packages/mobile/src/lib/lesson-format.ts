@@ -24,7 +24,7 @@ export type LessonBlock =
 /** Sentence boundary: period/!/? followed by whitespace and a capital start. */
 const SENTENCE_BREAK = /(?<=[.!?])\s+(?=[A-Z(])/;
 
-/** A short "Label:" lead — no periods/colons inside, capped length. */
+/** A short "Label:" lead, no periods/colons inside, capped length. */
 const TERM_LEAD = /^[A-Z][^.:!?]{0,34}:\s/;
 
 /** Sentences worth highlighting as a key point. */

@@ -6,20 +6,20 @@ import { safeError } from '../security/safe-log.js';
 /**
  * Public health endpoints powering the /status marketing page.
  *
- * Mounted BEFORE `authContext` in app.ts — these routes are intentionally
+ * Mounted BEFORE `authContext` in app.ts, these routes are intentionally
  * unauthenticated so liveness/readiness probes and the public status page
  * can hit them without a session. They get their own tighter rate limit
  * (60 / 15-min per IP) to keep an unauthenticated surface from being used
  * for DB-load DoS.
  *
- * Response shapes are deliberately minimal — never include stack traces,
+ * Response shapes are deliberately minimal, never include stack traces,
  * DB connection strings, query text, or any field that could leak PHI.
  */
 
 const STALE_THRESHOLD_SECONDS = 24 * 60 * 60; // 24 hours
 const DB_QUERY_TIMEOUT_MS = 2_000;
 
-/** Tight limit for the unauthenticated health surface — 60 req per 15-min
+/** Tight limit for the unauthenticated health surface, 60 req per 15-min
  *  per IP. Legitimate probes are <1/min; this stops an attacker from using
  *  the DB health probe as a free DB-load amplifier. Disabled under tests
  *  so supertest doesn't trip the limiter across cases. */
@@ -57,7 +57,7 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
 const router = Router();
 
 /**
- * GET /health — liveness. Always 200, no DB call, <5ms.
+ * GET /health, liveness. Always 200, no DB call, <5ms.
  * Returns process uptime, timestamp, and the deployed git sha (or 'dev').
  */
 router.get('/', (_req, res) => {
@@ -71,7 +71,7 @@ router.get('/', (_req, res) => {
 });
 
 /**
- * GET /health/db — readiness. Runs `SELECT 1` against Postgres with a 2s
+ * GET /health/db, readiness. Runs `SELECT 1` against Postgres with a 2s
  * timeout. Returns 200 + latency on success, 503 + structured error on
  * failure or timeout. NEVER includes stack traces or connection strings.
  */
@@ -98,10 +98,10 @@ router.get('/db', async (req, res) => {
 });
 
 /**
- * GET /health/audit — checks that the audit pipeline is alive by reading
+ * GET /health/audit, checks that the audit pipeline is alive by reading
  * the most recent `occurred_at` from `audit_events`.
  *  - `ok`    : last event within the last 24h.
- *  - `stale` : last event older than 24h — audit ingestion is likely stuck.
+ *  - `stale` : last event older than 24h, audit ingestion is likely stuck.
  *  - `empty` : no events at all (fresh DB or table truncated).
  *
  * Same containment as /health/db: DB failure returns 503 with a structured

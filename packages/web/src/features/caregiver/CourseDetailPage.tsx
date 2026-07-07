@@ -61,7 +61,7 @@ const CADENCE_LABEL: Record<string, string> = {
 const PASS_THRESHOLD = 0.8;
 
 function formatDate(iso: string | null) {
-  if (!iso) return '—';
+  if (!iso) return ', ';
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -212,7 +212,7 @@ function Quiz({ questions, onPass }: QuizProps) {
               Quiz Passed!
             </div>
             <div style={{ fontSize: '0.875rem', color: '#16A34A' }}>
-              {correctCount} of {questions.length} correct — course is now marked complete.
+              {correctCount} of {questions.length} correct, course is now marked complete.
             </div>
           </div>
         ) : (
@@ -227,7 +227,7 @@ function Quiz({ questions, onPass }: QuizProps) {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
                 </span>
                 <span>
-                  {correctCount} of {questions.length} correct — {Math.round(PASS_THRESHOLD * 100)}% required to pass.
+                  {correctCount} of {questions.length} correct, {Math.round(PASS_THRESHOLD * 100)}% required to pass.
                   Review the highlighted questions and try again.
                 </span>
               </div>
@@ -248,7 +248,7 @@ function Quiz({ questions, onPass }: QuizProps) {
                     {q.question}
                     {isWrong && (
                       <span style={{ marginLeft: '0.5rem', color: '#EF4444', fontSize: '0.8rem', fontWeight: 500 }}>
-                        — Correct: {q.options[q.correct]}
+                        Correct: {q.options[q.correct]}
                       </span>
                     )}
                   </div>
@@ -498,12 +498,12 @@ export function CourseDetailPage() {
         </div>
       )}
 
-      {/* Course sections — accordion */}
+      {/* Course sections, accordion */}
       {mods?.sections && mods.sections.length > 0 && (
         <div style={{ marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
             <h2 style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#64748B', margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Course Content — {mods.sections.length} Sections
+              Course Content, {mods.sections.length} Sections
             </h2>
             <button
               type="button"
@@ -572,7 +572,7 @@ export function CourseDetailPage() {
         </div>
       )}
 
-      {/* Knowledge check quiz — required to unlock completion */}
+      {/* Knowledge check quiz, required to unlock completion */}
       {!isCompleted && hasQuiz && (
         <Quiz questions={mods!.quiz!} onPass={handleQuizPass} />
       )}
@@ -600,7 +600,7 @@ export function CourseDetailPage() {
             <>
               <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '0.9375rem' }}>Pass the knowledge check to complete</div>
               <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: '0.2rem' }}>
-                Answer all questions above — {Math.round(PASS_THRESHOLD * 100)}% correct required.
+                Answer all questions above, {Math.round(PASS_THRESHOLD * 100)}% correct required.
               </div>
             </>
           ) : (

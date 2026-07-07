@@ -268,7 +268,7 @@ export function RecurringSchedulesPage() {
               {forecast.totalGaps} upcoming visit{forecast.totalGaps === 1 ? '' : 's'} not yet generated
             </div>
             <div style={{ fontSize: '0.8125rem', color: '#92400E', opacity: 0.9 }}>
-              Active recurring patterns have visits in the next 14 days that aren't on the calendar yet — caregivers won't see them until you generate them.
+              Active recurring patterns have visits in the next 14 days that aren't on the calendar yet, caregivers won't see them until you generate them.
               {' '}
               {forecast.gaps.slice(0, 3).map((g, i) => (
                 <span key={`${g.scheduleId}-${g.date}`}>
@@ -403,7 +403,7 @@ export function RecurringSchedulesPage() {
                           {s.templateName} <span style={{ color: '#94A3B8', fontWeight: 400 }}>· {s.clientName}</span>
                         </div>
                         <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: '0.2rem' }}>
-                          {s.caregiverName || s.caregiverId.slice(0, 8) + '…'} — {dowLabel(s.daysOfWeek)} · {s.startTime}–{s.endTime}
+                          {s.caregiverName || s.caregiverId.slice(0, 8) + '…'}, {dowLabel(s.daysOfWeek)} · {s.startTime}-{s.endTime}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>
                           {s.startDate} → {s.endDate}

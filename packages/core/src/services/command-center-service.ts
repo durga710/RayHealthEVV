@@ -1,5 +1,5 @@
 /**
- * Command Center attention engine — pure, deterministic prioritization of what a
+ * Command Center attention engine, pure, deterministic prioritization of what a
  * home-care agency owner must act on RIGHT NOW. Takes the agency operational
  * snapshot (all aggregated counts, no PHI) and returns a severity-ranked list of
  * attention items, each with a deep-link to the page that resolves it.
@@ -159,7 +159,7 @@ export function buildCommandCenterAttention(s: CommandCenterSnapshot): Attention
     id: 'visits-in-progress-stale',
     severity: 'warning',
     title: `${s.payroll.inProgressVisits} visit${s.payroll.inProgressVisits === 1 ? '' : 's'} still open`,
-    detail: 'Clocked in but never clocked out — fix before payroll runs.',
+    detail: 'Clocked in but never clocked out, fix before payroll runs.',
     count: s.payroll.inProgressVisits,
     to: '/admin/review',
   });
@@ -167,7 +167,7 @@ export function buildCommandCenterAttention(s: CommandCenterSnapshot): Attention
     id: 'coverage-gaps',
     severity: 'warning',
     title: `${s.coverage.totalGaps} upcoming visit${s.coverage.totalGaps === 1 ? '' : 's'} not yet generated`,
-    detail: 'Recurring patterns have visits not on the calendar — caregivers won’t see them.',
+    detail: 'Recurring patterns have visits not on the calendar, caregivers won’t see them.',
     count: s.coverage.totalGaps,
     to: '/admin/recurring-schedules',
   });
@@ -190,7 +190,7 @@ export function buildCommandCenterAttention(s: CommandCenterSnapshot): Attention
 
 /**
  * Build the prompt for an AI "daily briefing" over the command-center snapshot.
- * PURE and COUNT-ONLY — it never includes a client/caregiver name or any PHI,
+ * PURE and COUNT-ONLY, it never includes a client/caregiver name or any PHI,
  * only aggregate numbers and the already-derived attention list, so the briefing
  * carries no retention liability. Returns the system instruction + user prompt
  * for `askAI`; kept here (not in the route) so it's unit-testable and the
@@ -205,7 +205,7 @@ export function buildBriefingPrompt(s: CommandCenterSnapshot): {
   const system =
     'You are the operations briefing assistant for a Pennsylvania home-care agency ' +
     'admin console. Given today\'s aggregate operational numbers, write a short, ' +
-    'plain-English briefing (3–5 sentences, no preamble) that tells the agency owner ' +
+    'plain-English briefing (3-5 sentences, no preamble) that tells the agency owner ' +
     'what to prioritize right now and why it matters for care delivery, compliance, ' +
     'and getting paid. Lead with the most urgent item. Be direct and specific about ' +
     'the numbers. Do NOT invent details, names, or numbers beyond what is given. If ' +

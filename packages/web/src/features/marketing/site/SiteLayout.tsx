@@ -146,7 +146,7 @@ export const SITE_CSS = `
 .mk-trow>div:last-child{border-right:none;}
 .mk-trow:first-child>div{font-weight:600;color:var(--ink);font-size:.82rem;letter-spacing:.02em;text-transform:uppercase;}
 .mk-trow .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--accent-deep);font-weight:600;}
-/* semantic table — same look as mk-table, real <table>/<th>/<td> for a11y */
+/* semantic table, same look as mk-table, real <table>/<th>/<td> for a11y */
 .mk-tbl{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:.92rem;}
 .mk-tbl thead th{text-align:left;background:var(--surface);color:var(--ink);font-weight:600;font-size:.78rem;letter-spacing:.02em;text-transform:uppercase;padding:14px 20px;border-bottom:1px solid var(--line);}
 .mk-tbl td{padding:14px 20px;border-top:1px solid var(--line);color:var(--ink-soft);vertical-align:top;}

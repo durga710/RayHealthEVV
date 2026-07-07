@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getJson, postJson, patchJson } from '../../lib/api-client.js';
 
 /**
- * Admin course authoring — create or edit a learning course, including the
+ * Admin course authoring, create or edit a learning course, including the
  * in-app content (objectives, lesson sections, training video) and the
  * knowledge-check quiz that gates completion. Mounted at
  *   /admin/learning/courses/new      (create)
@@ -294,7 +294,7 @@ export function CourseEditorPage() {
                 style={{ ...inputStyle, minHeight: '90px', resize: 'vertical' }}
                 value={s.content}
                 onChange={(e) => setSections((prev) => prev.map((x, j) => (j === i ? { ...x, content: e.target.value } : x)))}
-                placeholder="Section content — what the caregiver reads."
+                placeholder="Section content, what the caregiver reads."
               />
             </div>
           ))}

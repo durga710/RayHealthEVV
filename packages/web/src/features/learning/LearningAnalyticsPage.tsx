@@ -62,7 +62,7 @@ export function LearningAnalyticsPage(): ReactElement {
         <div>
           <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Course analytics</h2>
           <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, #64748b)', fontSize: '0.9rem' }}>
-            Per-course completion rates and bottleneck signal. Sorted by completion rate ascending — worst-performing courses first.
+            Per-course completion rates and bottleneck signal. Sorted by completion rate ascending, worst-performing courses first.
           </p>
         </div>
         <Link to="/admin/learning" style={linkButtonStyle}>← Learning Hub</Link>
@@ -121,7 +121,7 @@ export function LearningAnalyticsPage(): ReactElement {
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     {row.averageDaysToComplete === null
-                      ? <span style={{ color: '#94a3b8' }}>—</span>
+                      ? <span style={{ color: '#94a3b8' }}>, </span>
                       : `${Math.round(row.averageDaysToComplete)} d`}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>

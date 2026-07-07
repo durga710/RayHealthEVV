@@ -3,7 +3,7 @@
  * Multi-agency demo dataset for the App Store fixture caregiver.
  *
  * Builds on seed-fixture-schedule.ts (single-agency Sunrise data) and:
- *   • links the fixture user to a SECOND agency — Keystone Care Services LLC —
+ *   • links the fixture user to a SECOND agency. Keystone Care Services LLC , 
  *     via user_agencies, with its own per-agency caregivers row (this is what
  *     the mobile agency picker / switch flow needs)
  *   • creates 3 Keystone clients (Pittsburgh coords, 15 m geofence), each with
@@ -11,11 +11,11 @@
  *   • seeds ~20 UPCOMING Keystone assignments across the next 30 days and
  *     6 PAST Keystone visits (4 verified, 2 flagged with evv_exceptions)
  *   • extends the Sunrise schedule from 3 weeks to a full month (6 extra
- *     upcoming assignments on days 21–30)
+ *     upcoming assignments on days 21-30)
  *
- * All identifiers are deterministic — reruns upsert in place.
+ * All identifiers are deterministic. reruns upsert in place.
  *
- * SAFETY GUARD — refuses to run against the prod default branch unless
+ * SAFETY GUARD. refuses to run against the prod default branch unless
  * RAYHEALTH_ALLOW_PROD_FIXTURE_SEED=1 is set (same contract as the other
  * fixture seeders).
  *
@@ -39,7 +39,7 @@ const GEOFENCE_M = 15;
 
 const uid = (n: number) => '00000000-0000-4000-8000-' + n.toString(16).padStart(12, '0');
 
-// Keystone clients — real Pittsburgh-area coordinates so the clock-in map
+// Keystone clients. real Pittsburgh-area coordinates so the clock-in map
 // renders sensibly, mirroring the Sunrise fixture clients.
 const KEYSTONE_CLIENTS = [
   {
@@ -163,7 +163,7 @@ async function main() {
       .onConflict('id').merge({ agency_id: KEYSTONE_AGENCY, status: 'active', updated_at: db.fn.now() });
     console.log('✓ Keystone caregiver row ensured');
 
-    // 2) user_agencies memberships — Sunrise (home, from backfill) + Keystone.
+    // 2) user_agencies memberships. Sunrise (home, from backfill) + Keystone.
     for (const [agencyId, caregiverId] of [[SUNRISE_AGENCY, SUNRISE_CG], [KEYSTONE_AGENCY, KEYSTONE_CG]] as const) {
       await db('user_agencies')
         .insert({ user_id: FIXTURE_USER, agency_id: agencyId, caregiver_id: caregiverId, role: 'caregiver', status: 'active', created_at: db.fn.now(), updated_at: db.fn.now() })
@@ -188,8 +188,8 @@ async function main() {
         .onConflict('id').merge({ service_code: 'T1019', end_date: '2027-12-31', updated_at: db.fn.now() });
 
       await db('visit_templates')
-        .insert({ id: c.tmpl, client_id: c.id, name: `${c.firstName} ${c.lastName} — Personal Care`, tasks: JSON.stringify(DEFAULT_TASKS), created_at: db.fn.now(), updated_at: db.fn.now() })
-        .onConflict('id').merge({ name: `${c.firstName} ${c.lastName} — Personal Care`, updated_at: db.fn.now() });
+        .insert({ id: c.tmpl, client_id: c.id, name: `${c.firstName} ${c.lastName}. Personal Care`, tasks: JSON.stringify(DEFAULT_TASKS), created_at: db.fn.now(), updated_at: db.fn.now() })
+        .onConflict('id').merge({ name: `${c.firstName} ${c.lastName}. Personal Care`, updated_at: db.fn.now() });
     }
     console.log(`✓ ${KEYSTONE_CLIENTS.length} Keystone clients + authorizations + templates ensured`);
 

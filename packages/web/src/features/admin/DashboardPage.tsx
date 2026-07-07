@@ -20,7 +20,7 @@ const initialCounts: CountState = {
 };
 
 function formatCount(value: number | null): string {
-  if (value === null) return '—';
+  if (value === null) return ', ';
   return new Intl.NumberFormat().format(value);
 }
 
@@ -117,7 +117,7 @@ export function DashboardPage() {
       }
     };
 
-    // Count endpoint returns { count } — avoids pulling every PHI-bearing visit
+    // Count endpoint returns { count }, avoids pulling every PHI-bearing visit
     // row just to read its length on the dashboard.
     const safeCountField = async (path: string): Promise<number | null> => {
       try {
@@ -156,7 +156,7 @@ export function DashboardPage() {
   const roleLabel = user?.role ?? 'admin';
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || '';
 
-  const complianceDisplay = counts.complianceRate === null ? '—' : `${counts.complianceRate}%`;
+  const complianceDisplay = counts.complianceRate === null ? ', ' : `${counts.complianceRate}%`;
   const complianceTint = counts.complianceRate === null
     ? '#94A3B8'
     : counts.complianceRate >= 80

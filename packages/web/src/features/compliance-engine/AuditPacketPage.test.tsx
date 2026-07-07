@@ -86,7 +86,7 @@ const samplePacket = {
   }
 };
 
-/** api-client's extractError() calls response.clone().json() — plain mock
+/** api-client's extractError() calls response.clone().json(), plain mock
  *  response objects need a self-returning `clone()` for that to work. */
 function errorResponse(status: number, body: unknown) {
   return {
@@ -169,7 +169,7 @@ describe('AuditPacketPage', () => {
     expect(await screen.findByText('Visit not found')).toBeInTheDocument();
   });
 
-  it('never renders raw lat/lng-like coordinate fields — geofence shows only result/distance', async () => {
+  it('never renders raw lat/lng-like coordinate fields, geofence shows only result/distance', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve(samplePacket) })

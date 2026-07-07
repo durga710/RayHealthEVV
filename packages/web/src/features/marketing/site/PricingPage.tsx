@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
 
 /**
- * Pricing — rebuilt on the shared SiteLayout (teal/orange brand) so it
+ * Pricing, rebuilt on the shared SiteLayout (teal/orange brand) so it
  * matches the rest of the marketing site. Replaces the old MarketingShell
  * version that dropped users onto a different, off-brand page.
  */
@@ -40,7 +40,7 @@ const tiers: readonly Tier[] = [
     name: 'Standard',
     price: '$649',
     period: '/ month',
-    summary: 'For multi-coordinator agencies with 25–200 active clients.',
+    summary: 'For multi-coordinator agencies with 25-200 active clients.',
     features: [
       'Up to 200 active clients',
       'Everything in Starter',
@@ -75,11 +75,11 @@ const tiers: readonly Tier[] = [
 const faqs: readonly { q: string; a: string }[] = [
   {
     q: 'Are there per-visit or per-transaction fees?',
-    a: 'No. Pricing is a predictable monthly subscription by client volume — no per-visit nickel-and-diming on EVV captures or claim transactions.',
+    a: 'No. Pricing is a predictable monthly subscription by client volume, no per-visit nickel-and-diming on EVV captures or claim transactions.',
   },
   {
     q: 'Do all plans include the full EVV engine?',
-    a: 'Yes. Every plan runs the same EVV engine — the same six federal Cures-Act elements, the same PA DHS alignment, and the same tamper-evident audit trail. Tiers differ only in client volume and support.',
+    a: 'Yes. Every plan runs the same EVV engine, the same six federal Cures-Act elements, the same PA DHS alignment, and the same tamper-evident audit trail. Tiers differ only in client volume and support.',
   },
   {
     q: 'What counts as an "active client"?',
@@ -87,7 +87,7 @@ const faqs: readonly { q: string; a: string }[] = [
   },
   {
     q: 'Is billing & payroll included?',
-    a: 'Scheduling, EVV, and the audit trail are live today. Billing reconciliation and payroll exports are on the roadmap — ask sales about early access for your agency.',
+    a: 'Scheduling, EVV, and the audit trail are live today. Billing reconciliation and payroll exports are on the roadmap, ask sales about early access for your agency.',
   },
 ];
 
@@ -101,7 +101,7 @@ export function PricingPage() {
           <h1 className="mk-h1">Predictable per-month pricing.</h1>
           <p className="mk-lead">
             No per-visit fees, no surprise transaction charges. One monthly plan by client
-            volume — the full EVV engine and audit trail on every tier.
+            volume, the full EVV engine and audit trail on every tier.
           </p>
         </div>
       </header>
@@ -150,7 +150,7 @@ export function PricingPage() {
           </div>
 
           <p style={{ maxWidth: '62ch', margin: '40px auto 0', textAlign: 'center', color: 'var(--body)', lineHeight: 1.6 }}>
-            All plans include the same EVV engine — the same federal Cures-Act elements, the same
+            All plans include the same EVV engine, the same federal Cures-Act elements, the same
             PA DHS alignment, and the same tamper-evident audit trail. Tiers differ only in client
             volume and support.
           </p>

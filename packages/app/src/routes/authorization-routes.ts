@@ -7,7 +7,7 @@ const router = Router();
 
 router.post('/', requireCapability('client.write'), async (req, res) => {
   // Validate the body. serviceCode is constrained to the canonical PA HCPCS
-  // codes — previously the route inserted req.body verbatim, so an
+  // codes, previously the route inserted req.body verbatim, so an
   // authorization could be saved with a W-series program code that no EVV
   // visit or 837 claim line can ever carry, silently breaking claim matching
   // and units burn-down.
@@ -50,7 +50,7 @@ router.get('/', requireCapability('client.read'), async (req, res) => {
       new ClaimRepository(db).getBilledLineUnits(req.auth.agencyId),
     ]);
     // Enrich each authorization with units consumed by billed (non-void) claim
-    // lines for the same client + service code within the auth window — the same
+    // lines for the same client + service code within the auth window, the same
     // burn-down the scheduling conflict gate uses, so the two never disagree.
     const enriched = auths.map((a) => {
       const unitsUsed = billedUnits

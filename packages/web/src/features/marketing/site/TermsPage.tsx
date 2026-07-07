@@ -39,7 +39,7 @@ export function TermsPage() {
 
             <p className="lead">
               These Terms of Service (the &ldquo;Terms&rdquo;) govern your access
-              to and use of RayHealthEVV&trade; — a HIPAA-aware Electronic Visit
+              to and use of RayHealthEVV&trade;, a HIPAA-aware Electronic Visit
               Verification (EVV) and home-care operations platform (the
               &ldquo;Service&rdquo;) operated by RayHealthEVV (&ldquo;we,&rdquo;
               &ldquo;us,&rdquo; or &ldquo;our&rdquo;). By creating an account,
@@ -110,7 +110,7 @@ export function TermsPage() {
             <ul>
               <li>
                 Enter, falsify, or manipulate visit data, GPS coordinates, or
-                timestamps — EVV records are compliance documents, and falsifying
+                timestamps. EVV records are compliance documents, and falsifying
                 them may constitute Medicaid fraud.
               </li>
               <li>

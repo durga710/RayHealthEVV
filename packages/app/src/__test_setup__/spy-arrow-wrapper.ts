@@ -1,5 +1,5 @@
 /**
- * Vitest 4 enforces JS spec for `new <fn>()` — arrow functions can't be
+ * Vitest 4 enforces JS spec for `new <fn>()`, arrow functions can't be
  * invoked with `new`. Many existing route tests pass an arrow impl to
  * `vi.spyOn(core, 'XRepository').mockImplementation(() => ({ ... }))`
  * and then the route does `new core.XRepository(db).method(...)`. This
@@ -10,7 +10,7 @@
  * `vi.spyOn` once: when the mock impl is an arrow function, wrap it in
  * a regular function whose explicit return is the arrow's return value.
  * JS `new` of a regular function that returns an object yields that
- * object as the instance — restoring the pre-4 behavior without
+ * object as the instance, restoring the pre-4 behavior without
  * touching any test source.
  *
  * Detection of arrow-vs-regular: only arrow functions lack a
@@ -61,7 +61,7 @@ const realSpyOn = vi.spyOn.bind(vi);
   const originalMockImpl = spy.mockImplementation.bind(spy);
   spy.mockImplementation = function patchedMockImpl(fn: (...args: unknown[]) => unknown) {
     if (typeof fn === 'function' && !fn.prototype) {
-      // Arrow function — wrap so `new` works.
+      // Arrow function, wrap so `new` works.
       return originalMockImpl(function wrapped(this: unknown, ...args: unknown[]) {
         return fn(...args);
       });

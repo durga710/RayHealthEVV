@@ -1,5 +1,5 @@
 /**
- * Caregiver reminder email — HTML + plain-text.
+ * Caregiver reminder email. HTML + plain-text.
  *
  * Sent when an admin/coordinator confirms a copilot `send_reminder` action.
  * The body is the human-authored reminder message (escaped); RayHealth only
@@ -45,7 +45,7 @@ export function renderReminderEmail(fields: ReminderEmailFields): ReminderEmailP
     '',
     fields.message,
     '',
-    `— ${agency} (via RayHealth EVV)`,
+    `,  ${agency} (via RayHealth EVV)`,
     '',
     `Questions? Reach us at ${support}.`,
   ].join('\n');

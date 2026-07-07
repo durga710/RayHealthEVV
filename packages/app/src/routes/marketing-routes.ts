@@ -6,7 +6,7 @@ const router = Router();
 
 // Public, unauthenticated lead-capture endpoint. Mounted ABOVE authContext
 // in app.ts so anonymous browsers can POST. Rate-limited at the app level.
-// Stores into `contact_submissions` (NOT agency-scoped — interest data, not PHI).
+// Stores into `contact_submissions` (NOT agency-scoped, interest data, not PHI).
 router.post('/contact', async (req, res) => {
   const body = (req.body ?? {}) as Record<string, unknown>;
   const name = typeof body.name === 'string' ? body.name.trim() : '';

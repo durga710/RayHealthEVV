@@ -90,7 +90,7 @@ describe('AuditEventRepository', () => {
 
   /**
    * findByEntityForAgency backs the audit packet route (Agent 06), which is
-   * forbidden from using the unscoped findByEntity — a visit/assignment id
+   * forbidden from using the unscoped findByEntity, a visit/assignment id
    * from another tenant must never resolve to that tenant's audit rows.
    */
   it('findByEntityForAgency filters by agency_id, unlike findByEntity', async () => {

@@ -26,7 +26,7 @@ export default function AppLayout() {
     return <Redirect href="/login" />;
   }
   // A multi-agency account fresh off sign-in must pick its agency before any
-  // agency-scoped tab renders — everything below this gate shows PHI that
+  // agency-scoped tab renders, everything below this gate shows PHI that
   // belongs to exactly one agency.
   if (needsAgencySelection) {
     return <Redirect href="/select-agency" />;

@@ -65,7 +65,7 @@ export function LearningDashboardPage() {
         <div>
           <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Learning Hub</h2>
           <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, #64748b)', fontSize: '0.9rem' }}>
-            Caregiver training compliance — at-a-glance and per-person.
+            Caregiver training compliance, at-a-glance and per-person.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -86,7 +86,7 @@ export function LearningDashboardPage() {
 
       {rollup && (
         <>
-          {/* AI-flavored compliance signals — prioritized actionable insights */}
+          {/* AI-flavored compliance signals, prioritized actionable insights */}
           <InsightsPanel refreshKey={refreshTick} />
 
           {/* Top KPI row */}

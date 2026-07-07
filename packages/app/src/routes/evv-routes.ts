@@ -24,7 +24,7 @@ const router = Router();
  */
 function geofenceRejection(envelope: { distanceM: number; allowedM: number }) {
   return {
-    message: `You are ${envelope.distanceM} m from the client's address — please move closer to clock in.`,
+    message: `You are ${envelope.distanceM} m from the client's address, please move closer to clock in.`,
     code: 'GEOFENCE_OUT_OF_BOUNDS' as const,
     distanceM: envelope.distanceM,
     allowedM: envelope.allowedM
@@ -49,7 +49,7 @@ router.get('/visits', requireCapability('evv.read'), async (req, res) => {
 });
 
 /**
- * Lightweight count for dashboard tiles — a SQL COUNT instead of shipping every
+ * Lightweight count for dashboard tiles, a SQL COUNT instead of shipping every
  * (PHI-bearing) visit row to the client just to read its length.
  */
 router.get('/visits/count', requireCapability('evv.read'), async (req, res) => {
@@ -76,7 +76,7 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
     const db = req.app.get('db');
     const repo = new EvvRepository(db);
     const scheduleRepo = new ScheduleRepository(db);
-    // Resolve client_id (Cures-Act #2 — beneficiary) from the assignment's
+    // Resolve client_id (Cures-Act #2, beneficiary) from the assignment's
     // visit_template. Snapshotting it onto the visit row keeps the row
     // self-contained for aggregator submission and audit.
     const assignment = await scheduleRepo.getAssignmentForCaregiver(
@@ -88,7 +88,7 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
 
     // Geofence gate. Pulls the client's anchor + radius (tenant-scoped) and
     // compares against the GPS lat/lng captured by the mobile app. Fails
-    // open when the client has no registered coordinates — see
+    // open when the client has no registered coordinates, see
     // checkGeofence() docstring for the rationale.
     const clientRepo = new ClientRepository(db);
     const clientGeofence = await clientRepo.getClientGeofence(
@@ -98,7 +98,7 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
     if (clientGeofence) {
       const violation = checkGeofence(parsed.data.location, clientGeofence);
       if (violation) {
-        // Audit out-of-bounds attempts so the policy gap is observable —
+        // Audit out-of-bounds attempts so the policy gap is observable , 
         // a caregiver hammering clock-in from a single off-site location
         // shows up as repeated permission.denied rows on the assignment.
         try {
@@ -139,7 +139,7 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
     }
     const serviceCode = authorizedServiceCode?.success ? authorizedServiceCode.data : parsed.data.serviceCode;
     if (!serviceCode) {
-      // Cures-Act #1 — service code is mandatory at clock-in. Refuse rather
+      // Cures-Act #1, service code is mandatory at clock-in. Refuse rather
       // than silently NULLing it; downstream aggregator submission will reject
       // a visit row without a service code anyway.
       return res.status(400).json({ message: 'serviceCode (HCPCS) is required at clock-in' });
@@ -196,7 +196,7 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
     // slow response, or a stale client screen re-showing a finished visit as
     // resumable). Without this, every repeat call re-ran geofence/exception
     // detection and overwrote clock_out_time/clock_out_location with a fresh
-    // value — silently discarding the original clock-out and, if any
+    // value, silently discarding the original clock-out and, if any
     // exception was detected, filing a duplicate exception + audit row per
     // call. Return the already-completed record unchanged instead.
     if (existing.clockOutTime) {
@@ -268,7 +268,7 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
     const status = detected.length > 0 ? 'flagged' : 'verified';
 
     // updateVisit returns null when the visit is on another tenant OR does
-    // not exist. Both surface as 404 — we never confirm cross-tenant existence.
+    // not exist. Both surface as 404, we never confirm cross-tenant existence.
     const visit = await repo.updateVisit(id.data, req.auth.agencyId, {
       clockOutTime,
       clockOutLocation: parsed.data.location,

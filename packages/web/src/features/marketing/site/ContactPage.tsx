@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { SiteLayout, mkic } from './SiteLayout.js';
 
 /**
- * Contact — rebuilt on the shared SiteLayout (teal/orange brand). Preserves
+ * Contact, rebuilt on the shared SiteLayout (teal/orange brand). Preserves
  * the original POST to /api/marketing/contact; restyled with brand tokens
  * (no leftover blue borders/shadows).
  */
@@ -66,7 +66,7 @@ export function ContactPage() {
           <span className="mk-eyebrow">Contact</span>
           <h1 className="mk-h1">Tell us about your agency.</h1>
           <p className="mk-lead">
-            A real person from the team replies within one business day — no bot, no drip campaign.
+            A real person from the team replies within one business day, no bot, no drip campaign.
           </p>
         </div>
       </header>

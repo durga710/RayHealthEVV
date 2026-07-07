@@ -3,10 +3,10 @@ import { createDb, ClientRepository } from '../index.js';
 
 /**
  * Agency-scoped client reads used by the audit packet route (Agent 06):
- * `getClientNameForAgency` (minimum-necessary identity — id/firstName/
+ * `getClientNameForAgency` (minimum-necessary identity, id/firstName/
  * lastName only) and `getClientGeofence` (the EVV geofence anchor). Both are
  * joined into `GET /admin/audit-packet/:visitId` via `visit.clientId`, which
- * could in principle be a stale/foreign id — these methods must return
+ * could in principle be a stale/foreign id, these methods must return
  * `undefined` rather than another agency's client data.
  *
  * Skips (rather than fails) when no DB is reachable, matching this suite's

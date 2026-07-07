@@ -106,7 +106,7 @@ const ROLE_CAPABILITIES: Record<AppRole, Capability[]> = {
     'evv.read',
     'learning.read', 'learning.write',
     // Coordinators can review claim/payroll readiness but not generate or
-    // change claim status — those stay admin-only (billing.write).
+    // change claim status, those stay admin-only (billing.write).
     'billing.read'
   ],
   caregiver: [
@@ -126,7 +126,7 @@ export function hasCapability(role: AppRole, capability: Capability): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Pennsylvania regulatory constants — code-truth values used by the
+// Pennsylvania regulatory constants, code-truth values used by the
 // Compliance Engine. Every value below is sourced from the canonical
 // `docs/compliance/states/pennsylvania.md` reference and Pennsylvania
 // regulation citations (55 Pa. Code, 23 Pa.C.S., 42 CFR 441). Treat these as
@@ -144,7 +144,7 @@ export const PA_GEOFENCE_TOTAL_METERS = PA_GEOFENCE_BASE_METERS + PA_GEOFENCE_TO
 export const PA_GRACE_PERIOD_MINUTES = 15;
 /** VMUR (Visit Maintenance) correction window before the visit is locked (days). */
 export const PA_VMUR_CORRECTION_WINDOW_DAYS = 7;
-/** PA retains EVV + audit records for 7 years — longest in the nation. */
+/** PA retains EVV + audit records for 7 years, longest in the nation. */
 export const PA_RETENTION_YEARS = 7;
 /** PA DHS audit-response SLA from notification to packet submission (hours). */
 export const PA_DHS_AUDIT_RESPONSE_HOURS = 48;
@@ -172,7 +172,7 @@ export const PA_HHA_INSERVICE_HOURS_PER_YEAR = 12;
 export const PA_DHS_ABUSE_HOTLINE = '1-800-932-0582';
 /** Sandata aggregator EVV submission endpoint (production). */
 export const PA_SANDATA_EVV_ENDPOINT = 'https://evv.sandata.com/Sandata.WebServices/Production';
-/** Sandata submission window — visits must be submitted within (days). */
+/** Sandata submission window, visits must be submitted within (days). */
 export const PA_SANDATA_SUBMISSION_WINDOW_DAYS = 7;
 
 /**
@@ -192,7 +192,7 @@ export type PaChcMco = typeof paChcMcos[number];
  * The six caregiver credential codes PA expects for a fully compliant home-
  * health roster. Used by the Credentials & Background module's policy block
  * so the UI renders the taxonomy without hardcoding it. Distinct from
- * `paCredentialTypes` above — that older list is the persisted-row credential
+ * `paCredentialTypes` above, that older list is the persisted-row credential
  * categories; this list is the PA-specific taxonomy.
  */
 export const paComplianceCredentials = [

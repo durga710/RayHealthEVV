@@ -8,7 +8,7 @@ let onUnauthorized: (() => void) | null = null;
 const apiClient: AxiosInstance = axiosCreate({
   baseURL: API_URL,
   // Without a timeout a half-open socket (captive-portal / flaky Wi-Fi) leaves
-  // every request hanging forever — including the startup token validation,
+  // every request hanging forever, including the startup token validation,
   // which would strand the app on a blank loading screen. Fail after 15s so
   // the caller's catch path runs.
   timeout: 15000,
@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     // Only treat as a revoked/expired session if we had a token (i.e. user was authenticated).
-    // A 401 on the /login call itself just means bad credentials — leave that to the caller.
+    // A 401 on the /login call itself just means bad credentials, leave that to the caller.
     const status = error?.response?.status;
     const url: string | undefined = error?.config?.url;
     const isLoginCall = typeof url === 'string' && url.includes('/auth/mobile/login');

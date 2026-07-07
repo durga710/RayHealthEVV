@@ -8,7 +8,7 @@
  * The check is synchronous and literal-only (no DNS resolution) so it is safe
  * to run in request handlers and unit tests: it enforces https and blocks
  * loopback / private / link-local / unique-local IP literals and localhost
- * hostnames. Request-time DNS-rebinding is out of scope here — the primary
+ * hostnames. Request-time DNS-rebinding is out of scope here, the primary
  * control is refusing to STORE a dangerous URL at config-write time.
  */
 
@@ -33,7 +33,7 @@ function ipv6IsBlocked(host: string): boolean {
   if (h === '::1' || h === '::') return true; // loopback / unspecified
   if (h.startsWith('fe80')) return true; // link-local
   if (h.startsWith('fc') || h.startsWith('fd')) return true; // unique-local fc00::/7
-  // IPv4-mapped (e.g. ::ffff:127.0.0.1) — extract and re-check the v4 tail.
+  // IPv4-mapped (e.g. ::ffff:127.0.0.1), extract and re-check the v4 tail.
   const mapped = /::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(h);
   if (mapped && ipv4IsBlocked(mapped[1])) return true;
   return false;
@@ -63,7 +63,7 @@ export function isSafeOutboundUrl(value: string): boolean {
   return !isBlockedOutboundHost(url.hostname);
 }
 
-/** Throws when `value` is not a safe outbound URL — for use right before a fetch. */
+/** Throws when `value` is not a safe outbound URL, for use right before a fetch. */
 export function assertSafeOutboundUrl(value: string): void {
   if (!isSafeOutboundUrl(value)) {
     throw new Error('refusing to call a non-https or private/internal URL');

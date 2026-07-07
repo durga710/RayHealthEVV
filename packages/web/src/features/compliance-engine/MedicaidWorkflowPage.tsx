@@ -178,16 +178,16 @@ export function MedicaidWorkflowPage() {
         },
       ]
     : [
-        { label: 'Active MA cases', value: '—' },
-        { label: 'Distinct payers', value: '—', hint: 'across active auths' },
-        { label: 'Service codes in use', value: '—', hint: 'service mix' },
-        { label: 'New auths (30d)', value: '—', tone: 'accent' },
+        { label: 'Active MA cases', value: ', ' },
+        { label: 'Distinct payers', value: ', ', hint: 'across active auths' },
+        { label: 'Service codes in use', value: ', ', hint: 'service mix' },
+        { label: 'New auths (30d)', value: ', ', tone: 'accent' },
       ];
 
   return (
     <ComplianceModuleLayout
       title="Medicaid Workflow"
-      tagline="CHC eligibility, prior authorizations, and PA Medicaid service mix readiness — synced to PROMISe MMIS (planned), with the 90-day quarterly review cycle required by 55 Pa. Code Chapter 6000."
+      tagline="CHC eligibility, prior authorizations, and PA Medicaid service mix readiness, synced to PROMISe MMIS (planned), with the 90-day quarterly review cycle required by 55 Pa. Code Chapter 6000."
       status="live"
       kpis={kpis}
       dataSources={[
@@ -447,7 +447,7 @@ export function MedicaidWorkflowPage() {
           }}
         >
           For agencies whose state routes EVV through HHAeXchange. The CSV uses your HHAeXchange
-          configuration (Tax ID, Provider ID, caregiver and service-code mappings) — configure it on{' '}
+          configuration (Tax ID, Provider ID, caregiver and service-code mappings), configure it on{' '}
           Agency Setup first or the download returns 422. Acceptance / rejection is written back via{' '}
           <code>POST /api/exports/hhaexchange/reconcile</code>.
         </p>

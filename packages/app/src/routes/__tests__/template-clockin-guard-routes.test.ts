@@ -13,7 +13,7 @@ const caregiverId = '00000000-0000-4000-8000-0000000000d3';
 const clientId = '00000000-0000-4000-8000-0000000000d4';
 const assignmentId = '00000000-0000-4000-8000-0000000000d5';
 
-describe('POST /templates — client ownership (finding #8)', () => {
+describe('POST /templates, client ownership (finding #8)', () => {
   it('404s a client that does not belong to the caller agency, without creating', async () => {
     const clientBelongsToAgency = vi.fn().mockResolvedValue(false);
     const createTemplate = vi.fn();
@@ -48,7 +48,7 @@ describe('POST /templates — client ownership (finding #8)', () => {
   });
 });
 
-describe('POST /evv/clock-in — concurrent open-visit guard (finding #9)', () => {
+describe('POST /evv/clock-in, concurrent open-visit guard (finding #9)', () => {
   it('409s when an open visit already exists for the assignment', async () => {
     vi.spyOn(core, 'ScheduleRepository').mockImplementation(
       () => ({

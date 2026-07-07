@@ -4,7 +4,7 @@ import { getJson, postJson, ApiError } from '../../lib/api-client.js';
 import { useAuth } from '../../lib/AuthContext.js';
 
 /**
- * CopilotChatPage — conversational Q&A surface at /admin/learning/copilot.
+ * CopilotChatPage, conversational Q&A surface at /admin/learning/copilot.
  *
  * Per brand: confirm-every-action. When the model proposes an action
  * (signaled by a `proposedAction` field in the response) we render a
@@ -183,7 +183,7 @@ export function CopilotChatPage(): ReactElement {
    * is appended as a system turn.
    *
    * If only the natural-language `proposedAction` is available (no JSON),
-   * this falls back to advisory mode — we just record the confirmation
+   * this falls back to advisory mode, we just record the confirmation
    * without executing. As of v2.1 the backend injects an agency-context
    * blob into every prompt so the model now has the UUIDs it needs to
    * emit structured proposedActionData routinely; the advisory branch
@@ -214,7 +214,7 @@ export function CopilotChatPage(): ReactElement {
       }
     } else if (turn.proposedAction) {
       appendSystemTurn(
-        `Recorded as confirmed (advisory mode): "${turn.proposedAction}". The model did not emit a structured action — typically because no matching caregiver or course was found in the injected agency context.`,
+        `Recorded as confirmed (advisory mode): "${turn.proposedAction}". The model did not emit a structured action, typically because no matching caregiver or course was found in the injected agency context.`,
       );
     }
   };

@@ -42,7 +42,7 @@ export function SignupPage() {
         setError(data.message ?? 'Signup failed');
         return;
       }
-      // The agency is created in `pending` review status — no session is issued.
+      // The agency is created in `pending` review status, no session is issued.
       // Show a confirmation; the admin can sign in once a super-admin approves.
       setSubmitted(true);
     } catch {

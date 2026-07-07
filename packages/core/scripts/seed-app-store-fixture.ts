@@ -8,7 +8,7 @@
  * the `00000000-0000-4000-8000-000000000001..0005` range so reruns
  * upsert in place rather than duplicating.
  *
- * SAFETY GUARDS — refuses to run if both are true:
+ * SAFETY GUARDS. refuses to run if both are true:
  *   1. The DB hostname matches the known prod proxy
  *      (`c-5.us-east-1.aws.neon.tech` for project late-art-87716813)
  *   2. AND `DATABASE_URL` doesn't contain `branch=` in its query string
@@ -77,7 +77,7 @@ async function main() {
   try {
     console.log('Seeding App Store fixture data…');
 
-    // Agency — required for FK constraints on users + caregivers + clients.
+    // Agency. required for FK constraints on users + caregivers + clients.
     await db('agencies')
       .insert({
         id: TEST_AGENCY_ID,
@@ -89,7 +89,7 @@ async function main() {
       .onConflict('id')
       .merge({ name: 'TEST Agency (App Store fixture)', updated_at: db.fn.now() });
 
-    // Client — TEST-Lok TEST-Ghimeray, 225 National Dr, Pittsburgh PA.
+    // Client. TEST-Lok TEST-Ghimeray, 225 National Dr, Pittsburgh PA.
     await db('clients')
       .insert({
         id: TEST_CLIENT_ID,
@@ -119,7 +119,7 @@ async function main() {
         updated_at: db.fn.now()
       });
 
-    // Caregiver — TEST-Roman TEST-Ghimeray.
+    // Caregiver. TEST-Roman TEST-Ghimeray.
     await db('caregivers')
       .insert({
         id: TEST_CAREGIVER_ID,
@@ -141,7 +141,7 @@ async function main() {
         updated_at: db.fn.now()
       });
 
-    // User — caregiver login row, joined to caregivers via caregiver_id.
+    // User. caregiver login row, joined to caregivers via caregiver_id.
     const passwordHash = await bcrypt.hash(TEST_CAREGIVER_PASSWORD, 12);
     await db('users')
       .insert({
@@ -161,7 +161,7 @@ async function main() {
         updated_at: db.fn.now()
       });
 
-    // Admin user — needed to exercise the web admin portal end-to-end
+    // Admin user. needed to exercise the web admin portal end-to-end
     // (Agency Setup, Visit Review, Audit Retention dashboard, Sandata
     // export, etc). All admin-only routes gate on capabilities the
     // 'admin' role grants in pennsylvania.ts.ROLE_CAPABILITIES. Same
@@ -184,7 +184,7 @@ async function main() {
         updated_at: db.fn.now()
       });
 
-    // Visit template — recurring daily personal-care plan.
+    // Visit template. recurring daily personal-care plan.
     await db('visit_templates')
       .insert({
         id: TEST_TEMPLATE_ID,
@@ -197,7 +197,7 @@ async function main() {
       .onConflict('id')
       .merge({ name: 'TEST Daily Personal Care', updated_at: db.fn.now() });
 
-    // Assignment — caregiver→template scheduled for today's window.
+    // Assignment. caregiver→template scheduled for today's window.
     const startTs = new Date();
     startTs.setMinutes(startTs.getMinutes() + 5);
     const endTs = new Date(startTs.getTime() + 4 * 60 * 60 * 1000);

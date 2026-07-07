@@ -34,7 +34,7 @@ afterEach(() => {
 
 /**
  * Stub the agency + user lookups the route does to build the email body.
- * Both default to "no row found" — that's fine, the route falls back to
+ * Both default to "no row found", that's fine, the route falls back to
  * sensible defaults. Tests that care can call this with overrides.
  */
 function stubLookups(opts?: {
@@ -172,7 +172,7 @@ describe('POST /invites', () => {
     expect(sesSpy).toHaveBeenCalledTimes(1);
 
     // An invite.email.sent audit row must have been written with the
-    // messageId — and crucially, the audit payload must NOT contain
+    // messageId, and crucially, the audit payload must NOT contain
     // the URL or any token-looking value.
     const sentCalls = auditCreate.mock.calls.filter(
       (c: unknown[]) => (c[0] as { eventType: string }).eventType === 'invite.email.sent'
@@ -222,7 +222,7 @@ describe('POST /invites', () => {
       .set('Authorization', `Bearer ${makeToken('admin')}`)
       .send({ email: 'caregiver@keystone.example', role: 'caregiver' });
 
-    // The invite itself is still 201 — email is best-effort.
+    // The invite itself is still 201, email is best-effort.
     expect(response.status).toBe(201);
     expect(response.body.emailDelivery).toBe('failed');
     // Manual fallback path must still be present.
@@ -279,7 +279,7 @@ describe('POST /invites/:id/resend-email', () => {
     expect(response.status).toBe(200);
     expect(response.body.emailDelivery).toBe('sent');
     expect(response.body.email).toBe('caregiver@keystone.example');
-    // The response MUST NOT include the invite URL — that's a second
+    // The response MUST NOT include the invite URL, that's a second
     // disclosure path we deliberately closed.
     expect(JSON.stringify(response.body)).not.toContain('accept-invite');
   });
@@ -367,7 +367,7 @@ describe('POST /invites/:id/resend-email', () => {
   });
 
   it('refuses callers without the staff.write capability', async () => {
-    // A `family` role token — has no staff.write capability.
+    // A `family` role token, has no staff.write capability.
     const response = await request(createApp())
       .post('/invites/22222222-2222-4222-2222-222222222222/resend-email')
       .set('Authorization', `Bearer ${makeToken('family')}`)

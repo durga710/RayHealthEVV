@@ -41,7 +41,7 @@ const statusStyle: Record<string, { className: string; label: string }> = {
 };
 
 function formatDate(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return ', ';
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -234,7 +234,7 @@ export function LearningPortalPage() {
                       </p>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                          <label className="label">Score (0–100, optional)</label>
+                          <label className="label">Score (0-100, optional)</label>
                           <input
                             type="number"
                             min="0"

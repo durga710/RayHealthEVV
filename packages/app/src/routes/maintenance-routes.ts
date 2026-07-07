@@ -8,7 +8,7 @@ const router = Router();
 
 type AuditDb = ConstructorParameters<typeof AuditEventRepository>[0];
 
-// Best-effort audit write — never blocks or fails the maintenance action, but
+// Best-effort audit write, never blocks or fails the maintenance action, but
 // the durable non-repudiation record lives on the visit_maintenance row itself
 // (requester_id / approver_id / approved_at), so a dropped audit event does not
 // lose attribution.
@@ -23,7 +23,7 @@ async function recordAuditEvent(db: AuditDb, event: NewAuditEvent): Promise<void
 }
 
 // Adjusted clock times for an approved correction. Both must be valid ISO
-// datetimes and the end must come strictly after the start — a negative- or
+// datetimes and the end must come strictly after the start, a negative- or
 // zero-duration correction is rejected at the boundary rather than written as a
 // billable visit.
 const adjustedTimesSchema = z
@@ -64,7 +64,7 @@ router.post('/request-unlock', requireCapability('schedule.write'), async (req, 
     res.status(201).json(maintenance);
   } catch (error) {
     // requestUnlock throws when visitId doesn't belong to the caller's
-    // agency — treat that the same as "visit not found", not a 500, and
+    // agency, treat that the same as "visit not found", not a 500, and
     // don't leak whether the visit exists on another tenant.
     res.status(404).json({ message: 'Visit not found' });
   }

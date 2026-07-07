@@ -47,10 +47,10 @@ const BILLING_FIELDS: Array<{ key: keyof BillingForm; label: string; placeholder
 
 // PA HCPCS service codes that carry a per-unit rate.
 const FEE_CODES: Array<{ code: string; label: string; unit: string }> = [
-  { code: 'T1019', label: 'T1019 — Personal care', unit: 'per 15 min' },
-  { code: 'S5125', label: 'S5125 — Attendant care', unit: 'per 15 min' },
-  { code: 'T1004', label: 'T1004 — Qualified aide services', unit: 'per 15 min' },
-  { code: 'T1021', label: 'T1021 — Home health aide', unit: 'per visit' },
+  { code: 'T1019', label: 'T1019. Personal care', unit: 'per 15 min' },
+  { code: 'S5125', label: 'S5125. Attendant care', unit: 'per 15 min' },
+  { code: 'T1004', label: 'T1004. Qualified aide services', unit: 'per 15 min' },
+  { code: 'T1021', label: 'T1021. Home health aide', unit: 'per visit' },
 ];
 
 function centsToDollars(cents: number | undefined): string {
@@ -150,7 +150,7 @@ export function AgencySetupPage() {
     e.preventDefault();
     setBillingBanner(null);
     setBillingSaving(true);
-    // Only send non-empty fields — the API validates format per field and
+    // Only send non-empty fields, the API validates format per field and
     // leaves omitted fields untouched.
     const payload: Partial<BillingForm> = {};
     (Object.keys(billing) as Array<keyof BillingForm>).forEach(k => {
@@ -320,7 +320,7 @@ export function AgencySetupPage() {
         </div>
       </div>
 
-      {/* Billing & Clearinghouse — 837 billing-provider identity */}
+      {/* Billing & Clearinghouse, 837 billing-provider identity */}
       <div className="form-card" style={{ borderTop: '3px solid #107480', marginTop: '1.5rem' }}>
         <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>
           Billing &amp; Clearinghouse
@@ -367,14 +367,14 @@ export function AgencySetupPage() {
         )}
       </div>
 
-      {/* Fee Schedule — cents per billing unit by HCPCS code */}
+      {/* Fee Schedule, cents per billing unit by HCPCS code */}
       <div className="form-card" style={{ borderTop: '3px solid #107480', marginTop: '1.5rem' }}>
         <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>
           Fee Schedule
         </h2>
         <p style={{ margin: '0 0 1.1rem', fontSize: '0.8125rem', color: '#64748B', lineHeight: 1.6 }}>
           Your contracted rate per billing unit for each PA service code. Claims compute charges from
-          these rates — a code left blank bills $0.00 and is flagged before submission.
+          these rates, a code left blank bills $0.00 and is flagged before submission.
         </p>
         <form onSubmit={handleFeeSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>

@@ -6,7 +6,7 @@
  * URL, Provider ID, and credentials are per-agency config (set during onboarding)
  * so a single deploy serves many agencies on distinct Sandata instances.
  *
- * IMPORTANT — payload contract: the exact field names below follow Sandata's
+ * IMPORTANT, payload contract: the exact field names below follow Sandata's
  * "Alternate Data Collection" / Open-Model interface, but each state's Sandata
  * instance (PA DHS included) issues its own integration spec + sandbox. Treat
  * `buildSandataApiPayload` as the single place to align field names/value
@@ -28,7 +28,7 @@ import type { SandataCaregiverMapping, SandataServiceMapping } from '../services
 export interface SandataClientConfig {
   /** Operator flips this true once Provider ID, mappings, and BAA are in place. */
   enabled: boolean;
-  /** e.g. https://uat-api.sandata.com/interface/v3 — per state, per environment. */
+  /** e.g. https://uat-api.sandata.com/interface/v3, per state, per environment. */
   apiBaseUrl: string | null;
   /** 9-digit Sandata Provider ID assigned to the agency. */
   providerId: string | null;
@@ -169,7 +169,7 @@ export async function submitVisits(
 
   if (!res.ok) {
     const retryable = res.status >= 500;
-    // Do NOT reflect the raw upstream response body back to the caller — with a
+    // Do NOT reflect the raw upstream response body back to the caller, with a
     // caller-influenced base URL that would be a reflected-SSRF read primitive.
     // Report only the status code; the full body is available server-side.
     if (res.status === 401 || res.status === 403) {

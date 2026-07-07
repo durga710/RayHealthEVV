@@ -4,15 +4,15 @@ import { buildInviteUrl, createEmailClient } from '../email-client.js';
 
 /**
  * These tests exercise the email client in two modes:
- *  - no-op client (AWS creds unset) — must NOT instantiate or call the
+ *  - no-op client (AWS creds unset), must NOT instantiate or call the
  *    SDK and must resolve with `{ok: false, error: 'EMAIL_NOT_CONFIGURED'}`.
- *  - real client — mocks `SESv2Client.prototype.send` so we can assert
+ *  - real client, mocks `SESv2Client.prototype.send` so we can assert
  *    the SendEmailCommand input shape without hitting AWS.
  *
  * We mock on the prototype to catch both `client.send(...)` and any
  * future `new Command()` wrapping; the input passed to `send` is the
  * `SendEmailCommand` instance, and its `.input` property is the
- * raw object that would go to SES — exactly what we want to assert on.
+ * raw object that would go to SES, exactly what we want to assert on.
  */
 
 const ORIGINAL_ENV = { ...process.env };
@@ -197,7 +197,7 @@ describe('createEmailClient', () => {
     });
 
     expect(result.ok).toBe(false);
-    // A vanilla Error has `name: 'Error'` and no `$metadata` — we
+    // A vanilla Error has `name: 'Error'` and no `$metadata`, we
     // surface that as the category rather than UNKNOWN_ERROR.
     if (result.ok === false) expect(result.error).toBe('Error');
   });

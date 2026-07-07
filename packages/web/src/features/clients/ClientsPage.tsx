@@ -130,7 +130,7 @@ export function ClientsPage() {
     setBanner(null);
 
     // Coordinates are optional, but if one is supplied both must be, and both
-    // must parse — otherwise the geofence anchor would be silently incomplete.
+    // must parse, otherwise the geofence anchor would be silently incomplete.
     const lat = latitude.trim() ? Number(latitude) : undefined;
     const lng = longitude.trim() ? Number(longitude) : undefined;
     if ((lat === undefined) !== (lng === undefined)) {
@@ -273,7 +273,7 @@ export function ClientsPage() {
                   <span className="label" style={{ display: 'block' }}>Service address &amp; EVV geofence</span>
                   <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#64748B', lineHeight: 1.5 }}>
                     The address where care is delivered. Add latitude &amp; longitude to
-                    activate the clock-in / clock-out geofence — without coordinates,
+                    activate the clock-in / clock-out geofence, without coordinates,
                     location verification can&apos;t be enforced for this client.
                   </p>
                 </div>
@@ -419,7 +419,7 @@ export function ClientsPage() {
                           {c.medicaidNumber ? (
                             <span className="badge badge-info" style={{ fontFamily: 'var(--font-mono)', textTransform: 'none', letterSpacing: 0 }}>{c.medicaidNumber}</span>
                           ) : (
-                            <span style={{ color: '#94A3B8', fontSize: '0.8125rem' }}>—</span>
+                            <span style={{ color: '#94A3B8', fontSize: '0.8125rem' }}>, </span>
                           )}
                         </td>
                         <td style={{ color: '#94A3B8' }}>{isExpanded ? '▾' : '▸'}</td>
@@ -450,7 +450,7 @@ export function ClientsPage() {
                                   </span>
                                 ) : (
                                   <span className="badge badge-warning" style={{ textTransform: 'none', letterSpacing: 0 }}>
-                                    Not set — location not enforced
+                                    Not set, location not enforced
                                   </span>
                                 )}
                               </div>

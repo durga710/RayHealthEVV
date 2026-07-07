@@ -13,7 +13,7 @@ afterEach(() => {
 const agencyId = 'agency-1';
 const userId = 'user-1';
 
-describe('Compliance Engine — audit-defense preview', () => {
+describe('Compliance Engine, audit-defense preview', () => {
   it('returns counts + PA policy for an admin in the agency', async () => {
     const getAuditDefensePreview = vi.fn().mockResolvedValue({
       auditEvents: 42,
@@ -121,7 +121,7 @@ describe('Compliance Engine — audit-defense preview', () => {
   });
 });
 
-describe('Compliance Engine — authorizations overview', () => {
+describe('Compliance Engine, authorizations overview', () => {
   const mockCounts = {
     activeAuthorizations: 25,
     expiringIn14d: 3,
@@ -216,7 +216,7 @@ describe('Compliance Engine — authorizations overview', () => {
   });
 });
 
-describe('Compliance Engine — summary', () => {
+describe('Compliance Engine, summary', () => {
   const mockSummary = {
     auditEventsLast30d: 1024,
     activeAuthorizations: 84,
@@ -266,7 +266,7 @@ describe('Compliance Engine — summary', () => {
   });
 });
 
-describe('Compliance Engine — credentials overview', () => {
+describe('Compliance Engine, credentials overview', () => {
   const mockCounts = {
     activeCredentials: 240,
     pendingCredentials: 8,
@@ -320,7 +320,7 @@ describe('Compliance Engine — credentials overview', () => {
   });
 });
 
-describe('Compliance Engine — claims overview', () => {
+describe('Compliance Engine, claims overview', () => {
   const mockCounts = {
     verifiedVisitsLast7d: 84,
     verifiedVisitsLast30d: 340,
@@ -368,7 +368,7 @@ describe('Compliance Engine — claims overview', () => {
   });
 });
 
-describe('Compliance Engine — payroll overview', () => {
+describe('Compliance Engine, payroll overview', () => {
   const mockCounts = {
     verifiedHoursLast7d: 412.5,
     verifiedHoursLast30d: 1840,
@@ -416,7 +416,7 @@ describe('Compliance Engine — payroll overview', () => {
   });
 });
 
-describe('Compliance Engine — Medicaid workflow overview', () => {
+describe('Compliance Engine. Medicaid workflow overview', () => {
   const mockCounts = {
     activeMaCases: 84,
     distinctPayers: 4,
@@ -470,7 +470,7 @@ describe('Compliance Engine — Medicaid workflow overview', () => {
   });
 });
 
-describe('Compliance Engine — audit-defense packet.csv', () => {
+describe('Compliance Engine, audit-defense packet.csv', () => {
   function spyRepo(impl: () => Partial<core.ComplianceEngineRepository>) {
     vi.spyOn(core, 'ComplianceEngineRepository').mockImplementation(
       function ComplianceEngineRepositoryMock() {
@@ -589,7 +589,7 @@ describe('Compliance Engine — audit-defense packet.csv', () => {
   });
 });
 
-describe('Compliance Engine — authorizations list', () => {
+describe('Compliance Engine, authorizations list', () => {
   const mockPage = {
     rows: [
       {
@@ -689,7 +689,7 @@ describe('Compliance Engine — authorizations list', () => {
   });
 });
 
-describe('Compliance Engine — exceptions list + acknowledge', () => {
+describe('Compliance Engine, exceptions list + acknowledge', () => {
   const validUuid = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
   const mockPage = {
     rows: [
@@ -851,7 +851,7 @@ describe('Compliance Engine — exceptions list + acknowledge', () => {
   });
 });
 
-describe('Compliance Engine — exceptions overview', () => {
+describe('Compliance Engine, exceptions overview', () => {
   const mockCounts = {
     openExceptions: 12,
     lateClockInOpen: 5,
@@ -918,7 +918,7 @@ describe('Compliance Engine — exceptions overview', () => {
   });
 });
 
-describe('Compliance Engine — claim readiness blockers', () => {
+describe('Compliance Engine, claim readiness blockers', () => {
   function spyRepo(impl: () => Partial<core.ComplianceEngineRepository>) {
     vi.spyOn(core, 'ComplianceEngineRepository').mockImplementation(
       function ComplianceEngineRepositoryMock() {

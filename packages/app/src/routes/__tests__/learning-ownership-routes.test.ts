@@ -13,7 +13,7 @@ const caregiverId = '00000000-0000-4000-8000-0000000000b3';
 const enrollmentId = '00000000-0000-4000-8000-0000000000b4';
 const courseId = '00000000-0000-4000-8000-0000000000b5';
 
-describe('POST /learning/complete — tenant scoping (finding #3)', () => {
+describe('POST /learning/complete, tenant scoping (finding #3)', () => {
   it('passes the caller agencyId to recordCompletion so the enrollment is agency-scoped', async () => {
     const recordCompletion = vi.fn().mockResolvedValue({ id: 'c1', enrollmentId, caregiverId, courseId });
     vi.spyOn(core, 'LearningRepository').mockImplementation(
@@ -26,7 +26,7 @@ describe('POST /learning/complete — tenant scoping (finding #3)', () => {
       .send({ enrollmentId, courseId });
 
     expect(res.status).toBe(201);
-    // Second argument is the caller's agencyId — the ownership scope.
+    // Second argument is the caller's agencyId, the ownership scope.
     expect(recordCompletion).toHaveBeenCalledWith(expect.objectContaining({ enrollmentId, courseId }), agencyId);
   });
 
@@ -45,7 +45,7 @@ describe('POST /learning/complete — tenant scoping (finding #3)', () => {
   });
 });
 
-describe('POST /learning/start — tenant scoping (finding #14)', () => {
+describe('POST /learning/start, tenant scoping (finding #14)', () => {
   it('passes agencyId to markInProgress and 404s a non-owned enrollment', async () => {
     const markInProgress = vi.fn().mockResolvedValue(false);
     vi.spyOn(core, 'LearningRepository').mockImplementation(

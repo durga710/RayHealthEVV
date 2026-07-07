@@ -4,7 +4,7 @@ import { getJson } from '../../lib/api-client.js';
 
 /**
  * Printable certificate of completion for a caregiver's completed course.
- * Mounted at /portal/training/:courseId/certificate. Data is authoritative —
+ * Mounted at /portal/training/:courseId/certificate. Data is authoritative , 
  * fetched from GET /api/learning/certificate/:courseId, which 404s unless the
  * caregiver actually completed the course. The toolbar is hidden when printing
  * so the certificate prints clean (or "Save as PDF").
@@ -36,7 +36,7 @@ export function CertificatePage() {
   useEffect(() => {
     getJson<{ success: boolean; data: Certificate }>(`/api/learning/certificate/${courseId}`)
       .then((r) => setCert(r.data))
-      .catch(() => setError('This certificate is not available yet — complete the course first.'))
+      .catch(() => setError('This certificate is not available yet, complete the course first.'))
       .finally(() => setLoading(false));
   }, [courseId]);
 

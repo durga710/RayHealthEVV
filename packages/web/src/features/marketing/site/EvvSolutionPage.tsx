@@ -15,15 +15,15 @@ interface Pillar {
 }
 
 const pillars: Pillar[] = [
-  { t: 'GPS clock-in / clock-out', b: 'Caregivers verify each visit from the mobile app. Location is captured at the start and end of service — not typed in after the fact.',
+  { t: 'GPS clock-in / clock-out', b: 'Caregivers verify each visit from the mobile app. Location is captured at the start and end of service, not typed in after the fact.',
     i: mkic(<><circle cx="12" cy="10" r="3" /><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z" /></>) },
-  { t: 'The six federal data elements', b: 'Every visit captures all six elements the 21st Century Cures Act requires — automatically, on every clock-in and clock-out.',
+  { t: 'The six federal data elements', b: 'Every visit captures all six elements the 21st Century Cures Act requires, automatically, on every clock-in and clock-out.',
     i: mkic(<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>) },
-  { t: 'Offline capture', b: 'No signal at the home? The visit is captured on the device and syncs automatically once connectivity returns — nothing is lost.',
+  { t: 'Offline capture', b: 'No signal at the home? The visit is captured on the device and syncs automatically once connectivity returns, nothing is lost.',
     i: mkic(<><path d="M5 12.55a11 11 0 0 1 14 0M8.5 16.1a6 6 0 0 1 7 0M12 20h.01" /><path d="M2 2l20 20" /></>) },
-  { t: 'Telephony / IVR fallback', b: 'For homes without a smartphone, caregivers verify by phone from the client’s landline — the same visit record, captured by call.',
+  { t: 'Telephony / IVR fallback', b: 'For homes without a smartphone, caregivers verify by phone from the client’s landline, the same visit record, captured by call.',
     i: mkic(<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" /></>) },
-  { t: 'Tamper-evident records', b: 'Once a visit is verified, the record is locked. Edits are tracked with who, what, and when — so the audit trail is defensible.',
+  { t: 'Tamper-evident records', b: 'Once a visit is verified, the record is locked. Edits are tracked with who, what, and when, so the audit trail is defensible.',
     i: mkic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>) },
   { t: 'Sandata aggregator mapping', b: 'Visits map to the data format Pennsylvania’s state aggregator expects, so verified visits flow toward billing without re-keying.',
     i: mkic(<><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5" /><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3" /></>) },
@@ -37,7 +37,7 @@ interface DataElement {
 
 const elements: DataElement[] = [
   { n: '01', t: 'Type of service', b: 'The specific service performed during the visit, recorded against the client’s plan.' },
-  { n: '02', t: 'Individual receiving the service', b: 'The client served — tied to their authorization and care plan.' },
+  { n: '02', t: 'Individual receiving the service', b: 'The client served, tied to their authorization and care plan.' },
   { n: '03', t: 'Individual providing the service', b: 'The caregiver who delivered the visit, verified at clock-in.' },
   { n: '04', t: 'Date of service', b: 'The calendar date the service was actually delivered.' },
   { n: '05', t: 'Location of service', b: 'Where the service was delivered, captured by GPS or telephony at the home.' },
@@ -54,7 +54,7 @@ const steps: Step[] = [
   { n: '01', t: 'Arrive & clock in', b: 'The caregiver opens the app at the home and clocks in. GPS confirms location and the start time is stamped.' },
   { n: '02', t: 'Deliver the visit', b: 'Care is delivered and tasks are logged. With no signal, everything is captured on-device for later sync.' },
   { n: '03', t: 'Clock out', b: 'Clock-out stamps the end time and location. All six federal elements are now captured for the visit.' },
-  { n: '04', t: 'Verify & map', b: 'The locked, tamper-evident record maps to the Sandata format and flows toward billing — no re-keying.' },
+  { n: '04', t: 'Verify & map', b: 'The locked, tamper-evident record maps to the Sandata format and flows toward billing, no re-keying.' },
 ];
 
 interface Stat {
@@ -76,7 +76,7 @@ interface Faq {
 
 const faqs: Faq[] = [
   { q: 'What are the six federal EVV data elements?', a: 'The 21st Century Cures Act requires every EVV visit to capture: the type of service, the individual receiving the service, the individual providing the service, the date of service, the location of service, and the time the service begins and ends. RayHealth captures all six on every clock-in and clock-out.' },
-  { q: 'What happens when there’s no cell signal at the home?', a: 'The visit is captured on the device — including GPS location at clock-in and clock-out — and syncs automatically once connectivity returns. For homes without a smartphone, caregivers can verify by phone using the telephony/IVR fallback from the client’s landline.' },
+  { q: 'What happens when there’s no cell signal at the home?', a: 'The visit is captured on the device, including GPS location at clock-in and clock-out, and syncs automatically once connectivity returns. For homes without a smartphone, caregivers can verify by phone using the telephony/IVR fallback from the client’s landline.' },
   { q: 'How does RayHealth keep records tamper-evident?', a: 'Once a visit is verified it’s locked, and any later correction is recorded with who made the change, what changed, and when. That edit history travels with the visit, so the record stays defensible in an audit.' },
   { q: 'How does this work with Pennsylvania’s aggregator?', a: 'Pennsylvania uses the Sandata state aggregator for EVV. RayHealth maps verified visits to the data format the aggregator expects so they flow toward billing without manual re-entry. Confirm your program’s current submission requirements with PA DHS.' },
 ];
@@ -104,7 +104,7 @@ const verifyRows: VerifyRow[] = [
   { l: 'Receiving', v: 'E. Daniels' },
   { l: 'Providing', v: 'M. Santos' },
   { l: 'Date', v: 'Jun 27, 2026' },
-  { l: 'Begins / ends', v: '8:02 AM – 10:01 AM' },
+  { l: 'Begins / ends', v: '8:02 AM, 10:01 AM' },
 ];
 
 export function EvvSolutionPage() {
@@ -133,7 +133,7 @@ export function EvvSolutionPage() {
         <div className="mk-wrap">
           <p className="mk-eylabel">Verification, end to end</p>
           <h2 className="mk-h2">Capture the visit the way the rules require.</h2>
-          <p className="mk-deck">EVV isn&rsquo;t a checkbox after the fact. RayHealth captures each visit as it happens — even when the home has no signal — and keeps the record defensible.</p>
+          <p className="mk-deck">EVV isn&rsquo;t a checkbox after the fact. RayHealth captures each visit as it happens, even when the home has no signal, and keeps the record defensible.</p>
           <div className="mk-grid">
             {pillars.map((p) => (
               <div className="mk-card" key={p.t}>
@@ -151,7 +151,7 @@ export function EvvSolutionPage() {
         <div className="mk-wrap">
           <p className="mk-eylabel">21st Century Cures Act</p>
           <h2 className="mk-h2">The six federal EVV data elements.</h2>
-          <p className="mk-deck">Federal law requires every EVV visit to capture these six elements. RayHealth records all six on each clock-in and clock-out — no manual entry, no gaps.</p>
+          <p className="mk-deck">Federal law requires every EVV visit to capture these six elements. RayHealth records all six on each clock-in and clock-out, no manual entry, no gaps.</p>
           <div className="mk-grid cols3">
             {elements.map((e) => (
               <div className="mk-card" key={e.n}>
@@ -172,7 +172,7 @@ export function EvvSolutionPage() {
             <div className="mk-feattext">
               <p className="mk-eylabel">GPS verification</p>
               <h3>Location captured at the door, not the desk.</h3>
-              <p>When a caregiver clocks in, RayHealth captures GPS location and the timestamp on the spot. Every required element is checked off as the visit happens — so verification is built in, not reconstructed.</p>
+              <p>When a caregiver clocks in, RayHealth captures GPS location and the timestamp on the spot. Every required element is checked off as the visit happens, so verification is built in, not reconstructed.</p>
               <ul className="mk-checks">
                 <li><span className="mk-ck">{mkic(MK_CHECK)}</span>GPS location at both clock-in and clock-out</li>
                 <li><span className="mk-ck">{mkic(MK_CHECK)}</span>All six federal elements captured automatically</li>
@@ -211,7 +211,7 @@ export function EvvSolutionPage() {
             <div className="mk-feattext">
               <p className="mk-eylabel">Resilient &amp; defensible</p>
               <h3>Works in tough homes, locks when it counts.</h3>
-              <p>A home with no smartphone or no signal still gets a clean record — by telephony or offline sync. Once a visit is verified, it&rsquo;s locked, and every correction is tracked for the audit trail.</p>
+              <p>A home with no smartphone or no signal still gets a clean record, by telephony or offline sync. Once a visit is verified, it&rsquo;s locked, and every correction is tracked for the audit trail.</p>
               <ul className="mk-checks">
                 <li><span className="mk-ck">{mkic(MK_CHECK)}</span>Telephony / IVR fallback from the client&rsquo;s landline</li>
                 <li><span className="mk-ck">{mkic(MK_CHECK)}</span>Locked records with full who/what/when edit history</li>

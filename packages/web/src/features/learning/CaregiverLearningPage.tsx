@@ -93,7 +93,7 @@ export function CaregiverLearningPage() {
   useEffect(() => {
     if (!caregiverId) return;
     void refresh();
-    // refresh is a stable closure over set-state functions — eslint
+    // refresh is a stable closure over set-state functions, eslint
     // doesn't have react-hooks/exhaustive-deps configured here so we leave
     // it out of the dep array; the function captures the current caregiverId
     // via outer scope.

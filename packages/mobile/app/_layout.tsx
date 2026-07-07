@@ -10,7 +10,7 @@ import { showAppToast } from '../src/features/common/alerts/appAlert';
 // Expo Go (SDK 53+) removed remote push support, so expo-notifications' push-
 // token auto-registration logs a warning the moment the module is imported.
 // We only use LOCAL scheduled notifications (shift alerts), which still work in
-// Expo Go — so this message is expected noise *only* while running inside Expo
+// Expo Go, so this message is expected noise *only* while running inside Expo
 // Go. It does NOT fire in a dev/production build, where remote push is
 // available, so scope the suppression to Expo Go to keep real push problems
 // visible everywhere else.
@@ -73,8 +73,8 @@ function RootContent() {
 
   // When the session is lost (logout, or a mid-use 401 revoke), reset the whole
   // stack to login. The (tabs) layout already redirects, but screens pushed
-  // OVER the tabs — /clockin, /training, /course-player, /visit-detail,
-  // /profile-details, /change-password — would otherwise strand the user on a
+  // OVER the tabs, /clockin, /training, /course-player, /visit-detail,
+  // /profile-details, /change-password, would otherwise strand the user on a
   // now-unauthorized
   // screen. Fire only on the authenticated→unauthenticated transition.
   const prevAuth = useRef(isAuthenticated);

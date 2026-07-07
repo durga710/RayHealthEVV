@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-na
 /**
  * Web shim for react-native-webview.
  *
- * react-native-webview is native-only — it imports react-native internals
+ * react-native-webview is native-only, it imports react-native internals
  * (codegenNativeComponent) that don't exist on web, so bundling it for web
  * breaks `expo export`. metro.config.cjs redirects `react-native-webview` to
  * this file for the web platform only; iOS/Android keep the real package.

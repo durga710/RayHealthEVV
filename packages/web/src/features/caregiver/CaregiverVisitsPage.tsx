@@ -140,13 +140,13 @@ export function CaregiverVisitsPage() {
                   <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#0F172A' }}>{dateStr}</div>
                   <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: '0.15rem' }}>
                     {inTime}
-                    {outTime ? ` – ${outTime}` : ' (in progress)'}
+                    {outTime ? `, ${outTime}` : ' (in progress)'}
                     {v.serviceCode && ` · ${v.serviceCode}`}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0F172A' }}>
-                    {hours > 0 ? formatHours(hours) : '—'}
+                    {hours > 0 ? formatHours(hours) : ', '}
                   </div>
                   <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>duration</div>
                 </div>

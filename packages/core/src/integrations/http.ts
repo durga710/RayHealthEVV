@@ -4,7 +4,7 @@
  * Uses the global `fetch` (Node 18+/22) so tests can stub it with
  * `vi.stubGlobal('fetch', ...)`. Applies a hard timeout via AbortController so a
  * hung aggregator can never wedge a request handler. Never throws on a non-2xx
- * status — the caller inspects `ok`/`status` and decides; only a genuine
+ * status, the caller inspects `ok`/`status` and decides; only a genuine
  * network/abort failure rejects.
  */
 
@@ -56,7 +56,7 @@ export interface GetJsonOptions {
 }
 
 /**
- * GET a JSON resource. Like `postJson`, never throws on a non-2xx status — the
+ * GET a JSON resource. Like `postJson`, never throws on a non-2xx status, the
  * caller inspects `ok`/`status`. Only a network/abort failure rejects.
  */
 export async function getJson(url: string, options: GetJsonOptions = {}): Promise<HttpJsonResponse> {

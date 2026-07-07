@@ -34,12 +34,12 @@ interface SecurityControl {
 }
 
 // Every item below is an IMPLEMENTED architectural control per the scout /
-// architecture reports — presented as "claim → mechanism".
+// architecture reports, presented as "claim → mechanism".
 const securityControls: readonly SecurityControl[] = [
   {
     icon: 'app-window',
     label: 'HttpOnly web sessions',
-    detail: 'The admin web session lives in an HttpOnly cookie, never in browser storage — so a cross-site script cannot read it.',
+    detail: 'The admin web session lives in an HttpOnly cookie, never in browser storage, so a cross-site script cannot read it.',
     tone: 'primary',
   },
   {
@@ -63,7 +63,7 @@ const securityControls: readonly SecurityControl[] = [
   {
     icon: 'file-text',
     label: 'Append-only audit log',
-    detail: 'Every state change is written to an audit table a Postgres trigger refuses to UPDATE or DELETE — the log cannot be edited, even by us.',
+    detail: 'Every state change is written to an audit table a Postgres trigger refuses to UPDATE or DELETE, the log cannot be edited, even by us.',
     tone: 'primary',
   },
   {
@@ -80,7 +80,7 @@ const securityControls: readonly SecurityControl[] = [
   },
 ];
 
-// Honest roadmap. Nothing is marked "complete" — operational HIPAA readiness
+// Honest roadmap. Nothing is marked "complete", operational HIPAA readiness
 // is in progress, and overclaiming a milestone as done is exactly what the
 // language guardrails forbid. "active" = underway, "upcoming" = not started.
 const roadmap: readonly WorkflowStep[] = [
@@ -156,7 +156,7 @@ const aiPolicy: readonly AiPolicyPoint[] = [
   },
   {
     title: 'Human in the loop',
-    detail: 'The copilot proposes; a person approves. There is no autonomous action — the AI never edits a claim, schedule, or record on its own.',
+    detail: 'The copilot proposes; a person approves. There is no autonomous action, the AI never edits a claim, schedule, or record on its own.',
   },
   {
     title: 'AI actions are audit-logged',
@@ -171,7 +171,7 @@ interface Subprocessor {
   statusTone: 'success' | 'info' | 'neutral';
 }
 
-// Mirrors PrivacyPage.tsx exactly — this is NOT a place to invent vendors.
+// Mirrors PrivacyPage.tsx exactly, this is NOT a place to invent vendors.
 const subprocessors: readonly Subprocessor[] = [
   { name: 'Vercel', role: 'Application compute (web app + API)', status: 'BAA in progress', statusTone: 'info' },
   { name: 'Neon', role: 'Postgres database', status: 'BAA active', statusTone: 'success' },
@@ -191,7 +191,7 @@ export function TrustCenterPage() {
           <h1 className="mk-h1">RayHealthEVV Trust Center</h1>
           <p className="mk-lead">
             Built for homecare operators who need security, accountability, and
-            audit-ready workflows. Every claim below follows one pattern — the
+            audit-ready workflows. Every claim below follows one pattern, the
             control, the mechanism that enforces it, and where you can verify
             it. Where our operational HIPAA readiness is still in progress, we
             say so.
@@ -216,8 +216,8 @@ export function TrustCenterPage() {
             <SectionCard title="Current readiness status" bordered>
               <p style={{ margin: 0, lineHeight: 1.7, color: 'var(--color-text-secondary)' }}>
                 RayHealthEVV is built with <strong>HIPAA-grade architectural
-                controls</strong> — encryption in transit, per-agency data
-                isolation, an append-only audit trail, and revocable sessions —
+                controls</strong>, encryption in transit, per-agency data
+                isolation, an append-only audit trail, and revocable sessions , 
                 that are implemented and running today. Our{' '}
                 <strong>operational HIPAA readiness is in progress</strong>:
                 vendor Business Associate Agreements, a formal risk analysis, an
@@ -351,12 +351,12 @@ export function TrustCenterPage() {
             <SectionCard title="Security contact" bordered>
               <p style={{ margin: 0, lineHeight: 1.7, color: 'var(--color-text-secondary)' }}>
                 Security or privacy concern? Reach our Privacy / Security Officer
-                directly. Diligence requests — BAA template, control narratives,
-                or a synthetic PHI-free audit-log sample — are answered on the
+                directly. Diligence requests. BAA template, control narratives,
+                or a synthetic PHI-free audit-log sample, are answered on the
                 same channel.
               </p>
               <p style={{ margin: 'var(--space-4) 0 0', lineHeight: 1.8, color: 'var(--color-text-secondary)' }}>
-                Privacy / Security Officer — RayHealthEVV™
+                Privacy / Security Officer. RayHealthEVV™
                 <br />
                 <a href="mailto:security@rayhealthevv.com" style={{ color: 'var(--color-primary-dark)', fontWeight: 600 }}>
                   security@rayhealthevv.com

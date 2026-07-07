@@ -4,7 +4,7 @@ import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
 /**
  * Solutions › Scheduling.
  * Conflict-aware visual scheduling: a drag-and-drop weekly board that reads
- * eligibility, credentials, and authorizations in real time — so the schedule
+ * eligibility, credentials, and authorizations in real time, so the schedule
  * a coordinator publishes is one that can actually be billed and verified.
  */
 
@@ -15,7 +15,7 @@ interface Pillar {
 }
 
 const pillars: Pillar[] = [
-  { t: 'Drag-and-drop weekly board', b: 'Build the week visually. Move a visit and everything around it — caregiver, client, authorization, travel — recalculates as you drop it.',
+  { t: 'Drag-and-drop weekly board', b: 'Build the week visually. Move a visit and everything around it, caregiver, client, authorization, travel, recalculates as you drop it.',
     i: mkic(<><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /></>) },
   { t: 'Live eligibility & credential checks', b: 'Every assignment is checked against the caregiver’s record. Expired clearances, missing training, or service mismatches surface before the visit is published.',
     i: mkic(<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></>) },
@@ -36,9 +36,9 @@ interface Step {
 }
 
 const steps: Step[] = [
-  { n: '01', t: 'Open the weekly board', b: 'Coordinators see every client and caregiver on one drag-and-drop grid — by day, by week, or by team.' },
+  { n: '01', t: 'Open the weekly board', b: 'Coordinators see every client and caregiver on one drag-and-drop grid, by day, by week, or by team.' },
   { n: '02', t: 'Drop a visit', b: 'Assign a caregiver to a slot. RayHealth checks eligibility, credentials, authorization, and travel the instant you do.' },
-  { n: '03', t: 'Resolve conflicts', b: 'Anything that can’t be billed or verified is flagged inline with the reason — overlaps, expired credentials, exhausted units.' },
+  { n: '03', t: 'Resolve conflicts', b: 'Anything that can’t be billed or verified is flagged inline with the reason, overlaps, expired credentials, exhausted units.' },
   { n: '04', t: 'Publish with confidence', b: 'Caregivers get the schedule on the same app they clock in with, and the visit is ready to verify and bill.' },
 ];
 
@@ -63,7 +63,7 @@ const faqs: Faq[] = [
   { q: 'What conflicts does the scheduler actually catch?', a: 'Overlapping visits for the same caregiver, travel gaps that can’t be physically met, expired or missing credentials, training that’s overdue, service-type mismatches, and visits that would exceed a client’s authorized units. Each is flagged inline with the specific reason.' },
   { q: 'How does authorization burn-down work?', a: 'RayHealth tracks approved units per client against what’s already scheduled and delivered. As you build the week, it shows remaining units and warns before you publish visits that would push a client past their authorization.' },
   { q: 'Can I set up recurring and standing schedules?', a: 'Yes. Define a client’s standing pattern once and RayHealth generates the recurring visits, keeping them in step with availability and authorization changes so you’re not rebuilding the week by hand.' },
-  { q: 'How does scheduling connect to EVV and workforce?', a: 'Scheduling reads the same caregiver record used for credentialing and the same authorization data used for billing. A published visit flows straight into EVV for clock-in and verification — one source of truth, not three systems to reconcile.' },
+  { q: 'How does scheduling connect to EVV and workforce?', a: 'Scheduling reads the same caregiver record used for credentialing and the same authorization data used for billing. A published visit flows straight into EVV for clock-in and verification, one source of truth, not three systems to reconcile.' },
 ];
 
 const Chrome = ({ url }: { url: string }) => (

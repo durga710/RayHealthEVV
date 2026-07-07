@@ -6,7 +6,7 @@ import AppToast from './AppToast';
 import type { QueuedDialog, QueuedToast } from './types';
 
 /**
- * Self-contained host for the branded alert/toast system — no context is
+ * Self-contained host for the branded alert/toast system, no context is
  * needed since screens call the imperative showAppAlert/showAppToast
  * functions directly, not a hook. Mount once, as a sibling rendered after
  * <Stack> so it always paints on top (see app/_layout.tsx).

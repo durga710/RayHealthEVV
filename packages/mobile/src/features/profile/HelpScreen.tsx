@@ -81,10 +81,10 @@ const HELP_SECTIONS: HelpSection[] = [
         text:
           'After signing in you land on the Home Screen. It provides quick access to your daily work:',
         bullets: [
-          'Today — all visits assigned for the current day, with patient name, scheduled time, address, and clock-in status',
-          'Schedule — upcoming assignments',
-          'Visits — search past and upcoming visits',
-          'Me — your profile, linked agencies, training, and settings',
+          'Today, all visits assigned for the current day, with patient name, scheduled time, address, and clock-in status',
+          'Schedule, upcoming assignments',
+          'Visits, search past and upcoming visits',
+          'Me, your profile, linked agencies, training, and settings',
         ],
       },
     ],
@@ -111,7 +111,7 @@ const HELP_SECTIONS: HelpSection[] = [
       {
         heading: 'Mutual visits (M)',
         text:
-          'Mutual visits involve multiple patients receiving care during the same scheduled time at the same residence. Only one Clock-In and one Clock-Out are required — the system automatically verifies the additional patient. Care Plan tasks must still be completed individually for each patient.',
+          'Mutual visits involve multiple patients receiving care during the same scheduled time at the same residence. Only one Clock-In and one Clock-Out are required, the system automatically verifies the additional patient. Care Plan tasks must still be completed individually for each patient.',
       },
       {
         heading: 'Linked visits (L)',
@@ -124,7 +124,7 @@ const HELP_SECTIONS: HelpSection[] = [
           '🟢  Visit verified successfully, or a time edit was approved',
           '🟠  Time edit awaiting agency approval',
           '🔴  Visit verification issue detected',
-          'Gray text — the visit has already been billed',
+          'Gray text, the visit has already been billed',
         ],
       },
     ],
@@ -143,7 +143,7 @@ const HELP_SECTIONS: HelpSection[] = [
       {
         heading: 'Clock In',
         text:
-          "Tap Clock In when you arrive. Verification uses your agency's approved method — GPS, Bluetooth beacon, NFC, security token, or other approved EVV technology. Once verified, your clock-in time is recorded and the button is disabled.",
+          "Tap Clock In when you arrive. Verification uses your agency's approved method. GPS, Bluetooth beacon, NFC, security token, or other approved EVV technology. Once verified, your clock-in time is recorded and the button is disabled.",
       },
       {
         heading: 'Clock Out',
@@ -153,8 +153,8 @@ const HELP_SECTIONS: HelpSection[] = [
       {
         heading: 'Care Plan task status',
         bullets: [
-          'Performed — you successfully completed the task',
-          'Refused — you attempted the task, but the patient refused the service',
+          'Performed, you successfully completed the task',
+          'Refused, you attempted the task, but the patient refused the service',
         ],
         note: 'Tasks may be edited until billing has been completed by the agency.',
       },
@@ -171,9 +171,9 @@ const HELP_SECTIONS: HelpSection[] = [
       {
         heading: 'Visit notes',
         bullets: [
-          'Text notes — create one or more written notes',
-          'Audio notes — record up to 30 seconds of audio',
-          'Image notes — attach photographs related to the visit',
+          'Text notes, create one or more written notes',
+          'Audio notes, record up to 30 seconds of audio',
+          'Image notes, attach photographs related to the visit',
         ],
         note: 'All notes become available to authorized agency staff.',
       },
@@ -188,7 +188,7 @@ const HELP_SECTIONS: HelpSection[] = [
     blocks: [
       {
         text:
-          'Occasionally you must provide services that are not on the daily schedule — commonly when your agency requests an unexpected visit. Use Unscheduled Visit to begin these visits.',
+          'Occasionally you must provide services that are not on the daily schedule, commonly when your agency requests an unexpected visit. Use Unscheduled Visit to begin these visits.',
       },
       {
         heading: 'Existing patient',
@@ -273,7 +273,7 @@ const HELP_SECTIONS: HelpSection[] = [
       {
         heading: 'User profile',
         text:
-          'Your profile contains the information provided during registration — name, gender, date of birth, email address, and phone number.',
+          'Your profile contains the information provided during registration, name, gender, date of birth, email address, and phone number.',
         note: 'If any information is incorrect, contact your agency administrator.',
       },
       {
@@ -284,7 +284,7 @@ const HELP_SECTIONS: HelpSection[] = [
       {
         heading: 'Disconnecting & reconnecting',
         text:
-          'After disconnecting from an agency you lose access to it — future schedules and messages from that agency no longer appear. To reconnect, contact the agency and provide your RayHealthEVV ID; once approved, access is automatically restored.',
+          'After disconnecting from an agency you lose access to it, future schedules and messages from that agency no longer appear. To reconnect, contact the agency and provide your RayHealthEVV ID; once approved, access is automatically restored.',
       },
       {
         heading: 'Password',
@@ -301,8 +301,8 @@ const HELP_SECTIONS: HelpSection[] = [
     blocks: [
       {
         bullets: [
-          'For assistance with your account, schedules, or visit issues — contact your agency administrator',
-          'For software support — contact RayHealthEVV Support',
+          'For assistance with your account, schedules, or visit issues, contact your agency administrator',
+          'For software support, contact RayHealthEVV Support',
         ],
       },
     ],
@@ -404,7 +404,7 @@ export default function HelpScreen() {
             <EmptyState
               icon="search-outline"
               title="No matching topics"
-              message="Try a different word — or email support and we'll point you the right way."
+              message="Try a different word, or email support and we'll point you the right way."
             />
           </View>
         ) : (

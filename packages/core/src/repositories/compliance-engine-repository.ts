@@ -26,7 +26,7 @@ export interface AuditDefensePacketRow {
   id: string;
   /** ISO timestamp identifying when the row happened in the source system. */
   occurredAt: string;
-  /** Actor (user/system) most directly responsible — may be null for raw visits. */
+  /** Actor (user/system) most directly responsible, may be null for raw visits. */
   actorId: string | null;
   /** Visit reference where applicable. */
   visitId: string | null;
@@ -37,7 +37,7 @@ export interface AuditDefensePacketRow {
   detailsJson: string;
 }
 
-/** Result of building a packet — counts plus the underlying row stream. */
+/** Result of building a packet, counts plus the underlying row stream. */
 export interface AuditDefensePacket {
   agencyId: string;
   periodFrom: string;
@@ -87,7 +87,7 @@ export interface AcknowledgedException {
 export interface AuthorizationDetailRow {
   id: string;
   clientId: string;
-  /** Concatenated client first + last name for display. NOT a PHI export — the
+  /** Concatenated client first + last name for display. NOT a PHI export, the
    *  view is admin/coordinator-only via `client.read`. */
   clientName: string;
   payerId: string;
@@ -159,7 +159,7 @@ export class ComplianceEngineRepository {
       .whereBetween('created_at', [fromIso, toIso])
       .count<Array<{ count: string }>>('* as count');
 
-    // evv_visits has no agency_id directly — join through caregivers.
+    // evv_visits has no agency_id directly, join through caregivers.
     const [evvRow] = await this.db('evv_visits')
       .join('caregivers', 'evv_visits.caregiver_id', 'caregivers.id')
       .where('caregivers.agency_id', agencyId)
@@ -192,7 +192,7 @@ export class ComplianceEngineRepository {
    * (header line + each row), so a PA DHS auditor can re-derive it from the
    * downloaded packet without trusting the server.
    *
-   * This is a read-only build — it does not write the audit event for the
+   * This is a read-only build, it does not write the audit event for the
    * export itself. That event must be emitted by the caller (the HTTP route)
    * with `eventType: 'phi.export'` so the actor + correlation id are accurate.
    */
@@ -436,9 +436,9 @@ export class ComplianceEngineRepository {
    * and returns the resulting row. Returns `null` when:
    *  - the exception does not exist
    *  - the exception belongs to a different agency
-   *  - the exception is already acknowledged (idempotent — caller can warn)
+   *  - the exception is already acknowledged (idempotent, caller can warn)
    *
-   * Does **not** emit the audit event itself — the HTTP route writes a single
+   * Does **not** emit the audit event itself, the HTTP route writes a single
    * `exception.approved` event with the actor and correlation id; doing it here
    * would lose the request-scoped context. Updates are wrapped in a transaction
    * so the agency-scope check and the UPDATE land atomically.
@@ -1064,16 +1064,16 @@ export class ComplianceEngineRepository {
   }
 
   /**
-   * Agency-wide operational snapshot of TODAY's scheduled visits — the heart of
+   * Agency-wide operational snapshot of TODAY's scheduled visits, the heart of
    * the owner command center. Joins assignments scheduled today (UTC) →
    * visit_templates → clients (agency scope) and LEFT JOINs the latest EVV visit
    * per assignment to classify each into one bucket:
    *   - completed  : visit clocked out
    *   - inProgress : clocked in, not yet out
-   *   - lateStart  : scheduled start already passed (> grace) with no clock-in — needs action NOW
+   *   - lateStart  : scheduled start already passed (> grace) with no clock-in, needs action NOW
    *   - upcoming   : scheduled later today, not started
    * `lateStart` is the actionable "no-show risk" bucket an owner must chase.
-   * Counts only — no PHI rows leave the DB.
+   * Counts only, no PHI rows leave the DB.
    */
   async getTodaysVisitOps(agencyId: string, nowIso: string): Promise<TodaysVisitOps> {
     const now = new Date(nowIso);
@@ -1130,7 +1130,7 @@ export class ComplianceEngineRepository {
   }
 
   /**
-   * Per-visit rows for today's scheduling board — the actionable drill-down
+   * Per-visit rows for today's scheduling board, the actionable drill-down
    * behind the command-center "late to start" count. Returns client + caregiver
    * identity (the assigned office staff are authorized to see their own agency's
    * roster) and the raw clock timestamps; the caller derives display status via
@@ -1200,7 +1200,7 @@ export interface TodaysVisitOps {
   completed: number;
   /** Today's visits clocked in but not yet clocked out. */
   inProgress: number;
-  /** Scheduled start passed (>15m grace) with no clock-in — needs action now. */
+  /** Scheduled start passed (>15m grace) with no clock-in, needs action now. */
   lateStart: number;
   /** Scheduled later today, not started yet. */
   upcoming: number;
@@ -1326,7 +1326,7 @@ export interface ExceptionResolutionCounts {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers (module-private — exported only via the methods above)
+// Helpers (module-private, exported only via the methods above)
 // ---------------------------------------------------------------------------
 
 /** Clamp `n` to the closed interval [lo, hi]. */
@@ -1388,7 +1388,7 @@ export function auditPacketRowToCsv(row: AuditDefensePacketRow): string {
 /**
  * Compute the manifest SHA-256 over the canonical CSV serialisation of the
  * sorted packet rows (header line + one line per row, joined with `\n`). Pure
- * function of `rows` — same input ⇒ same hash.
+ * function of `rows`, same input ⇒ same hash.
  */
 function computePacketHash(rows: AuditDefensePacketRow[]): string {
   const header = AUDIT_DEFENSE_PACKET_COLUMNS.join(',');

@@ -72,7 +72,7 @@ export function encryptCell(plain: string | null | undefined): string | null {
 export function decryptCell(blob: string | null | undefined): string | null | undefined {
   if (blob == null || blob === '') return blob ?? null;
   if (!blob.startsWith(`${VERSION}:`)) {
-    // Legacy plaintext during rollout — return as-is. Backfill tooling later.
+    // Legacy plaintext during rollout, return as-is. Backfill tooling later.
     return blob;
   }
   const buf = Buffer.from(blob.slice(VERSION.length + 1), 'base64');

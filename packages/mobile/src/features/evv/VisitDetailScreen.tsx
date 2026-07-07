@@ -17,25 +17,25 @@ function one(v: string | string[] | undefined): string | undefined {
 }
 
 function fmtDate(iso?: string): string {
-  if (!iso) return '—';
+  if (!iso) return ', ';
   const d = new Date(iso);
   return Number.isFinite(d.getTime())
     ? d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-    : '—';
+    : ', ';
 }
 
 function fmtTime(iso?: string): string {
-  if (!iso) return '—';
+  if (!iso) return ', ';
   const d = new Date(iso);
   return Number.isFinite(d.getTime())
     ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
-    : '—';
+    : ', ';
 }
 
 function fmtDuration(inIso?: string, outIso?: string): string {
-  if (!inIso || !outIso) return '—';
+  if (!inIso || !outIso) return ', ';
   const ms = new Date(outIso).getTime() - new Date(inIso).getTime();
-  if (!Number.isFinite(ms) || ms <= 0) return '—';
+  if (!Number.isFinite(ms) || ms <= 0) return ', ';
   const min = Math.round(ms / 60000);
   const h = Math.floor(min / 60);
   const m = min % 60;

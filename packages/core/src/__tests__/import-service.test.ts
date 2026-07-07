@@ -32,7 +32,7 @@ describe('parseCsv', () => {
   });
 });
 
-describe('validateImportRecords — clients', () => {
+describe('validateImportRecords, clients', () => {
   it('accepts a complete row and normalizes types', () => {
     const { records } = parseCsv(
       'external_id,first_name,last_name,date_of_birth,medicaid_number,state,latitude,longitude,geofence_radius_m\n' +
@@ -63,7 +63,7 @@ describe('validateImportRecords — clients', () => {
   });
 });
 
-describe('validateImportRecords — caregivers', () => {
+describe('validateImportRecords, caregivers', () => {
   it('accepts a valid caregiver and lowercases email', () => {
     const { records } = parseCsv('first_name,last_name,email,npi\nGrace,Hopper,Grace@Navy.MIL,1234567890\n');
     const [r] = validateImportRecords('caregivers', records);
@@ -82,7 +82,7 @@ describe('validateImportRecords — caregivers', () => {
   });
 });
 
-describe('validateImportRecords — authorizations', () => {
+describe('validateImportRecords, authorizations', () => {
   it('accepts a canonical service code and links via client_external_id', () => {
     const { records } = parseCsv(
       'external_id,client_external_id,payer_id,service_code,units_authorized,start_date,end_date\n' +

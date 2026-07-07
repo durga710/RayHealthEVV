@@ -7,7 +7,7 @@ const router = Router();
 
 /**
  * Admin-only paginated audit-events timeline. Same capability guard as
- * /admin/audit-retention (`audit.read`) — coordinators / caregivers /
+ * /admin/audit-retention (`audit.read`), coordinators / caregivers /
  * family members never see this.
  *
  * Query params (all optional):

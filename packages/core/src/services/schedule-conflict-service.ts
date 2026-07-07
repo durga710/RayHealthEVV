@@ -4,7 +4,7 @@
  * The assignment model is day-granular (a visit date, no start/end time), so
  * this detects the conflicts the data supports today:
  *  - HARD: a duplicate assignment (same caregiver already on this visit
- *    template for the same date) — blocked.
+ *    template for the same date), blocked.
  *  - SOFT (warnings, non-blocking): the visit date has no covering client
  *    authorization, or the covering authorization has no units left.
  *

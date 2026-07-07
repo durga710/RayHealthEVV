@@ -6,7 +6,7 @@
  * the Postgres driver, fetch clients, or the JSON body parser routinely
  * embed column values, query fragments, or request body fields in `.message`
  * or `.stack`. Logging that raw to stdout puts PHI into the deploy provider's
- * log pipeline — out-of-band from `audit_events` and outside the BAA scope
+ * log pipeline, out-of-band from `audit_events` and outside the BAA scope
  * of the application database.
  *
  * Strategy:
@@ -21,7 +21,7 @@
  */
 
 const REDACTIONS: Array<{ pattern: RegExp; replacement: string }> = [
-  // Medicaid IDs (PA: 10 digits). Conservative — strips any 10-11 digit run.
+  // Medicaid IDs (PA: 10 digits). Conservative, strips any 10-11 digit run.
   { pattern: /\b\d{10,11}\b/g, replacement: '[REDACTED-MEDICAID]' },
   // SSN-shaped XXX-XX-XXXX or 9 raw digits.
   { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: '[REDACTED-SSN]' },

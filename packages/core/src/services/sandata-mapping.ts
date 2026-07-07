@@ -1,16 +1,16 @@
 /**
- * Sandata aggregator mapping — config schema + lookup.
+ * Sandata aggregator mapping, config schema + lookup.
  *
  * The Sandata EVV Provider Self-Service Visit Maintenance CSV requires three
  * pieces of identity that we cannot derive from RayHealth's internal IDs alone:
  *
- *   1. Sandata Provider ID   — assigned to the agency by Sandata once they
+ *   1. Sandata Provider ID  , assigned to the agency by Sandata once they
  *                              register with the PA Aggregator. Format: 9-digit
  *                              numeric string.
- *   2. External Worker ID    — Sandata's caregiver-stable ID. Often equals the
+ *   2. External Worker ID   . Sandata's caregiver-stable ID. Often equals the
  *                              caregiver's SSN-last-4 + state license + birth
  *                              year, but each agency configures their own scheme.
- *   3. Service code + HCPCS  — Sandata expects an HCPCS service code + modifier
+ *   3. Service code + HCPCS . Sandata expects an HCPCS service code + modifier
  *                              combination per visit. PA most commonly uses:
  *                                T1019 U4 → personal care services
  *                                T1019 U5 → respite
@@ -20,7 +20,7 @@
  *   - Defines the per-agency config shape and validates it with Zod
  *   - Provides a single `buildSandataRow()` function that converts a visit +
  *     caregiver + client + config into a typed Sandata row
- *   - Refuses to emit a row when any required mapping is missing — never
+ *   - Refuses to emit a row when any required mapping is missing, never
  *     ships a partial CSV that Sandata would reject silently
  *
  * Persistence: stored in a new table `agency_sandata_config` (one row per
@@ -39,7 +39,7 @@ export const sandataServiceMappingSchema = z.object({
   internalServiceCode: z.string().min(1),
   /** HCPCS base code, e.g. "T1019". */
   hcpcsCode: z.string().regex(/^[A-Z]\d{4}$/, 'HCPCS must be 5 characters: 1 letter + 4 digits'),
-  /** HCPCS modifier — Sandata requires one for PA personal care. */
+  /** HCPCS modifier. Sandata requires one for PA personal care. */
   hcpcsModifier: z.enum(HCPCS_MODIFIERS),
   /** Human-readable label for audit/exception messages. */
   label: z.string().min(1),
@@ -50,7 +50,7 @@ export type SandataServiceMapping = z.infer<typeof sandataServiceMappingSchema>
 export const sandataCaregiverMappingSchema = z.object({
   /** RayHealth caregiver UUID. */
   caregiverId: z.string().uuid(),
-  /** Sandata external worker ID — opaque string assigned by the agency. */
+  /** Sandata external worker ID, opaque string assigned by the agency. */
   externalWorkerId: z.string().min(1).max(32),
 })
 
@@ -58,7 +58,7 @@ export type SandataCaregiverMapping = z.infer<typeof sandataCaregiverMappingSche
 
 export const sandataConfigSchema = z.object({
   agencyId: z.string().uuid(),
-  /** Sandata Provider ID — assigned by Sandata when the agency registers. */
+  /** Sandata Provider ID, assigned by Sandata when the agency registers. */
   providerId: z.string().regex(/^\d{9}$/, 'Sandata Provider ID is 9 digits'),
   /** ISO 8601 timezone identifier; visit timestamps are emitted in this zone. */
   timezone: z.string().default('America/New_York'),
@@ -66,7 +66,7 @@ export const sandataConfigSchema = z.object({
   caregivers: z.array(sandataCaregiverMappingSchema),
   /** Per-service-code HCPCS mapping. Visits with unmapped service codes are skipped. */
   services: z.array(sandataServiceMappingSchema),
-  /** When false, the export endpoint returns an empty CSV — used for staged rollout. */
+  /** When false, the export endpoint returns an empty CSV, used for staged rollout. */
   enabled: z.boolean().default(false),
 })
 
@@ -84,7 +84,7 @@ export interface SandataVisitInput {
   clockOutIso: string | null
   /** Service code referenced in the visit_template.tasks JSON. */
   internalServiceCode: string
-  /** Geofence verification — Sandata records lat/lng of clock-in. */
+  /** Geofence verification. Sandata records lat/lng of clock-in. */
   clockInLat: number
   clockInLng: number
   clockOutLat: number | null
@@ -184,7 +184,7 @@ function buildLookups(config: SandataConfig): MappingLookups {
 
 /**
  * Convert a single visit into a Sandata CSV row, or describe why it was skipped.
- * Pure function — no I/O. Callers iterate over visits and collect the outcomes.
+ * Pure function, no I/O. Callers iterate over visits and collect the outcomes.
  */
 export function buildSandataRow(
   visit: SandataVisitInput,
@@ -252,7 +252,7 @@ export function buildSandataRow(
 
 /**
  * Bulk-convert a list of visits into Sandata rows + structured skip log.
- * Builds the lookups once and reuses them — efficient for full-month exports.
+ * Builds the lookups once and reuses them, efficient for full-month exports.
  */
 export function buildSandataExport(
   visits: readonly SandataVisitInput[],

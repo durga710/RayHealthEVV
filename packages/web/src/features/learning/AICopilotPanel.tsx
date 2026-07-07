@@ -2,15 +2,15 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { getJson } from '../../lib/api-client.js';
 
 /**
- * AICopilotPanel — the visible-but-locked surface on the Learning Hub.
+ * AICopilotPanel, the visible-but-locked surface on the Learning Hub.
  *
  * Per brand guidance: the AI workflow copilot is a paid agency add-on with
  * private billing visibility. When the flag is OFF (the default), the surface
- * still renders so coordinators see what's coming — they just can't use it.
+ * still renders so coordinators see what's coming, they just can't use it.
  * The "Enable" CTA is visible only to admins (private billing).
  *
  * The actual AI calls (Gemini per-role defaults, confirm-every-action) are
- * wired in a follow-up — this is the entry surface.
+ * wired in a follow-up, this is the entry surface.
  */
 
 interface AiCopilotFlag {
@@ -29,7 +29,7 @@ interface ApiResponse<T> {
 }
 
 interface AICopilotPanelProps {
-  /** Currently-authed user role — drives whether the Enable CTA is shown. */
+  /** Currently-authed user role, drives whether the Enable CTA is shown. */
   userRole?: 'admin' | 'coordinator' | 'caregiver' | 'family';
 }
 
@@ -48,7 +48,7 @@ export function AICopilotPanel({ userRole }: AICopilotPanelProps): ReactElement 
         if (response.success && response.data) {
           setFeatures({ aiCopilot: { enabled: response.data.enabled, plan: response.data.plan } });
         } else {
-          // Failed to load — assume off (safe default).
+          // Failed to load, assume off (safe default).
           setFeatures({ aiCopilot: { enabled: false, plan: 'off' } });
         }
       } catch {
@@ -93,7 +93,7 @@ function LockedPanel({ userRole }: { userRole?: string }): ReactElement {
         <p style={{ margin: '0 0 0.85rem', color: '#475569', fontSize: '0.9rem', lineHeight: 1.5 }}>
           Ask plain-English questions about your training compliance. "Who's due for
           HIPAA refresh next week?" "Why is Roberto stuck on dementia care?"
-          Coordinator-level decisions stay in your hands — the copilot proposes,
+          Coordinator-level decisions stay in your hands, the copilot proposes,
           you confirm.
         </p>
 
@@ -101,7 +101,7 @@ function LockedPanel({ userRole }: { userRole?: string }): ReactElement {
           <li>Per-role assistant: caregiver, coordinator, owner</li>
           <li>Smart enrollment suggestions based on visit history</li>
           <li>Automatic reminders before due dates and expiry</li>
-          <li>Every action requires your confirmation — nothing automated silently</li>
+          <li>Every action requires your confirmation, nothing automated silently</li>
         </ul>
 
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginTop: '1rem' }}>

@@ -1,5 +1,5 @@
 /**
- * Recurrence expansion — the pure core of the recurring-schedule engine.
+ * Recurrence expansion, the pure core of the recurring-schedule engine.
  *
  * Given a weekly pattern (days-of-week + a start/end time over a date range)
  * and a materialization window, produce the concrete occurrences that fall in

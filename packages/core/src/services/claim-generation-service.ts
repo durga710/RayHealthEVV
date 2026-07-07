@@ -65,7 +65,7 @@ export interface GenerateClaimsInput {
   /**
    * Contracted fee schedule: cents per billing unit, keyed by HCPCS service
    * code. When a visit's service code has no rate the line charges $0 and is
-   * flagged — a claim can't be sent to a payer at $0.
+   * flagged, a claim can't be sent to a payer at $0.
    */
   ratesByServiceCode?: Readonly<Record<string, number>>;
   /** Injectable id generator (deterministic in tests). */
@@ -108,7 +108,7 @@ export function minutesBetween(startIso: string, endIso: string): number {
  * Convert a verified duration into HCPCS billing units.
  *
  *   - Per-visit codes (unitMinutes === 0, e.g. T1021): always 1 unit.
- *   - 15-minute codes: CMS "8-minute rule" — round to the nearest whole unit
+ *   - 15-minute codes: CMS "8-minute rule", round to the nearest whole unit
  *     (round-half-up). A visit under ~8 minutes yields 0 units and is flagged
  *     downstream as below the minimum billable increment, rather than rounded
  *     up (we never over-bill Medicaid).
@@ -167,7 +167,7 @@ export function generateClaims(input: GenerateClaimsInput): GenerateClaimsResult
       unbillable.push({
         visitId: visit.visitId,
         clientId: visit.clientId,
-        reasons: ['No service code recorded on the visit — cannot map to a HCPCS code.'],
+        reasons: ['No service code recorded on the visit, cannot map to a HCPCS code.'],
       });
       continue;
     }
@@ -175,7 +175,7 @@ export function generateClaims(input: GenerateClaimsInput): GenerateClaimsResult
       unbillable.push({
         visitId: visit.visitId,
         clientId: visit.clientId,
-        reasons: ['Visit has no clock-out — an incomplete visit cannot be billed.'],
+        reasons: ['Visit has no clock-out, an incomplete visit cannot be billed.'],
       });
       continue;
     }
@@ -216,7 +216,7 @@ export function generateClaims(input: GenerateClaimsInput): GenerateClaimsResult
       riskFlags.push('high');
     }
     if (!visit.clientMedicaidNumber) {
-      reasons.push('Client Medicaid ID is missing — payer will reject the claim.');
+      reasons.push('Client Medicaid ID is missing, payer will reject the claim.');
       riskFlags.push('high');
     }
     const sandata = visit.sandataStatus ?? null;
@@ -237,7 +237,7 @@ export function generateClaims(input: GenerateClaimsInput): GenerateClaimsResult
     const ratePerUnit = input.ratesByServiceCode?.[visit.serviceCode] ?? 0;
     const chargeCents = ratePerUnit * units;
     if (ratePerUnit <= 0 && units > 0) {
-      reasons.push(`No fee-schedule rate configured for ${visit.serviceCode} — charge is $0.00.`);
+      reasons.push(`No fee-schedule rate configured for ${visit.serviceCode}, charge is $0.00.`);
       riskFlags.push('medium');
     }
 

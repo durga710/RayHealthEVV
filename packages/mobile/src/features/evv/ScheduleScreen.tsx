@@ -94,7 +94,7 @@ function formatTime(iso: string | null): string {
   const d = new Date(iso);
   return Number.isFinite(d.getTime())
     ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
-    : '—';
+    : ', ';
 }
 
 export default function ScheduleScreen() {
@@ -140,7 +140,7 @@ export default function ScheduleScreen() {
         const res = await apiClient.get<{ schedule: ScheduleRow[] }>('/api/mobile/caregiver/schedule?days=30');
         schedule = res.data?.schedule ?? [];
       } catch {
-        // The /schedule endpoint may not be deployed yet — fall back to the
+        // The /schedule endpoint may not be deployed yet, fall back to the
         // always-available "today" window (same row shape) so the tab still
         // shows visits instead of an empty state.
         const res = await apiClient.get<{ schedule: ScheduleRow[] }>('/api/mobile/caregiver/today');

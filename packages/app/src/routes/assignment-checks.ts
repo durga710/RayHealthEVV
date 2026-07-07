@@ -51,7 +51,7 @@ export async function evaluateAssignmentChecks(
     return { caregiver: null, templateClient: null, hardConflicts: [], warnings: [] };
   }
 
-  // Credential advisory (warning, not a block — a renewal may be in flight).
+  // Credential advisory (warning, not a block, a renewal may be in flight).
   const credentials = await caregiverRepo.getCredentials(input.caregiverId, agencyId);
   const credCheck = evaluateCredentialEligibility({
     operatingTrack: 'personal-assistance',

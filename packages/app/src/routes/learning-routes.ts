@@ -42,7 +42,7 @@ const courseBodySchema = z.object({
   modules: modulesSchema.nullable().optional(),
 });
 
-// GET /learning/courses — catalog visible to all authenticated roles (admin, coordinator, caregiver)
+// GET /learning/courses, catalog visible to all authenticated roles (admin, coordinator, caregiver)
 router.get('/courses', requireCapability('learning.read'), async (req: Request, res: Response) => {
   try {
     const db = req.app.get('db') as Knex;
@@ -55,7 +55,7 @@ router.get('/courses', requireCapability('learning.read'), async (req: Request, 
   }
 });
 
-// POST /learning/courses — author a new agency course (with in-app content + quiz)
+// POST /learning/courses, author a new agency course (with in-app content + quiz)
 router.post('/courses', requireCapability('staff.write'), async (req: Request, res: Response) => {
   const parsed = courseBodySchema.safeParse(req.body ?? {});
   if (!parsed.success) {
@@ -76,7 +76,7 @@ router.post('/courses', requireCapability('staff.write'), async (req: Request, r
   }
 });
 
-// PATCH /learning/courses/:id — edit an agency-owned course (global courses are read-only)
+// PATCH /learning/courses/:id, edit an agency-owned course (global courses are read-only)
 router.patch('/courses/:id', requireCapability('staff.write'), async (req: Request, res: Response) => {
   const parsed = courseBodySchema.partial().safeParse(req.body ?? {});
   if (!parsed.success) {
@@ -99,7 +99,7 @@ router.patch('/courses/:id', requireCapability('staff.write'), async (req: Reque
   }
 });
 
-// DELETE /learning/courses/:id — remove an agency-owned course
+// DELETE /learning/courses/:id, remove an agency-owned course
 router.delete('/courses/:id', requireCapability('staff.write'), async (req: Request, res: Response) => {
   try {
     const db = req.app.get('db') as Knex;
@@ -115,7 +115,7 @@ router.delete('/courses/:id', requireCapability('staff.write'), async (req: Requ
   }
 });
 
-// GET /learning/progress — caregiver's own enrollment progress
+// GET /learning/progress, caregiver's own enrollment progress
 router.get('/progress', requireCapability('evv.write'), async (req: Request, res: Response) => {
   try {
     const db = req.app.get('db') as Knex;
@@ -129,7 +129,7 @@ router.get('/progress', requireCapability('evv.write'), async (req: Request, res
   }
 });
 
-// GET /learning/rollup — agency-level compliance dashboard
+// GET /learning/rollup, agency-level compliance dashboard
 router.get('/rollup', requireCapability('staff.read'), async (req: Request, res: Response) => {
   try {
     const db = req.app.get('db') as Knex;
@@ -142,7 +142,7 @@ router.get('/rollup', requireCapability('staff.read'), async (req: Request, res:
   }
 });
 
-// GET /learning/insights — actionable compliance insights for coordinators
+// GET /learning/insights, actionable compliance insights for coordinators
 router.get('/insights', requireCapability('staff.read'), async (req: Request, res: Response) => {
   try {
     const db = req.app.get('db') as Knex;
@@ -155,7 +155,7 @@ router.get('/insights', requireCapability('staff.read'), async (req: Request, re
   }
 });
 
-// GET /learning/analytics — per-course analytics for admin view
+// GET /learning/analytics, per-course analytics for admin view
 router.get('/analytics', requireCapability('staff.read'), async (req: Request, res: Response) => {
   try {
     const db = req.app.get('db') as Knex;
@@ -168,7 +168,7 @@ router.get('/analytics', requireCapability('staff.read'), async (req: Request, r
   }
 });
 
-// GET /learning/courses/:id/caregivers — enrollment roster for one course (admin/coordinator)
+// GET /learning/courses/:id/caregivers, enrollment roster for one course (admin/coordinator)
 router.get(
   '/courses/:id/caregivers',
   requireCapability('staff.read'),
@@ -188,7 +188,7 @@ router.get(
   },
 );
 
-// GET /learning/caregivers/:id — one caregiver's training progress (admin/coordinator).
+// GET /learning/caregivers/:id, one caregiver's training progress (admin/coordinator).
 // Agency-scoped: the caregiver must belong to the caller's agency.
 router.get(
   '/caregivers/:id',
@@ -213,7 +213,7 @@ router.get(
   },
 );
 
-// POST /learning/enroll — coordinator enrolls a caregiver in a course
+// POST /learning/enroll, coordinator enrolls a caregiver in a course
 router.post('/enroll', requireCapability('staff.write'), async (req: Request, res: Response) => {
   try {
     const { caregiverId, courseId, dueAt } = req.body as {
@@ -243,7 +243,7 @@ router.post('/enroll', requireCapability('staff.write'), async (req: Request, re
   }
 });
 
-// POST /learning/start — mark enrollment as in_progress when caregiver opens external course
+// POST /learning/start, mark enrollment as in_progress when caregiver opens external course
 router.post('/start', requireCapability('evv.write'), async (req: Request, res: Response) => {
   try {
     const { enrollmentId } = req.body as { enrollmentId?: string };
@@ -263,7 +263,7 @@ router.post('/start', requireCapability('evv.write'), async (req: Request, res: 
   }
 });
 
-// POST /learning/complete — record a course completion
+// POST /learning/complete, record a course completion
 router.post('/complete', requireCapability('evv.write'), async (req: Request, res: Response) => {
   try {
     const { enrollmentId, courseId, score, notes } = req.body as {
@@ -292,7 +292,7 @@ router.post('/complete', requireCapability('evv.write'), async (req: Request, re
     res.status(201).json({ success: true, data: completion });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unexpected error';
-    // A missing/foreign enrollment or course is a 404, not a server error —
+    // A missing/foreign enrollment or course is a 404, not a server error , 
     // and doesn't disclose whether the id exists in another tenant.
     if (/not found/i.test(message)) {
       return res.status(404).json({ success: false, error: 'Enrollment or course not found' });
@@ -301,7 +301,7 @@ router.post('/complete', requireCapability('evv.write'), async (req: Request, re
   }
 });
 
-// GET /learning/certificate/:courseId — certificate of completion for the
+// GET /learning/certificate/:courseId, certificate of completion for the
 // authenticated caregiver's completed course (404 if not completed)
 router.get('/certificate/:courseId', requireCapability('evv.write'), async (req: Request, res: Response) => {
   try {

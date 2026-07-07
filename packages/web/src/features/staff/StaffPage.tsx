@@ -161,7 +161,7 @@ export function StaffPage() {
       setCreatedInvite(invite);
       setMessage(invite.emailDelivery === 'sent'
         ? `Invitation emailed to ${email}. Copy the link below as a backup.`
-        : `Invite created for ${email} — copy the link below and share it.`);
+        : `Invite created for ${email}, copy the link below and share it.`);
       setEmail('');
     } catch {
       setMessage('Failed to create invite');
@@ -179,7 +179,7 @@ export function StaffPage() {
       } else if (result.emailDelivery === 'not_configured') {
         setResendState(prev => ({ ...prev, [inviteId]: { status: 'failed', reason: 'Email not configured on server' } }));
       } else {
-        const reason = result.emailError ? `Send failed: ${result.emailError}` : 'Send failed — try again';
+        const reason = result.emailError ? `Send failed: ${result.emailError}` : 'Send failed, try again';
         setResendState(prev => ({ ...prev, [inviteId]: { status: 'failed', reason } }));
       }
     } catch (err) {
@@ -387,7 +387,7 @@ export function StaffPage() {
             <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#F8FAFC' }}>
               <div style={{ fontSize: '0.8125rem', color: '#475569', marginBottom: '0.6rem', lineHeight: 1.5 }}>
                 {createdInvite.emailDelivery === 'sent'
-                  ? `Backup link — only needed if ${createdInvite.email} doesn't see the email.`
+                  ? `Backup link, only needed if ${createdInvite.email} doesn't see the email.`
                   : `Share this link with ${createdInvite.email}.`}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>

@@ -131,7 +131,7 @@ router.put('/:id', requireCapability('schedule.write'), async (req, res) => {
     const { caregiverId, visitTemplateId, visitDate } = req.body ?? {};
     const patch: { caregiverId?: string; visitTemplateId?: string; visitDate?: string | null } = {};
 
-    // A reassigned caregiver / template must belong to this agency — same
+    // A reassigned caregiver / template must belong to this agency, same
     // cross-tenant guard the create path enforces.
     if (caregiverId !== undefined) {
       if (typeof caregiverId !== 'string' || !caregiverId) {
@@ -162,7 +162,7 @@ router.put('/:id', requireCapability('schedule.write'), async (req, res) => {
 
     // Re-run the conflict gate on the EFFECTIVE assignment (current values with
     // the patch applied) so a reschedule/reassign can't silently create a
-    // double-booking or push past authorized units — the create path enforces
+    // double-booking or push past authorized units, the create path enforces
     // this, the edit path must too. Self-excluded from duplicate detection.
     const assignmentId = String(req.params.id);
     const current = await repo.getAssignmentById(assignmentId, req.auth.agencyId);

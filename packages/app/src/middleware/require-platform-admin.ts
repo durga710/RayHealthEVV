@@ -11,7 +11,7 @@ import { PLATFORM_COOKIE_NAME, readCookie } from '../security/cookies.js';
  * it never lives in JS-readable storage (XSS cannot exfiltrate the highest-
  * privilege credential in the system). SameSite=strict on that cookie is the
  * CSRF defense. A Bearer Authorization header is still accepted as a fallback
- * for API/test clients — this does not reintroduce the XSS-exfiltration risk
+ * for API/test clients, this does not reintroduce the XSS-exfiltration risk
  * because no platform token is exposed to JS for a script to steal.
  */
 

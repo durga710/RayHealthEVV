@@ -11,7 +11,7 @@ interface ChatMessage {
 const greeting: ChatMessage = {
   role: 'assistant',
   content:
-    "Hi — I'm RayHealthOps. I can answer operational questions about your agency: visit counts, open exceptions, expiring credentials, and so on. What would you like to look at?"
+    "Hi. I'm RayHealthOps. I can answer operational questions about your agency: visit counts, open exceptions, expiring credentials, and so on. What would you like to look at?"
 };
 
 const SUGGESTIONS = [

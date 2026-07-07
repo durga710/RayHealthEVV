@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { SiteLayout } from './SiteLayout.js';
 
 /**
- * /ads — rebuilt on the shared SiteLayout (teal/orange brand). Showcase of
+ * /ads, rebuilt on the shared SiteLayout (teal/orange brand). Showcase of
  * the RayHealthEVV™ ad creative in every delivered aspect ratio (square,
  * vertical, landscape) so the team can preview, grab a direct link, or
  * download for a given placement.
@@ -30,7 +30,7 @@ interface AdCampaign {
 
 const campaigns: readonly AdCampaign[] = [
   {
-    name: 'Spot 1 — Care, on the same page',
+    name: 'Spot 1. Care, on the same page',
     blurb: 'The flagship 30-second spot. Square for in-feed (Instagram, Facebook), vertical for Stories / Reels / TikTok.',
     variants: [
       {
@@ -50,7 +50,7 @@ const campaigns: readonly AdCampaign[] = [
     ],
   },
   {
-    name: 'Spot 2 — Built for the field',
+    name: 'Spot 2. Built for the field',
     blurb: 'Second campaign cut. Landscape for YouTube / web pre-roll, vertical for mobile-first placements.',
     variants: [
       {
@@ -132,7 +132,7 @@ export function AdsPage() {
         <div className="mk-hero-grid" aria-hidden />
         <div className="mk-heroin">
           <span className="mk-eyebrow">Ad creative</span>
-          <h1 className="mk-h1">RayHealthEVV™ ads — every format, ready to ship.</h1>
+          <h1 className="mk-h1">RayHealthEVV™ ads, every format, ready to ship.</h1>
           <p className="mk-lead">
             Preview the current ad creative in each delivered aspect ratio. Use the square and
             landscape cuts for feeds and web pre-roll, the vertical cuts for Stories, Reels, and

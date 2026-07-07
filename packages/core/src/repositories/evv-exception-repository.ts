@@ -24,7 +24,7 @@ export class EvvExceptionRepository {
   // agency. Add new exception mutations there (scoped), not here.
 
   /**
-   * Agency-scoped exception read for a single visit — used by the audit
+   * Agency-scoped exception read for a single visit, used by the audit
    * packet route (`GET /admin/audit-packet/:visitId`). Joins
    * evv_exceptions -> evv_visits -> caregivers and filters on
    * caregivers.agency_id, the same authorization pattern as

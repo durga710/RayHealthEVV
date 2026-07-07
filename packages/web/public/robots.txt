@@ -1,4 +1,4 @@
-# RayHealth EVV — production robots policy.
+# RayHealth EVV. production robots policy.
 # Public marketing surface is crawlable; everything behind /admin and /portal
 # is gated by session and lives on the same hostname, so block crawlers from
 # wasting their budget there.

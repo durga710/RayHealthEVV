@@ -7,7 +7,7 @@ import { getJson } from '../../lib/api-client.js';
  * Backed by `GET /api/admin/audit-retention/status` (capability
  * `audit.read`, admin-only). Surfaces the data an HHS auditor or an
  * agency compliance officer needs to demonstrate that audit logs are
- * being retained per 45 CFR §164.530(j) — without exposing PHI.
+ * being retained per 45 CFR §164.530(j), without exposing PHI.
  */
 
 interface RetentionStatus {
@@ -182,7 +182,7 @@ export function AuditRetentionPage() {
             <div style={{ fontSize: '1.05rem', fontWeight: 600, marginTop: '0.4rem', color: status.eventsApproachingSixYearLimit > 0 ? '#92400e' : '#14532d' }}>
               {status.eventsApproachingSixYearLimit > 0 ? (
                 <>
-                  {formatNumber(status.eventsApproachingSixYearLimit)} event(s) older than 5y 9m —
+                  {formatNumber(status.eventsApproachingSixYearLimit)} event(s) older than 5y 9m , 
                   schedule cold-storage extraction within 90 days to stay above the{' '}
                   {status.retentionFloorYears}-year statutory floor.
                 </>
@@ -214,7 +214,7 @@ export function AuditRetentionPage() {
               <div style={stat}>
                 <div style={statLabel}>Oldest event</div>
                 <div style={statValue}>
-                  {status.oldestOccurredAt ? `${daysSince(status.oldestOccurredAt)}d` : '—'}
+                  {status.oldestOccurredAt ? `${daysSince(status.oldestOccurredAt)}d` : ', '}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                   {status.oldestOccurredAt
@@ -259,7 +259,7 @@ export function AuditRetentionPage() {
           <div style={{ ...card, backgroundColor: '#f8fafc', borderTop: '3px solid #e2e8f0' }}>
             <div style={statLabel}>Statutory reference</div>
             <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
-              45 CFR §164.530(j) — <em>Documentation</em>. Covered entities must retain
+              45 CFR §164.530(j), <em>Documentation</em>. Covered entities must retain
               required documentation, including audit logs of access to ePHI, for{' '}
               <strong>{status.retentionFloorYears} years</strong> from the date of its
               creation or the date when it last was in effect, whichever is later.

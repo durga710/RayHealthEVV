@@ -1,5 +1,5 @@
 /**
- * State-strategy types — shared shape for every state's operational config.
+ * State-strategy types, shared shape for every state's operational config.
  *
  * Each U.S. state has its own EVV aggregator, credentialing rules, geofence
  * tolerance, and operating-track vocabulary. Rather than scattering
@@ -31,13 +31,13 @@ export interface StateConfig {
   /** Full state name for UI. */
   name: string
   /** Which EVV aggregator the state's Medicaid program uses by default. Some
-   * states allow per-agency choice between Sandata and HHAeXchange — we
+   * states allow per-agency choice between Sandata and HHAeXchange, we
    * model that with `aggregatorChoice: true` and let agency_evv_config pick. */
   defaultAggregator: EvvAggregator
   aggregatorChoice: boolean
   /** Geofence tolerance in meters for an EVV clock-in to count as on-site. */
   defaultGeofenceRadiusMeters: number
-  /** GPS accuracy floor — visits with worse accuracy than this require a
+  /** GPS accuracy floor, visits with worse accuracy than this require a
    * coordinator manual review. */
   minGpsAccuracyMeters: number
   /** Allowed operating tracks for this state's home-care category. */

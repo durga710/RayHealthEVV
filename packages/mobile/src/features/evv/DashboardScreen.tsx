@@ -57,7 +57,7 @@ interface TodayScheduleRow {
 }
 
 // The fire window (8s) is wider than the tick (5s) so a tick always lands
-// inside it once as the countdown passes through — the previous 4s window could
+// inside it once as the countdown passes through, the previous 4s window could
 // be straddled and skipped. firedForegroundRef keeps it to a single haptic.
 const FOREGROUND_FIRE_WINDOW_MS = 33_000;
 const FOREGROUND_FIRE_MIN_MS = 25_000;
@@ -201,7 +201,7 @@ export default function DashboardScreen() {
         clientGeofenceM: r.geofenceRadiusM ?? 150,
         visitState: deriveVisitState(r),
         // Gated on resumableVisit() (not a raw copy of currentVisitId) so a
-        // completed visit — which still carries the day's currentVisitId —
+        // completed visit, which still carries the day's currentVisitId , 
         // doesn't get treated as reopenable when the card is tapped again.
         openVisitId: resumableVisit(r)?.id ?? null,
         clockInTime: resumableVisit(r)?.clockInTime ?? null,
@@ -223,12 +223,12 @@ export default function DashboardScreen() {
   };
 
   // Refetch on focus so visits/schedule changes made in the web app appear
-  // when the caregiver opens or returns to the dashboard — not only on a
+  // when the caregiver opens or returns to the dashboard, not only on a
   // manual pull-to-refresh.
   useFocusEffect(
     useCallback(() => {
       // Admins/coordinators see the "use the web portal" screen, not the
-      // caregiver schedule — don't fire the caregiver-only /today request.
+      // caregiver schedule, don't fire the caregiver-only /today request.
       if (user?.role === 'admin' || user?.role === 'coordinator') return;
       void fetchAssignments();
     }, [user?.role]),
@@ -268,7 +268,7 @@ export default function DashboardScreen() {
     void logout().finally(() => router.replace('/login'));
   };
 
-  // Single source of truth for opening a visit's clock screen — used by both
+  // Single source of truth for opening a visit's clock screen, used by both
   // the hero primary action and each timeline card so their params never drift.
   const openVisit = useCallback(
     (item: Assignment) => {
@@ -422,7 +422,7 @@ export default function DashboardScreen() {
               <EmptyState
                 icon="calendar-clear-outline"
                 title="No visits today"
-                message="You're all clear. Assigned visits appear here as soon as your coordinator schedules them — pull down to refresh."
+                message="You're all clear. Assigned visits appear here as soon as your coordinator schedules them, pull down to refresh."
               />
               <Pressable
                 onPress={() => router.push('/help')}
@@ -522,7 +522,7 @@ function CardContent({
 // The single most important thing on the screen: what to do next, when, and one
 // clear tap to act. Shows a live countdown before the shift, a running elapsed
 // clock while in progress, a structured route-preview slot (placeholder for a
-// future map — deliberately not a faked live route), and an unmistakable
+// future map, deliberately not a faked live route), and an unmistakable
 // clock-in / clock-out affordance.
 function NextVisitHero({
   visit,
@@ -545,7 +545,7 @@ function NextVisitHero({
   if (inProgress && visit.clockInTime) {
     const inMs = new Date(visit.clockInTime).getTime();
     timingLabel = 'Elapsed';
-    timingValue = Number.isFinite(inMs) ? formatElapsed(nowTs - inMs) : '—';
+    timingValue = Number.isFinite(inMs) ? formatElapsed(nowTs - inMs) : ', ';
   } else if (!hasTime) {
     timingLabel = 'Scheduled';
     timingValue = 'Time TBD';
@@ -604,7 +604,7 @@ function NextVisitHero({
             ) : null}
           </View>
 
-          {/* Route preview — structured slot for a future map. Intentionally a
+          {/* Route preview, structured slot for a future map. Intentionally a
               labelled placeholder, never a fabricated live route. */}
           <View style={styles.routePreview}>
             <View style={styles.routePreviewIcon}>
@@ -631,7 +631,7 @@ function NextVisitHero({
   );
 }
 
-// Shown in the hero slot when every scheduled visit today is already done — the
+// Shown in the hero slot when every scheduled visit today is already done, the
 // caregiver's "you're covered" moment, not a blank space.
 function AllDoneHero({ doneCount }: { doneCount: number }) {
   return (

@@ -78,7 +78,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
   // Scheduled times for an assignment. Added 2026-05-09 when the mobile
-  // 30-second pre-warning haptic + notification feature shipped — the
+  // 30-second pre-warning haptic + notification feature shipped, the
   // mobile app needs to know "this caregiver is supposed to clock in at
   // X:00 PM" so it can fire the local notification 30s prior. Without
   // these, the predecessor design relied on the caregiver clocking in
@@ -250,7 +250,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
   // Single-use enforcement for staff invites. Added 2026-05-09 when the
-  // real invite-accept endpoints landed — without these columns we can't
+  // real invite-accept endpoints landed, without these columns we can't
   // tell whether a token has already been redeemed, which would let the
   // same invite create multiple users. Idempotent: only adds if missing.
   if (await knex.schema.hasTable('staff_invites')) {
@@ -364,7 +364,7 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
-  // CHECK constraints — refuse to ever store a role / status / outcome value
+  // CHECK constraints, refuse to ever store a role / status / outcome value
   // outside the documented enum. Caught early at INSERT so a typo or a
   // forged-payload attempt cannot land bogus data in the audit trail.
   // Each block is wrapped in a name-not-exists guard so reruns are no-ops.
@@ -451,7 +451,7 @@ export async function up(knex: Knex): Promise<void> {
   `);
 
   // audit_events is append-only. The compliance position is "audit rows are
-  // evidence; nobody — including future-us with a SQL console open — gets to
+  // evidence; nobody, including future-us with a SQL console open, gets to
   // edit them." A BEFORE trigger on UPDATE/DELETE/TRUNCATE raises an exception
   // so the only path to mutation is dropping the trigger first (which itself
   // is auditable in PG's DDL log).
@@ -477,7 +477,7 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
-  // ── R3a — caregiver_id foreign keys ───────────────────────────────────────
+  // ── R3a, caregiver_id foreign keys ───────────────────────────────────────
   // Resolve the "would reference users/staff" comment. The intended target is
   // `caregivers.id`. `users.caregiver_id` is the denormalized linkage from a
   // login to its caregiver entity; `assignments.caregiver_id` and
@@ -524,7 +524,7 @@ export async function up(knex: Knex): Promise<void> {
     `);
   }
 
-  // ── R4a — Cures-Act fields on evv_visits ─────────────────────────────────
+  // ── R4a. Cures-Act fields on evv_visits ─────────────────────────────────
   // FK client_id → clients.id (NOT VALID for upgrade safety).
   await knex.raw(`
     DO $$
@@ -545,7 +545,7 @@ export async function up(knex: Knex): Promise<void> {
       END IF;
     END$$;
   `);
-  // CHECK on service_code — only PA-supported HCPCS codes.
+  // CHECK on service_code, only PA-supported HCPCS codes.
   await knex.raw(`
     DO $$
     BEGIN
@@ -562,7 +562,7 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
-  // ── R4b — evv_visits immutability ────────────────────────────────────────
+  // ── R4b, evv_visits immutability ────────────────────────────────────────
   // Visits are EVV evidence. Once a visit is created, only the clock-out
   // transition (status, clock_out_time, clock_out_location) may mutate the
   // row. Any other change must go through visit_maintenance with its
@@ -598,7 +598,7 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
-  // ── R5 — widen PHI columns to fit AES-GCM ciphertext ─────────────────────
+  // ── R5, widen PHI columns to fit AES-GCM ciphertext ─────────────────────
   // caregivers.npi was varchar(10) (a 10-digit NPI). After R5 column-encryption
   // it stores a `v1:<base64>` envelope (~76+ chars). Widen to text so encrypted
   // writes succeed. Idempotent: only ALTERs if the column is still varchar(10).
@@ -615,9 +615,9 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
-  // ── Support agent — support_conversations ───────────────────────────────
+  // ── Support agent, support_conversations ───────────────────────────────
   // Public unauthenticated POST /api/support/chat lands here, two rows per
-  // turn (user message then assistant reply). NOT agency-scoped — anonymous
+  // turn (user message then assistant reply). NOT agency-scoped, anonymous
   // marketing-site chat. The system prompt forbids the model from accepting
   // PHI; this table has no FK relationship to PHI tables either.
   if (!(await knex.schema.hasTable('support_conversations'))) {
@@ -634,7 +634,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── Marketing — contact_submissions ─────────────────────────────────────
+  // ── Marketing, contact_submissions ─────────────────────────────────────
   // Public unauthenticated POST /api/marketing/contact lands here. NOT
   // agency-scoped (no PHI; just lead capture). Indexed on created_at for
   // chronological review and on email for deduplication / blocklist work.
@@ -653,7 +653,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R6 — mobile_sessions for revocable JWT auth ──────────────────────────
+  // ── R6, mobile_sessions for revocable JWT auth ──────────────────────────
   // Mobile auth has been stateless JWT (8 h validity). On a lost-device
   // event the only mitigation was rotating JWT_SECRET, which logs out
   // every user. mobile_sessions adds a server-side row keyed by the JWT's
@@ -677,7 +677,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R3b — family ↔ client relationship table ─────────────────────────────
+  // ── R3b, family ↔ client relationship table ─────────────────────────────
   // The family role currently has agency-wide client.read because there is
   // no model of which clients a given family member is related to. This
   // table closes that gap: each row links a `users.id` (with role='family')
@@ -689,7 +689,7 @@ export async function up(knex: Knex): Promise<void> {
       table.uuid('family_user_id').references('id').inTable('users').notNullable().onDelete('CASCADE');
       table.uuid('client_id').references('id').inTable('clients').notNullable().onDelete('CASCADE');
       // Optional relationship label (parent, child, spouse, guardian, etc.)
-      // — recorded for compliance/disclosure purposes but not used in authz.
+      //, recorded for compliance/disclosure purposes but not used in authz.
       table.string('relationship_type');
       // Verifying coordinator (who confirmed this relationship). NULL until
       // verified, so admin UI can show "pending verification" pills.
@@ -754,7 +754,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R8 — Stripe billing columns on agencies ──────────────────────────────
+  // ── R8. Stripe billing columns on agencies ──────────────────────────────
   // Self-serve billing: each agency row tracks its Stripe customer and
   // subscription so billing routes can operate without a separate billing
   // service. subscription_status mirrors Stripe's enum so the app can gate
@@ -773,11 +773,11 @@ export async function up(knex: Knex): Promise<void> {
     }
   }
 
-  // ── R9 — Caregiver onboarding pipeline ──────────────────────────────────
+  // ── R9. Caregiver onboarding pipeline ──────────────────────────────────
   // Three new tables support a fully integrated hiring funnel:
-  //   applicants            — one row per job application per agency
-  //   onboarding_interviews — AI chat session linked to each applicant
-  //   onboarding_documents  — document checklist per applicant
+  //   applicants           , one row per job application per agency
+  //   onboarding_interviews. AI chat session linked to each applicant
+  //   onboarding_documents , document checklist per applicant
   //
   // All three are tenant-scoped via agency_id (directly or through applicant_id)
   // and cascade-delete when the parent row is removed.
@@ -885,9 +885,9 @@ export async function up(knex: Knex): Promise<void> {
     END$$;
   `);
 
-  // ── R7 — Sandata aggregator submission tracking ───────────────────────────
+  // ── R7. Sandata aggregator submission tracking ───────────────────────────
   // Track each visit's lifecycle through the state aggregator pipeline.
-  // Intentionally excluded from the immutability trigger's blocked list —
+  // Intentionally excluded from the immutability trigger's blocked list , 
   // these are the only columns that legitimately change after clock-out,
   // when the background job submits to Sandata and records the acceptance.
   if (await knex.schema.hasTable('evv_visits')) {
@@ -923,7 +923,7 @@ export async function up(knex: Knex): Promise<void> {
     `);
   }
 
-  // ── R10 — user profile fields ─────────────────────────────────────────────
+  // ── R10, user profile fields ─────────────────────────────────────────────
   if (!(await knex.schema.hasColumn('users', 'first_name'))) {
     await knex.schema.alterTable('users', (t) => {
       t.string('first_name', 100).nullable();
@@ -933,7 +933,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R11 — password_reset_tokens ──────────────────────────────────────────
+  // ── R11, password_reset_tokens ──────────────────────────────────────────
   if (!(await knex.schema.hasTable('password_reset_tokens'))) {
     await knex.schema.createTable('password_reset_tokens', (table) => {
       table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
@@ -945,7 +945,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R12 — external_url + modules on learning_courses ─────────────────────
+  // ── R12, external_url + modules on learning_courses ─────────────────────
   if (await knex.schema.hasTable('learning_courses')) {
     if (!(await knex.schema.hasColumn('learning_courses', 'external_url'))) {
       await knex.schema.alterTable('learning_courses', (t) => {
@@ -959,7 +959,7 @@ export async function up(knex: Knex): Promise<void> {
     }
   }
 
-  // ── R13 — Claims & billing ───────────────────────────────────────────────
+  // ── R13. Claims & billing ───────────────────────────────────────────────
   // Medicaid claim generation. A `claims` row aggregates one client's verified
   // visits over a service period for one payer; each `claim_lines` row bills a
   // single immutable evv_visits row (one date of service). Money is stored in
@@ -1029,14 +1029,14 @@ export async function up(knex: Knex): Promise<void> {
       table.string('denial_risk', 10).notNullable().defaultTo('low');
       table.jsonb('denial_reasons').notNullable().defaultTo('[]');
       table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
-      // One line per visit per claim — a visit can't appear twice on a claim.
+      // One line per visit per claim, a visit can't appear twice on a claim.
       table.unique(['claim_id', 'visit_id']);
       table.index(['claim_id']);
       table.index(['visit_id']);
     });
   }
 
-  // ── R14 — Agency billing identity (837 billing-provider profile) ──────────
+  // ── R14. Agency billing identity (837 billing-provider profile) ──────────
   // The 837P billing-provider loop (2010AA) needs the agency's NPI, tax id and
   // service address; the agency's clearinghouse interchange id labels the
   // receiver. These are nullable: a 837 still generates without them, but the
@@ -1060,7 +1060,7 @@ export async function up(knex: Knex): Promise<void> {
     }
   }
 
-  // ── R15 — Agency fee schedule (cents per billing unit, by HCPCS code) ──────
+  // ── R15. Agency fee schedule (cents per billing unit, by HCPCS code) ──────
   // Stored as jsonb { "T1019": 600, ... } keyed by service code. Drives the
   // claim line chargeCents; without it claim lines are $0 and flagged.
   if (
@@ -1072,7 +1072,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R16 — Audit retention infrastructure ──────────────────────────────────
+  // ── R16. Audit retention infrastructure ──────────────────────────────────
   // The audit retention sweep moves rows older than the statutory floor
   // (PA_RETENTION_YEARS = 7) out of the hot `audit_events` table into
   // `audit_events_archive`, logging each run to `audit_retention_runs`. These
@@ -1080,7 +1080,7 @@ export async function up(knex: Knex): Promise<void> {
   // baseline runner (`schema.up`) never invokes, so prod never had them and
   // the sweep would fail. They are created here, idempotently, mirroring the
   // LIVE `audit_events` shape (actor_id/actor_type/entity_type/entity_id/
-  // outcome/correlation_id) — NOT the legacy actor_user_id/resource_type shape
+  // outcome/correlation_id). NOT the legacy actor_user_id/resource_type shape
   // that the original archive table and sweep INSERT...SELECT were written
   // against.
   if (!(await knex.schema.hasTable('audit_events_archive'))) {
@@ -1104,7 +1104,7 @@ export async function up(knex: Knex): Promise<void> {
   } else {
     // Bring an archive table created by the legacy migration into alignment
     // with the live audit_events shape. Old columns (actor_user_id etc.) are
-    // left in place (nullable) — dropping them could lose side-channel data.
+    // left in place (nullable), dropping them could lose side-channel data.
     for (const [col, add] of [
       ['actor_id', (t: Knex.AlterTableBuilder) => t.uuid('actor_id')],
       ['actor_type', (t: Knex.AlterTableBuilder) => t.string('actor_type')],
@@ -1135,7 +1135,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R17 — Import / migration source keys ───────────────────────────────────
+  // ── R17. Import / migration source keys ───────────────────────────────────
   // Onboarding an agency off another platform (HHAeXchange, Sandata, etc.)
   // means bulk-importing their clients, caregivers, and authorizations. To make
   // re-imports idempotent and to link related rows across files, every
@@ -1162,7 +1162,7 @@ export async function up(knex: Knex): Promise<void> {
     );
   }
 
-  // ── R18 — ERA / 835 remittance posting ─────────────────────────────────────
+  // ── R18. ERA / 835 remittance posting ─────────────────────────────────────
   // The back half of the billing loop: a payer returns an 835 electronic
   // remittance advice (ERA) telling us what each claim was paid / adjusted /
   // denied. `claim_remittances` records every posting (one row per CLP claim in
@@ -1180,7 +1180,7 @@ export async function up(knex: Knex): Promise<void> {
       table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
       table.uuid('agency_id').references('id').inTable('agencies').notNullable().onDelete('CASCADE');
       table.uuid('claim_id').references('id').inTable('claims').nullable().onDelete('SET NULL');
-      table.string('control_number', 40).notNullable(); // CLP01 — our patient control number
+      table.string('control_number', 40).notNullable(); // CLP01, our patient control number
       table.text('payer_claim_control_number'); // CLP07
       table.string('status_code', 4); // CLP02 (1=paid, 4=denied, 22=reversal, …)
       table.integer('charge_cents').notNullable().defaultTo(0); // CLP03
@@ -1188,7 +1188,7 @@ export async function up(knex: Knex): Promise<void> {
       table.integer('patient_responsibility_cents').notNullable().defaultTo(0); // CLP05
       table.integer('adjustment_cents').notNullable().defaultTo(0);
       table.jsonb('adjustment_codes').notNullable().defaultTo('[]'); // [{group,reasonCode,amountCents}]
-      table.string('trace_number', 60); // TRN02 — EFT / check trace
+      table.string('trace_number', 60); // TRN02. EFT / check trace
       table.boolean('matched').notNullable().defaultTo(false);
       table.timestamp('posted_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
       table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
@@ -1197,7 +1197,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R19 — Recurring schedules ──────────────────────────────────────────────
+  // ── R19. Recurring schedules ──────────────────────────────────────────────
   // A recurring schedule is a weekly visit pattern (which caregiver, which
   // visit template/client, which days-of-week + time, over a date range). The
   // materializer expands it into concrete `assignments` for a rolling horizon,
@@ -1240,10 +1240,10 @@ export async function up(knex: Knex): Promise<void> {
     );
   }
 
-  // ── R20 — HHAeXchange aggregator submission tracking ──────────────────────
+  // ── R20. HHAeXchange aggregator submission tracking ──────────────────────
   // Mirror of R7 (Sandata) for agencies whose state routes EVV through the
   // HHAeXchange aggregator instead of Sandata. Same four-state lifecycle and
-  // the same exclusion from the immutability trigger — these columns change
+  // the same exclusion from the immutability trigger, these columns change
   // legitimately after clock-out when the export batch is submitted and the
   // aggregator's accept/reject response is written back.
   if (await knex.schema.hasTable('evv_visits')) {
@@ -1279,7 +1279,7 @@ export async function up(knex: Knex): Promise<void> {
     `);
   }
 
-  // ── R21 — Platform super-admin: agency review gate + account suspension ────
+  // ── R21. Platform super-admin: agency review gate + account suspension ────
   // The platform owner ("super admin", outside the agency tenancy) reviews
   // every new agency signup to confirm it's a real homecare agency before it
   // can operate, and can suspend any user account. `agencies.review_status`
@@ -1327,9 +1327,9 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R22 — Platform super-admin WebAuthn (Face ID / device biometric) 2FA ──
+  // ── R22. Platform super-admin WebAuthn (Face ID / device biometric) 2FA ──
   // Passkey credentials registered by the super-admin for second-factor login.
-  // We store only the credential's PUBLIC key (base64url) + signature counter —
+  // We store only the credential's PUBLIC key (base64url) + signature counter , 
   // never any biometric data, which by design never leaves the user's device.
   // Scoped by `username` (the env SUPER_ADMIN_USERNAME) since the super-admin is
   // not a row in `users`. Multiple rows = multiple enrolled devices.
@@ -1348,7 +1348,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R23 — Terms of Service acceptance ─────────────────────────────────────
+  // ── R23. Terms of Service acceptance ─────────────────────────────────────
   // Records that a principal affirmatively accepted the Terms of Service, and
   // which version. Captured at agency signup (users) and at caregiver job
   // application (applicants). Nullable because rows created before this column
@@ -1371,7 +1371,7 @@ export async function up(knex: Knex): Promise<void> {
     }
   }
 
-  // ── R24 — Account settings: 2FA (TOTP), notifications, preferences ─────────
+  // ── R24. Account settings: 2FA (TOTP), notifications, preferences ─────────
   // All nullable/defaulted so existing users are unaffected. totp_secret holds
   // the base32 secret (only used while totp_enabled); totp_backup_codes is a
   // JSON array of bcrypt-hashed single-use recovery codes. notification_prefs
@@ -1401,12 +1401,12 @@ export async function up(knex: Knex): Promise<void> {
     }
   }
 
-  // ── R25 — EVV aggregator + clearinghouse submission config ────────────────
+  // ── R25. EVV aggregator + clearinghouse submission config ────────────────
   // Ports agency_evv_config / agency_sandata_config / agency_hhaexchange_config
   // (previously created only by unported dated migrations, so absent on a freshly
   // migrated DB) into the baseline, and adds what automated submission needs: a
   // per-agency API base URL and an AES-256-GCM encrypted credentials blob (see
-  // security/cell-cipher.ts). agency_clearinghouse_config is new — it carries the
+  // security/cell-cipher.ts). agency_clearinghouse_config is new, it carries the
   // 837/835 trading-partner transport, endpoint, and credentials.
   if (!(await knex.schema.hasTable('agency_evv_config'))) {
     await knex.schema.createTable('agency_evv_config', (t) => {
@@ -1460,7 +1460,7 @@ export async function up(knex: Knex): Promise<void> {
   if (!(await knex.schema.hasTable('agency_clearinghouse_config'))) {
     await knex.schema.createTable('agency_clearinghouse_config', (t) => {
       t.uuid('agency_id').primary().references('id').inTable('agencies').onDelete('CASCADE');
-      // 'sftp' | 'http' — how the 837 is transmitted and the 835 retrieved.
+      // 'sftp' | 'http', how the 837 is transmitted and the 835 retrieved.
       t.string('transport', 16).notNullable().defaultTo('sftp');
       t.string('endpoint', 255).nullable();
       t.text('credentials_encrypted').nullable();
@@ -1471,7 +1471,7 @@ export async function up(knex: Knex): Promise<void> {
     });
   }
 
-  // ── R26 — Sandata Alt EVV transmission state ──────────────────────────────
+  // ── R26. Sandata Alt EVV transmission state ──────────────────────────────
   // The Alt EVV API is async: POST a batch → receive a UUID → poll /status until
   // Sandata returns per-record ACCEPTED/REJECTED/EXCEPTION. These tables hold the
   // durable state the synchronous client never had: a per-record sequence number

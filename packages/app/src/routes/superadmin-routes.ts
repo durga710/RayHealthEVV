@@ -1,18 +1,18 @@
 /**
  * Platform super-admin console (hidden; outside agency tenancy).
  *
- *   POST /superadmin/login                     — username + password → platform JWT
- *   GET  /superadmin/agencies                  — every agency + review status
- *   POST /superadmin/agencies/:id/approve      — approve a signup
- *   POST /superadmin/agencies/:id/reject       — reject (and lock out) a signup
- *   GET  /superadmin/users                     — every user across all agencies
- *   POST /superadmin/users/:id/suspend         — terminate (disable) an account
- *   POST /superadmin/users/:id/reactivate      — restore a suspended account
+ *   POST /superadmin/login                    , username + password → platform JWT
+ *   GET  /superadmin/agencies                 , every agency + review status
+ *   POST /superadmin/agencies/:id/approve     , approve a signup
+ *   POST /superadmin/agencies/:id/reject      , reject (and lock out) a signup
+ *   GET  /superadmin/users                    , every user across all agencies
+ *   POST /superadmin/users/:id/suspend        , terminate (disable) an account
+ *   POST /superadmin/users/:id/reactivate     , restore a suspended account
  *
  * Mounted BEFORE authContext: the super-admin authenticates with its own
  * bearer JWT (scope:'platform'), never an agency cookie/session. Credentials
  * come from env (SUPER_ADMIN_USERNAME + SUPER_ADMIN_PASSWORD_HASH, a bcrypt
- * hash) — the plaintext password is never stored in source or the DB. If those
+ * hash), the plaintext password is never stored in source or the DB. If those
  * env vars are unset the login endpoint returns 503 (feature disabled).
  */
 
@@ -428,7 +428,7 @@ async function reviewAgency(req: Request, res: Response, status: AgencyReviewSta
       return;
     }
     // Rejecting an agency that was previously approved must lock its users out
-    // immediately — revoke their active sessions.
+    // immediately, revoke their active sessions.
     if (status === 'rejected') {
       await db('sessions').where({ agency_id: id }).whereNull('revoked_at').update({ revoked_at: db.fn.now() });
     }

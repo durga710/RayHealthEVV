@@ -1,5 +1,5 @@
 /**
- * Claim clearinghouse client — SCAFFOLD (837 submit / 835 retrieve).
+ * Claim clearinghouse client. SCAFFOLD (837 submit / 835 retrieve).
  *
  * The 837P generator and 835 parser/poster already exist in core; this is the
  * missing transport that would actually move an EDI file to a clearinghouse and

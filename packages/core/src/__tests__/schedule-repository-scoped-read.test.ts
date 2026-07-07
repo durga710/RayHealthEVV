@@ -6,7 +6,7 @@ import { createDb, ScheduleRepository } from '../index.js';
  * `getAssignmentScheduleForAgency` resolves scheduled start/end for one
  * assignment via assignments -> visit_templates -> clients.agency_id. The
  * audit packet route calls this with `visit.assignmentId`, which could in
- * principle reference an assignment from another tenant — this must return
+ * principle reference an assignment from another tenant, this must return
  * null rather than that tenant's scheduled times.
  *
  * Skips (rather than fails) when no DB is reachable, matching this suite's

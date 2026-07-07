@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
 
 /**
- * Resources › Reference: Pennsylvania DHS task codes (the 106–256 range).
+ * Resources › Reference: Pennsylvania DHS task codes (the 106-256 range).
  *
  * INTEGRITY NOTE: This page does NOT reproduce the official PA DHS / OLTL
  * code list. The numbers shown are illustrative examples to communicate how
@@ -27,7 +27,7 @@ interface TaskGroup {
 const groups: TaskGroup[] = [
   {
     category: 'Personal care',
-    blurb: 'Hands-on assistance with activities of daily living (ADLs) — the core of most personal-assistance plans.',
+    blurb: 'Hands-on assistance with activities of daily living (ADLs), the core of most personal-assistance plans.',
     rows: [
       { code: 'e.g. 1xx', task: 'Bathing / personal hygiene', category: 'Personal care' },
       { code: 'e.g. 1xx', task: 'Dressing', category: 'Personal care' },
@@ -40,7 +40,7 @@ const groups: TaskGroup[] = [
   },
   {
     category: 'Household / IADL',
-    blurb: 'Instrumental activities of daily living (IADLs) — support that keeps a consumer safe and independent at home.',
+    blurb: 'Instrumental activities of daily living (IADLs), support that keeps a consumer safe and independent at home.',
     rows: [
       { code: 'e.g. 2xx', task: 'Meal preparation', category: 'Household / IADL' },
       { code: 'e.g. 2xx', task: 'Light housekeeping', category: 'Household / IADL' },

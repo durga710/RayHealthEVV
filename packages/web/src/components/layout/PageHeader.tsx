@@ -11,7 +11,7 @@ interface PageHeaderProps {
   eyebrow?: PageHeaderEyebrow;
   title: ReactNode;
   subtitle?: ReactNode;
-  /** Right-aligned controls — usually a refresh button or primary action. */
+  /** Right-aligned controls, usually a refresh button or primary action. */
   actions?: ReactNode;
 }
 

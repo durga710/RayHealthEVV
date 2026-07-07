@@ -6,14 +6,14 @@ import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
  * Public-facing HIPAA compliance page at `/compliance/hipaa`.
  *
  * Migrated from the old MarketingShell to the shared SiteLayout
- * (teal/orange brand). Content is preserved verbatim — only the
+ * (teal/orange brand). Content is preserved verbatim, only the
  * wrappers and styling were restructured onto the `mk-*` design system.
  *
  * Audience: prospective customers, agency compliance officers, BAA
  * counterparties, third-party auditors performing diligence.
  *
  * Language guardrails:
- *  - We never use "HIPAA certified" — HHS does not issue HIPAA
+ *  - We never use "HIPAA certified". HHS does not issue HIPAA
  *    certifications, and the term carries legal exposure.
  *  - We never claim "HIPAA compliant"/"fully compliant" as a finished
  *    state. We use "HIPAA-ready architecture", "Designed with HIPAA-grade
@@ -26,7 +26,7 @@ import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
  *
  * The authoritative engineering record lives in
  * docs/compliance/hipaa/ in the source repository. This page is the
- * customer-facing summary — when policies in that folder change, this
+ * customer-facing summary, when policies in that folder change, this
  * page must be updated within 30 days per SECURITY_POLICY.md §1.
  */
 
@@ -119,7 +119,7 @@ const safeguards: readonly SafeguardGroup[] = [
   },
   {
     safeguard: 'Privacy Rule controls',
-    cfr: '45 CFR § 164.502 – § 164.528',
+    cfr: '45 CFR § 164.502, § 164.528',
     rows: [
       {
         control: 'Minimum necessary',
@@ -228,7 +228,7 @@ export function HipaaCompliancePage() {
           <h1 className="mk-h1">Designed with HIPAA-grade controls.</h1>
           <p className="mk-lead">
             RayHealthEVV™ is engineered to meet the HIPAA Security Rule
-            (45 CFR § 164.308 – § 164.318) and the Privacy Rule controls
+            (45 CFR § 164.308, § 164.318) and the Privacy Rule controls
             that apply to a Business Associate handling ePHI for
             Pennsylvania home-care agencies.
           </p>
@@ -296,7 +296,7 @@ export function HipaaCompliancePage() {
               </div>
             </section>
 
-            {/* Controls table — the meat of the page */}
+            {/* Controls table, the meat of the page */}
             <section aria-labelledby="controls-heading">
               <h2 id="controls-heading" style={cardHeading}>
                 HIPAA Security and Privacy Rule controls
@@ -419,8 +419,8 @@ export function HipaaCompliancePage() {
                   >
                     Security &amp; Compliance Pack (PDF)
                   </a>{' '}
-                  — control narratives, encryption verification matrix, and
-                  incident-response plan.
+                  (control narratives, encryption verification matrix, and
+                  incident-response plan).
                 </li>
                 <li>
                   <a
@@ -429,7 +429,7 @@ export function HipaaCompliancePage() {
                   >
                     Audit log sample export (CSV)
                   </a>{' '}
-                  — synthetic, PHI-free sample of the `audit_events` schema.
+                  (a synthetic, PHI-free sample of the `audit_events` schema).
                 </li>
               </ul>
             </section>
@@ -442,19 +442,19 @@ export function HipaaCompliancePage() {
                   <Link to="/privacy" style={linkStyle}>
                     Privacy summary
                   </Link>{' '}
-                  — what we collect, how we use it, and your rights.
+                  (what we collect, how we use it, and your rights).
                 </li>
                 <li>
                   <Link to="/status" style={linkStyle}>
                     Service status
                   </Link>{' '}
-                  — live operational health.
+                  (live operational health).
                 </li>
                 <li>
                   <Link to="/contact" style={linkStyle}>
                     Contact compliance
                   </Link>{' '}
-                  — for BAA, diligence, or incident questions.
+                  (for BAA, diligence, or incident questions).
                 </li>
               </ul>
             </section>

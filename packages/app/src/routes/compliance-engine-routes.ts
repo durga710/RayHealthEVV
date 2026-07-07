@@ -56,7 +56,7 @@ function normalizeEnd(input: string): string {
  * GET /api/compliance-engine/audit-defense/preview?from=&to=
  *
  * Returns the size of a PA audit-defense packet for the authenticated agency
- * and the given date range — counts only, no PHI. Sized to the PA DHS 48-hour
+ * and the given date range, counts only, no PHI. Sized to the PA DHS 48-hour
  * response window (echoed in the `policy` block alongside the 7-year retention
  * floor).
  *
@@ -127,12 +127,12 @@ router.get(
  * agency, sorted by `occurred_at ASC, id ASC` so the manifest hash is stable.
  *
  * The X-Manifest-Sha256 response header contains a hex SHA-256 of the canonical
- * CSV (header + sorted body). Auditors can re-derive it from the file alone —
+ * CSV (header + sorted body). Auditors can re-derive it from the file alone , 
  * server signatures are not trusted in PA DHS audit contexts.
  *
  * Every successful download writes one `phi.export` audit event recording who
  * exported the packet, the period, the row counts, and the manifest hash. The
- * audit write must never block the user response — failures go to stderr.
+ * audit write must never block the user response, failures go to stderr.
  *
  * Capability: `audit.read` (admin-only today).
  */
@@ -203,7 +203,7 @@ router.get(
       res.status(200).send(csv);
 
       // Record the export so the regulator can trace who pulled the data and
-      // when. Failures here are non-blocking — the user already has their file.
+      // when. Failures here are non-blocking, the user already has their file.
       try {
         await new AuditEventRepository(db).create({
           agencyId: req.auth.agencyId,
@@ -246,7 +246,7 @@ const oversightQuerySchema = z.object({
  * record-level CRUD route at /api/authorizations.
  *
  * `asOf` defaults to today (UTC). Capability `client.read` (admin + coordinator)
- * — coordinators run authorization workflows, so they get this lens too.
+ *, coordinators run authorization workflows, so they get this lens too.
  */
 router.get(
   '/authorizations/overview',
@@ -305,7 +305,7 @@ const authorizationListQuerySchema = z.object({
  * an `urgency` bucket the UI uses to color rows.
  *
  * `filter` defaults to `active`. `limit` clamps to [1, 200]; `offset` clamps
- * to ≥ 0. Capability `client.read` (admin + coordinator) — same as the
+ * to ≥ 0. Capability `client.read` (admin + coordinator), same as the
  * overview endpoint above.
  */
 router.get(
@@ -392,7 +392,7 @@ const credentialsQuerySchema = z.object({
 /**
  * GET /api/compliance-engine/credentials/overview?asOf=YYYY-MM-DD
  *
- * Credentials compliance snapshot — active/pending/expired counts plus
+ * Credentials compliance snapshot, active/pending/expired counts plus
  * expiring-in-30/90-day windows and recently-expired. Surfaces the PA-specific
  * credential taxonomy (`paComplianceCredentials`) in the policy block so the UI
  * can render it without hardcoding. Capability `staff.read` (admin + coordinator).
@@ -434,7 +434,7 @@ router.get(
 /**
  * GET /api/compliance-engine/claims/overview
  *
- * Claim Matching readiness — counts of EVV visits by status (verified =
+ * Claim Matching readiness, counts of EVV visits by status (verified =
  * claim-ready, flagged = not-ready, pending = in-flight). Capability `evv.read`
  * (admin + coordinator). Policy block echoes the 7-day Sandata submission window.
  */
@@ -686,7 +686,7 @@ const exceptionAckBodySchema = z.object({
  * regulator-facing audit trail captures the actor, timestamp, and optional
  * note.
  *
- * Idempotent — re-acknowledging an already-closed exception returns 409 with
+ * Idempotent, re-acknowledging an already-closed exception returns 409 with
  * a stable error code so the UI can hide the row without confusing the user.
  *
  * Capability `audit.read` here is intentional: PA's audit-defense workflow

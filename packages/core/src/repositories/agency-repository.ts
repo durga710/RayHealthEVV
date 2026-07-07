@@ -52,7 +52,7 @@ export class AgencyRepository {
   /**
    * Update an agency's mutable fields (today: just `name`). Returns the
    * updated row, or null if the agency doesn't exist. Used by the admin
-   * AgencySetupPage save action — previously a stub that didn't persist.
+   * AgencySetupPage save action, previously a stub that didn't persist.
    */
   async findAll(): Promise<Agency[]> {
     const rows = await this.db<AgencyRow>('agencies').select('*').orderBy('name');

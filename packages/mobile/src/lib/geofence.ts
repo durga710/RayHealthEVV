@@ -2,7 +2,7 @@
  * Pure geofence math for the EVV clock-in/out screen. No React Native imports,
  * so it is unit-testable and is the single source of truth for the distance the
  * UI shows and the inside/outside decision it makes. The SERVER independently
- * re-checks the geofence at clock-in/out — this is the client-side preview only.
+ * re-checks the geofence at clock-in/out, this is the client-side preview only.
  */
 
 export interface LatLng {

@@ -57,8 +57,8 @@ export class ClientRepository {
   }
 
   /**
-   * Reads the client's geofence anchor — registered street-address GPS plus
-   * the per-client allowed radius — for EVV clock-in / clock-out validation.
+   * Reads the client's geofence anchor, registered street-address GPS plus
+   * the per-client allowed radius, for EVV clock-in / clock-out validation.
    *
    * Tenant-scoped via `agency_id` so a caregiver in agency A can never probe
    * a client UUID from agency B. Returns undefined when the client row does
@@ -89,7 +89,7 @@ export class ClientRepository {
 
   /**
    * Minimum-necessary client identity for evidence surfaces (the audit
-   * packet's `client: { id, name }` field) — first/last name only, never the
+   * packet's `client: { id, name }` field), first/last name only, never the
    * full client row (no address, DOB, Medicaid number). Tenant-scoped via
    * `agency_id` so a visit's `clientId` from another tenant can never be
    * resolved to a name here.
@@ -268,7 +268,7 @@ export class ClientRepository {
   /**
    * Delete a client, tenant-scoped. Refuses ('has_dependencies') when
    * authorizations or visit templates still reference the client, since those
-   * carry billing / scheduling history a hard delete would orphan — the owner
+   * carry billing / scheduling history a hard delete would orphan, the owner
    * must remove dependents first. 'not_found' for an unknown or cross-tenant id.
    */
   async deleteClient(

@@ -201,10 +201,10 @@ export function ExceptionResolutionPage() {
         ok += 1;
       } catch (err) {
         if (err instanceof ApiError && err.status === 409) {
-          // Row was already acknowledged (race) — counted as skipped, not failure.
+          // Row was already acknowledged (race), counted as skipped, not failure.
           skipped += 1;
         } else if (err instanceof ApiError && err.status === 403) {
-          // Caller lacks audit.read — abort the loop, surface single error.
+          // Caller lacks audit.read, abort the loop, surface single error.
           setAckError(
             'You do not have permission to acknowledge exceptions. Ask an admin to perform this action.',
           );
@@ -253,10 +253,10 @@ export function ExceptionResolutionPage() {
         },
       ]
     : [
-        { label: 'Open exceptions', value: '—', tone: 'warning' },
-        { label: 'Late clock-ins (open)', value: '—', hint: '15-min grace' },
-        { label: 'Missing location (open)', value: '—' },
-        { label: 'VMUR pending', value: '—', tone: 'accent', hint: '7-day correction window' },
+        { label: 'Open exceptions', value: ', ', tone: 'warning' },
+        { label: 'Late clock-ins (open)', value: ', ', hint: '15-min grace' },
+        { label: 'Missing location (open)', value: ', ' },
+        { label: 'VMUR pending', value: ', ', tone: 'accent', hint: '7-day correction window' },
       ];
 
   const totalOpenByType =
@@ -274,7 +274,7 @@ export function ExceptionResolutionPage() {
       kpis={kpis}
       dataSources={[
         'evv_exceptions (joined to evv_visits → caregivers for agency scope)',
-        'visit_maintenance (VMUR) — status=pending',
+        'visit_maintenance (VMUR), status=pending',
       ]}
       nextSteps={[
         'Row-level note capture (passes through to the audit event payload)',
@@ -623,7 +623,7 @@ export function ExceptionResolutionPage() {
                       </td>
                       <td
                         style={{
-                          /* SLA-breached rows use the Deep Red brand accent — this is the
+                          /* SLA-breached rows use the Deep Red brand accent, this is the
                              regulator-facing 48h DHS signal, not a transient error. */
                           color: breached ? 'var(--color-accent)' : 'var(--color-text-muted)',
                           fontWeight: breached ? 800 : 600,

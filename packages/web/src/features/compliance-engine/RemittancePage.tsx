@@ -229,7 +229,7 @@ export function RemittancePage() {
               fontWeight: 600,
             }}
           >
-            Posted {result.posted} remittances — {result.matched} matched to claims,
+            Posted {result.posted} remittances, {result.matched} matched to claims,
             {' '}{result.unmatched.length} unmatched. Total paid {usd(result.totalPaidCents)}.
           </div>
         )}
@@ -269,7 +269,7 @@ export function RemittancePage() {
                   <td>{usd(r.chargeCents)}</td>
                   <td>{usd(r.paidCents)}</td>
                   <td>{usd(r.adjustmentCents)}</td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{r.traceNumber ?? '—'}</td>
+                  <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{r.traceNumber ?? ', '}</td>
                 </tr>
               ))}
             </tbody>

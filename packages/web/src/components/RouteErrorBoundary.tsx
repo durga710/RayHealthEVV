@@ -13,7 +13,7 @@ interface RouteErrorBoundaryState {
  * a localized message instead of blanking the entire admin shell. Reset it on
  * navigation by passing a changing `key` (the pathname) from the parent layout.
  *
- * Error boundaries must be class components — there is no hook equivalent for
+ * Error boundaries must be class components, there is no hook equivalent for
  * `getDerivedStateFromError` / `componentDidCatch`.
  */
 export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBoundaryState> {
@@ -45,7 +45,7 @@ export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, Route
             Something went wrong on this page
           </h2>
           <p style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--color-text, #0F172A)', lineHeight: 1.5 }}>
-            This page failed to render. The rest of the app is still available — try reloading, or pick
+            This page failed to render. The rest of the app is still available, try reloading, or pick
             another page from the menu.
           </p>
           <button

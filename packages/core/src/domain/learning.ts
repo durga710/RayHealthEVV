@@ -1,5 +1,5 @@
 /**
- * Learning domain — caregiver training catalog, enrollments, completions.
+ * Learning domain, caregiver training catalog, enrollments, completions.
  *
  * Designed around PA personal-care training requirements (PA Code §52.18 et seq.):
  *   - One-time orientation before first visit
@@ -7,7 +7,7 @@
  *   - Recertifications with explicit expiry (CPR, first-aid)
  *
  * Compliance posture:
- *   - course_completions is an append-only event log — never updated
+ *   - course_completions is an append-only event log, never updated
  *   - course_enrollments tracks current state (due dates, expiry)
  *   - The pair lets us reconstruct who knew what when, for audit purposes
  */
@@ -200,7 +200,7 @@ export interface CourseCaregiverEnvelope {
 }
 
 /**
- * Certificate of completion data — assembled from a completed enrollment plus
+ * Certificate of completion data, assembled from a completed enrollment plus
  * the caregiver, course, and agency it belongs to. `verificationCode` is a
  * short, human-readable identifier derived from the enrollment id so a printed
  * certificate can be traced back to its record.

@@ -174,7 +174,7 @@ export function ApplyPage() {
           >
             {[
               'Complete your application in minutes.',
-              'AI interview starts immediately — no scheduling required.',
+              'AI interview starts immediately, no scheduling required.',
               'Our team reviews your responses and reaches out soon.',
             ].map((point) => (
               <li

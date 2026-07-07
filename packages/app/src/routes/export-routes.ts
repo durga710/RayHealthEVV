@@ -48,7 +48,7 @@ function csvCell(value: unknown): string {
   if (value == null) return '';
   let s = String(value);
   // A cell that starts with =, +, -, @, tab or CR is evaluated as a formula by
-  // Excel/Sheets (RFC quoting does NOT prevent this — the app strips the quotes
+  // Excel/Sheets (RFC quoting does NOT prevent this, the app strips the quotes
   // and still evaluates). Prefix with a single quote so it is treated as text.
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
@@ -134,12 +134,12 @@ router.get('/visits.csv', requireCapability('billing.read'), async (req, res) =>
  * Visit Maintenance" import accepts. Tenant-scoped to the caller's
  * agency. PHI read; auditLog middleware records access.
  *
- * This is a SKELETON — the column set is the federally-required Cures
+ * This is a SKELETON, the column set is the federally-required Cures
  * Act 6 data points plus client/worker names and verification method.
  * Production deploys will need:
  *   1. The agency's Sandata Provider ID prepended as a row prefix.
  *   2. Sandata's Worker ID (often last-4-SSN) instead of caregiver UUID
- *      — the worker_external_id field needs adding to caregivers.
+ *     , the worker_external_id field needs adding to caregivers.
  *   3. Sandata's HCPCS-modifier table mapped from our service codes.
  *   4. Schema version + checksum row per Sandata's import contract.
  *
@@ -232,7 +232,7 @@ router.get('/sandata.csv', requireCapability('billing.read'), async (req, res) =
     for (const row of rows as Record<string, unknown>[]) {
       const startLoc = parseLoc(row.clock_in_location);
       const endLoc = parseLoc(row.clock_out_location);
-      // Sandata expects a verification-method code — GPS for our
+      // Sandata expects a verification-method code. GPS for our
       // geofence path, PHONE for the telephony fallback. We don't
       // currently persist that; default to GPS when coords exist,
       // BLANK otherwise. Production must derive from a stored
@@ -284,8 +284,8 @@ router.get('/sandata.csv', requireCapability('billing.read'), async (req, res) =
  *
  * Transmits every verified visit in the date range to the agency's Sandata
  * aggregator over its API and records the per-visit acknowledgments. Returns
- * `not_configured` (409) when the agency has not finished Sandata setup — no
- * endpoint / Provider ID / credentials — so a half-configured agency never
+ * `not_configured` (409) when the agency has not finished Sandata setup, no
+ * endpoint / Provider ID / credentials, so a half-configured agency never
  * believes a batch was sent. On a transport failure returns `error` (502) with
  * whether a retry is sane; on success records each ack onto the visit and
  * audits the batch.
@@ -375,7 +375,7 @@ router.post('/sandata/submit', requireCapability('billing.write'), async (req, r
 /**
  * POST /exports/sandata/reconcile  { results: [{ visitId, status, confirmationId? }] }
  *
- * Applies the aggregator's response file back onto each visit — typically
+ * Applies the aggregator's response file back onto each visit, typically
  * `accepted` (clears the denial-risk flag) or `rejected` (raises it to high).
  * Each update is tenant-scoped inside the repository; unknown / cross-agency
  * visit ids are counted as `notFound` rather than failing the whole batch.
@@ -437,7 +437,7 @@ router.post('/sandata/reconcile', requireCapability('billing.write'), async (req
  * agency's HHAeXchange config supplies AgencyTaxID / ProviderID, the caregiver
  * → EmployeeID map, and the service-code map. Visits with no mapping (or no
  * clock-out) are skipped and reported in the `X-Skipped` header rather than
- * silently dropped. A valid config is REQUIRED — without it we 422 (mirrors the
+ * silently dropped. A valid config is REQUIRED, without it we 422 (mirrors the
  * 837 download guard) so the operator knows to finish HHAeXchange setup first.
  *
  * Member ID = the client's import `external_id` (the source-system id, which is
@@ -539,7 +539,7 @@ router.get('/hhaexchange.csv', requireCapability('billing.read'), async (req, re
  * the range to the agency's HHAeXchange connection. Returns not_configured(409)
  * when setup is incomplete; on success records each acknowledgment. (The
  * HHAeXchange transport is currently a scaffold, so a fully-configured agency
- * receives a clear `error` until the real transport lands — never a fake mark.)
+ * receives a clear `error` until the real transport lands, never a fake mark.)
  */
 router.post('/hhaexchange/submit', requireCapability('billing.write'), async (req, res) => {
   const parsed = submitSchema.safeParse(req.body ?? {});
@@ -757,8 +757,8 @@ function summarizeTransmit(r: SandataAltEvv.TransmitResult) {
 /**
  * POST /exports/sandata/altevv/submit  { from?, to? }
  *
- * Transmits the verified visits in the range — and the clients + caregivers they
- * reference — to Sandata's Alternate-EVV API in load order. Returns a per-entity
+ * Transmits the verified visits in the range, and the clients + caregivers they
+ * reference, to Sandata's Alternate-EVV API in load order. Returns a per-entity
  * summary (posted / blocked / deferred / uuid). 409 not_configured when setup is
  * incomplete; nothing is sent. Visits defer until their dependencies verify via
  * a subsequent /altevv/poll.

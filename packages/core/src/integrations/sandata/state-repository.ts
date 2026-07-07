@@ -3,7 +3,7 @@
  *
  * The synchronous client had no memory; the async POST→UUID→poll model needs
  * persistent state the transmission service drives:
- *  - sandata_record_state: per CLIENT/EMPLOYEE/VISIT record — its monotonically
+ *  - sandata_record_state: per CLIENT/EMPLOYEE/VISIT record, its monotonically
  *    increasing SequenceID (Sandata requires it grow on every resend), current
  *    status, and the last UUID/poll result.
  *  - sandata_transmission: one row per POSTed batch UUID (the poll ledger).

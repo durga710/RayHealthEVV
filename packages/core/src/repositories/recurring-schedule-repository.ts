@@ -162,7 +162,7 @@ export class RecurringScheduleRepository {
     if (occurrences.length === 0) return { scheduleId, created: 0, skipped: 0 };
 
     // Existing assignment dates for this caregiver + template across the window
-    // — dedup against both prior materializations and manual bookings.
+    //, dedup against both prior materializations and manual bookings.
     const existingRows = (await this.db('assignments')
       .where('caregiver_id', sched.caregiver_id as string)
       .andWhere('visit_template_id', sched.visit_template_id as string)
@@ -198,7 +198,7 @@ export class RecurringScheduleRepository {
   /**
    * Read-only coverage forecast: a dry-run of materialization. For every ACTIVE
    * recurring schedule, expand its occurrences in [windowStart, windowEnd] and
-   * return the ones that have NO assignment yet (same caregiver + template) —
+   * return the ones that have NO assignment yet (same caregiver + template) , 
    * i.e. upcoming visits that exist on paper but were never generated, so they'd
    * silently not happen. Same dedup logic as `materialize`, but inserts nothing.
    * Ordered by date so the soonest gap surfaces first.

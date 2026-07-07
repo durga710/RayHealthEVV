@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
 
 /**
- * RayVerify — the "trust engine" band on the landing page.
+ * RayVerify, the "trust engine" band on the landing page.
  *
  * Positioned as the verification layer that powers RayHealthEVV (Stripe → Radar).
  * A dark premium section with a scroll-animated verification pipeline. Copy is
@@ -37,7 +37,7 @@ const PIPELINE: Stage[] = [
 
 const LAYERS = [
   { k: 'Beyond GPS', t: 'Location is table stakes', b: 'Time-and-place proves a phone was near an address. RayVerify proves the right caregiver was actually there.' },
-  { k: 'Explainable', t: 'Every score, in plain English', b: 'A 0–100 fraud score with a human-readable reason for each signal — built for auditors, not black boxes.' },
+  { k: 'Explainable', t: 'Every score, in plain English', b: 'A 0-100 fraud score with a human-readable reason for each signal, built for auditors, not black boxes.' },
   { k: 'Audit-ready', t: 'Evidence, captured by default', b: 'Each visit produces a tamper-evident verification package your agency can stand behind in a review.' },
 ];
 
@@ -63,7 +63,7 @@ export function RayVerifySection() {
           <span className="rvfy-eyebrow"><span className="rvfy-pip" />Powered by RayVerify</span>
           <h2 className="rvfy-title">Every visit. <span className="rvfy-em">Verified.</span></h2>
           <p className="rvfy-deck">
-            Home care deserves more than a GPS ping. RayVerify is the trust engine inside RayHealthEVV —
+            Home care deserves more than a GPS ping. RayVerify is the trust engine inside RayHealthEVV , 
             layering identity, location, device, and fraud intelligence so you know the right caregiver
             delivered the right care, at the right place.
           </p>

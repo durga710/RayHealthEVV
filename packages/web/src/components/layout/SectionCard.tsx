@@ -9,7 +9,7 @@ interface SectionCardProps {
   /**
    * When true, wraps the content in a bordered white surface. Leave false
    * (default) for sections whose children already carry their own card
-   * styling (metric grids, attention lists) — matches how Command Center's
+   * styling (metric grids, attention lists), matches how Command Center's
    * sections are just a labeled grouping, not a nested card.
    */
   bordered?: boolean;

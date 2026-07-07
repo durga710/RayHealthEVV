@@ -5,7 +5,7 @@
  * detail (mappings, provider IDs) lives in `agency_sandata_config` and the
  * forthcoming `agency_hhaexchange_config`.
  *
- * The shape is small on purpose — it's the answer to a single product
+ * The shape is small on purpose, it's the answer to a single product
  * question ("which aggregator should the export pipeline route to for this
  * agency"), separated from the details needed once that question is settled.
  */
@@ -28,7 +28,7 @@ export const agencyEvvConfigSchema = z.object({
 export type AgencyEvvConfig = z.infer<typeof agencyEvvConfigSchema>
 
 /**
- * Update payload sent by the admin UI. `productionReady` is optional — most
+ * Update payload sent by the admin UI. `productionReady` is optional, most
  * picker interactions just change the aggregator and shouldn't accidentally
  * flip the go-live switch.
  */

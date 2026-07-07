@@ -3,7 +3,7 @@ import { z } from 'zod'
 /**
  * Per-agency feature flags. Stored as JSONB on the agencies table.
  *
- * Default for any flag is "off" — features must be explicitly enabled
+ * Default for any flag is "off", features must be explicitly enabled
  * per agency, never default-on. Plan tier governs entitlement when
  * enabling ("starter" vs "pro" gating individual features within a
  * flag is up to each feature's own UI).
@@ -58,7 +58,7 @@ export const DEFAULT_AGENCY_FEATURES: AgencyFeatures = {
 export function parseAgencyFeatures(raw: unknown): AgencyFeatures {
   // The raw value comes from JSONB and may be undefined, null, an empty
   // object, or a partial object. `agencyFeaturesSchema.parse` with defaults
-  // handles all these cases — but we accept a final safety net.
+  // handles all these cases, but we accept a final safety net.
   try {
     if (raw === null || raw === undefined) {
       return DEFAULT_AGENCY_FEATURES

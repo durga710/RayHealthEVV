@@ -8,13 +8,13 @@
  *   • ensures every used client has a T1019 authorization (clock-in needs one)
  *   • seeds ~16 UPCOMING assignments spread across the next 3 weeks so the
  *     Schedule calendar is populated
- *   • seeds 8 PAST completed visits — 5 verified, 3 flagged — each flagged one
+ *   • seeds 8 PAST completed visits, 5 verified, 3 flagged. each flagged one
  *     with an evv_exceptions row explaining why
  *
  * All identifiers are deterministic so reruns upsert in place. Run
  * cleanup-fixture-assignments.ts first for an exactly-this set.
  *
- * SAFETY GUARD — refuses to run against the prod default branch unless
+ * SAFETY GUARD. refuses to run against the prod default branch unless
  * RAYHEALTH_ALLOW_PROD_FIXTURE_SEED=1 is set.
  *
  * Usage:

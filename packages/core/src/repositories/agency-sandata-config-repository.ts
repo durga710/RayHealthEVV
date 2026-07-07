@@ -74,7 +74,7 @@ export interface PartialSandataConfig {
   services: SandataServiceMapping[]
   enabled: boolean
   apiBaseUrl: string | null
-  /** Read-only indicator — plaintext credentials are never returned to callers. */
+  /** Read-only indicator, plaintext credentials are never returned to callers. */
   hasCredentials: boolean
 }
 
@@ -140,7 +140,7 @@ export class AgencySandataConfigRepository {
   }
 
   /**
-   * Returns the full submission config WITH decrypted credentials — for the
+   * Returns the full submission config WITH decrypted credentials, for the
    * Sandata client only. Never expose this to an API response; the admin UI
    * uses `findByAgency` (which carries `hasCredentials`, not the secret).
    */

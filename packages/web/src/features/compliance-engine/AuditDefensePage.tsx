@@ -19,7 +19,7 @@ interface PacketDownloadResult {
 
 /**
  * Download the audit-defense CSV packet for [from, to]. Uses fetch + Blob so
- * we can read the `X-Manifest-Sha256` header and surface it in the UI — that
+ * we can read the `X-Manifest-Sha256` header and surface it in the UI, that
  * hash is what a PA DHS auditor uses to confirm the file was not edited. Falls
  * back to throwing on non-2xx so the caller can render a message.
  */
@@ -181,8 +181,8 @@ export function AuditDefensePage() {
     : [
         { label: 'Retention floor', value: '7 years', hint: 'PA: longest in U.S.' },
         { label: 'DHS response SLA', value: '48h' },
-        { label: 'Audit events (range)', value: '—' },
-        { label: 'VMUR corrections (range)', value: '—' },
+        { label: 'Audit events (range)', value: ', ' },
+        { label: 'VMUR corrections (range)', value: ', ' },
       ];
 
   return (
@@ -220,7 +220,7 @@ export function AuditDefensePage() {
           }}
         >
           Pick a date range. The preview counts the audit_events, VMUR corrections, EVV visits, and
-          active caregivers that would land in a PA DHS defense packet — sized to the 48-hour
+          active caregivers that would land in a PA DHS defense packet, sized to the 48-hour
           response window.
         </p>
         <form
@@ -265,7 +265,7 @@ export function AuditDefensePage() {
             disabled={downloading || !from || !to}
             style={{
               ...primaryButtonStyle,
-              /* Deep Red accent — the regulator-facing CSV export is the one place we
+              /* Deep Red accent, the regulator-facing CSV export is the one place we
                  want the brand's secondary color to land hardest. */
               backgroundColor: 'var(--color-accent)',
               opacity: downloading || !from || !to ? 0.55 : 1,
@@ -321,7 +321,7 @@ export function AuditDefensePage() {
               margin: '0.5rem 0 0',
             }}
           >
-            A PA DHS auditor can re-derive this hash from the file alone — server signatures are not trusted.
+            A PA DHS auditor can re-derive this hash from the file alone, server signatures are not trusted.
           </p>
         </div>
       ) : null}

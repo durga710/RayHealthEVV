@@ -1,5 +1,5 @@
 /**
- * Baseline migration runner — applies the inlined `schema.ts` migrations
+ * Baseline migration runner, applies the inlined `schema.ts` migrations
  * idempotently via knex.schema.hasTable/hasColumn guards. Invoked by
  * `npm run db:migrate`.
  *
@@ -11,13 +11,13 @@
  * engineering work in PROJECT_STATUS.md.
  *
  * `extend-visit-maintenance` and its 2026-06-30 backfill ARE wired in
- * below — VisitMaintenanceRepository's tenant-scoping fix depends on the
+ * below. VisitMaintenanceRepository's tenant-scoping fix depends on the
  * `agency_id` column they add/populate, so they can't be left orphaned
  * like the rest. Both are idempotent (hasColumn guards / `WHERE agency_id
  * IS NULL`), safe to re-run.
  *
  * Writes status to stderr (not stdout) so the parent shell can pipe stdout
- * for JSON without contamination. No `console.*` calls — keeps `npm run
+ * for JSON without contamination. No `console.*` calls, keeps `npm run
  * lint` clean and matches the codebase's no-console-in-prod posture.
  */
 
@@ -46,7 +46,7 @@ async function run(): Promise<void> {
     try {
       await db.destroy();
     } catch {
-      /* swallow — process is exiting */
+      /* swallow, process is exiting */
     }
   }
 }

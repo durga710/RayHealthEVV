@@ -23,7 +23,7 @@ export interface QuizGrade {
   total: number;
   /** 0..1 fraction. */
   score: number;
-  /** Rounded 0..100 integer — what we POST as the completion score. */
+  /** Rounded 0..100 integer, what we POST as the completion score. */
   scorePercent: number;
   passed: boolean;
   wrong: WrongAnswer[];

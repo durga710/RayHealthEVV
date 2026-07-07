@@ -1,7 +1,7 @@
 import type { ReactNode, SVGProps } from 'react';
 
 /**
- * Shared line-icon set — Lucide-style geometry, 24×24 viewBox, 1.5 stroke,
+ * Shared line-icon set. Lucide-style geometry, 24×24 viewBox, 1.5 stroke,
  * `currentColor` so every icon inherits the surrounding text/tone color.
  *
  * These replace the pictographic emojis that used to stand in for iconography

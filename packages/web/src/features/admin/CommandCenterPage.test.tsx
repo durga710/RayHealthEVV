@@ -75,7 +75,7 @@ describe('CommandCenterPage', () => {
     expect(screen.getByText('4 of 10 visits completed (40%)')).toBeInTheDocument();
 
     // Billing readiness: no flagged visits this week reads as "clean".
-    expect(screen.getByText('Clean — ready to bill')).toBeInTheDocument();
+    expect(screen.getByText('Clean, ready to bill')).toBeInTheDocument();
 
     // Quick Action Dock covers all six named actions.
     for (const label of [

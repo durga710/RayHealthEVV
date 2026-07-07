@@ -5,7 +5,7 @@
  * Tellus, a spreadsheet) means importing their clients, caregivers, and
  * authorizations. This module is the PURE half of that pipeline: an RFC-4180
  * CSV parser plus per-entity row validators that turn raw CSV text into typed,
- * normalized rows with per-row error reporting. No database access here — the
+ * normalized rows with per-row error reporting. No database access here, the
  * routes layer takes the validated rows and upserts them (idempotently, keyed
  * on `external_id`) inside a transaction.
  *
@@ -389,7 +389,7 @@ const VALIDATORS: Record<
 
 /**
  * Validate every parsed record for an entity. Returns one RowResult per data
- * row, in file order, with a 1-based rowNumber. Pure — no DB. Relational
+ * row, in file order, with a 1-based rowNumber. Pure, no DB. Relational
  * existence checks (e.g. does client_external_id resolve?) happen at commit.
  */
 export function validateImportRecords(

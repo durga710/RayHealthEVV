@@ -31,7 +31,7 @@ const STATUS_META: Record<VisitStatus, { label: string; bg: string; border: stri
 };
 
 function fmtTime(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return ', ';
   return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
@@ -75,7 +75,7 @@ export function TodayBoardPage() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 60_000); // live ops board — refresh each minute
+    const t = setInterval(load, 60_000); // live ops board, refresh each minute
     return () => clearInterval(t);
   }, [load]);
 
@@ -108,7 +108,7 @@ export function TodayBoardPage() {
             Today's visits
           </h1>
           <p style={{ margin: '0.3rem 0 0', color: '#64748B', fontSize: '0.9375rem' }}>
-            Live status of every visit scheduled today — act on late starts first.
+            Live status of every visit scheduled today, act on late starts first.
           </p>
         </div>
         <button type="button" onClick={load} className="btn-ghost btn-sm" disabled={loading}>
@@ -178,8 +178,8 @@ export function TodayBoardPage() {
                   {filtered.map((v) => (
                     <tr key={v.assignmentId}>
                       <td><StatusBadge status={v.status} /></td>
-                      <td style={{ fontWeight: 600, color: '#0F172A' }}>{v.clientName || '—'}</td>
-                      <td>{v.caregiverName || '—'}</td>
+                      <td style={{ fontWeight: 600, color: '#0F172A' }}>{v.clientName || ', '}</td>
+                      <td>{v.caregiverName || ', '}</td>
                       <td style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtTime(v.scheduledStartTime)}</td>
                       <td style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtTime(v.clockInTime)}</td>
                       <td style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtTime(v.clockOutTime)}</td>

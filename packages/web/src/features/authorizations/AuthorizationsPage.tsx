@@ -18,15 +18,15 @@ interface Authorization {
 
 type Banner = { kind: 'success' | 'error'; text: string } | null;
 
-// Canonical PA HCPCS codes — these are the ONLY codes EVV visits and 837 claim
+// Canonical PA HCPCS codes, these are the ONLY codes EVV visits and 837 claim
 // lines carry, so authorizations must use them or claim-matching and units
 // burn-down silently fail. Keep in lock-step with paServiceCodes in
 // packages/core/src/config/pennsylvania.ts (the API rejects anything else).
 const PA_SERVICE_CODES = [
-  { code: 'T1019', label: 'T1019 — Personal care services (per 15 min)' },
-  { code: 'S5125', label: 'S5125 — Attendant care services (per 15 min)' },
-  { code: 'T1004', label: 'T1004 — Qualified nursing aide services (per 15 min)' },
-  { code: 'T1021', label: 'T1021 — Home health aide / CNA (per visit)' },
+  { code: 'T1019', label: 'T1019. Personal care services (per 15 min)' },
+  { code: 'S5125', label: 'S5125. Attendant care services (per 15 min)' },
+  { code: 'T1004', label: 'T1004. Qualified nursing aide services (per 15 min)' },
+  { code: 'T1021', label: 'T1021. Home health aide / CNA (per visit)' },
 ];
 
 // Select fields use the global .select-field class for consistency.

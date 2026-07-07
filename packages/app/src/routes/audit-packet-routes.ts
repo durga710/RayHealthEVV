@@ -22,7 +22,7 @@ import { safeError } from '../security/safe-log.js';
 const router = Router();
 
 /**
- * Per-visit deep audit packet — everything a PA DHS / Sandata auditor asks
+ * Per-visit deep audit packet, everything a PA DHS / Sandata auditor asks
  * about ONE visit, assembled on demand. Complementary to the date-range,
  * count-first CSV at /compliance-engine/audit-defense/packet.csv.
  *
@@ -35,7 +35,7 @@ const router = Router();
  *     derived (`captured` / `accuracyM` / `result` / `distanceM` / `allowedM`).
  *   - Audit events expose `payloadSha256`, never the raw `payload`.
  *   - Every sub-collection read is agency-scoped (`findByEntityForAgency`,
- *     `findByVisitIdForAgency`, `findExceptionsByVisitForAgency`) — the
+ *     `findByVisitIdForAgency`, `findExceptionsByVisitForAgency`), the
  *     unscoped `AuditEventRepository.findByEntity` must never be used here.
  *   - Generating a packet is itself a HIPAA §164.312(b) PHI disclosure: the
  *     `phi.export` audit event is written BEFORE the response is sent, and a
@@ -80,7 +80,7 @@ function sha256OfCanonicalJson(value: unknown): string {
 /**
  * Derives geofence facts for one clock event from the raw captured location
  * plus the client's registered geofence anchor. Never returns the raw
- * lat/lng — only a captured flag, the GPS accuracy scalar, the in/out
+ * lat/lng, only a captured flag, the GPS accuracy scalar, the in/out
  * verdict, and (when computable) the distance/allowed radius, mirroring the
  * 422 GEOFENCE_OUT_OF_BOUNDS envelope already exposed by evv-routes.ts.
  */
@@ -134,7 +134,7 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
 
   try {
     const evvRepo = new EvvRepository(db);
-    // The only fetch path for the visit — already tenant-scoped and 404-safe
+    // The only fetch path for the visit, already tenant-scoped and 404-safe
     // (returns null for both "does not exist" and "belongs to another
     // agency", so this route never leaks cross-tenant existence).
     const visit = await evvRepo.getVisitByIdForAgency(visitId, agencyId);
@@ -158,7 +158,7 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
         scheduleRepo.getAssignmentScheduleForAgency(visit.assignmentId, agencyId),
         exceptionRepo.findExceptionsByVisitForAgency(visitId, agencyId),
         maintenanceRepo.findByVisitIdForAgency(visitId, agencyId),
-        // Sub-collection reads MUST use the agency-scoped variant — never
+        // Sub-collection reads MUST use the agency-scoped variant, never
         // the unscoped AuditEventRepository.findByEntity.
         auditRepo.findByEntityForAgency(agencyId, 'evv.visit', visitId),
         auditRepo.findByEntityForAgency(agencyId, 'evv.clock-out', visitId),
@@ -178,7 +178,7 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
       clockOutTime: visit.clockOutTime ?? null
     };
 
-    // ---- parties — minimum necessary ---------------------------------------
+    // ---- parties, minimum necessary ---------------------------------------
     const caregiverPayload = {
       id: visit.caregiverId,
       name: caregiver ? fullName(caregiver.firstName, caregiver.lastName) : ''
@@ -193,7 +193,7 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
       return acc;
     }, {} as Record<CuresActDataPoint, boolean>);
 
-    // ---- geofence — derived, never raw -------------------------------------
+    // ---- geofence, derived, never raw -------------------------------------
     const geofence = {
       clockIn: deriveGeofence(visit.clockInLocation, clientGeofenceAnchor),
       clockOut: deriveGeofence(visit.clockOutLocation, clientGeofenceAnchor)
@@ -227,7 +227,7 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
       adjustedEndTime: c.adjustedEndTime ?? null
     }));
 
-    // ---- audit-event chain — references and hashes, never raw payloads -----
+    // ---- audit-event chain, references and hashes, never raw payloads -----
     const auditEventsPayload = [...visitEvents, ...clockOutEvents, ...clockInEvents]
       .sort((a, b) => new Date(b.occurredAt ?? 0).getTime() - new Date(a.occurredAt ?? 0).getTime())
       .map((e) => ({
@@ -272,7 +272,7 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
     const integritySha256 = sha256OfCanonicalJson(bodyWithoutHash);
 
     // Mandatory, fail-closed disclosure log. Unlike the best-effort geofence-
-    // denial logging elsewhere, this write is a precondition of responding —
+    // denial logging elsewhere, this write is a precondition of responding , 
     // if it throws, the catch block below returns 500 with no packet body.
     await auditRepo.create({
       agencyId,
