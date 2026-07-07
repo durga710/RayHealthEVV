@@ -193,7 +193,8 @@ export function PrivacyPage() {
                 BAA in progress
               </li>
               <li>
-                <strong>Neon</strong> — Postgres database; BAA in progress
+                <strong>Neon</strong> — Postgres database; BAA active, running in
+                Neon’s HIPAA mode (pgAudit audit logging, encryption at rest)
               </li>
               <li>
                 <strong>AWS</strong> — Bedrock AI inference; BAA active

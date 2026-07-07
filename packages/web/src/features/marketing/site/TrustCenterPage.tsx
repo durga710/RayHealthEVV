@@ -87,14 +87,14 @@ const roadmap: readonly WorkflowStep[] = [
   {
     id: 'baa',
     label: 'Business Associate Agreement coverage',
-    description: 'AWS Bedrock BAA active; Vercel, Neon, Firebase, and Resend BAAs in progress. We execute a BAA with every agency before any PHI is processed.',
+    description: 'AWS Bedrock and Neon BAAs active; Vercel, Firebase, and Resend BAAs in progress. We execute a BAA with every agency before any PHI is processed.',
     status: 'active',
   },
   {
     id: 'hipaa-db',
     label: 'HIPAA-mode database posture',
-    description: 'Provisioning the database under the terms required for regulated PHI workloads.',
-    status: 'upcoming',
+    description: 'Complete: the Postgres database runs in Neon’s HIPAA mode under an executed BAA, with pgAudit audit logging enabled and encryption at rest.',
+    status: 'complete',
   },
   {
     id: 'risk-analysis',
@@ -174,7 +174,7 @@ interface Subprocessor {
 // Mirrors PrivacyPage.tsx exactly — this is NOT a place to invent vendors.
 const subprocessors: readonly Subprocessor[] = [
   { name: 'Vercel', role: 'Application compute (web app + API)', status: 'BAA in progress', statusTone: 'info' },
-  { name: 'Neon', role: 'Postgres database', status: 'BAA in progress', statusTone: 'info' },
+  { name: 'Neon', role: 'Postgres database', status: 'BAA active', statusTone: 'success' },
   { name: 'AWS', role: 'Bedrock AI inference', status: 'BAA active', statusTone: 'success' },
   { name: 'Cloudflare', role: 'DNS + TLS termination (encrypted transit only)', status: 'Not a Business Associate', statusTone: 'neutral' },
   { name: 'Google Firebase', role: 'Push notifications and auth', status: 'BAA in progress', statusTone: 'info' },
@@ -268,9 +268,9 @@ export function TrustCenterPage() {
             <SectionCard title="HIPAA operational readiness roadmap">
               <p style={{ margin: '0 0 var(--space-6)', lineHeight: 1.7, color: 'var(--color-text-secondary)' }}>
                 This is a <strong>BAA readiness roadmap</strong>, shown honestly.
-                Nothing here is marked complete — each item is either in progress
-                or planned. This is the work that stands between our HIPAA-ready
-                architecture and full operational readiness for real PHI.
+                Each item is marked complete, in progress, or planned. Most of
+                the work that stands between our HIPAA-ready architecture and
+                full operational readiness for real PHI is still ahead.
               </p>
               <WorkflowStepper orientation="vertical" steps={[...roadmap]} />
               <div
@@ -285,6 +285,7 @@ export function TrustCenterPage() {
                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Legend
                 </span>
+                <StatusPill label="Complete" tone="success" dot />
                 <StatusPill label="In progress" tone="info" dot />
                 <StatusPill label="Planned" tone="neutral" dot />
               </div>

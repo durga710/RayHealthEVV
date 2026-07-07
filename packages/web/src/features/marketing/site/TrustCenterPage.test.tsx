@@ -43,10 +43,12 @@ describe('TrustCenterPage', () => {
     expect(screen.queryByText(/guaranteed compliance/i)).not.toBeInTheDocument();
   });
 
-  it('mirrors PrivacyPage subprocessor BAA posture (Neon in progress, AWS active)', () => {
+  it('mirrors PrivacyPage subprocessor BAA posture (Neon and AWS active, others in progress)', () => {
     renderPage();
     expect(screen.getByRole('cell', { name: /Neon/i })).toBeInTheDocument();
+    // Vercel, Firebase, Resend remain in progress.
     expect(screen.getAllByText(/BAA in progress/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/BAA active/i).length).toBeGreaterThan(0);
+    // Neon + AWS are both active now.
+    expect(screen.getAllByText(/BAA active/i).length).toBeGreaterThanOrEqual(2);
   });
 });
