@@ -134,22 +134,45 @@ export class LearningRepository {
     return rows.map((r: Record<string, unknown>) => this.mapEnrollment(r));
   }
 
-  async findEnrollment(caregiverId: string, courseId: string): Promise<CourseEnrollment | undefined> {
+  /**
+   * Look up an enrollment by (caregiver, course). Always scoped by `agencyId`
+   * so it can never return — or dedup against — another tenant's enrollment row.
+   */
+  async findEnrollment(
+    caregiverId: string,
+    courseId: string,
+    agencyId: string,
+  ): Promise<CourseEnrollment | undefined> {
     const row = await this.db('course_enrollments')
-      .where({ caregiver_id: caregiverId, course_id: courseId })
+      .where({ caregiver_id: caregiverId, course_id: courseId, agency_id: agencyId })
       .first();
     return row ? this.mapEnrollment(row as Record<string, unknown>) : undefined;
   }
 
-  async markInProgress(enrollmentId: string): Promise<void> {
-    await this.db('course_enrollments')
-      .where({ id: enrollmentId })
+  /**
+   * Mark an enrollment in-progress. Scoped by `agencyId` so a caller can only
+   * transition enrollments owned by their own agency. Returns true when a row
+   * was updated, false when the enrollment doesn't exist in this agency (or
+   * wasn't in a startable state) so the route can 404 rather than silently no-op.
+   */
+  async markInProgress(enrollmentId: string, agencyId: string): Promise<boolean> {
+    const updated = await this.db('course_enrollments')
+      .where({ id: enrollmentId, agency_id: agencyId })
       .whereIn('status', ['not_started', 'overdue'])
       .update({ status: 'in_progress', updated_at: this.db.fn.now() });
+    return updated > 0;
   }
 
   async enroll(data: NewCourseEnrollment): Promise<CourseEnrollment> {
-    const existing = await this.findEnrollment(data.caregiverId, data.courseId);
+    // The caregiver must belong to the enrolling agency — prevents creating an
+    // enrollment row that points at another tenant's caregiver.
+    const caregiver = await this.db('caregivers')
+      .where({ id: data.caregiverId, agency_id: data.agencyId })
+      .first('id');
+    if (!caregiver) {
+      throw new Error('Caregiver not found in this agency');
+    }
+    const existing = await this.findEnrollment(data.caregiverId, data.courseId, data.agencyId);
     if (existing) return existing;
     const [row] = await this.db('course_enrollments')
       .insert({
@@ -165,9 +188,14 @@ export class LearningRepository {
 
   // ---------- Completions ----------
 
-  async recordCompletion(data: NewCourseCompletion): Promise<CourseCompletion> {
+  async recordCompletion(data: NewCourseCompletion, agencyId: string): Promise<CourseCompletion> {
     return this.db.transaction(async (trx) => {
-      const enrollment = await trx('course_enrollments').where({ id: data.enrollmentId }).first();
+      // Scope the enrollment lookup by agency so a caller can only complete an
+      // enrollment owned by their own agency — the enrollment id alone is not a
+      // sufficient authorization token.
+      const enrollment = await trx('course_enrollments')
+        .where({ id: data.enrollmentId, agency_id: agencyId })
+        .first();
       if (!enrollment) throw new Error(`Enrollment ${data.enrollmentId} not found`);
 
       const course = await trx('learning_courses').where({ id: data.courseId }).first();

@@ -5,6 +5,11 @@ export const auditEventTypes = [
     'caregiver.created', 'caregiver.status-changed',
     'assignment.created', 'assignment.cancelled',
     'exception.filed', 'exception.approved',
+    // Visit Maintenance Unlock Request (VMUR) lifecycle — the sanctioned path for
+    // editing a finalized (immutability-locked) visit. `requested` records who
+    // asked for the correction; `approved` records who authorized it and the
+    // adjusted times, so a post-finalization billing change is always attributable.
+    'visit.maintenance.requested', 'visit.maintenance.approved',
     'auth.login.success', 'auth.login.failure', 'auth.logout',
     // A multi-agency user re-scoped their mobile token to another agency they
     // hold an active membership in. Row lands under the DESTINATION agency;

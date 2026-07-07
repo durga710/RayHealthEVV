@@ -37,6 +37,14 @@ function rjustNum(value, len) {
 function clean(value) {
     return (value ?? '').replace(/[*~:^]/g, ' ').trim();
 }
+/**
+ * Normalize an ICD-10-CM code for X12: uppercase, drop the decimal point
+ * (X12 carries the code without it) and strip anything that isn't
+ * alphanumeric. Returns '' for a blank/invalid input so the caller can skip it.
+ */
+function icd10(value) {
+    return (value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
 function seg(...elements) {
     // Drop trailing empty elements for a tidy segment.
     let end = elements.length;
@@ -119,12 +127,28 @@ export function generate837P(input) {
         tx.push(seg('NM1', 'PR', '2', clean(sub.payerName), '', '', '', '', 'PI', clean(sub.payerId)));
         // 2300 Claim
         tx.push(seg('CLM', clean(claim.controlNumber), money(claimChargeCents), '', '', `${pos}${SUBELEMENT}B${SUBELEMENT}1`, 'Y', 'A', 'Y', 'Y'));
+        // 2300 Health Care Diagnosis Code (HI). Required for a professional claim:
+        // the principal diagnosis rides in ABK, each additional in ABF. We only
+        // emit the segment — and the matching service-line diagnosis pointer below —
+        // when at least one valid code is present, so the file never contains a
+        // pointer to a diagnosis that isn't declared.
+        const diagnoses = (claim.diagnosisCodes ?? []).map(icd10).filter(Boolean);
+        if (diagnoses.length > 0) {
+            const hiElements = diagnoses
+                .slice(0, 12) // 005010X222A1 caps the HI diagnosis list at 12
+                .map((code, idx) => `${idx === 0 ? 'ABK' : 'ABF'}${SUBELEMENT}${code}`);
+            tx.push(seg('HI', ...hiElements));
+        }
+        // SV107 composite diagnosis-code pointer — points at the principal
+        // diagnosis (position 1 in the HI segment). Omitted entirely when the claim
+        // has no diagnosis, leaving no dangling reference.
+        const diagnosisPointer = diagnoses.length > 0 ? '1' : '';
         // 2400 Service lines
         let lx = 0;
         for (const line of claim.lines) {
             lx += 1;
             tx.push(seg('LX', String(lx)));
-            tx.push(seg('SV1', `HC${SUBELEMENT}${clean(line.serviceCode)}`, money(line.chargeCents), 'UN', String(line.units), pos, '', '1'));
+            tx.push(seg('SV1', `HC${SUBELEMENT}${clean(line.serviceCode)}`, money(line.chargeCents), 'UN', String(line.units), pos, '', diagnosisPointer));
             tx.push(seg('DTP', '472', 'D8', ccyymmdd(line.serviceDate)));
             if (line.renderingProviderNpi) {
                 tx.push(seg('NM1', '82', '1', clean(line.renderingProviderLastName ?? ''), clean(line.renderingProviderFirstName ?? ''), '', '', '', 'XX', rjustNum(line.renderingProviderNpi, 10)));

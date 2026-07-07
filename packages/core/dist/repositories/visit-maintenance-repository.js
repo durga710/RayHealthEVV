@@ -42,8 +42,13 @@ export class VisitMaintenanceRepository {
      * Approve (and adjust) an unlock request — only if it belongs to
      * `agencyId`. Returns null for both "not found" and "belongs to another
      * agency" so the route can 404 without leaking cross-tenant existence.
+     *
+     * `approverId` is recorded on the row (approver_id + approved_at) so a
+     * post-finalization billing change is always attributable to the actor who
+     * authorized it — distinct from the requester. This is a non-repudiation
+     * requirement for editing an otherwise immutable evv_visits row.
      */
-    async approveUnlock(id, agencyId, adjustedTimes) {
+    async approveUnlock(id, agencyId, approverId, adjustedTimes) {
         const allowedIds = this.db('visit_maintenance as m')
             .join('evv_visits as v', 'v.id', 'm.visit_id')
             .join('caregivers as c', 'c.id', 'v.caregiver_id')
@@ -56,6 +61,8 @@ export class VisitMaintenanceRepository {
             status: 'approved',
             adjusted_start_time: adjustedTimes.start,
             adjusted_end_time: adjustedTimes.end,
+            approver_id: approverId,
+            approved_at: this.db.fn.now(),
             // Opportunistically backfills agency_id for any row that
             // predates the column being populated on insert.
             agency_id: agencyId
@@ -64,6 +71,7 @@ export class VisitMaintenanceRepository {
         return updated ? this.mapRowToMaintenance(updated) : null;
     }
     mapRowToMaintenance(row) {
+        const toIso = (v) => v == null ? undefined : v instanceof Date ? v.toISOString() : new Date(v).toISOString();
         return {
             id: row.id,
             visitId: row.visit_id,
@@ -71,8 +79,10 @@ export class VisitMaintenanceRepository {
             requesterId: row.requester_id,
             reason: row.reason,
             status: row.status,
-            adjustedStartTime: row.adjusted_start_time?.toISOString(),
-            adjustedEndTime: row.adjusted_end_time?.toISOString()
+            adjustedStartTime: toIso(row.adjusted_start_time),
+            adjustedEndTime: toIso(row.adjusted_end_time),
+            approverId: row.approver_id ?? undefined,
+            approvedAt: toIso(row.approved_at)
         };
     }
 }

@@ -14,8 +14,13 @@ export function makeToken(
   userId = 'user-1',
   caregiverId?: string
 ): string {
+  // A `jti` is now mandatory on every bearer token (authContext rejects tokens
+  // without one and looks the jti up against mobile_sessions). The shared test
+  // setup stubs MobileSessionRepository.findActiveByJti to treat any jti as an
+  // active session, so route tests keep passing without a live database.
   return jwt.sign({ sub: userId, agencyId, role, caregiverId }, TEST_SECRET, {
     expiresIn: '1h',
     algorithm: 'HS256',
+    jwtid: `test-jti-${userId}`,
   });
 }
