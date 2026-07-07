@@ -19,18 +19,13 @@ try {
 
 export default function handler(req, res) {
   if (bootError) {
+    // Return a generic error to the (unauthenticated) client — the name,
+    // message and stack are reconnaissance (file paths, dependency internals,
+    // missing-env hints) and this path bypasses the app's hardened middleware.
+    // The full detail was already logged to the runtime log above.
     res.statusCode = 500;
     res.setHeader('content-type', 'application/json');
-    res.end(
-      JSON.stringify({
-        error: 'BOOT_FAILED',
-        name: bootError.name,
-        message: bootError.message,
-        stack: typeof bootError.stack === 'string'
-          ? bootError.stack.split('\n').slice(0, 12)
-          : undefined
-      })
-    );
+    res.end(JSON.stringify({ error: 'BOOT_FAILED' }));
     return;
   }
   // Strip the /api prefix Vercel preserves so Express routes

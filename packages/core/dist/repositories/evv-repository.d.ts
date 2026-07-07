@@ -11,6 +11,13 @@ import type { EvvVisit } from '../domain/evv.js';
 export declare class EvvRepository {
     private readonly db;
     constructor(db: Knex);
+    /**
+     * The open (not-yet-clocked-out) visit for an assignment, if any. Used to
+     * stop a second concurrent clock-in on the same assignment — duplicate open
+     * visits produce overlapping/duplicate billed EVV time. Returns undefined
+     * when there is no open visit.
+     */
+    findOpenVisitForAssignment(assignmentId: string): Promise<EvvVisit | undefined>;
     createVisit(visit: EvvVisit): Promise<EvvVisit>;
     /**
      * Update a visit only if it belongs to the agency. Returns null when the

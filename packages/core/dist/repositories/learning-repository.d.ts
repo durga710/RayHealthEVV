@@ -23,10 +23,20 @@ export declare class LearningRepository {
     /** Idempotent upsert by (agency_id, code). Used by the catalog seed script. */
     upsertCourseByCode(data: NewLearningCourse): Promise<LearningCourse>;
     listEnrollmentsForCaregiver(caregiverId: string): Promise<CourseEnrollment[]>;
-    findEnrollment(caregiverId: string, courseId: string): Promise<CourseEnrollment | undefined>;
-    markInProgress(enrollmentId: string): Promise<void>;
+    /**
+     * Look up an enrollment by (caregiver, course). Always scoped by `agencyId`
+     * so it can never return — or dedup against — another tenant's enrollment row.
+     */
+    findEnrollment(caregiverId: string, courseId: string, agencyId: string): Promise<CourseEnrollment | undefined>;
+    /**
+     * Mark an enrollment in-progress. Scoped by `agencyId` so a caller can only
+     * transition enrollments owned by their own agency. Returns true when a row
+     * was updated, false when the enrollment doesn't exist in this agency (or
+     * wasn't in a startable state) so the route can 404 rather than silently no-op.
+     */
+    markInProgress(enrollmentId: string, agencyId: string): Promise<boolean>;
     enroll(data: NewCourseEnrollment): Promise<CourseEnrollment>;
-    recordCompletion(data: NewCourseCompletion): Promise<CourseCompletion>;
+    recordCompletion(data: NewCourseCompletion, agencyId: string): Promise<CourseCompletion>;
     getAgencyRollup(agencyId: string, now?: Date): Promise<LearningAgencyRollup>;
     getCaregiverProgress(caregiverId: string, now?: Date): Promise<CaregiverLearningProgress>;
     getCourseAnalytics(agencyId: string, now?: Date): Promise<CourseAnalyticsEnvelope>;

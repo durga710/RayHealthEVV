@@ -69,6 +69,17 @@ export interface Edi837Claim {
     subscriber: Edi837Subscriber;
     /** Place-of-service code; defaults to 12 (home). */
     placeOfService?: string;
+    /**
+     * ICD-10-CM diagnosis codes for the claim, principal first. Sent in the
+     * loop-2300 HI segment (ABK for the principal, ABF for each additional).
+     * 005010X222A1 requires at least one diagnosis on a professional claim, and
+     * every service line's diagnosis pointer must reference one of these. When
+     * empty/omitted, NO HI segment is written and NO service-line diagnosis
+     * pointer is emitted — so the file never carries a dangling pointer, though
+     * such a claim will be rejected by the payer for the missing diagnosis until
+     * the agency captures one.
+     */
+    diagnosisCodes?: string[];
     lines: Edi837ServiceLine[];
 }
 export interface Edi837Control {

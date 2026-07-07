@@ -51,10 +51,16 @@ export class VisitMaintenanceRepository {
    * Approve (and adjust) an unlock request — only if it belongs to
    * `agencyId`. Returns null for both "not found" and "belongs to another
    * agency" so the route can 404 without leaking cross-tenant existence.
+   *
+   * `approverId` is recorded on the row (approver_id + approved_at) so a
+   * post-finalization billing change is always attributable to the actor who
+   * authorized it — distinct from the requester. This is a non-repudiation
+   * requirement for editing an otherwise immutable evv_visits row.
    */
   async approveUnlock(
     id: string,
     agencyId: string,
+    approverId: string,
     adjustedTimes: { start: string; end: string }
   ): Promise<VisitMaintenance | null> {
     const allowedIds = this.db('visit_maintenance as m')
@@ -70,6 +76,8 @@ export class VisitMaintenanceRepository {
         status: 'approved',
         adjusted_start_time: adjustedTimes.start,
         adjusted_end_time: adjustedTimes.end,
+        approver_id: approverId,
+        approved_at: this.db.fn.now(),
         // Opportunistically backfills agency_id for any row that
         // predates the column being populated on insert.
         agency_id: agencyId
@@ -80,6 +88,8 @@ export class VisitMaintenanceRepository {
   }
 
   private mapRowToMaintenance(row: any): VisitMaintenance {
+    const toIso = (v: Date | string | null | undefined): string | undefined =>
+      v == null ? undefined : v instanceof Date ? v.toISOString() : new Date(v).toISOString();
     return {
       id: row.id,
       visitId: row.visit_id,
@@ -87,8 +97,10 @@ export class VisitMaintenanceRepository {
       requesterId: row.requester_id,
       reason: row.reason,
       status: row.status,
-      adjustedStartTime: row.adjusted_start_time?.toISOString(),
-      adjustedEndTime: row.adjusted_end_time?.toISOString()
+      adjustedStartTime: toIso(row.adjusted_start_time),
+      adjustedEndTime: toIso(row.adjusted_end_time),
+      approverId: row.approver_id ?? undefined,
+      approvedAt: toIso(row.approved_at)
     };
   }
 }

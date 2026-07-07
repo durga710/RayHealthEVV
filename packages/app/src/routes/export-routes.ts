@@ -43,10 +43,14 @@ const reconcileSchema = z.object({
     .max(1000),
 });
 
-/** Escape one CSV cell per RFC 4180. */
+/** Escape one CSV cell per RFC 4180, neutralizing spreadsheet formula injection. */
 function csvCell(value: unknown): string {
   if (value == null) return '';
-  const s = String(value);
+  let s = String(value);
+  // A cell that starts with =, +, -, @, tab or CR is evaluated as a formula by
+  // Excel/Sheets (RFC quoting does NOT prevent this — the app strips the quotes
+  // and still evaluates). Prefix with a single quote so it is treated as text.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }

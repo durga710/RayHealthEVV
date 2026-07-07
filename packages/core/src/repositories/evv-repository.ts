@@ -12,6 +12,21 @@ import type { EvvVisit } from '../domain/evv.js';
 export class EvvRepository {
   constructor(private readonly db: Knex) {}
 
+  /**
+   * The open (not-yet-clocked-out) visit for an assignment, if any. Used to
+   * stop a second concurrent clock-in on the same assignment — duplicate open
+   * visits produce overlapping/duplicate billed EVV time. Returns undefined
+   * when there is no open visit.
+   */
+  async findOpenVisitForAssignment(assignmentId: string): Promise<EvvVisit | undefined> {
+    const row = await this.db('evv_visits')
+      .where({ assignment_id: assignmentId })
+      .whereNull('clock_out_time')
+      .orderBy('clock_in_time', 'desc')
+      .first();
+    return row ? this.mapRowToVisit(row) : undefined;
+  }
+
   async createVisit(visit: EvvVisit): Promise<EvvVisit> {
     const [inserted] = await this.db('evv_visits')
       .insert({

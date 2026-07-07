@@ -21,11 +21,18 @@ import {
   AuditEventRepository,
   hhaexchangeCaregiverMappingSchema,
   hhaexchangeServiceMappingSchema,
+  isSafeOutboundUrl,
   type PartialHhaexchangeConfig,
 } from '@rayhealth/core'
 import { requireCapability } from '../middleware/require-capability.js'
 
 const router = Router()
+
+// https + public-host only — same SSRF guard as the Sandata config route.
+const safeAggregatorUrl = z
+  .string()
+  .max(255)
+  .refine(isSafeOutboundUrl, { message: 'apiBaseUrl must be an https URL to a public host' })
 
 // ---------- Update payload schema ----------
 
@@ -40,7 +47,7 @@ const hhaexchangeConfigUpdateSchema = z.object({
   caregivers: z.array(hhaexchangeCaregiverMappingSchema).optional(),
   services: z.array(hhaexchangeServiceMappingSchema).optional(),
   enabled: z.boolean().optional(),
-  apiBaseUrl: z.string().url().max(255).nullable().optional(),
+  apiBaseUrl: safeAggregatorUrl.nullable().optional(),
   // Write-only. undefined = leave unchanged; null = clear; object = encrypt+store.
   credentials: z
     .object({

@@ -118,6 +118,20 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
             // a visit row without a service code anyway.
             return res.status(400).json({ message: 'serviceCode (HCPCS) is required at clock-in' });
         }
+        // Reject a second concurrent clock-in on the same assignment. Duplicate
+        // prevention lived only in the mobile client, so a direct/replayed API call
+        // (or a retry after a slow response) could open several overlapping visits,
+        // each independently clockable-out → overlapping/duplicate billed EVV time.
+        // Return the existing open visit so the client can resume it rather than
+        // creating a new one.
+        const openVisit = await repo.findOpenVisitForAssignment(parsed.data.assignmentId);
+        if (openVisit) {
+            return res.status(409).json({
+                message: 'An open visit already exists for this assignment.',
+                code: 'VISIT_ALREADY_OPEN',
+                visit: openVisit,
+            });
+        }
         const visit = await repo.createVisit({
             assignmentId: parsed.data.assignmentId,
             caregiverId: req.auth.caregiverId,

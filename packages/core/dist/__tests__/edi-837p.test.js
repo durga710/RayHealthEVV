@@ -121,5 +121,28 @@ describe('generate837P', () => {
         const { edi } = generate837P(input);
         expect(edi).toContain('NM1*IL*1*O BRIEN JR*JANE');
     });
+    it('emits an HI diagnosis segment and a matching SV1 pointer when diagnosis codes are present', () => {
+        const input = baseInput();
+        // Decimal point is dropped for X12; principal first (ABK), then ABF.
+        input.claims[0].diagnosisCodes = ['Z74.1', 'E11.9'];
+        const { edi } = generate837P(input);
+        expect(edi).toContain('HI*ABK:Z741*ABF:E119');
+        // The HI segment sits inside the 2300 claim loop, after CLM, before LX.
+        const clmIdx = edi.indexOf('CLM*');
+        const hiIdx = edi.indexOf('HI*ABK:');
+        const lxIdx = edi.indexOf('LX*1');
+        expect(clmIdx).toBeLessThan(hiIdx);
+        expect(hiIdx).toBeLessThan(lxIdx);
+        // Service line carries the diagnosis pointer to diagnosis #1.
+        expect(edi).toContain('SV1*HC:T1019*80.00*UN*4*12**1');
+    });
+    it('omits the HI segment AND the dangling diagnosis pointer when no diagnosis is present', () => {
+        // baseInput() supplies no diagnosisCodes.
+        const { edi } = generate837P(baseInput());
+        expect(edi).not.toContain('HI*ABK:');
+        // No trailing "**1" diagnosis pointer referencing a non-existent diagnosis.
+        expect(edi).toContain('SV1*HC:T1019*80.00*UN*4*12~');
+        expect(edi).not.toContain('SV1*HC:T1019*80.00*UN*4*12**1');
+    });
 });
 //# sourceMappingURL=edi-837p.test.js.map

@@ -235,6 +235,10 @@ router.post('/enroll', requireCapability('staff.write'), async (req: Request, re
     res.status(201).json({ success: true, data: enrollment });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unexpected error';
+    // Caregiver not owned by this agency → 404, without leaking cross-tenant existence.
+    if (/not found/i.test(message)) {
+      return res.status(404).json({ success: false, error: 'Caregiver not found' });
+    }
     res.status(500).json({ success: false, error: message });
   }
 });
@@ -248,7 +252,10 @@ router.post('/start', requireCapability('evv.write'), async (req: Request, res: 
     }
     const db = req.app.get('db') as Knex;
     const repo = new LearningRepository(db);
-    await repo.markInProgress(enrollmentId);
+    const updated = await repo.markInProgress(enrollmentId, req.auth.agencyId);
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Enrollment not found' });
+    }
     res.json({ success: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unexpected error';
@@ -271,17 +278,25 @@ router.post('/complete', requireCapability('evv.write'), async (req: Request, re
     const db = req.app.get('db') as Knex;
     const repo = new LearningRepository(db);
     const caregiverId = req.auth.caregiverId ?? req.auth.userId;
-    const completion = await repo.recordCompletion({
-      enrollmentId,
-      caregiverId,
-      courseId,
-      completedAt: new Date().toISOString(),
-      score: score ?? null,
-      notes: notes ?? null,
-    });
+    const completion = await repo.recordCompletion(
+      {
+        enrollmentId,
+        caregiverId,
+        courseId,
+        completedAt: new Date().toISOString(),
+        score: score ?? null,
+        notes: notes ?? null,
+      },
+      req.auth.agencyId,
+    );
     res.status(201).json({ success: true, data: completion });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unexpected error';
+    // A missing/foreign enrollment or course is a 404, not a server error —
+    // and doesn't disclose whether the id exists in another tenant.
+    if (/not found/i.test(message)) {
+      return res.status(404).json({ success: false, error: 'Enrollment or course not found' });
+    }
     res.status(500).json({ success: false, error: message });
   }
 });

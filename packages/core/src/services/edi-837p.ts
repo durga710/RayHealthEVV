@@ -80,6 +80,17 @@ export interface Edi837Claim {
   subscriber: Edi837Subscriber;
   /** Place-of-service code; defaults to 12 (home). */
   placeOfService?: string;
+  /**
+   * ICD-10-CM diagnosis codes for the claim, principal first. Sent in the
+   * loop-2300 HI segment (ABK for the principal, ABF for each additional).
+   * 005010X222A1 requires at least one diagnosis on a professional claim, and
+   * every service line's diagnosis pointer must reference one of these. When
+   * empty/omitted, NO HI segment is written and NO service-line diagnosis
+   * pointer is emitted — so the file never carries a dangling pointer, though
+   * such a claim will be rejected by the payer for the missing diagnosis until
+   * the agency captures one.
+   */
+  diagnosisCodes?: string[];
   lines: Edi837ServiceLine[];
 }
 
@@ -121,6 +132,15 @@ function rjustNum(value: string, len: number): string {
 /** Strip characters X12 reserves as delimiters from free-text data. */
 function clean(value: string): string {
   return (value ?? '').replace(/[*~:^]/g, ' ').trim();
+}
+
+/**
+ * Normalize an ICD-10-CM code for X12: uppercase, drop the decimal point
+ * (X12 carries the code without it) and strip anything that isn't
+ * alphanumeric. Returns '' for a blank/invalid input so the caller can skip it.
+ */
+function icd10(value: string): string {
+  return (value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
 function seg(...elements: string[]): string {
@@ -248,6 +268,23 @@ export function generate837P(input: Edi837Input): Edi837Result {
       ),
     );
 
+    // 2300 Health Care Diagnosis Code (HI). Required for a professional claim:
+    // the principal diagnosis rides in ABK, each additional in ABF. We only
+    // emit the segment — and the matching service-line diagnosis pointer below —
+    // when at least one valid code is present, so the file never contains a
+    // pointer to a diagnosis that isn't declared.
+    const diagnoses = (claim.diagnosisCodes ?? []).map(icd10).filter(Boolean);
+    if (diagnoses.length > 0) {
+      const hiElements = diagnoses
+        .slice(0, 12) // 005010X222A1 caps the HI diagnosis list at 12
+        .map((code, idx) => `${idx === 0 ? 'ABK' : 'ABF'}${SUBELEMENT}${code}`);
+      tx.push(seg('HI', ...hiElements));
+    }
+    // SV107 composite diagnosis-code pointer — points at the principal
+    // diagnosis (position 1 in the HI segment). Omitted entirely when the claim
+    // has no diagnosis, leaving no dangling reference.
+    const diagnosisPointer = diagnoses.length > 0 ? '1' : '';
+
     // 2400 Service lines
     let lx = 0;
     for (const line of claim.lines) {
@@ -262,7 +299,7 @@ export function generate837P(input: Edi837Input): Edi837Result {
           String(line.units),
           pos,
           '',
-          '1',
+          diagnosisPointer,
         ),
       );
       tx.push(seg('DTP', '472', 'D8', ccyymmdd(line.serviceDate)));

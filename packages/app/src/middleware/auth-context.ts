@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { SessionRepository, type AppRole } from '@rayhealth/core';
+import { MobileSessionRepository, SessionRepository, type AppRole } from '@rayhealth/core';
 import { readCookie, SESSION_COOKIE_NAME } from '../security/cookies.js';
 import { hashOpaqueToken } from '../security/token-hashing.js';
 
@@ -9,6 +9,8 @@ interface JwtPayload {
   agencyId: string;
   role: AppRole;
   caregiverId?: string;
+  /** Standard JWT id — matches a mobile_sessions row so the token is revocable. */
+  jti?: string;
 }
 
 export async function authContext(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -55,12 +57,31 @@ export async function authContext(req: Request, res: Response, next: NextFunctio
     // algorithm the token declares, which enables the classic "alg=none"
     // bypass and the RS256-to-HS256 key-confusion attack.
     const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as JwtPayload;
+
+    // Mobile bearer tokens are revocable: every issued token carries a `jti`
+    // backed by a mobile_sessions row. Reject any token without a jti, or whose
+    // row is missing/revoked/expired, so logout and password-reset actually
+    // terminate the session (a valid signature alone is not sufficient).
+    if (!payload.jti) {
+      res.status(401).json({ message: 'Invalid or expired token' });
+      return;
+    }
+    const mobileSession = await new MobileSessionRepository(req.app.get('db')).findActiveByJti(
+      payload.jti,
+      new Date().toISOString()
+    );
+    if (!mobileSession) {
+      res.status(401).json({ message: 'Invalid or expired token' });
+      return;
+    }
+
     req.auth = {
       agencyId: payload.agencyId,
       role: payload.role,
       userId: payload.sub,
       caregiverId: payload.caregiverId,
-      authMethod: 'bearer'
+      authMethod: 'bearer',
+      tokenJti: payload.jti
     };
     next();
   } catch {

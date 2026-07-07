@@ -84,6 +84,14 @@ export class ScheduleRepository {
     };
   }
 
+  /** True when the client exists and belongs to the given agency. */
+  async clientBelongsToAgency(clientId: string, agencyId: string): Promise<boolean> {
+    const row = await this.db('clients')
+      .where({ id: clientId, agency_id: agencyId })
+      .first('id');
+    return Boolean(row);
+  }
+
   /** Resolve the client a visit template belongs to, scoped to the agency. */
   async getTemplateClient(
     visitTemplateId: string,
@@ -179,11 +187,19 @@ export class ScheduleRepository {
   }
 
   async getAssignmentsByCaregiver(caregiverId: string, agencyId?: string): Promise<any[]> {
+    // A client can have several authorization rows (different service codes,
+    // renewed/overlapping date ranges). The LEFT JOIN to authorizations would
+    // otherwise emit one assignment row per authorization — duplicating each
+    // visit on the caregiver's schedule. DISTINCT ON collapses to a single row
+    // per assignment, picking the authorization with the latest end_date
+    // (matching getAssignmentForCaregiver, which uses .first() over the same
+    // ordering).
     const query = this.db('assignments')
       .join('visit_templates', 'assignments.visit_template_id', 'visit_templates.id')
       .join('clients', 'visit_templates.client_id', 'clients.id')
       .leftJoin('authorizations', 'authorizations.client_id', 'clients.id')
       .where('assignments.caregiver_id', caregiverId)
+      .distinctOn('assignments.id')
       .select(
         'assignments.id',
         'assignments.caregiver_id',
@@ -196,6 +212,9 @@ export class ScheduleRepository {
         'clients.geofence_radius_m',
         'authorizations.service_code'
       )
+      // DISTINCT ON requires the leading ORDER BY column to match the distinct
+      // key; end_date DESC then selects the most recent authorization per row.
+      .orderBy('assignments.id')
       .orderBy('authorizations.end_date', 'desc');
     if (agencyId) query.andWhere('clients.agency_id', agencyId);
     const rows = await query;

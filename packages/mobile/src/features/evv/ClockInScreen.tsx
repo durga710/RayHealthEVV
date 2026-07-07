@@ -378,6 +378,9 @@ export default function ClockInScreen() {
   // view instead of a bare native alert.
   const [completed, setCompleted] = useState<{
     totalElapsed: number; clockInTime: string; clockOutTime: string;
+    // Whether an actual GPS coordinate was captured at clock-out. Drives the
+    // confirmation badge so it never claims "GPS verified" for a zeroed fix.
+    locationCaptured: boolean;
   } | null>(null);
   const completeAnim = useRef(new Animated.Value(0)).current;
 
@@ -523,7 +526,7 @@ export default function ClockInScreen() {
       const clockInTime = visit.clockInTime;
       const clockOutTime = new Date().toISOString();
       setVisit(null);
-      setCompleted({ totalElapsed, clockInTime, clockOutTime });
+      setCompleted({ totalElapsed, clockInTime, clockOutTime, locationCaptured: Boolean(coords) });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       const resp = (err as {
@@ -787,8 +790,16 @@ export default function ClockInScreen() {
           </View>
 
           <View style={styles.doneVerified}>
-            <Ionicons name="shield-checkmark" size={15} color={colors.success} />
-            <Text style={styles.doneVerifiedText}>GPS verified · EVV recorded</Text>
+            <Ionicons
+              name={completed.locationCaptured ? 'shield-checkmark' : 'alert-circle'}
+              size={15}
+              color={completed.locationCaptured ? colors.success : colors.amber}
+            />
+            <Text style={styles.doneVerifiedText}>
+              {completed.locationCaptured
+                ? 'GPS verified · EVV recorded'
+                : 'EVV recorded · location not captured'}
+            </Text>
           </View>
         </Animated.View>
 

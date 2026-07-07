@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { AgencyRepository, AuditEventRepository, CaregiverRepository, PasswordResetRepository, SessionRepository, UserAgencyRepository, UserRepository } from '@rayhealth/core';
+import { AgencyRepository, AuditEventRepository, CaregiverRepository, MobileSessionRepository, PasswordResetRepository, SessionRepository, UserAgencyRepository, UserRepository } from '@rayhealth/core';
 import { authContext } from '../middleware/auth-context.js';
 import { requireCsrf } from '../middleware/csrf.js';
 import { clearSessionCookieOptions, SESSION_COOKIE_NAME, sessionCookieOptions } from '../security/cookies.js';
@@ -248,8 +248,27 @@ async function listMobileAgencies(db, user) {
     }
     return [{ agencyId: user.agencyId, agencyName, role: user.role }];
 }
-function signMobileToken(claims) {
-    return jwt.sign(claims, jwtSecret(), { expiresIn: '8h', algorithm: 'HS256' });
+const MOBILE_TOKEN_TTL_SECONDS = 8 * 60 * 60;
+/**
+ * Issue a revocable mobile bearer token. Each token carries a `jti` backed by a
+ * `mobile_sessions` row, so logout and password-reset can terminate it
+ * server-side — a valid signature alone is no longer sufficient to authenticate
+ * (see authContext). Returns the signed JWT.
+ */
+async function issueMobileToken(db, claims, deviceLabel) {
+    const jti = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + MOBILE_TOKEN_TTL_SECONDS * 1000).toISOString();
+    await new MobileSessionRepository(db).create({
+        userId: claims.sub,
+        tokenJti: jti,
+        deviceLabel,
+        expiresAt,
+    });
+    return jwt.sign(claims, jwtSecret(), {
+        expiresIn: MOBILE_TOKEN_TTL_SECONDS,
+        algorithm: 'HS256',
+        jwtid: jti,
+    });
 }
 router.post('/mobile/login', async (req, res) => {
     const { email, password } = req.body ?? {};
@@ -272,7 +291,15 @@ router.post('/mobile/login', async (req, res) => {
             res.status(403).json({ code: gate.code, message: gate.message });
             return;
         }
-        const token = signMobileToken({
+        // If the user enrolled TOTP 2FA, do not mint a bearer token yet — issue a
+        // short-lived challenge and require the second factor via /mobile/login/2fa.
+        // This mirrors the web /login flow so 2FA is enforced on mobile too.
+        if (user.totpEnabled) {
+            const challengeToken = jwt.sign({ sub: user.id, purpose: '2fa' }, jwtSecret(), { expiresIn: '5m' });
+            res.json({ twoFactorRequired: true, challengeToken });
+            return;
+        }
+        const token = await issueMobileToken(db, {
             sub: user.id,
             agencyId: user.agencyId,
             role: user.role,
@@ -294,6 +321,75 @@ router.post('/mobile/login', async (req, res) => {
         // scoped to the home agency; /mobile/switch-agency swaps it.
         const agencies = await listMobileAgencies(db, user);
         res.json({ token, role: user.role, agencyId: user.agencyId, agencies });
+    }
+    catch {
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+// Second factor for mobile: exchange a challenge token + TOTP/backup code for a
+// revocable bearer token. Mirrors POST /login/2fa but returns a mobile token +
+// agency list instead of a cookie session.
+router.post('/mobile/login/2fa', async (req, res) => {
+    const { challengeToken, code } = req.body ?? {};
+    if (!challengeToken || !code) {
+        res.status(400).json({ message: 'challengeToken and code are required' });
+        return;
+    }
+    try {
+        let userId;
+        try {
+            const payload = jwt.verify(challengeToken, jwtSecret(), { algorithms: ['HS256'] });
+            if (payload.purpose !== '2fa' || !payload.sub)
+                throw new Error('bad challenge');
+            userId = payload.sub;
+        }
+        catch {
+            res.status(401).json({ message: 'Your verification session expired. Please sign in again.' });
+            return;
+        }
+        const db = req.app.get('db');
+        const row = (await db('users').where({ id: userId }).first());
+        if (!row || !row.totp_enabled || !row.totp_secret) {
+            res.status(401).json({ message: 'Two-factor authentication is not available for this account.' });
+            return;
+        }
+        const cleaned = String(code).replace(/\s/g, '');
+        let verified = verifySync({ token: cleaned, secret: row.totp_secret }).valid;
+        // Fall back to single-use backup codes.
+        if (!verified && Array.isArray(row.totp_backup_codes)) {
+            const upper = cleaned.toUpperCase();
+            for (let i = 0; i < row.totp_backup_codes.length; i += 1) {
+                if (await bcrypt.compare(upper, row.totp_backup_codes[i])) {
+                    verified = true;
+                    const remaining = row.totp_backup_codes.filter((_, j) => j !== i);
+                    await db('users').where({ id: row.id }).update({ totp_backup_codes: JSON.stringify(remaining) });
+                    break;
+                }
+            }
+        }
+        if (!verified) {
+            res.status(401).json({ message: 'That code is incorrect or expired.' });
+            return;
+        }
+        const token = await issueMobileToken(db, {
+            sub: row.id,
+            agencyId: row.agency_id,
+            role: row.role,
+            caregiverId: row.caregiver_id ?? undefined,
+        });
+        await recordAuditEvent(db, {
+            agencyId: row.agency_id,
+            actorId: row.id,
+            actorType: 'user',
+            eventType: 'auth.login.success',
+            entityType: 'user',
+            entityId: row.id,
+            outcome: 'success',
+            payload: { authMethod: 'bearer', secondFactor: 'totp' },
+            occurredAt: new Date().toISOString(),
+        });
+        const agencies = await listMobileAgencies(db, { id: row.id, agencyId: row.agency_id, role: row.role });
+        res.json({ token, role: row.role, agencyId: row.agency_id, agencies });
     }
     catch {
         res.status(500).json({ message: 'Internal Server Error' });
@@ -416,7 +512,13 @@ router.post('/bootstrap', async (req, res) => {
             }
             return new UserRepository(trx).create({ agencyId, email, passwordHash, role: 'admin' });
         });
-        const token = jwt.sign({ sub: user.id, agencyId: user.agencyId, role: user.role }, jwtSecret(), { expiresIn: '8h', algorithm: 'HS256' });
+        // Issue a revocable bearer token (jti + mobile_sessions row) so it satisfies
+        // authContext, which now requires every bearer token to be server-revocable.
+        const token = await issueMobileToken(db, {
+            sub: user.id,
+            agencyId: user.agencyId,
+            role: user.role,
+        }, 'bootstrap');
         res.status(201).json({ token, role: user.role, agencyId: user.agencyId });
     }
     catch (err) {
@@ -431,9 +533,11 @@ router.post('/bootstrap', async (req, res) => {
 });
 router.post('/logout', authContext, requireCsrf, async (req, res) => {
     try {
+        const db = req.app.get('db');
+        const nowIso = new Date().toISOString();
         if (req.auth.authMethod === 'session' && req.auth.sessionId) {
-            await new SessionRepository(req.app.get('db')).revokeById(req.auth.sessionId, new Date().toISOString());
-            await recordAuditEvent(req.app.get('db'), {
+            await new SessionRepository(db).revokeById(req.auth.sessionId, nowIso);
+            await recordAuditEvent(db, {
                 agencyId: req.auth.agencyId,
                 actorId: req.auth.userId,
                 actorType: 'user',
@@ -442,7 +546,22 @@ router.post('/logout', authContext, requireCsrf, async (req, res) => {
                 entityId: req.auth.sessionId,
                 outcome: 'success',
                 payload: { authMethod: req.auth.authMethod },
-                occurredAt: new Date().toISOString()
+                occurredAt: nowIso
+            });
+        }
+        else if (req.auth.authMethod === 'bearer' && req.auth.tokenJti) {
+            // Revoke the mobile bearer token server-side so it can't be replayed.
+            await new MobileSessionRepository(db).revokeByJti(req.auth.tokenJti, nowIso);
+            await recordAuditEvent(db, {
+                agencyId: req.auth.agencyId,
+                actorId: req.auth.userId,
+                actorType: 'user',
+                eventType: 'session.revoked',
+                entityType: 'mobile_session',
+                entityId: req.auth.tokenJti,
+                outcome: 'success',
+                payload: { authMethod: req.auth.authMethod },
+                occurredAt: nowIso
             });
         }
         res.clearCookie(SESSION_COOKIE_NAME, clearSessionCookieOptions());
@@ -518,12 +637,15 @@ router.post('/reset-password', async (req, res) => {
         }
         const passwordHash = await bcrypt.hash(password, 12);
         await db.transaction(async (trx) => {
+            const nowIso = new Date().toISOString();
             await trx('users').where('id', resetToken.userId).update({ password_hash: passwordHash });
             await resetRepo.markUsed(resetToken.id);
-            // Revoke all active sessions for security
+            // Revoke all active sessions for security — both web cookie sessions and
+            // mobile bearer tokens, so a reset terminates every active session.
             await trx('sessions').where('user_id', resetToken.userId).whereNull('revoked_at').update({
-                revoked_at: new Date().toISOString(),
+                revoked_at: nowIso,
             });
+            await new MobileSessionRepository(trx).revokeAllForUser(resetToken.userId, nowIso);
         });
         const user = await new UserRepository(db).findById(resetToken.userId);
         if (user) {
@@ -609,12 +731,17 @@ router.post('/mobile/switch-agency', authContext, requireCsrf, async (req, res) 
             res.status(403).json({ code: 'AGENCY_ACCESS_DENIED', message: 'You do not have access to this agency.' });
             return;
         }
-        const token = signMobileToken({
+        const token = await issueMobileToken(db, {
             sub: userId,
             agencyId: membership.agencyId,
             role: membership.role,
             caregiverId: membership.caregiverId,
         });
+        // Invalidate the token being switched away from so only one mobile token is
+        // live per device after a re-scope.
+        if (req.auth.tokenJti) {
+            await new MobileSessionRepository(db).revokeByJti(req.auth.tokenJti, new Date().toISOString());
+        }
         await recordAuditEvent(db, {
             agencyId: membership.agencyId,
             actorId: userId,

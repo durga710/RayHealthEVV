@@ -30,6 +30,8 @@ export declare class ScheduleRepository {
     createTemplate(template: any): Promise<any>;
     getTemplates(agencyId: string): Promise<any[]>;
     createAssignment(assignment: AssignmentInput): Promise<any>;
+    /** True when the client exists and belongs to the given agency. */
+    clientBelongsToAgency(clientId: string, agencyId: string): Promise<boolean>;
     /** Resolve the client a visit template belongs to, scoped to the agency. */
     getTemplateClient(visitTemplateId: string, agencyId: string): Promise<{
         clientId: string;

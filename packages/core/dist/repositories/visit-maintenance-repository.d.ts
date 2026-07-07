@@ -22,8 +22,13 @@ export declare class VisitMaintenanceRepository {
      * Approve (and adjust) an unlock request — only if it belongs to
      * `agencyId`. Returns null for both "not found" and "belongs to another
      * agency" so the route can 404 without leaking cross-tenant existence.
+     *
+     * `approverId` is recorded on the row (approver_id + approved_at) so a
+     * post-finalization billing change is always attributable to the actor who
+     * authorized it — distinct from the requester. This is a non-repudiation
+     * requirement for editing an otherwise immutable evv_visits row.
      */
-    approveUnlock(id: string, agencyId: string, adjustedTimes: {
+    approveUnlock(id: string, agencyId: string, approverId: string, adjustedTimes: {
         start: string;
         end: string;
     }): Promise<VisitMaintenance | null>;

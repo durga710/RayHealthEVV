@@ -51,6 +51,7 @@ describe('evv geofence', () => {
                 status: 'pending'
             });
             vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+                findOpenVisitForAssignment: vi.fn().mockResolvedValue(undefined),
                 createVisit: mockCreateVisit
             }));
             mockAssignmentLookup();
@@ -70,6 +71,7 @@ describe('evv geofence', () => {
         it('rejects clock-in outside the geofence radius with 422 GEOFENCE_OUT_OF_BOUNDS', async () => {
             const mockCreateVisit = vi.fn();
             vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+                findOpenVisitForAssignment: vi.fn().mockResolvedValue(undefined),
                 createVisit: mockCreateVisit
             }));
             mockAssignmentLookup();
@@ -108,6 +110,7 @@ describe('evv geofence', () => {
                 status: 'pending'
             });
             vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+                findOpenVisitForAssignment: vi.fn().mockResolvedValue(undefined),
                 createVisit: mockCreateVisit
             }));
             mockAssignmentLookup();

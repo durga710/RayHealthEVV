@@ -3,10 +3,31 @@ import { requireCapability } from '../middleware/require-capability.js';
 import { ScheduleRepository } from '@rayhealth/core';
 const router = Router();
 router.post('/', requireCapability('schedule.write'), async (req, res) => {
+    const { clientId, name, tasks } = req.body ?? {};
+    if (!clientId || typeof clientId !== 'string') {
+        res.status(400).json({ message: 'clientId is required' });
+        return;
+    }
+    if (typeof name !== 'string' || name.trim() === '') {
+        res.status(400).json({ message: 'name must be a non-empty string' });
+        return;
+    }
+    if (tasks !== undefined && !Array.isArray(tasks)) {
+        res.status(400).json({ message: 'tasks must be an array' });
+        return;
+    }
     try {
         const db = req.app.get('db');
         const repo = new ScheduleRepository(db);
-        const template = await repo.createTemplate(req.body);
+        // Tenant ownership: the template's client must belong to the caller's
+        // agency, otherwise a schedule.write user could attach a template (and its
+        // name/tasks) to another tenant's client. 404 without leaking existence.
+        const owned = await repo.clientBelongsToAgency(clientId, req.auth.agencyId);
+        if (!owned) {
+            res.status(404).json({ message: 'Client not found' });
+            return;
+        }
+        const template = await repo.createTemplate({ clientId, name, tasks: tasks ?? [] });
         res.status(201).json(template);
     }
     catch (error) {

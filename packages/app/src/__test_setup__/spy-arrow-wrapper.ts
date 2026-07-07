@@ -17,6 +17,38 @@
  * `.prototype` property in modern JS engines.
  */
 import { vi } from 'vitest';
+import { MobileSessionRepository } from '@rayhealth/core';
+
+/**
+ * authContext now requires every mobile bearer token to carry a `jti` backed by
+ * an active `mobile_sessions` row. The route-test suite authenticates with
+ * makeToken() and mocks repositories rather than talking to a database, so we
+ * stub findActiveByJti to treat any presented jti as a live, non-revoked
+ * session by default. Tests that exercise revocation (missing/revoked row →
+ * 401) override MobileSessionRepository via vi.spyOn, which supersedes this.
+ */
+MobileSessionRepository.prototype.findActiveByJti = async function stubFindActiveByJti(
+  jti: string,
+) {
+  return {
+    id: 'test-mobile-session',
+    userId: 'test-user',
+    tokenJti: jti,
+    expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+  };
+};
+// Token issuance / revocation are DB writes; stub them as benign no-ops so
+// login, switch-agency, logout and reset-password don't need a live database.
+MobileSessionRepository.prototype.create = async function stubCreate(session: {
+  userId: string;
+  tokenJti: string;
+  expiresAt: string;
+  deviceLabel?: string;
+}) {
+  return { id: 'test-mobile-session', ...session };
+};
+MobileSessionRepository.prototype.revokeByJti = async function stubRevokeByJti() {};
+MobileSessionRepository.prototype.revokeAllForUser = async function stubRevokeAllForUser() {};
 
 const realSpyOn = vi.spyOn.bind(vi);
 (vi as unknown as { spyOn: (...a: unknown[]) => unknown }).spyOn = function patchedSpyOn(

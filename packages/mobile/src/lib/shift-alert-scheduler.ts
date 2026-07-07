@@ -90,7 +90,11 @@ export async function ensureShiftAlertChannel(): Promise<void> {
     sound: 'default',
     enableVibrate: true,
     enableLights: true,
-    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    // PRIVATE, not PUBLIC: the notification body is `${clientName} · ${code}`,
+    // which is PHI (patient identity + that they receive a specific service).
+    // PRIVATE still surfaces the alert on a locked screen but redacts its
+    // content until the device is unlocked, so it isn't disclosed to bystanders.
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
     description: 'Reminders fired 30 seconds before each scheduled shift.'
   });
 }

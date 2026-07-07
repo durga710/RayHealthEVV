@@ -16,6 +16,7 @@ import { z } from 'zod'
 import {
   AgencySandataConfigRepository,
   AuditEventRepository,
+  isSafeOutboundUrl,
   sandataCaregiverMappingSchema,
   sandataServiceMappingSchema,
   type PartialSandataConfig,
@@ -23,6 +24,14 @@ import {
 import { requireCapability } from '../middleware/require-capability.js'
 
 const router = Router()
+
+// Aggregator base URL must be https and must not point at a private, loopback,
+// link-local or localhost target — otherwise a tenant admin could turn a
+// transmission into an SSRF pivot into internal/cloud-metadata infrastructure.
+const safeAggregatorUrl = z
+  .string()
+  .max(255)
+  .refine(isSafeOutboundUrl, { message: 'apiBaseUrl must be an https URL to a public host' })
 
 const sandataConfigUpdateSchema = z.object({
   providerId: z
@@ -34,7 +43,7 @@ const sandataConfigUpdateSchema = z.object({
   caregivers: z.array(sandataCaregiverMappingSchema).optional(),
   services: z.array(sandataServiceMappingSchema).optional(),
   enabled: z.boolean().optional(),
-  apiBaseUrl: z.string().url().max(255).nullable().optional(),
+  apiBaseUrl: safeAggregatorUrl.nullable().optional(),
   // Write-only. undefined = leave unchanged; null = clear; object = encrypt+store.
   credentials: z
     .object({

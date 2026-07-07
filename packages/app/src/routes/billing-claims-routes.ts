@@ -362,6 +362,12 @@ router.get('/claims/:id/837', requireCapability('billing.read'), async (req: Req
         payerId: claim.payerId,
       },
       placeOfService: '12',
+      // ICD-10-CM diagnosis codes, principal first. Sourced from the claim when
+      // present; when the agency hasn't captured a diagnosis the generator emits
+      // no HI segment and no dangling diagnosis pointer (the payer will still
+      // reject for the missing diagnosis, which surfaces the data gap honestly
+      // rather than producing a silently-malformed file).
+      diagnosisCodes: (claim as { diagnosisCodes?: string[] }).diagnosisCodes ?? [],
       lines: claim.lines.map((l) => {
         const rp = renderingProviders.get(l.visitId);
         return {

@@ -15,6 +15,7 @@
  * `submitVisits` returns `not_configured` and sends nothing.
  */
 import { basicAuth, postJson } from './http.js';
+import { assertSafeOutboundUrl } from './url-guard.js';
 /** Maps internal visits to the Sandata API shape, skipping unmapped ones. */
 export function buildSandataApiPayload(config, visits) {
     const workerByCaregiver = new Map(config.caregivers.map((c) => [c.caregiverId, c.externalWorkerId]));
@@ -92,6 +93,16 @@ export async function submitVisits(config, visits) {
         // Nothing mappable to send; surface the skips as the (empty) batch result.
         return { kind: 'ok', batchId: 'noop-empty', acks: skipped };
     }
+    // Defense-in-depth against SSRF: refuse to call a non-https or
+    // private/internal URL even if one was somehow stored. The config route
+    // validates this on write; this guards stored/legacy values too.
+    try {
+        assertSafeOutboundUrl(`${baseUrl}/visits`);
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : 'unsafe URL';
+        return { kind: 'error', message: `Sandata request blocked: ${message}`, retryable: false };
+    }
     let res;
     try {
         res = await postJson(`${baseUrl}/visits`, payload, { headers: authHeaders(creds) });
@@ -102,11 +113,13 @@ export async function submitVisits(config, visits) {
     }
     if (!res.ok) {
         const retryable = res.status >= 500;
-        const detail = typeof res.text === 'string' && res.text ? res.text.slice(0, 300) : `HTTP ${res.status}`;
+        // Do NOT reflect the raw upstream response body back to the caller — with a
+        // caller-influenced base URL that would be a reflected-SSRF read primitive.
+        // Report only the status code; the full body is available server-side.
         if (res.status === 401 || res.status === 403) {
             return { kind: 'error', message: `Sandata authentication failed (HTTP ${res.status})`, retryable: false };
         }
-        return { kind: 'error', message: `Sandata rejected the batch: ${detail}`, retryable };
+        return { kind: 'error', message: `Sandata rejected the batch (HTTP ${res.status})`, retryable };
     }
     const data = (res.body ?? {});
     const batchId = data.batchId ?? `sandata-${payload.providerId}-${payload.visits.length}`;

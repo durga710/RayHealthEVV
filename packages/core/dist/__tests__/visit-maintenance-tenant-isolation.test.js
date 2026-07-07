@@ -89,16 +89,16 @@ describe('VisitMaintenanceRepository tenant isolation', () => {
         if (!isConnected)
             return;
         const created = await repo.requestUnlock({ visitId: visitAId, requesterId: crypto.randomUUID(), reason: 'for approve-unlock test', status: 'pending' }, agencyAId);
-        const crossTenantAttempt = await repo.approveUnlock(created.id, agencyBId, {
-            start: new Date().toISOString(),
-            end: new Date().toISOString()
-        });
+        const approverId = crypto.randomUUID();
+        const start = new Date('2026-06-10T09:00:00.000Z').toISOString();
+        const end = new Date('2026-06-10T13:00:00.000Z').toISOString();
+        const crossTenantAttempt = await repo.approveUnlock(created.id, agencyBId, approverId, { start, end });
         expect(crossTenantAttempt).toBeNull();
-        const sameTenantApproval = await repo.approveUnlock(created.id, agencyAId, {
-            start: new Date().toISOString(),
-            end: new Date().toISOString()
-        });
+        const sameTenantApproval = await repo.approveUnlock(created.id, agencyAId, approverId, { start, end });
         expect(sameTenantApproval?.status).toBe('approved');
+        // Non-repudiation: the approving actor and approval timestamp are recorded.
+        expect(sameTenantApproval?.approverId).toBe(approverId);
+        expect(sameTenantApproval?.approvedAt).toBeTruthy();
     });
 });
 //# sourceMappingURL=visit-maintenance-tenant-isolation.test.js.map

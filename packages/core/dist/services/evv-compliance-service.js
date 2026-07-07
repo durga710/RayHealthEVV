@@ -8,10 +8,16 @@ export class EvvComplianceService {
             missing.push('individual');
         if (!visit.clockInTime)
             missing.push('date');
-        if (!visit.clockInLocation?.lat || !visit.clockInLocation?.lng) {
+        // A location is "missing" only when a coordinate is absent or non-numeric —
+        // NOT when it is falsy. Latitude 0 / longitude 0 are valid coordinates (the
+        // equator / prime meridian); a falsy test would misclassify a genuine fix
+        // there as missing and file a spurious exception.
+        const loc = visit.clockInLocation;
+        const hasCoord = (n) => typeof n === 'number' && Number.isFinite(n);
+        if (!loc || !hasCoord(loc.lat) || !hasCoord(loc.lng)) {
             missing.push('location');
         }
-        else if (visit.clockInLocation.accuracy > 100) {
+        else if (loc.accuracy > 100) {
             warnings.push('Clock-in GPS accuracy exceeds 100m threshold');
         }
         if (!visit.clockInTime || !visit.clockOutTime)

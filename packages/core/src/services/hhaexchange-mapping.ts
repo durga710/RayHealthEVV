@@ -219,8 +219,13 @@ export function toHhaexchangeCsv(rows: readonly HhaexchangeCsvRow[]): string {
 
 function quoteField(value: string): string {
   if (value === '') return ''
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`
+  let s = value
+  // Neutralize spreadsheet formula injection: a leading =, +, -, @, tab or CR
+  // is evaluated as a formula by Excel/Sheets. Prefix with a single quote so
+  // the cell is treated as text. RFC-4180 quoting alone does not prevent this.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
+  if (/[",\n\r]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`
   }
-  return value
+  return s
 }
