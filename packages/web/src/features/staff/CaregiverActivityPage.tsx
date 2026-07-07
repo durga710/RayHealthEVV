@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getJson } from '../../lib/api-client.js';
 import { EmptyState, ErrorRetry, LoadingSkeleton } from '../../components/state/index.js';
+import { Icon } from '../../components/index.js';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 interface Profile {
@@ -180,15 +181,16 @@ export function CaregiverActivityPage() {
                 <span style={{ display: 'inline-block', padding: '0.12em 0.6em', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700, textTransform: 'capitalize', background: profile.status === 'active' ? '#05966918' : '#64748B18', color: profile.status === 'active' ? '#059669' : '#64748B' }}>{profile.status}</span>
               </div>
               <div style={{ color: '#64748B', fontSize: '0.88rem', marginTop: 4, display: 'flex', gap: '1.1rem', flexWrap: 'wrap' }}>
-                <span>✉ {profile.email}</span>
-                {profile.phone ? <span>☎ {profile.phone}</span> : null}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><Icon name="mail" size={15} />{profile.email}</span>
+                {profile.phone ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><Icon name="phone" size={15} />{profile.phone}</span> : null}
                 {profile.hireDate ? <span>Hired {fmtDate(profile.hireDate)}</span> : null}
                 <span>NPI {profile.hasNpi ? 'on file' : 'missing'}</span>
               </div>
             </div>
             {compliance ? (
-              <div style={{ padding: '0.5rem 0.9rem', borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', background: compliance.compliant ? '#05966914' : '#BE123C14', color: compliance.compliant ? '#059669' : '#BE123C' }}>
-                {compliance.compliant ? '✓ Compliant' : '⚠ Action needed'}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', background: compliance.compliant ? '#05966914' : '#BE123C14', color: compliance.compliant ? '#059669' : '#BE123C' }}>
+                <Icon name={compliance.compliant ? 'shield-check' : 'alert-triangle'} size={16} />
+                {compliance.compliant ? 'Compliant' : 'Action needed'}
               </div>
             ) : null}
           </div>
