@@ -1,0 +1,4 @@
+# Shell scripts must keep LF line endings so they run on the Linux CI runners
+# even when checked out on Windows (where autocrlf would otherwise add CRLF and
+# break `bash` parsing).
+*.sh text eol=lf

@@ -70,6 +70,8 @@ jobs:
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
       - run: npm run security:scan
+      - name: No string-built SQL (parameterized-query guard)
+        run: npm run sql:scan
 
   test-core:
     name: test-core
