@@ -77,7 +77,7 @@ export function progressFraction(stepIndex: number, steps: PlayerStep[]): number
 }
 
 /** Quiz questions gate Next until answered; every other step can always advance. */
-export function canAdvance(step: PlayerStep, answers: Array<number | null>): boolean {
+export function canAdvance(step: PlayerStep, answers: (number | null)[]): boolean {
   if (step.kind !== 'quiz-question') return true;
   return answers[step.questionIndex] != null;
 }

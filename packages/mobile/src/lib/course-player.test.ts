@@ -7,6 +7,7 @@ import {
   progressFraction,
   stepMeta,
   type CourseModules,
+  type QuizQuestion,
 } from './course-player';
 
 const fullModules: CourseModules = {
@@ -51,7 +52,7 @@ describe('buildSteps', () => {
   });
 
   it('drops quiz steps entirely for quizless courses (null and empty)', () => {
-    for (const quiz of [null, []] as const) {
+    for (const quiz of [null, [] as QuizQuestion[]]) {
       const kinds = buildSteps({ ...fullModules, quiz }).map((s) => s.kind);
       expect(kinds).not.toContain('quiz-question');
       expect(kinds).not.toContain('quiz-result');

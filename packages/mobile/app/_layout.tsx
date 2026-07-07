@@ -73,8 +73,9 @@ function RootContent() {
 
   // When the session is lost (logout, or a mid-use 401 revoke), reset the whole
   // stack to login. The (tabs) layout already redirects, but screens pushed
-  // OVER the tabs — /clockin, /training, /visit-detail, /profile-details,
-  // /change-password — would otherwise strand the user on a now-unauthorized
+  // OVER the tabs — /clockin, /training, /course-player, /visit-detail,
+  // /profile-details, /change-password — would otherwise strand the user on a
+  // now-unauthorized
   // screen. Fire only on the authenticated→unauthenticated transition.
   const prevAuth = useRef(isAuthenticated);
   useEffect(() => {
@@ -113,6 +114,7 @@ function RootContent() {
         <Stack.Screen name="select-agency" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="clockin" options={{ headerShown: false }} />
         <Stack.Screen name="training" options={{ headerShown: false }} />
+        <Stack.Screen name="course-player" options={{ headerShown: false }} />
         <Stack.Screen name="visit-detail" options={{ headerShown: false }} />
         <Stack.Screen name="profile-details" options={{ headerShown: false }} />
         <Stack.Screen name="change-password" options={{ headerShown: false }} />

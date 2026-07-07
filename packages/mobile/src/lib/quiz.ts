@@ -29,7 +29,7 @@ export interface QuizGrade {
   wrong: WrongAnswer[];
 }
 
-export function gradeQuiz(questions: QuizQuestion[], answers: Array<number | null>): QuizGrade {
+export function gradeQuiz(questions: QuizQuestion[], answers: (number | null)[]): QuizGrade {
   const wrong: WrongAnswer[] = [];
   let correctCount = 0;
   questions.forEach((q, questionIndex) => {
@@ -57,10 +57,10 @@ export function gradeQuiz(questions: QuizQuestion[], answers: Array<number | nul
   };
 }
 
-export function allAnswered(answers: Array<number | null>): boolean {
+export function allAnswered(answers: (number | null)[]): boolean {
   return answers.every((a) => a != null);
 }
 
-export function emptyAnswers(count: number): Array<number | null> {
+export function emptyAnswers(count: number): (number | null)[] {
   return Array.from({ length: count }, () => null);
 }
