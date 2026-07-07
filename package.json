@@ -14,7 +14,7 @@
     "typecheck": "turbo typecheck",
     "security:scan": "tsx scripts/security-surface-scan.ts",
     "sql:scan": "bash scripts/check-no-string-sql.sh",
-    "check": "./scripts/check.sh",
+    "check": "bash scripts/check.sh",
     "db:migrate": "npm run db:migrate --workspace=@rayhealth/core",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
