@@ -5,12 +5,9 @@ node_modules/
 # Build artifacts
 dist/
 **/dist/
-# packages/core/dist and packages/app/dist are still committed because the
-# monorepo's TypeScript resolution consumes core/app at compile time via dist.
-# packages/web/dist is now built by Vercel on every deploy (see vercel.json) —
-# no need to commit web build output.
-!packages/core/dist/
-!packages/app/dist/
+# No dist is committed. Vercel's build now compiles the workspace deps itself
+# (buildCommand runs `turbo build` for @rayhealth/web + @rayhealth/app and
+# their dependencies), so core/app/web dist are all produced at deploy time.
 .turbo/
 **/.turbo/
 *.tsbuildinfo

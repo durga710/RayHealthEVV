@@ -1,1 +1,0 @@
-{"version":3,"file":"require-capability.d.ts","sourceRoot":"","sources":["../../src/middleware/require-capability.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAC/D,OAAO,EAAiB,KAAK,UAAU,EAAE,MAAM,iBAAiB,CAAC;AAEjE,wBAAgB,iBAAiB,CAAC,UAAU,EAAE,UAAU,IAC9C,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,KAAG,IAAI,CAQ/D"}

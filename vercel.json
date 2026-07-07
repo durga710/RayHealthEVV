@@ -1,6 +1,6 @@
 {
   "installCommand": "npm ci",
-  "buildCommand": "npm --workspace @rayhealth/web run build",
+  "buildCommand": "npx turbo build --filter=@rayhealth/web... --filter=@rayhealth/app...",
   "outputDirectory": "packages/web/dist",
   "functions": {
     "api/**/*.js": {

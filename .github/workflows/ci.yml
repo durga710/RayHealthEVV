@@ -107,6 +107,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
+      # app tests import @rayhealth/core via its compiled dist; build the
+      # workspace deps first now that dist is no longer committed.
+      - run: npx turbo build --filter=@rayhealth/app^...
       - run: npx vitest run
         working-directory: packages/app
 
