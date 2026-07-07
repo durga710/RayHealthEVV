@@ -17,6 +17,10 @@ import type {
   NewCourseEnrollment,
   NewLearningCourse,
 } from '../domain/learning.js';
+import type {
+  CaregiverTrainingRecord,
+  TrainingCompletionRecord,
+} from '../services/training-evidence.js';
 
 type InsightContext = 'due' | 'expired' | 'orientation' | 'stalled' | 'cert_expiring';
 
@@ -296,6 +300,61 @@ export class LearningRepository {
     });
 
     return { caregiverId, enrollments: items, isCompliant: allCompliant };
+  }
+
+  /**
+   * Full training history for one caregiver in one agency, for audit
+   * evidence: every enrolled course plus its complete (append-only)
+   * completion log, newest first. Point-in-time evaluation happens in
+   * services/training-evidence.ts.
+   */
+  async getTrainingRecordsForCaregiver(
+    caregiverId: string,
+    agencyId: string,
+  ): Promise<CaregiverTrainingRecord[]> {
+    const rows = await this.db('course_enrollments as e')
+      .join('learning_courses as c', 'c.id', 'e.course_id')
+      .where('e.caregiver_id', caregiverId)
+      .andWhere('e.agency_id', agencyId)
+      .orderBy('c.code')
+      .select(
+        'c.id as course_id',
+        'c.code',
+        'c.title',
+        'c.required',
+        'c.cadence',
+        'c.expires_after_days',
+        'e.due_at',
+      );
+    if (rows.length === 0) return [];
+
+    const completionRows = await this.db('course_completions')
+      .where('caregiver_id', caregiverId)
+      .whereIn('course_id', rows.map((r: Record<string, unknown>) => String(r.course_id)))
+      .orderBy('completed_at', 'desc')
+      .select('course_id', 'completed_at', 'score');
+
+    const byCourse = new Map<string, TrainingCompletionRecord[]>();
+    for (const c of completionRows as Record<string, unknown>[]) {
+      const key = String(c.course_id);
+      const list = byCourse.get(key) ?? [];
+      list.push({
+        completedAt: new Date(c.completed_at as string).toISOString(),
+        score: c.score == null ? null : Number(c.score),
+      });
+      byCourse.set(key, list);
+    }
+
+    return (rows as Record<string, unknown>[]).map((r) => ({
+      courseId: String(r.course_id),
+      code: String(r.code),
+      title: String(r.title),
+      required: Boolean(r.required),
+      cadence: String(r.cadence),
+      expiresAfterDays: r.expires_after_days == null ? null : Number(r.expires_after_days),
+      dueAt: r.due_at == null ? null : new Date(r.due_at as string).toISOString(),
+      completions: byCourse.get(String(r.course_id)) ?? [],
+    }));
   }
 
   async getCourseAnalytics(agencyId: string, now = new Date()): Promise<CourseAnalyticsEnvelope> {

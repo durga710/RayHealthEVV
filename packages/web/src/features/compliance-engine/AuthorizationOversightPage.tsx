@@ -203,10 +203,10 @@ export function AuthorizationOversightPage() {
         },
       ]
     : [
-        { label: 'Active authorizations', value: ', ' },
-        { label: 'Expiring 14d', value: ', ', tone: 'warning' },
-        { label: 'Expiring 30d', value: ', ' },
-        { label: 'Recently expired', value: ', ', tone: 'warning' },
+        { label: 'Active authorizations', value: '-' },
+        { label: 'Expiring 14d', value: '-', tone: 'warning' },
+        { label: 'Expiring 30d', value: '-' },
+        { label: 'Recently expired', value: '-', tone: 'warning' },
       ];
 
   return (

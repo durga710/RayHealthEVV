@@ -181,8 +181,8 @@ export function AuditDefensePage() {
     : [
         { label: 'Retention floor', value: '7 years', hint: 'PA: longest in U.S.' },
         { label: 'DHS response SLA', value: '48h' },
-        { label: 'Audit events (range)', value: ', ' },
-        { label: 'VMUR corrections (range)', value: ', ' },
+        { label: 'Audit events (range)', value: '-' },
+        { label: 'VMUR corrections (range)', value: '-' },
       ];
 
   return (

@@ -269,7 +269,7 @@ export function RemittancePage() {
                   <td>{usd(r.chargeCents)}</td>
                   <td>{usd(r.paidCents)}</td>
                   <td>{usd(r.adjustmentCents)}</td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{r.traceNumber ?? ', '}</td>
+                  <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{r.traceNumber ?? '-'}</td>
                 </tr>
               ))}
             </tbody>

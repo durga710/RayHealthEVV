@@ -139,10 +139,10 @@ export function PayrollReconciliationPage() {
         },
       ]
     : [
-        { label: 'Verified hours (7d)', value: ', ' },
-        { label: 'Verified hours (30d)', value: ', ' },
-        { label: 'Completed visits (7d)', value: ', ' },
-        { label: 'In-progress shifts', value: ', ', tone: 'accent' },
+        { label: 'Verified hours (7d)', value: '-' },
+        { label: 'Verified hours (30d)', value: '-' },
+        { label: 'Completed visits (7d)', value: '-' },
+        { label: 'In-progress shifts', value: '-', tone: 'accent' },
       ];
 
   return (

@@ -30,6 +30,7 @@ export * from './services/credential-compliance-service.js';
 export * from './services/assignment-eligibility-service.js';
 export * from './services/schedule-conflict-service.js';
 export * from './services/evv-compliance-service.js';
+export * from './services/training-evidence.js';
 export * from './services/evv-exception-service.js';
 export * from './services/claim-generation-service.js';
 export * from './services/edi-837p.js';

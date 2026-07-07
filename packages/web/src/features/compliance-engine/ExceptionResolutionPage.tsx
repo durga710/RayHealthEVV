@@ -253,10 +253,10 @@ export function ExceptionResolutionPage() {
         },
       ]
     : [
-        { label: 'Open exceptions', value: ', ', tone: 'warning' },
-        { label: 'Late clock-ins (open)', value: ', ', hint: '15-min grace' },
-        { label: 'Missing location (open)', value: ', ' },
-        { label: 'VMUR pending', value: ', ', tone: 'accent', hint: '7-day correction window' },
+        { label: 'Open exceptions', value: '-', tone: 'warning' },
+        { label: 'Late clock-ins (open)', value: '-', hint: '15-min grace' },
+        { label: 'Missing location (open)', value: '-' },
+        { label: 'VMUR pending', value: '-', tone: 'accent', hint: '7-day correction window' },
       ];
 
   const totalOpenByType =

@@ -53,7 +53,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return ', ';
+  if (!iso) return '-';
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 

@@ -256,9 +256,9 @@ export function ClaimMatchingPage() {
         { label: 'Claims generated', value: claims.length.toLocaleString(), tone: 'accent', hint: 'this agency' },
       ]
     : [
-        { label: 'Claim-ready (7d)', value: ', ', tone: 'success' },
-        { label: 'Claim-ready (30d)', value: ', ' },
-        { label: 'Flagged (7d)', value: ', ', tone: 'warning' },
+        { label: 'Claim-ready (7d)', value: '-', tone: 'success' },
+        { label: 'Claim-ready (30d)', value: '-' },
+        { label: 'Flagged (7d)', value: '-', tone: 'warning' },
         { label: 'Claims generated', value: claims.length.toLocaleString(), tone: 'accent' },
       ];
 
@@ -358,7 +358,7 @@ export function ClaimMatchingPage() {
                       <td style={{ padding: '0.5rem 0.6rem', fontWeight: 700, color: 'var(--color-text)' }}>{b.clientName}</td>
                       <td style={{ padding: '0.5rem 0.6rem', color: 'var(--color-text-muted)' }}>{b.caregiverName}</td>
                       <td style={{ padding: '0.5rem 0.6rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-                        {b.clockInTime ? new Date(b.clockInTime).toLocaleDateString() : ', '}
+                        {b.clockInTime ? new Date(b.clockInTime).toLocaleDateString() : '-'}
                       </td>
                       <td style={{ padding: '0.5rem 0.6rem' }}>
                         <Link to={m.to} style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'none' }}>

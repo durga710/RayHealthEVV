@@ -87,6 +87,21 @@ interface AuditPacketResponse {
     occurredAt: string;
     payloadSha256: string;
   }>;
+  training: {
+    evaluatedAt: string;
+    compliantAtVisit: boolean;
+    records: Array<{
+      courseId: string;
+      code: string;
+      title: string;
+      required: boolean;
+      cadence: string;
+      coveredAtVisit: boolean;
+      completedAt: string | null;
+      expiresAt: string | null;
+      score: number | null;
+    }>;
+  };
   aggregator: {
     sandataStatus: string | null;
     sandataConfirmationId: string | null;
@@ -128,13 +143,13 @@ const OUTCOME_TONE: Record<'success' | 'failure' | 'denied', 'success' | 'danger
 };
 
 function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return ', ';
+  if (!iso) return '-';
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
 }
 
 function shortId(id: string | null | undefined): string {
-  return id ? `${id.slice(0, 8)}…` : ', ';
+  return id ? `${id.slice(0, 8)}…` : '-';
 }
 
 /** Small label/value grid used for the visit summary and packet metadata. Uses only CSS-variable colors, no inline hex, per the design-system token rule. */
@@ -179,9 +194,9 @@ function GeofenceCard({ label, facts }: { label: string; facts: GeofenceFacts })
       <KeyValueGrid
         items={[
           { label: 'Captured', value: facts.captured ? 'Yes' : 'No' },
-          { label: 'GPS accuracy', value: facts.accuracyM != null ? `${facts.accuracyM} m` : ', ' },
-          { label: 'Distance from client', value: facts.distanceM != null ? `${facts.distanceM} m` : ', ' },
-          { label: 'Allowed radius', value: facts.allowedM != null ? `${facts.allowedM} m` : ', ' }
+          { label: 'GPS accuracy', value: facts.accuracyM != null ? `${facts.accuracyM} m` : '-' },
+          { label: 'Distance from client', value: facts.distanceM != null ? `${facts.distanceM} m` : '-' },
+          { label: 'Allowed radius', value: facts.allowedM != null ? `${facts.allowedM} m` : '-' }
         ]}
       />
     </div>
@@ -337,14 +352,14 @@ export function AuditPacketPage() {
                   {' · '}
                   Client{' '}
                   <strong style={{ color: 'var(--color-text)' }}>
-                    {data.client.name ?? (data.client.id ? shortId(data.client.id) : ', ')}
+                    {data.client.name ?? (data.client.id ? shortId(data.client.id) : '-')}
                   </strong>
                 </span>
               </div>
               <KeyValueGrid
                 items={[
-                  { label: 'Service code', value: data.visit.serviceCode ?? ', ' },
-                  { label: 'Service description', value: data.visit.serviceDescription ?? ', ' },
+                  { label: 'Service code', value: data.visit.serviceCode ?? '-' },
+                  { label: 'Service description', value: data.visit.serviceDescription ?? '-' },
                   { label: 'Scheduled start', value: formatDateTime(data.visit.scheduledStartTime) },
                   { label: 'Scheduled end', value: formatDateTime(data.visit.scheduledEndTime) },
                   { label: 'Clock-in', value: formatDateTime(data.visit.clockInTime) },
@@ -403,8 +418,8 @@ export function AuditPacketPage() {
                 },
                 { key: 'requester', header: 'Requester', render: (r) => r.requesterName ?? shortId(r.requesterId) },
                 { key: 'reason', header: 'Reason', render: (r) => r.reason },
-                { key: 'category', header: 'Category', render: (r) => r.reasonCategoryCode ?? ', ' },
-                { key: 'correction', header: 'Correction', render: (r) => r.correctionCode ?? ', ' },
+                { key: 'category', header: 'Category', render: (r) => r.reasonCategoryCode ?? '-' },
+                { key: 'correction', header: 'Correction', render: (r) => r.correctionCode ?? '-' },
                 { key: 'approver', header: 'Approver', render: (r) => r.approverName ?? shortId(r.approverId) },
                 { key: 'approvedAt', header: 'Approved at', render: (r) => formatDateTime(r.approvedAt) },
                 { key: 'adjustedStart', header: 'Adjusted start', render: (r) => formatDateTime(r.adjustedStartTime) },
@@ -416,6 +431,54 @@ export function AuditPacketPage() {
             />
           </SectionCard>
 
+          <SectionCard title="Training at time of visit">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <StatusPill
+                  label={data.training.compliantAtVisit ? 'Required training current at visit' : 'Required training gap at visit'}
+                  tone={data.training.compliantAtVisit ? 'success' : 'danger'}
+                  dot
+                />
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                  Evaluated against clock-in {formatDateTime(data.training.evaluatedAt)} from the append-only completion log.
+                </span>
+              </div>
+              <DataTable
+                columns={[
+                  { key: 'course', header: 'Course', render: (r) => `${r.title} (${r.code})` },
+                  {
+                    key: 'required',
+                    header: 'Required',
+                    render: (r) => (r.required ? 'Required' : 'Optional')
+                  },
+                  {
+                    key: 'covered',
+                    header: 'Status at visit',
+                    render: (r) => (
+                      <StatusPill
+                        label={r.coveredAtVisit ? 'Current' : 'Not covered'}
+                        tone={r.coveredAtVisit ? 'success' : r.required ? 'danger' : 'neutral'}
+                      />
+                    )
+                  },
+                  { key: 'completedAt', header: 'Completed', render: (r) => formatDateTime(r.completedAt) },
+                  { key: 'score', header: 'Score', render: (r) => (r.score == null ? '-' : `${r.score}%`) },
+                  {
+                    key: 'expiresAt',
+                    header: 'Valid until',
+                    render: (r) => (r.completedAt && r.expiresAt == null ? 'No expiry' : formatDateTime(r.expiresAt))
+                  }
+                ]}
+                rows={data.training.records}
+                getRowKey={(r) => r.courseId}
+                empty={{
+                  title: 'No training on record',
+                  body: 'This caregiver has no course enrollments in this agency.'
+                }}
+              />
+            </div>
+          </SectionCard>
+
           <SectionCard title="Audit-event chain">
             <Timeline items={auditTimelineItems} emptyLabel="No audit events recorded for this visit." />
           </SectionCard>
@@ -425,9 +488,9 @@ export function AuditPacketPage() {
               <KeyValueGrid
                 items={[
                   { label: 'Sandata status', value: data.aggregator.sandataStatus ?? 'Not submitted' },
-                  { label: 'Sandata confirmation', value: data.aggregator.sandataConfirmationId ?? ', ' },
+                  { label: 'Sandata confirmation', value: data.aggregator.sandataConfirmationId ?? '-' },
                   { label: 'HHAeXchange status', value: data.aggregator.hhaexchangeStatus ?? 'Not submitted' },
-                  { label: 'HHAeXchange confirmation', value: data.aggregator.hhaexchangeConfirmationId ?? ', ' }
+                  { label: 'HHAeXchange confirmation', value: data.aggregator.hhaexchangeConfirmationId ?? '-' }
                 ]}
               />
             </div>

@@ -77,7 +77,7 @@ function greeting(): string {
   return 'Good evening';
 }
 function timeAgo(iso: string | null): string {
-  if (!iso) return ', ';
+  if (!iso) return '-';
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return `${s}s ago`;
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
@@ -192,7 +192,7 @@ function ActivityItem({ ev }: { ev: ActivityRow }) {
       <span style={{ width: 7, height: 7, borderRadius: 99, background: eventTone(ev.eventType), marginTop: 6, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '0.82rem', fontWeight: 600, color: C.ink, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{ev.eventType}</div>
-        <div style={{ color: C.ink2, fontSize: '0.74rem', marginTop: 1 }}>{ev.agencyName ?? ', '} · {ev.actorType} · {ev.outcome}</div>
+        <div style={{ color: C.ink2, fontSize: '0.74rem', marginTop: 1 }}>{ev.agencyName ?? '-'} · {ev.actorType} · {ev.outcome}</div>
       </div>
       <span style={{ color: C.ink3, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{timeAgo(ev.occurredAt)}</span>
     </div>
@@ -451,13 +451,13 @@ export function SuperAdminPage() {
         {loadErr && <div role="alert" style={{ color: C.red, background: C.redSoft, border: `1px solid ${C.red}22`, borderRadius: 10, padding: '0.7rem 1rem', marginBottom: '1rem' }}>{loadErr}</div>}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(208px, 1fr))', gap: '0.85rem', marginBottom: '1.6rem' }}>
-          <Kpi label="Agencies" icon="agencies" value={String(stats?.agencies.total ?? ', ')} sub={`${stats?.agencies.approved ?? 0} active · ${stats?.agencies.pending ?? 0} pending`} subTone={(stats?.agencies.pending ?? 0) > 0 ? C.amber : undefined} />
-          <Kpi label="Users" icon="users" value={String(stats?.users.total ?? ', ')} sub={`${stats?.users.suspended ?? 0} suspended`} subTone={(stats?.users.suspended ?? 0) > 0 ? C.red : undefined} />
-          <Kpi label="Clients" icon="client" value={String(stats?.clients ?? ', ')} sub="across all agencies" />
-          <Kpi label="Caregivers" icon="caregiver" value={String(stats?.caregivers.total ?? ', ')} sub={`${stats?.caregivers.active ?? 0} active`} />
-          <Kpi label="Visits today" icon="visit" value={String(stats?.visits.today ?? ', ')} sub={`${stats?.visits.last7d ?? 0} this week · ${stats?.visits.total ?? 0} all-time`} />
-          <Kpi label="Open exceptions" icon="alert" value={String(stats?.exceptions.open ?? ', ')} sub="awaiting resolution" subTone={(stats?.exceptions.open ?? 0) > 0 ? C.amber : C.green} />
-          <Kpi label="Claims" icon="claim" value={String(stats?.claims.total ?? ', ')} sub={`${money(stats?.claims.chargedCents ?? 0)} billed`} />
+          <Kpi label="Agencies" icon="agencies" value={String(stats?.agencies.total ?? '-')} sub={`${stats?.agencies.approved ?? 0} active · ${stats?.agencies.pending ?? 0} pending`} subTone={(stats?.agencies.pending ?? 0) > 0 ? C.amber : undefined} />
+          <Kpi label="Users" icon="users" value={String(stats?.users.total ?? '-')} sub={`${stats?.users.suspended ?? 0} suspended`} subTone={(stats?.users.suspended ?? 0) > 0 ? C.red : undefined} />
+          <Kpi label="Clients" icon="client" value={String(stats?.clients ?? '-')} sub="across all agencies" />
+          <Kpi label="Caregivers" icon="caregiver" value={String(stats?.caregivers.total ?? '-')} sub={`${stats?.caregivers.active ?? 0} active`} />
+          <Kpi label="Visits today" icon="visit" value={String(stats?.visits.today ?? '-')} sub={`${stats?.visits.last7d ?? 0} this week · ${stats?.visits.total ?? 0} all-time`} />
+          <Kpi label="Open exceptions" icon="alert" value={String(stats?.exceptions.open ?? '-')} sub="awaiting resolution" subTone={(stats?.exceptions.open ?? 0) > 0 ? C.amber : C.green} />
+          <Kpi label="Claims" icon="claim" value={String(stats?.claims.total ?? '-')} sub={`${money(stats?.claims.chargedCents ?? 0)} billed`} />
           <Kpi label="Collected" icon="money" value={money(stats?.claims.paidCents ?? 0)} sub="remittances posted" subTone={C.green} />
         </div>
 

@@ -243,7 +243,7 @@ export function SettingsPage() {
                 <div style={{ fontSize: '0.8125rem', color: '#0F172A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {s.userAgent ?? 'Unknown device'} {s.current && <span style={{ color: '#15803D', fontWeight: 700 }}>· This device</span>}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{s.ipAddress ?? ', '} · expires {new Date(s.expiresAt).toLocaleDateString()}</div>
+                <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{s.ipAddress ?? '-'} · expires {new Date(s.expiresAt).toLocaleDateString()}</div>
               </div>
               {!s.current && <button type="button" style={btnGhost} onClick={() => void revokeSession(s.id)}>Revoke</button>}
             </div>

@@ -6,11 +6,13 @@ import {
   ClientRepository,
   EvvExceptionRepository,
   EvvRepository,
+  LearningRepository,
   ScheduleRepository,
   VisitMaintenanceRepository,
   checkGeofence,
   haversineMeters,
   curesActEvvDataPoints,
+  evaluateTrainingAtTime,
   paServiceCodeDescriptions,
   evvVisitIdSchema,
   type CuresActDataPoint,
@@ -149,8 +151,9 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
     const exceptionRepo = new EvvExceptionRepository(db);
     const maintenanceRepo = new VisitMaintenanceRepository(db);
     const auditRepo = new AuditEventRepository(db);
+    const learningRepo = new LearningRepository(db);
 
-    const [caregiver, client, clientGeofenceAnchor, schedule, exceptions, corrections, visitEvents, clockOutEvents, clockInEvents] =
+    const [caregiver, client, clientGeofenceAnchor, schedule, exceptions, corrections, visitEvents, clockOutEvents, clockInEvents, trainingRecords] =
       await Promise.all([
         caregiverRepo.findById(visit.caregiverId, agencyId),
         visit.clientId ? clientRepo.getClientNameForAgency(visit.clientId, agencyId) : Promise.resolve(undefined),
@@ -162,7 +165,8 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
         // the unscoped AuditEventRepository.findByEntity.
         auditRepo.findByEntityForAgency(agencyId, 'evv.visit', visitId),
         auditRepo.findByEntityForAgency(agencyId, 'evv.clock-out', visitId),
-        auditRepo.findByEntityForAgency(agencyId, 'evv.clock-in', visit.assignmentId)
+        auditRepo.findByEntityForAgency(agencyId, 'evv.clock-in', visit.assignmentId),
+        learningRepo.getTrainingRecordsForCaregiver(visit.caregiverId, agencyId)
       ]);
 
     // ---- visit ------------------------------------------------------------
@@ -241,6 +245,27 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
         payloadSha256: sha256OfCanonicalJson(e.payload ?? {})
       }));
 
+    // ---- training evidence at time of visit ---------------------------------
+    // Evaluated against the visit clock-in from the append-only completion
+    // log: "was the caregiver trained and current when care was provided?"
+    // Workforce data (course titles, dates, scores), no client PHI.
+    const trainingEvidence = evaluateTrainingAtTime(trainingRecords, visit.clockInTime);
+    const trainingPayload = {
+      evaluatedAt: visit.clockInTime,
+      compliantAtVisit: trainingEvidence.compliantAtTime,
+      records: trainingEvidence.records.map((r) => ({
+        courseId: r.courseId,
+        code: r.code,
+        title: r.title,
+        required: r.required,
+        cadence: r.cadence,
+        coveredAtVisit: r.coveredAtTime,
+        completedAt: r.coveringCompletedAt,
+        expiresAt: r.coveringExpiresAt,
+        score: r.score
+      }))
+    };
+
     // ---- aggregator submission status ---------------------------------------
     const aggregatorPayload = {
       sandataStatus: visit.sandataStatus ?? null,
@@ -266,6 +291,7 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
       exceptions: exceptionsPayload,
       corrections: correctionsPayload,
       auditEvents: auditEventsPayload,
+      training: trainingPayload,
       aggregator: aggregatorPayload
     };
 
@@ -288,7 +314,8 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
         counts: {
           exceptions: exceptionsPayload.length,
           corrections: correctionsPayload.length,
-          auditEvents: auditEventsPayload.length
+          auditEvents: auditEventsPayload.length,
+          trainingRecords: trainingPayload.records.length
         }
       },
       occurredAt: packetMeta.generatedAt
