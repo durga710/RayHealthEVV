@@ -12,6 +12,10 @@ const LOCAL_REACT = path.resolve(projectRoot, 'node_modules/react');
 // for the web platform only (iOS/Android keep the real package).
 const MAPS_WEB_SHIM = path.resolve(projectRoot, 'src/shims/react-native-maps.web.tsx');
 
+// react-native-webview is native-only for the same reason; the course player's
+// inline video needs it on iOS/Android, web gets a placeholder shim.
+const WEBVIEW_WEB_SHIM = path.resolve(projectRoot, 'src/shims/react-native-webview.web.tsx');
+
 const config = getDefaultConfig(projectRoot);
 
 config.watchFolders = [monorepoRoot];
@@ -37,6 +41,9 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   }
   if (moduleName === 'react-native-maps' && platform === 'web') {
     return { filePath: MAPS_WEB_SHIM, type: 'sourceFile' };
+  }
+  if (moduleName === 'react-native-webview' && platform === 'web') {
+    return { filePath: WEBVIEW_WEB_SHIM, type: 'sourceFile' };
   }
   if (defaultResolveRequest) {
     return defaultResolveRequest(context, moduleName, platform);
