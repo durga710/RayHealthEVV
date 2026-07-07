@@ -362,14 +362,27 @@ export default function CoursePlayerScreen() {
       case 'steps':
         return (
           <View key={key} style={styles.stepList}>
-            {block.items.map((item, i) => (
-              <View key={i} style={styles.stepRow}>
-                <View style={styles.stepBadge}>
-                  <Text style={styles.stepBadgeText}>{i + 1}</Text>
+            {block.items.map((item, i) => {
+              // Bold a short "Label:" lead inside a step ("Physical Abuse: hitting…").
+              const labelled = item.match(/^([A-Z][^.:]{0,40}):\s(.+)$/s);
+              return (
+                <View key={i} style={styles.stepRow}>
+                  <View style={styles.stepBadge}>
+                    <Text style={styles.stepBadgeText}>{i + 1}</Text>
+                  </View>
+                  <Text style={[styles.stepText, readingBody]}>
+                    {labelled ? (
+                      <>
+                        <Text style={styles.stepLabel}>{labelled[1]}: </Text>
+                        {labelled[2]}
+                      </>
+                    ) : (
+                      item
+                    )}
+                  </Text>
                 </View>
-                <Text style={[styles.stepText, readingBody]}>{item}</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         );
       case 'bullets':
@@ -399,6 +412,38 @@ export default function CoursePlayerScreen() {
                 <Text style={[styles.readingText, readingBody]}>{item.text}</Text>
               </View>
             ))}
+          </View>
+        );
+      case 'callout':
+        return (
+          <View key={key} style={styles.calloutCard}>
+            <View style={styles.calloutHeader}>
+              <Ionicons name="arrow-forward-circle" size={20} color={colors.brandBlue} />
+              <Text style={[styles.calloutTitle, { fontSize: readingBody.fontSize - 1 }]}>
+                {block.title}
+              </Text>
+            </View>
+            {block.text ? (
+              <Text style={[styles.readingText, readingBody]}>{block.text}</Text>
+            ) : null}
+            {block.items.map((item, i) => (
+              <View key={i} style={styles.stepRow}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={20}
+                  color={colors.brandBlue}
+                  style={styles.bulletIcon}
+                />
+                <Text style={[styles.stepText, readingBody]}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        );
+      case 'keypoint':
+        return (
+          <View key={key} style={styles.keypointCard}>
+            <Ionicons name="alert-circle" size={22} color={colors.amberDark} style={styles.bulletIcon} />
+            <Text style={[styles.keypointText, readingBody]}>{block.text}</Text>
           </View>
         );
     }
@@ -782,7 +827,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     padding: space.xl,
     marginBottom: space.md,
-    gap: space.md,
+    gap: space.lg,
     ...shadow.card,
   },
   overviewTitle: { ...typography.title, color: colors.textPrimary },
@@ -820,6 +865,28 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   termLabel: { color: colors.brandBlue, fontWeight: '900', letterSpacing: 0.2 },
+  stepLabel: { fontWeight: '900', color: colors.navy },
+  calloutCard: {
+    backgroundColor: colors.pressedBg,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: radii.md,
+    padding: space.lg,
+    gap: space.md,
+  },
+  calloutHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  calloutTitle: { flex: 1, color: colors.brandBlue, fontWeight: '900', lineHeight: 22 },
+  keypointCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.sm,
+    backgroundColor: colors.amberBg,
+    borderWidth: 1,
+    borderColor: colors.amberBorder,
+    borderRadius: radii.md,
+    padding: space.lg,
+  },
+  keypointText: { flex: 1, color: colors.amberDark, fontWeight: '700' },
 
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.md },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
