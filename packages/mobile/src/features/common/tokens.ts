@@ -71,6 +71,10 @@ export const colors = {
  *   sub       — secondary line under a heading
  *   label     — uppercase section labels / form labels
  *   caption   — smallest metadata (pills, hints, timestamps)
+ *   readingHeading / readingBody — long-form lesson text in the course player,
+ *               sized up for older readers; the player scales these bases with
+ *               its text-size presets (src/lib/text-size.ts), which also derive
+ *               the 1.5× line height.
  */
 export const typography = {
   hero: { fontSize: 27, fontWeight: '900', letterSpacing: -0.4 },
@@ -80,6 +84,8 @@ export const typography = {
   sub: { fontSize: 13, fontWeight: '500' },
   label: { fontSize: 11, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
   caption: { fontSize: 11, fontWeight: '600' },
+  readingHeading: { fontSize: 20, fontWeight: '800' },
+  readingBody: { fontSize: 18, fontWeight: '500' },
 } as const;
 
 /** 4-pt spacing scale. Compose layouts from these steps only. */

@@ -10,8 +10,10 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
+import type { CourseModules } from '../../lib/course-player';
+import { showCertificateAlert } from './certificate';
 import ScreenHeader from '../common/ScreenHeader';
 import ErrorRetry from '../common/ErrorRetry';
 import EmptyState from '../common/EmptyState';
@@ -29,6 +31,7 @@ interface Course {
   required: boolean;
   durationMinutes: number;
   externalUrl: string | null;
+  modules: CourseModules | null;
 }
 
 interface Enrollment {
@@ -65,6 +68,7 @@ function formatDue(iso: string | null): string | null {
 }
 
 export default function TrainingScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState<ProgressData | null>(null);
@@ -96,6 +100,15 @@ export default function TrainingScreen() {
   }, [load]);
 
   const handleStart = async (row: EnrollmentRow) => {
+    // In-app course content opens the guided player, which marks the
+    // enrollment in-progress itself.
+    if (row.course.modules) {
+      router.push({
+        pathname: '/course-player',
+        params: { courseId: row.course.id, enrollmentId: row.enrollment.id },
+      });
+      return;
+    }
     setBusyId(row.enrollment.id);
     try {
       await apiClient.post('/api/learning/start', { enrollmentId: row.enrollment.id });
@@ -115,23 +128,7 @@ export default function TrainingScreen() {
   const handleCertificate = async (row: EnrollmentRow) => {
     setBusyId(row.enrollment.id);
     try {
-      const res = await apiClient.get<{
-        success: boolean;
-        data: { courseTitle: string; completedAt: string; expiresAt: string | null; verificationCode: string };
-      }>(`/api/learning/certificate/${row.course.id}`);
-      const c = res.data.data;
-      const completed = new Date(c.completedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-      const expires = c.expiresAt
-        ? new Date(c.expiresAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
-        : 'No expiry';
-      showAppAlert(
-        c.courseTitle,
-        `Completed ${completed}\nExpires: ${expires}\nVerification code: ${c.verificationCode}`,
-        undefined,
-        { variant: 'success', icon: 'ribbon' },
-      );
-    } catch {
-      showAppAlert('No certificate yet', 'Finish the course to unlock your certificate here.', undefined, { variant: 'info' });
+      await showCertificateAlert(row.course.id);
     } finally {
       setBusyId(null);
     }
