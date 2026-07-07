@@ -286,12 +286,23 @@ html{scroll-behavior:smooth;}
 .rh-theater-tab:focus-visible{outline:none; box-shadow:var(--shadow-focus);}
 .rh-theater-panels{max-width:var(--maxw); margin:20px auto 0; padding:0 24px;}
 .rh-theater-panel{min-height:340px;}
-.rh-theater-inner{padding:.35rem;}
+/* each panel swaps a different component in, so it mounts fresh — crossfade it
+   up so switching tabs feels responsive instead of a hard cut */
+.rh-theater-inner{padding:.35rem; animation:rh-panelin .42s cubic-bezier(.2,.7,.2,1);}
+@keyframes rh-panelin{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:none;}}
+/* gentle "live" breathe on the status dots inside the product mockups so the
+   command center reads as actively monitoring, not a screenshot */
+.rh-spotvis .status-dot,.rh-theater-inner .status-dot{animation:rh-livedot 2.6s ease-in-out infinite;}
+@keyframes rh-livedot{0%,100%{opacity:1;}50%{opacity:.5;}}
 .rh-theater-clockin{display:grid; grid-template-columns:220px 1fr; gap:1.5rem; align-items:center;}
 .rh-theater-map{height:200px; border-radius:12px; background:linear-gradient(135deg, var(--accent-tint), var(--accent2-tint)); position:relative; overflow:hidden; border:1px solid var(--line);}
 .rh-theater-map::before{content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(10,40,30,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(10,40,30,.05) 1px,transparent 1px); background-size:22px 22px;}
 .rh-theater-map .zone{position:absolute; left:50%; top:50%; width:96px; height:96px; border-radius:50%; transform:translate(-50%,-50%); border:2px dashed var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent);}
-.rh-theater-map .pin{position:absolute; left:50%; top:50%; width:14px; height:14px; border-radius:50%; background:var(--accent); border:3px solid white; transform:translate(-50%,-50%); box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent);}
+.rh-theater-map .pin{position:absolute; left:50%; top:50%; width:14px; height:14px; border-radius:50%; background:var(--accent); border:3px solid white; transform:translate(-50%,-50%); box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent); z-index:2;}
+/* live GPS radar ping — a ring that continuously sweeps out from the pin, so
+   the geofence reads as an active location check rather than a static mockup */
+.rh-theater-map .pin::after{content:""; position:absolute; left:50%; top:50%; width:14px; height:14px; border-radius:50%; border:2px solid var(--accent); transform:translate(-50%,-50%); animation:rh-radar 2.8s cubic-bezier(.2,.6,.3,1) infinite;}
+@keyframes rh-radar{0%{width:14px; height:14px; opacity:.65;}70%{opacity:0;}100%{width:150px; height:150px; opacity:0;}}
 .rh-theater-clockin-copy p{color:var(--body-c); font-size:.9375rem; line-height:1.6;}
 .rh-theater-clockin-copy h4{margin-top:.6rem; font-size:1.0625rem;}
 .rh-theater-clockin-actions{margin-top:1rem; display:flex; gap:.6rem; flex-wrap:wrap;}
@@ -435,7 +446,7 @@ html{scroll-behavior:smooth;}
 /* reveal */
 .rh-rv{opacity:0; transform:translateY(16px); transition:opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1);}
 .rh-rv.in{opacity:1; transform:none;}
-@media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} .rh-rv{opacity:1; transform:none; transition:none;} .rh-btn,.rh-rolecard,.rh-price,.rh-evvi{transition:none;} .rh-eyebrow .pip,.rh-hero-bloom,.rh-herotext > *,.rh-heromedia{animation:none;} }
+@media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} .rh-rv{opacity:1; transform:none; transition:none;} .rh-btn,.rh-rolecard,.rh-price,.rh-evvi{transition:none;} .rh-eyebrow .pip,.rh-hero-bloom,.rh-herotext > *,.rh-heromedia,.rh-theater-map .pin::after,.rh-theater-inner,.rh-spotvis .status-dot,.rh-theater-inner .status-dot{animation:none;} }
 `,
     }}
     />
