@@ -15,6 +15,7 @@ import { Router, type Request, type Response } from 'express'
 import type { Knex } from 'knex'
 import { hasCapability, runAuditRetentionSweep, PA_RETENTION_YEARS } from '@rayhealth/core'
 import { requireCapability } from '../middleware/require-capability.js'
+import { assertCronAuthorized } from '../middleware/cron-auth.js'
 
 const router = Router()
 
@@ -90,23 +91,10 @@ router.get(
 
 // ---------- Sweep trigger ----------
 
-function assertCronAuthorized(req: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return false
-  const header = req.headers.authorization ?? ''
-  if (!header.startsWith('Bearer ')) return false
-  const token = header.slice('Bearer '.length).trim()
-  // Constant-time compare not strictly required here (secret is per-deployment),
-  // but harmless and avoids a class of timing-attack false positives.
-  if (token.length !== secret.length) return false
-  let diff = 0
-  for (let i = 0; i < token.length; i++) {
-    diff |= token.charCodeAt(i) ^ secret.charCodeAt(i)
-  }
-  return diff === 0
-}
-
-router.post('/sweep', async (req: Request, res: Response) => {
+// GET and POST share one handler: Vercel Cron invokes scheduled paths with
+// GET (plus Bearer CRON_SECRET), while a human admin triggers a manual run
+// with POST from a privileged session.
+const sweepHandler = async (req: Request, res: Response): Promise<void> => {
   const cronAuthorized = assertCronAuthorized(req)
   // `auth` is attached by auth-context middleware; in the cron path the
   // middleware may not have populated it (no session/bearer), which is fine , 
@@ -137,6 +125,8 @@ router.post('/sweep', async (req: Request, res: Response) => {
     process.stderr.write(`audit-retention sweep failed: ${message}\n`)
     res.status(500).json({ ok: false, error: message })
   }
-})
+}
+router.get('/sweep', sweepHandler)
+router.post('/sweep', sweepHandler)
 
 export default router

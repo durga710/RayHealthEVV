@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { MobileSessionRepository, SessionRepository, type AppRole } from '@rayhealth/core';
 import { readCookie, SESSION_COOKIE_NAME } from '../security/cookies.js';
 import { hashOpaqueToken } from '../security/token-hashing.js';
+import { assertCronAuthorized } from './cron-auth.js';
 
 interface JwtPayload {
   sub: string;
@@ -14,6 +15,17 @@ interface JwtPayload {
 }
 
 export async function authContext(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Vercel Cron invokes scheduled endpoints with GET and the deployment
+  // shared secret (Bearer CRON_SECRET) instead of a session. Pass through
+  // with NO req.auth: every cron-capable route re-verifies the secret
+  // itself, capability-gated routes fail closed without req.auth, and the
+  // pass-through is restricted to safe methods so no mutating request ever
+  // proceeds without an auth context.
+  if ((req.method === 'GET' || req.method === 'HEAD') && assertCronAuthorized(req)) {
+    next();
+    return;
+  }
+
   const sessionToken = readCookie(req, SESSION_COOKIE_NAME);
   if (sessionToken) {
     try {

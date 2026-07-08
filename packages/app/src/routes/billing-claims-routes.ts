@@ -20,23 +20,30 @@ import express from 'express';
 import { z } from 'zod';
 import type { Knex } from 'knex';
 import {
+  AgencyClearinghouseConfigRepository,
   AgencyRepository,
   AuditEventRepository,
   ClaimRepository,
+  ClearinghouseRemittanceFileRepository,
   buildPayrollExport,
   canTransitionClaim,
   claimStatuses,
-  generate837P,
   generateClaims,
+  hasCapability,
   parse835,
   paServiceCodeDescriptions,
   type AuthorizationContext,
   type BilledLineUnits,
   type Claim,
   type ClaimStatus,
-  type Edi837Claim,
 } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
+import { assertCronAuthorized } from '../middleware/cron-auth.js';
+import {
+  build837ForClaim,
+  buildTransportForAgency,
+  runRemittanceSweep,
+} from '../services/clearinghouse-service.js';
 import { safeError } from '../security/safe-log.js';
 
 const router = Router();
@@ -314,93 +321,19 @@ router.get('/claims/:id/837', requireCapability('billing.read'), async (req: Req
       return;
     }
 
-    const [profile, clientInfo, renderingProviders] = await Promise.all([
-      repo.getAgencyBillingProfile(req.auth.agencyId),
-      repo.getClientBillingInfo(req.auth.agencyId, [claim.clientId]),
-      repo.getVisitRenderingProviders(claim.lines.map((l) => l.visitId)),
-    ]);
-    if (!profile) {
+    const built = await build837ForClaim(db, req.auth.agencyId, claim);
+    if (built.kind === 'no_profile') {
       res.status(404).json({ message: 'Agency billing profile not found' });
       return;
     }
-
-    // A clearinghouse / PA Medicaid rejects an 837 with an empty billing
-    // provider. Refuse to emit a structurally-invalid file; tell the admin
-    // exactly which Billing & Clearinghouse fields to complete first.
-    const requiredProfile: Array<[keyof typeof profile, string]> = [
-      ['npi', 'Billing NPI'],
-      ['taxId', 'Tax ID (EIN)'],
-      ['address1', 'Service address'],
-      ['city', 'City'],
-      ['state', 'State'],
-      ['postalCode', 'ZIP code'],
-    ];
-    const missing = requiredProfile
-      .filter(([key]) => !String(profile[key] ?? '').trim())
-      .map(([, label]) => label);
-    if (missing.length > 0) {
+    if (built.kind === 'profile_incomplete') {
       res.status(422).json({
-        message: `Agency billing profile is incomplete, set ${missing.join(', ')} under Settings → Billing & Clearinghouse before generating an 837.`,
+        message: `Agency billing profile is incomplete, set ${built.missing.join(', ')} under Settings → Billing & Clearinghouse before generating an 837.`,
         code: 'BILLING_PROFILE_INCOMPLETE',
-        missing,
+        missing: built.missing,
       });
       return;
     }
-
-    const client = clientInfo.get(claim.clientId);
-    const submitterId = profile.clearinghouseId || profile.medicaidProviderNumber || 'RAYHEALTH';
-
-    const edi837Claim: Edi837Claim = {
-      controlNumber: claim.controlNumber ?? (claim.id as string).slice(0, 12),
-      subscriber: {
-        firstName: client?.firstName ?? '',
-        lastName: client?.lastName ?? '',
-        memberId: client?.medicaidNumber ?? '',
-        dateOfBirth: client?.dateOfBirth,
-        gender: 'U',
-        payerName: claim.payerId,
-        payerId: claim.payerId,
-      },
-      placeOfService: '12',
-      // ICD-10-CM diagnosis codes, principal first. Sourced from the claim when
-      // present; when the agency hasn't captured a diagnosis the generator emits
-      // no HI segment and no dangling diagnosis pointer (the payer will still
-      // reject for the missing diagnosis, which surfaces the data gap honestly
-      // rather than producing a silently-malformed file).
-      diagnosisCodes: (claim as { diagnosisCodes?: string[] }).diagnosisCodes ?? [],
-      lines: claim.lines.map((l) => {
-        const rp = renderingProviders.get(l.visitId);
-        return {
-          serviceCode: l.serviceCode,
-          chargeCents: l.chargeCents,
-          units: l.units,
-          serviceDate: l.serviceDate,
-          renderingProviderNpi: rp?.npi || undefined,
-          renderingProviderLastName: rp?.lastName,
-          renderingProviderFirstName: rp?.firstName,
-        };
-      }),
-    };
-
-    const result = generate837P({
-      submitter: { name: profile.name, id: submitterId, contactPhone: '' },
-      receiver: { name: claim.payerId, id: profile.clearinghouseId || claim.payerId },
-      billingProvider: {
-        organizationName: profile.name,
-        npi: profile.npi,
-        taxId: profile.taxId,
-        address1: profile.address1,
-        city: profile.city,
-        state: profile.state,
-        postalCode: profile.postalCode,
-        taxonomyCode: profile.taxonomyCode,
-      },
-      claims: [edi837Claim],
-      control: {
-        usageIndicator: 'T',
-        interchangeControlNumber: claim.controlNumber?.replace(/\D/g, '').slice(0, 9) || '1',
-      },
-    });
 
     // 837 contains member ids + names + DOB → a PHI export.
     await audit(db, req, 'phi.export', claim.id as string, {
@@ -414,8 +347,86 @@ router.get('/claims/:id/837', requireCapability('billing.read'), async (req: Req
       'Content-Disposition',
       `attachment; filename="claim-${claim.controlNumber ?? claim.id}.837.txt"`,
     );
-    res.send(result.edi);
+    res.send(built.edi);
   } catch {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /billing/claims/:id/submit, automated clearinghouse transmission
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/claims/:id/submit', requireCapability('billing.write'), async (req: Request, res: Response) => {
+  try {
+    const db = req.app.get('db') as Knex;
+    const repo = new ClaimRepository(db);
+    const claim = await repo.getClaim(req.auth.agencyId, String(req.params.id));
+    if (!claim) {
+      res.status(404).json({ message: 'Claim not found' });
+      return;
+    }
+
+    // Only ready claims may transmit. A rejected or denied claim goes back
+    // through /validate to ready first, keeping one gatekeeper for risk checks.
+    if (!canTransitionClaim(claim.status, 'submitted')) {
+      res.status(422).json({ message: `Cannot submit a claim in "${claim.status}" status` });
+      return;
+    }
+
+    const built = await build837ForClaim(db, req.auth.agencyId, claim);
+    if (built.kind === 'no_profile') {
+      res.status(404).json({ message: 'Agency billing profile not found' });
+      return;
+    }
+    if (built.kind === 'profile_incomplete') {
+      res.status(422).json({
+        message: `Agency billing profile is incomplete, set ${built.missing.join(', ')} under Settings → Billing & Clearinghouse before submitting.`,
+        code: 'BILLING_PROFILE_INCOMPLETE',
+        missing: built.missing,
+      });
+      return;
+    }
+
+    const transportResult = await buildTransportForAgency(db, req.auth.agencyId);
+    if (transportResult.kind === 'not_configured') {
+      res.status(409).json({ code: 'CLEARINGHOUSE_NOT_CONFIGURED', message: transportResult.reason });
+      return;
+    }
+
+    const sent = await transportResult.transport.submit(built.edi, { controlNumber: built.controlNumber });
+    if (sent.kind === 'error') {
+      await audit(db, req, 'claim.submitted', claim.id as string, {
+        automated: true,
+        transport: transportResult.transportName,
+        outcome: 'failure',
+        retryable: sent.retryable,
+      });
+      res.status(502).json({ message: sent.message, retryable: sent.retryable });
+      return;
+    }
+
+    const updated = await repo.updateStatus(req.auth.agencyId, claim.id as string, {
+      status: 'submitted',
+      submittedAt: new Date().toISOString(),
+      transportReference: sent.reference,
+    });
+
+    await audit(db, req, 'claim.submitted', claim.id as string, {
+      automated: true,
+      transport: transportResult.transportName,
+      reference: sent.reference,
+    });
+    // An automated transmission is a PHI disclosure, exactly like the download.
+    await audit(db, req, 'phi.export', claim.id as string, {
+      artifact: '837P',
+      destination: transportResult.transportName,
+      claimControlNumber: built.controlNumber,
+      lineCount: claim.lines.length,
+    });
+
+    res.json({ ...toClaimDetailResponse(updated as Claim), reference: sent.reference });
+  } catch (err) {
+    safeError('claim submit failed', err);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
@@ -482,6 +493,7 @@ function toClaimDetailResponse(claim: Claim): Record<string, unknown> {
     ...toClaimResponse(claim),
     payerClaimId: claim.payerClaimId,
     statusReason: claim.statusReason,
+    transportReference: claim.transportReference ?? null,
     submittedAt: claim.submittedAt,
     lines: claim.lines.map((l) => ({
       id: l.id,
@@ -615,5 +627,52 @@ router.post(
     }
   },
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET|POST /billing/remittances/sweep, automated 835 retrieval
+//
+// Vercel Cron invokes the path with GET and `Authorization: Bearer
+// <CRON_SECRET>`; the web UI's "Fetch now" button POSTs with a privileged
+// session. The cron path sweeps every enabled agency; a human sweeps only
+// their own. Time-boxed to stay well inside the serverless duration cap.
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleRemittanceSweep(req: Request, res: Response): Promise<void> {
+  const cronAuthorized = assertCronAuthorized(req);
+  const human = req.auth ? hasCapability(req.auth.role, 'billing.write') : false;
+  if (!cronAuthorized && !human) {
+    res.status(401).json({ error: 'unauthorized' });
+    return;
+  }
+
+  try {
+    const db = req.app.get('db') as Knex;
+    const agencyIds = cronAuthorized
+      ? await new AgencyClearinghouseConfigRepository(db).listEnabledAgencyIds()
+      : [req.auth.agencyId];
+    const summary = await runRemittanceSweep(db, {
+      agencyIds,
+      maxFilesPerAgency: 5,
+      deadlineMs: Date.now() + 20_000,
+    });
+    res.json(summary);
+  } catch (err) {
+    safeError('remittance sweep failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+}
+router.get('/remittances/sweep', handleRemittanceSweep);
+router.post('/remittances/sweep', handleRemittanceSweep);
+
+/** GET /billing/remittances/files, ledger of automatically ingested 835 files. */
+router.get('/remittances/files', requireCapability('billing.read'), async (req: Request, res: Response) => {
+  try {
+    const db = req.app.get('db') as Knex;
+    const files = await new ClearinghouseRemittanceFileRepository(db).list(req.auth.agencyId);
+    res.json(files);
+  } catch (err) {
+    safeError('list remittance files failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
 export default router;
