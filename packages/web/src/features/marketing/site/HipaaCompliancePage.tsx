@@ -139,7 +139,7 @@ const safeguards: readonly SafeguardGroup[] = [
       {
         control: 'Accounting of disclosures',
         implementation:
-          'Every read of PHI fields (`phi.read`, `phi.export`) is logged with actor, entity, timestamp, and purpose-of-use when supplied. Customers can produce an accounting per § 164.528 directly from the audit trail.'
+          'PHI-bearing operational reads and exports covered by the audit middleware are logged as `phi.read` or `phi.export` with actor, entity, timestamp, and purpose-of-use when supplied. Customers can produce accounting evidence per § 164.528 from the audit trail.'
       }
     ]
   }

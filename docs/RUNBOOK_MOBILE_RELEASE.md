@@ -1,5 +1,7 @@
 # RayHealth Mobile — EAS Build & Release Runbook
 
+**Authored by Durga Ghimeray**
+
 Steps to take the `@rayhealth/mobile` Expo app from local source to App Store
 and Google Play. None of these can be done from the coding agent — they
 require upstream developer-account credentials.
@@ -20,35 +22,62 @@ require upstream developer-account credentials.
 ```bash
 cd packages/mobile
 npx eas login
-npx eas init   # creates project on EAS, writes projectId into app.json
+npx eas init   # only if the Expo project has not already been linked
 ```
 
-Choose **Managed** workflow (no native code yet).
+Choose **Managed** workflow (no native code yet). If `app.json` already has
+an EAS project ID, skip initialization and verify the project is linked to
+the correct Expo account instead.
 
 ## 2. Configure EAS profiles
 
-Create `packages/mobile/eas.json`:
+`packages/mobile/eas.json` is already committed. Before a production build,
+replace placeholder Apple/Google submit values with real account-specific
+values outside git when needed:
 
 ```json
 {
-  "cli": { "version": ">= 12.0.0" },
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": { "simulator": true },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://localhost:3000"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "ios": { "simulator": true }
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://rayhealthevv.com"
+      }
     },
     "production": {
       "autoIncrement": true,
+      "channel": "production",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://rayhealthevv.com"
       }
     }
   },
-  "submit": { "production": {} }
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "FILL_IN_APPLE_ID",
+        "ascAppId": "FILL_IN_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "FILL_IN_APPLE_TEAM_ID"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal"
+      }
+    }
+  }
 }
 ```
 
@@ -58,8 +87,8 @@ Create `packages/mobile/eas.json`:
 EXPO_PUBLIC_API_URL=https://rayhealthevv.com npx expo start --tunnel
 ```
 
-Open the dev client on a phone, log in as the admin from `RUNBOOK_DEPLOY.md`.
-Test clock-in, clock-out, dashboard. Confirm:
+Open the dev client on a phone, log in as a synthetic caregiver fixture.
+Test clock-in, clock-out, and dashboard using synthetic visit data. Confirm:
 - JWT carries `jti` (decode at jwt.io)
 - `mobile_sessions` table gets a row (check Neon)
 - `/auth/mobile/logout` revokes — second request with same JWT returns 401

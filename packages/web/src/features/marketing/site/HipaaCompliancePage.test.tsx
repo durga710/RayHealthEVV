@@ -61,6 +61,13 @@ describe('HipaaCompliancePage', () => {
     expect(screen.getByRole('cell', { name: /Accounting of disclosures/i })).toBeInTheDocument();
   });
 
+  it('bounds audit-read wording to covered PHI operational reads and exports', () => {
+    const { container } = renderPage();
+    const text = container.textContent ?? '';
+    expect(text).toMatch(/PHI-bearing operational reads and exports covered by the audit middleware/i);
+    expect(text).not.toMatch(/Every read of PHI fields/i);
+  });
+
   it('publishes BAA, breach notification, and pending third-party attestation', () => {
     renderPage();
     expect(

@@ -1,0 +1,49 @@
+name: production-smoke
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    name: production health probes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RAYHEALTH_PROD_ORIGIN: ${{ vars.RAYHEALTH_PROD_ORIGIN }}
+    steps:
+      - name: Probe liveness, database, and audit health
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          origin="${RAYHEALTH_PROD_ORIGIN:-https://rayhealthevv.com}"
+          origin="${origin%/}"
+
+          probe() {
+            local name="$1"
+            local path="$2"
+            local out="$3"
+            echo "Probing ${name}: ${origin}${path}"
+            curl --fail --silent --show-error --max-time 10 \
+              --header 'accept: application/json' \
+              "${origin}${path}" \
+              --output "${out}"
+          }
+
+          probe "liveness" "/api/health" "health.json"
+          node -e "const fs=require('node:fs'); const body=JSON.parse(fs.readFileSync('health.json','utf8')); if (body.status !== 'ok') { console.error(body); process.exit(1); }"
+
+          probe "database" "/api/health/db" "health-db.json"
+          node -e "const fs=require('node:fs'); const body=JSON.parse(fs.readFileSync('health-db.json','utf8')); if (body.status !== 'ok') { console.error(body); process.exit(1); }"
+
+          probe "audit" "/api/health/audit" "health-audit.json"
+          node -e "const fs=require('node:fs'); const body=JSON.parse(fs.readFileSync('health-audit.json','utf8')); const allowed=new Set(['ok','stale','empty']); if (!allowed.has(body.status)) { console.error(body); process.exit(1); } if (body.status !== 'ok') { console.log('::warning::Audit health is ' + body.status + '. Review whether production traffic has been quiet or audit ingestion is stale.'); }"

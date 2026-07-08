@@ -1,5 +1,7 @@
 # Security policy
 
+**Authored by Durga Ghimeray**
+
 RayHealth EVV processes data on behalf of home-care agencies, including identifiers that — once real-agency onboarding begins — qualify as Protected Health Information (PHI) under HIPAA. We take security disclosures seriously and respond to every reported issue.
 
 ## Reporting a vulnerability
@@ -45,7 +47,7 @@ We will keep you informed at each step and coordinate on a public disclosure tim
 
 - The hosted application at https://rayhealthevv.com and any subdomains
 - The API surface (every route under `/api`, including unauthenticated routes like `/api/invites/accept/:token`)
-- The mobile Capacitor app shipped to the App Store / Play Store
+- The Expo / React Native caregiver app in `packages/mobile`
 - Source code in this repository
 - Build, CI, and deploy pipelines defined in `.github/workflows/`
 - Database migrations and the audit-trail integrity model
@@ -66,7 +68,7 @@ We track the security controls expected of a HIPAA Business Associate, even ahea
 - **Audit immutability** — `audit_events` is append-only at the database level via the `audit_events_block_mutation_trg` trigger. Retention sweep bypasses this trigger inside a single transaction with `SET LOCAL session_replication_role = 'replica'` and is itself audited in `audit_retention_runs`.
 - **Encryption in transit** — TLS enforced end-to-end; `sslmode=require` on Neon connections; HTTPS on the application surface.
 - **Encryption at rest** — provided by Neon (Postgres) and Vercel (filesystem); CMEK migration tracked in `docs/compliance/hipaa/RISK_ANALYSIS_2026.md`.
-- **Authentication** — bcrypt cost-12 password hashes, HttpOnly cookie sessions with CSRF for web, JWT bearer with iOS Keychain / Android Keystore for mobile, no auth in browser `localStorage` (`scripts/security-surface-scan.ts` enforces this as a regression gate).
+- **Authentication** — bcrypt cost-12 password hashes, HttpOnly cookie sessions with CSRF for web, JWT bearer with Expo SecureStore for mobile, no auth in browser `localStorage` (`scripts/security-surface-scan.ts` enforces this as a regression gate).
 - **Rate limiting** — login endpoints capped at 10/15 min, public invite-acceptance capped at 20/15 min.
 - **Least privilege** — capability-based RBAC, every authenticated route gates on a specific capability.
 - **Input validation** — Zod schemas validate every untrusted boundary; database access is parameterized.

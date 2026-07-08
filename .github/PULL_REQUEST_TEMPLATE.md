@@ -9,7 +9,7 @@
 - [ ] Backend API routes
 - [ ] Database migration
 - [ ] Web admin UI
-- [ ] Mobile Capacitor app
+- [ ] Mobile Expo / React Native app
 - [ ] AI Copilot prompts / executor
 - [ ] EVV aggregator export pipeline (Sandata or HHAeXchange)
 - [ ] Audit / compliance / HIPAA posture

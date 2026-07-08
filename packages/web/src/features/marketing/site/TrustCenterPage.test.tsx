@@ -48,6 +48,12 @@ describe('TrustCenterPage', () => {
     expect(screen.getByText(/Admin-assistant transcript text is not retained/i)).toBeInTheDocument();
   });
 
+  it('does not overstate who can edit the audit log', () => {
+    renderPage();
+    expect(screen.getByText(/the application cannot edit the log/i)).toBeInTheDocument();
+    expect(screen.queryByText(/the log cannot be edited, even by us/i)).not.toBeInTheDocument();
+  });
+
   it('mirrors PrivacyPage subprocessor BAA posture (Neon and AWS active, others in progress)', () => {
     renderPage();
     expect(screen.getByRole('cell', { name: /Neon/i })).toBeInTheDocument();

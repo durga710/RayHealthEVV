@@ -63,7 +63,7 @@ const securityControls: readonly SecurityControl[] = [
   {
     icon: 'file-text',
     label: 'Append-only audit log',
-    detail: 'Every state change is written to an audit table a Postgres trigger refuses to UPDATE or DELETE, the log cannot be edited, even by us.',
+    detail: 'Every state change is written to an audit table a Postgres trigger refuses to UPDATE or DELETE, so the application cannot edit the log.',
     tone: 'primary',
   },
   {
