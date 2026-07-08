@@ -37,7 +37,7 @@ should be described as complete.
 | Application-layer field encryption — caregiver NPI | Same `cell-cipher.ts` mechanism | `caregiver-repository.ts` paths exercise `encryptCell` / `decryptCell` on `caregivers.npi` | **Verified in code** |
 | Bedrock AI transport | AWS SDK over TLS | `@aws-sdk/client-bedrock-runtime` in `packages/app/src/routes/{support-routes,admin-assistant-routes}.ts`; AWS endpoints are TLS-1.2+ by default | **Verified in code path** |
 | Bedrock at-rest protection | AWS-managed service encryption | AWS platform behavior; documented at <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html> | **Vendor-asserted** |
-| Postgres at rest | Neon-managed storage encryption | Neon vendor docs; project `late-art-87716813` | **Vendor-asserted** |
+| Postgres at rest | Neon-managed storage encryption under executed BAA / HIPAA mode | Project `late-art-87716813`; Neon BAA active; HIPAA mode enabled with pgAudit audit logging and encryption at rest | **Vendor-asserted under active BAA** |
 | Vercel-hosted compute secrets | Encrypted env-var storage (vars marked `type: encrypted`) | confirmed via `GET /v9/projects/{id}/env` API on 2026-05-08; `JWT_SECRET`, `ENCRYPTION_KEY`, `AWS_*` all `type: encrypted` | **Verified in runtime** |
 | Cloudflare edge TLS | TLS 1.2+ termination at Cloudflare, re-encrypted to Vercel origin | Cloudflare Universal SSL on `rayhealthevv.com`; `cf-ray` header present in responses | **Vendor-asserted** |
 | Firebase data at rest | Google-managed encryption | Google platform behavior | **Vendor-asserted** |
@@ -79,7 +79,8 @@ Verified by code path:
 
 This means a database snapshot exfiltration would expose ciphertext
 only for these columns. The other PHI columns rely on Neon-managed
-storage encryption (vendor-asserted, not application-encrypted).
+storage encryption under the active Neon BAA / HIPAA-mode posture
+(vendor-asserted, not application-encrypted).
 
 ### 3.3 Mobile Token Storage — Expo SecureStore
 
@@ -120,21 +121,17 @@ non-BAA vendor** in code; if Bedrock fails, the endpoint returns 502 with
 "Could not reach the model" rather than silently routing to OpenAI or
 similar.
 
-The previous default model `us.anthropic.claude-3-5-haiku-20241022-v1:0`
-was retired by AWS as legacy on 2026-05-08; the model swap to Haiku 4.5
-is committed at `e7b0b05`.
+The previous Claude 3.5 Haiku default was retired by AWS as legacy on
+2026-05-08; the model swap to Haiku 4.5 is committed at `e7b0b05`.
 
 ---
 
 ## 4. Required Follow-Up Work
 
-### High Priority
-
-- Document Neon's encryption-at-rest evidence (vendor white paper or BAA
-  schedule) and link it from §2
-
 ### Medium Priority
 
+- Maintain Neon BAA / HIPAA-mode evidence in the private compliance vault
+  and re-verify it during each annual evaluation
 - Add the `audit_revisions` (before/after diff) table that the predecessor
   had — currently only the event row is captured in `audit_events`,
   not the column-level diff for mutating operations
@@ -164,7 +161,7 @@ Until the gaps above are closed, use this language honestly:
   `expo-secure-store`"
 - ❌ Do **not** say "all PHI fields are application-encrypted" — only
   Medicaid IDs and NPIs are; the rest rely on Neon-managed storage
-  encryption (vendor-asserted)
+  encryption under the active Neon BAA / HIPAA-mode posture
 - ❌ Do **not** say "the mobile app encrypts cached visits" — it
   doesn't cache visits at all yet, so the question is moot but easy to
   misread
@@ -179,3 +176,4 @@ Until the gaps above are closed, use this language honestly:
 | 2026-05-08 | Founder + assistant | Ported into `rayhealth-evv-clean`; promoted field-level encryption from "Gap" to "Verified" (cell-cipher.ts AES-256-GCM is shipped); reclassified mobile token storage as Gap (Capacitor Preferences ≠ Keychain); added clarification distinguishing the customer Capacitor app from the internal Expo project; pinned current Bedrock model and BAA status |
 | 2026-05-09 | Founder + assistant | **Mobile token storage gap closed.** Swapped `@capacitor/preferences` → `@aparajita/capacitor-secure-storage` (iOS Keychain / Android Keystore-backed EncryptedSharedPreferences). Promoted §2 row from Gap → Verified. Also rolled into this entry: backend EVV geofence enforcement landed on /evv/clock-in + clock-out (Haversine distance check vs `clients.latitude/longitude` within `geofence_radius_m`, default 150m, fail-open for clients without registered coords; out-of-bounds attempts written as `permission.denied` audit rows). New `GET /mobile/caregiver/today` returns scheduled assignments + client GPS so the mobile dashboard can render real patient names + countdowns. Mobile signature 30-second pre-warning live (`@capacitor/haptics` Heavy impact + `@capacitor/local-notifications` scheduled at `scheduled_*_time - 30s`). Mobile AI assistant rerouted from non-BAA Gemini fallback → BAA-covered Bedrock via `/api/admin-assistant/chat`. |
 | 2026-07-07 | Founder + assistant | Corrected the mobile source of truth to the current `packages/mobile` Expo / React Native app, replaced obsolete Capacitor token-storage references with `expo-secure-store` evidence, and removed the already-closed Capacitor secure-storage follow-up. |
+| 2026-07-07 | Founder + assistant | Updated Postgres at-rest posture to reflect the active Neon BAA and HIPAA mode, while preserving the distinction between application-layer encryption and vendor-managed storage encryption. |

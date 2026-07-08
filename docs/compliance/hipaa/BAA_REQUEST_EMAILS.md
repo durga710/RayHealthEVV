@@ -1,15 +1,17 @@
 # HIPAA Business Associate Agreement (BAA) Request Emails
 
+**Authored by Durga Ghimeray**
+
 **Purpose:** Each vendor below processes electronic Protected Health
 Information (ePHI) on RayHealth EVV's behalf. Under HIPAA §164.308(b)(1),
 every such "business associate" must sign a written BAA before live PHI
 flows through their systems. This document holds drafted request emails —
 copy, fill in your title/contact info, send.
 
-**Tracking checklist (status as of 2026-05-09):**
+**Tracking checklist (status as of 2026-07-07):**
 
 - [ ] Vercel — sent / received / signed
-- [ ] Neon — sent / received / signed
+- [x] **Neon — Active; executed BAA and HIPAA mode enabled** (verified 2026-07-07)
 - [ ] Google (Firebase / Cloud) — sent / received / signed
 - [ ] Resend — sent / received / signed
 - [x] **AWS — Active in AWS Artifact** (verified 2026-05-08)
@@ -72,40 +74,24 @@ quote basis. Turn-around is usually 3–7 business days.
 
 ## 2. Neon
 
-**Recipient:** `support@neon.tech`
-**Cc:** `compliance@neon.tech` (if it exists; otherwise just support)
-**Subject:** BAA request — RayHealth EVV (production Postgres on Neon)
+**Status: ACTIVE.** The Neon Business Associate Agreement is executed,
+and project `late-art-87716813` runs in Neon's HIPAA mode with pgAudit
+audit logging and encryption at rest enabled.
 
-```
-Hi Neon team,
+Store the executed BAA PDF in the private compliance vault. Do not commit
+the agreement PDF to git.
 
-RayHealth EVV (rayhealthevv.com) runs production Postgres on Neon for a
-HIPAA-regulated home-care operations platform. We need a signed Business
-Associate Agreement under HIPAA §164.308(b)(1) before we put live ePHI
-into the database.
+Re-verify on each annual evaluation:
 
-Could you please:
+1. Open the Neon console.
+2. Confirm project `late-art-87716813` is still on the HIPAA-eligible tier.
+3. Confirm HIPAA mode remains enabled.
+4. Confirm pgAudit/audit logging and encryption-at-rest evidence remain
+   available for customer diligence.
 
-1. Send the Neon BAA package
-2. Confirm our current Neon project tier supports BAA coverage (we're
-   currently on the standard tier; if Scale or Business is required,
-   please indicate)
-3. Note any configuration changes needed once the BAA is signed
-   (e.g., turning on additional encryption or log retention)
-
-Neon project: late-art-87716813
-Region: us-east-1
-Account email: reyghim1093@gmail.com
-
-Thanks,
-[Your name]
-[Your title — e.g., Founder, RayHealth EVV]
-```
-
-**What to expect:** Neon offers BAAs on **Scale** and **Business** tiers.
-If you're on the free or Launch tier, expect to upgrade. They route BAA
-requests through their compliance team; turn-around is typically 5–10
-business days.
+If the Neon BAA is terminated or HIPAA mode is disabled, treat that as a
+SEV-1 readiness incident and do not onboard real PHI until the posture is
+restored.
 
 ---
 
@@ -249,6 +235,9 @@ sales channel — `enterprise@cloudflare.com` — and update this section.
 ---
 
 ## After the remaining BAAs are signed
+
+Remaining outstanding BAAs as of 2026-07-07: Vercel, Google Firebase /
+Cloud, and Resend. AWS and Neon are active.
 
 1. Save executed PDFs in your password manager / private vault
 2. Update the checklist at the top of this doc with signing dates

@@ -1,5 +1,7 @@
 # RayHealth EVV — Information Security Policy
 
+**Authored by Durga Ghimeray**
+
 **Version:** 1.0
 **Effective:** 2026-05-09
 **Owner:** RayHealth EVV (Founder / Privacy Officer)
@@ -118,9 +120,11 @@ High-priority risks identified as of 2026-05-09:
   the `audit_events` table via the audit-logging middleware
   (`packages/app/src/middleware/audit-log.ts`).
 - The middleware classifies routes:
-  - `phi.read` for GETs against `/clients`, `/evv`, `/assignments`,
-    `/authorizations`, `/templates`, `/staff`, `/maintenance`
-  - `phi.export` for `/exports/*`
+  - `phi.read` for PHI-bearing GETs such as clients, EVV, assignments,
+    authorizations, templates, staff, maintenance, caregiver mobile schedule
+    reads, command-center visit-board reads, compliance exception lists, and
+    billing claims reads
+  - `phi.export` for bulk PHI extraction routes such as `/exports/*`
   - `auth.login.success` / `auth.login.failure` for authentication outcomes
 - The `audit_events` table is **append-only at the database layer** — UPDATE,
   DELETE, and TRUNCATE are blocked by Postgres trigger
@@ -220,9 +224,9 @@ See [INCIDENT_RESPONSE.md](./INCIDENT_RESPONSE.md).
 ### 5.5 Contingency Plan (§164.308(a)(7))
 
 - **Backups:** Neon point-in-time recovery (7-day window default; expandable
-  on Neon Scale tier). Application code in Git, deployed by Vercel CI/CD.
-  Pre-built `dist/` artifacts are committed to the repo so deploys do not
-  depend on Vercel's build environment.
+  on Neon Scale tier). Application code and migrations live in GitHub; Vercel
+  installs from the lockfile and rebuilds the web/app dependency graph from
+  source during deploy via `vercel.json`.
 - **Disaster recovery:** Vercel multi-region edge handles failover at the
   hosting layer. Neon backups can restore the database to any point in the
   retention window.
@@ -315,14 +319,14 @@ clauses.
 
 ## 10. Subprocessors and Business Associate Agreements
 
-| Vendor | Purpose | Data | BAA status (as of 2026-05-09) |
+| Vendor | Purpose | Data | BAA status (as of 2026-07-07) |
 |---|---|---|---|
 | Vercel | Compute (web app, API, serverless functions) | All PHI passes through Vercel network | Pending — see [BAA_REQUEST_EMAILS.md §1](./BAA_REQUEST_EMAILS.md) |
-| Neon | Postgres database (project `late-art-87716813`) | All PHI at rest | Pending — see [BAA_REQUEST_EMAILS.md §2](./BAA_REQUEST_EMAILS.md) |
+| Neon | Postgres database (project `late-art-87716813`) | All PHI at rest | Active — executed BAA; project runs in Neon HIPAA mode with pgAudit audit logging and encryption at rest |
 | Cloudflare | DNS + edge proxy in front of Vercel; passes `CF-Connecting-IP` to the API for audit logging | TLS-terminated traffic only; no app-level data | BAA not required for traffic transit only; revisit if Cloudflare features that store PHI are enabled |
 | Google (Firebase) | Push notifications, auth | Caregiver email, device token, push payload (no PHI in payload by design) | Pending — see [BAA_REQUEST_EMAILS.md §3](./BAA_REQUEST_EMAILS.md) |
 | Resend | Transactional email | Caregiver email, message body (may reference client identifiers) | Pending — see [BAA_REQUEST_EMAILS.md §4](./BAA_REQUEST_EMAILS.md) |
-| AWS (Bedrock) | AI inference for `/api/support/chat` (anonymous marketing chat) and `/api/admin-assistant/chat` (in-app coordinator chat). Default model `us.anthropic.claude-3-5-haiku-20241022-v1:0` cross-region inference profile. | The admin assistant calls tools that return aggregate counts only, never names. The marketing chat is anonymous and refuses PHI. Both refuse to operate if AWS credentials are not configured. | Must be verified active in AWS Artifact before PHI can flow through these endpoints |
+| AWS (Bedrock) | AI inference for `/api/support/chat`, `/api/admin-assistant/chat`, command-center briefings, and copilot workflows. Default model `us.anthropic.claude-haiku-4-5-20251001-v1:0` cross-region inference profile, unless overridden by `BEDROCK_MODEL_ID`. | AI surfaces are PHI-minimized, audited with hash/length metadata, and fail closed when AWS is not configured. | Active in AWS Artifact; re-verify annually |
 
 This table must be updated within 30 days of any subprocessor addition or
 removal.
@@ -360,3 +364,4 @@ All documents are retained for at least 6 years per §164.316(b)(2).
 | 2026-05-08 | Founder + assistant | Ported into `rayhealth-evv-clean`; replaced predecessor-only references (`audit_revisions`, `auth_events`, `PermissionService`, `AuditService.logEvent()`, `password_reset_tokens`) with controls actually shipped here; updated trigger names (`audit_events_block_mutation_trg`, `evv_visits_enforce_immutability_trg`); updated subprocessor IDs (Vercel `rayhealth-evv-platform-app`, Neon `late-art-87716813`); added cell-cipher AES-256-GCM as a verified field-level encryption control; documented that mobile offline PHI cache does not yet exist |
 | 2026-05-09 | Founder + assistant | AWS access key rotated (old key had been exposed in a chat session) on Vercel project `prj_Y0bFZJZND68I4eBeBfE2oqCzo5OG`. Local `BedrockRuntimeClient` smoke confirmed the new key has `bedrock:InvokeModel` permission; production `/api/support/chat` returned a clean Claude Haiku 4.5 response post-redeploy. Old key deactivation in IAM is a pending founder action; this row will be amended once that confirmation is in. Nightly `verify-audit-triggers.yml` GitHub Actions workflow added — runs the §5.6 verifier every 03:17 UTC so audit-trigger regressions surface within 24h instead of at the next annual review. Key material/IDs are intentionally not recorded in this document — see secret manager / IAM console for current credentials. |
 | 2026-06-30 | Security audit | Removed two AWS IAM access key IDs that had been recorded in plaintext in this row (the original rotation entry above). Both were committed to git history and must be treated as compromised: rotate the active key in IAM immediately, and never record access key IDs in this file going forward — reference the secret manager or an incident ticket instead. |
+| 2026-07-07 | Founder + assistant | Aligned this policy with current production posture: Neon BAA active and HIPAA mode complete, Bedrock default model updated to Claude Haiku 4.5, PHI-read audit coverage summarized from current middleware, and Vercel deploys documented as source-built, lockfile-driven deploys. |

@@ -9,9 +9,9 @@ const bedrock = createAmazonBedrock({
  * Active Claude model on Bedrock.
  *
  * Default is the Claude Haiku 4.5 cross-region inference profile. AWS retired
- * the previous default (`anthropic.claude-3-5-haiku-20241022-v1:0`) as legacy,
- * so that id now returns a ValidationException, which is why onboarding and
- * the admin assistant were silently failing in prod. Override via
+ * the previous Claude 3.5 Haiku default as legacy, so that id now returns a
+ * ValidationException, which is why onboarding and the admin assistant were
+ * silently failing in prod. Override via
  * BEDROCK_MODEL_ID; the Pro copilot tier can override separately via
  * BEDROCK_MODEL_ID_PRO.
  */
