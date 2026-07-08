@@ -382,7 +382,7 @@ const CATALOG: NewLearningCourse[] = [
         {
           title: 'Meal Preparation and Feeding',
           imageUrl: 'https://rayhealthevv.com/training/pa611/module-7-meals.jpg',
-          imageAlt: 'A healthy meal is prepared in a home kitchen.',
+          imageAlt: 'A table set with a variety of healthy dishes, including fresh salad, grilled vegetables, and fruit.',
           content:
             'Meal preparation and feeding help support participant health, energy, and independence.\n\nWhen preparing meals: follow the participant’s dietary instructions and restrictions, practice safe food handling, check dates and never serve spoiled food, respect food allergies, and prepare foods the participant can chew and swallow safely.\n\nIf the participant has a special diet (for example low sodium or diabetic): follow the dietary instructions in the Plan of Care exactly, and never add restricted ingredients.\n\nWhen assisting with eating: encourage the participant to eat independently when possible, offer small bites at a comfortable pace, stay attentive for choking risks, and never rush or force feed a participant.\n\nCorrect: The participant has a low sodium diet. The caregiver prepares the meal without added salt and follows the dietary instructions.\nIncorrect: The caregiver adds extra salt without checking the Plan of Care or contacting the agency.\n\nReport appetite changes, swallowing problems, or choking episodes to the agency.',
         },
