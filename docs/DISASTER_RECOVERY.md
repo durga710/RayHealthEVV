@@ -217,7 +217,13 @@ Once per year (target: each February, before the audit cycle):
 2. Practice a full PITR to a 30-minute-ago timestamp on that branch
 3. Run `verify-audit-triggers.mjs` against the restored branch
 4. Run a synthetic EVV cycle against the restored branch
-5. Document the drill outcome in `RISK_REGISTER.md` (when authored)
+5. Document the drill outcome with
+   [`OPERATIONAL_DRILLS.md`](./compliance/hipaa/OPERATIONAL_DRILLS.md) and
+   update [`RISK_REGISTER.md`](./compliance/hipaa/RISK_REGISTER.md) if the
+   drill changes residual risk
+
+The template exists, but the drill is not complete until evidence and signoff
+are stored in the private compliance vault.
 
 The drill is a control under `SECURITY_POLICY.md` §5.6 (annual
 evaluation) and must be retained as evidence per HIPAA §164.316.

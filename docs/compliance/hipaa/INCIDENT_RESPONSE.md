@@ -122,6 +122,19 @@ If an alert may involve PHI, treat it as SEV-2 or higher until disproven.
 
 ---
 
+## 4.1 Tabletop Rehearsal
+
+At least annually, and after any material incident or architecture change, run
+an incident-response tabletop using
+[OPERATIONAL_DRILLS.md](./OPERATIONAL_DRILLS.md). The exercise must use
+synthetic facts only, assign named response roles, test evidence-preservation
+steps, and store the signed outcome record in the private compliance vault.
+
+The tabletop template exists, but the control is not complete until an exercise
+has been run and evidence retained.
+
+---
+
 ## 5. First 15 Minutes
 
 ### 5.1 Start the Incident Record
