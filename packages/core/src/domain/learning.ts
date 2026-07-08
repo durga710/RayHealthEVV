@@ -18,6 +18,10 @@ export type EnrollmentStatus = 'not_started' | 'in_progress' | 'completed' | 'ov
 export interface CourseModule {
   title: string;
   content: string;
+  /** Optional illustration shown above the lesson text. Public https URL. */
+  imageUrl?: string | null;
+  /** Accessibility description for the illustration. */
+  imageAlt?: string | null;
 }
 
 export interface QuizQuestion {

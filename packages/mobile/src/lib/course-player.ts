@@ -14,6 +14,10 @@
 export interface CourseSection {
   title: string;
   content: string;
+  /** Optional illustration shown above the lesson text. */
+  imageUrl?: string | null;
+  /** Accessibility description for the illustration. */
+  imageAlt?: string | null;
 }
 
 export interface QuizQuestion {
