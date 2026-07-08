@@ -49,7 +49,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/medicaid',
     kpiLabel: 'Active MA cases',
-    fallbackValue: ', ',
+    fallbackValue: '-',
     summaryKey: 'activeMaCases',
   },
   {
@@ -58,7 +58,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/audit-defense',
     kpiLabel: 'Audit events (30d)',
-    fallbackValue: ', ',
+    fallbackValue: '-',
     summaryKey: 'auditEventsLast30d',
   },
   {
@@ -67,7 +67,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/payroll',
     kpiLabel: 'Verified hours (7d)',
-    fallbackValue: ', ',
+    fallbackValue: '-',
     summaryKey: 'verifiedHoursLast7d',
     format: formatHours,
   },
@@ -77,7 +77,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/claims',
     kpiLabel: 'Claim-ready (7d)',
-    fallbackValue: ', ',
+    fallbackValue: '-',
     summaryKey: 'claimReadyLast7d',
   },
   {
@@ -86,7 +86,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/authorizations',
     kpiLabel: 'Active authorizations',
-    fallbackValue: ', ',
+    fallbackValue: '-',
     summaryKey: 'activeAuthorizations',
   },
   {
@@ -95,7 +95,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/exceptions',
     kpiLabel: 'Open exceptions',
-    fallbackValue: ', ',
+    fallbackValue: '-',
     summaryKey: 'openExceptions',
   },
   {
@@ -104,7 +104,7 @@ const MODULES: ModuleCard[] = [
     status: 'live',
     to: '/admin/compliance-engine/credentials',
     kpiLabel: 'Active credentials',
-    fallbackValue: ', ',
+    fallbackValue: '-',
     summaryKey: 'activeCredentials',
   },
 ];

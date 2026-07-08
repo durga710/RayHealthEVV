@@ -83,6 +83,7 @@ interface MockOptions {
   corrections?: Array<core.VisitMaintenance & { requesterName: string | null; approverName: string | null }>;
   auditEventsByEntity?: (agencyIdArg: string, entityType: string, entityId: string) => core.AuditEvent[];
   auditCreate?: () => Promise<unknown>;
+  trainingRecords?: core.CaregiverTrainingRecord[];
 }
 
 function installMocks(options: MockOptions = {}) {
@@ -136,9 +137,14 @@ function installMocks(options: MockOptions = {}) {
     () => ({ findByEntityForAgency, create: auditCreate } as any)
   );
 
+  const getTrainingRecordsForCaregiver = vi.fn().mockResolvedValue(options.trainingRecords ?? []);
+  vi.spyOn(core, 'LearningRepository').mockImplementation(
+    () => ({ getTrainingRecordsForCaregiver } as any)
+  );
+
   return { getVisitByIdForAgency, findById, getClientNameForAgency, getClientGeofence,
     getAssignmentScheduleForAgency, findExceptionsByVisitForAgency, findByVisitIdForAgency,
-    findByEntityForAgency, auditCreate };
+    findByEntityForAgency, auditCreate, getTrainingRecordsForCaregiver };
 }
 
 describe('GET /admin/audit-packet/:visitId', () => {
@@ -373,6 +379,86 @@ describe('GET /admin/audit-packet/:visitId', () => {
         .set('Authorization', `Bearer ${makeToken('admin', agencyId, userId)}`);
       expect(response.body.geofence.clockOut.result).toBe('not_captured');
       expect(response.body.geofence.clockOut.captured).toBe(false);
+    });
+  });
+
+  describe('training evidence', () => {
+    const trainingRecords: core.CaregiverTrainingRecord[] = [
+      {
+        courseId: '00000000-0000-4000-8000-000000000101',
+        code: 'ORIENT-PA',
+        title: 'New Hire Orientation',
+        required: true,
+        cadence: 'one_time',
+        expiresAfterDays: null,
+        dueAt: null,
+        // Completed before the 2026-06-01T14:00Z visit: covers it.
+        completions: [{ completedAt: '2026-05-01T10:00:00.000Z', score: 90 }]
+      },
+      {
+        courseId: '00000000-0000-4000-8000-000000000102',
+        code: 'ANNUAL-HIPAA',
+        title: 'Annual HIPAA Privacy & Security',
+        required: true,
+        cadence: 'annual',
+        expiresAfterDays: 365,
+        dueAt: null,
+        // Completed only AFTER the visit: does not cover it.
+        completions: [{ completedAt: '2026-06-03T10:00:00.000Z', score: 100 }]
+      }
+    ];
+
+    it('evaluates coverage against the visit clock-in time', async () => {
+      const { getTrainingRecordsForCaregiver } = installMocks({ trainingRecords });
+      const response = await request(createApp())
+        .get(`/admin/audit-packet/${visitId}`)
+        .set('Authorization', `Bearer ${makeToken('admin', agencyId, userId)}`);
+
+      expect(response.status).toBe(200);
+      expect(getTrainingRecordsForCaregiver).toHaveBeenCalledWith(caregiverId, agencyId);
+
+      const training = response.body.training;
+      expect(training.evaluatedAt).toBe('2026-06-01T14:00:00.000Z');
+      expect(training.compliantAtVisit).toBe(false);
+      expect(training.records).toHaveLength(2);
+      expect(training.records[0]).toMatchObject({
+        code: 'ORIENT-PA',
+        required: true,
+        coveredAtVisit: true,
+        completedAt: '2026-05-01T10:00:00.000Z',
+        expiresAt: null,
+        score: 90
+      });
+      expect(training.records[1]).toMatchObject({
+        code: 'ANNUAL-HIPAA',
+        coveredAtVisit: false,
+        completedAt: null
+      });
+    });
+
+    it('is compliant when every required course was covered at the visit', async () => {
+      const { auditCreate } = installMocks({ trainingRecords: [trainingRecords[0]] });
+      const response = await request(createApp())
+        .get(`/admin/audit-packet/${visitId}`)
+        .set('Authorization', `Bearer ${makeToken('admin', agencyId, userId)}`);
+      expect(response.body.training.compliantAtVisit).toBe(true);
+      expect(auditCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({ counts: expect.objectContaining({ trainingRecords: 1 }) })
+        })
+      );
+    });
+
+    it('returns an empty training section for a caregiver with no enrollments', async () => {
+      installMocks();
+      const response = await request(createApp())
+        .get(`/admin/audit-packet/${visitId}`)
+        .set('Authorization', `Bearer ${makeToken('admin', agencyId, userId)}`);
+      expect(response.body.training).toEqual({
+        evaluatedAt: '2026-06-01T14:00:00.000Z',
+        compliantAtVisit: true,
+        records: []
+      });
     });
   });
 

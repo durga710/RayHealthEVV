@@ -78,7 +78,7 @@ async function fetchJsonSafe<T>(url: string): Promise<{ ok: boolean; body: T | n
 }
 
 function formatUptime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return ', ';
+  if (!Number.isFinite(seconds) || seconds < 0) return '-';
   const d = Math.floor(seconds / 86_400);
   const h = Math.floor((seconds % 86_400) / 3_600);
   const m = Math.floor((seconds % 3_600) / 60);
@@ -89,7 +89,7 @@ function formatUptime(seconds: number): string {
 }
 
 function formatAge(seconds: number | null | undefined): string {
-  if (seconds == null) return ', ';
+  if (seconds == null) return '-';
   if (seconds < 60) return `${seconds}s ago`;
   if (seconds < 3_600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86_400) return `${Math.floor(seconds / 3_600)}h ago`;
@@ -117,7 +117,7 @@ function toCard(name: string, body: unknown, networkOk: boolean): ServiceCard {
       name,
       status: rawStatus === 'ok' ? 'ok' : 'error',
       metricLabel: 'Uptime',
-      metricValue: r.uptimeSeconds != null ? formatUptime(r.uptimeSeconds) : ', ',
+      metricValue: r.uptimeSeconds != null ? formatUptime(r.uptimeSeconds) : '-',
       detail: r.version ? `v${r.version}` : undefined,
       lastChecked: now,
     };
@@ -129,7 +129,7 @@ function toCard(name: string, body: unknown, networkOk: boolean): ServiceCard {
       name,
       status,
       metricLabel: 'Latency',
-      metricValue: r.latencyMs != null ? `${r.latencyMs} ms` : ', ',
+      metricValue: r.latencyMs != null ? `${r.latencyMs} ms` : '-',
       detail: status === 'down' ? 'Connection failed' : undefined,
       lastChecked: now,
     };
@@ -150,7 +150,7 @@ function toCard(name: string, body: unknown, networkOk: boolean): ServiceCard {
         ? formatAge(r.ageSeconds)
         : status === 'empty'
           ? 'No events yet'
-          : ', ',
+          : '-',
     detail: status === 'down' ? 'Probe failed' : undefined,
     lastChecked: now,
   };
@@ -268,7 +268,7 @@ export function StatusPage() {
                   ? `Last checked ${new Date(state.lastChecked).toLocaleTimeString()}`
                   : state.loading
                     ? 'Checking…'
-                    : ', '}
+                    : '-'}
               </span>
             </div>
 

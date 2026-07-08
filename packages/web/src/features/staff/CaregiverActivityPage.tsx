@@ -56,12 +56,12 @@ function fmtHours(ms: number): string {
 }
 function fmtDate(iso: string): string {
   const d = new Date(iso);
-  return Number.isFinite(d.getTime()) ? d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : ', ';
+  return Number.isFinite(d.getTime()) ? d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '-';
 }
 function fmtTime(iso?: string): string {
-  if (!iso) return ', ';
+  if (!iso) return '-';
   const d = new Date(iso);
-  return Number.isFinite(d.getTime()) ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ', ';
+  return Number.isFinite(d.getTime()) ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '-';
 }
 function statusColor(s: VisitStatus, inProgress: boolean): string {
   if (inProgress) return TEAL;
@@ -265,11 +265,11 @@ export function CaregiverActivityPage() {
                       return [
                         <tr key={v.id} onClick={() => v.status === 'flagged' && setExpanded(isOpen ? null : v.id)} style={{ cursor: v.status === 'flagged' ? 'pointer' : 'default' }}>
                           <td>{fmtDate(v.clockInTime)}</td>
-                          <td>{v.clientName ?? ', '}</td>
+                          <td>{v.clientName ?? '-'}</td>
                           <td>{fmtTime(v.clockInTime)}</td>
-                          <td>{inProgress ? ', ' : fmtTime(v.clockOutTime)}</td>
-                          <td>{ms != null ? fmtHours(ms) : ', '}</td>
-                          <td>{v.serviceCode ? SERVICE_LABELS[v.serviceCode] ?? v.serviceCode : ', '}</td>
+                          <td>{inProgress ? '-' : fmtTime(v.clockOutTime)}</td>
+                          <td>{ms != null ? fmtHours(ms) : '-'}</td>
+                          <td>{v.serviceCode ? SERVICE_LABELS[v.serviceCode] ?? v.serviceCode : '-'}</td>
                           <td><StatusBadge status={v.status} inProgress={inProgress} />{v.status === 'flagged' ? <span style={{ marginLeft: 6, color: '#BE123C', fontSize: '0.75rem' }}>{isOpen ? '▲' : '▼'}</span> : null}</td>
                         </tr>,
                         isOpen ? (

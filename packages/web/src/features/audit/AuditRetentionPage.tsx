@@ -214,7 +214,7 @@ export function AuditRetentionPage() {
               <div style={stat}>
                 <div style={statLabel}>Oldest event</div>
                 <div style={statValue}>
-                  {status.oldestOccurredAt ? `${daysSince(status.oldestOccurredAt)}d` : ', '}
+                  {status.oldestOccurredAt ? `${daysSince(status.oldestOccurredAt)}d` : '-'}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                   {status.oldestOccurredAt

@@ -178,10 +178,10 @@ export function MedicaidWorkflowPage() {
         },
       ]
     : [
-        { label: 'Active MA cases', value: ', ' },
-        { label: 'Distinct payers', value: ', ', hint: 'across active auths' },
-        { label: 'Service codes in use', value: ', ', hint: 'service mix' },
-        { label: 'New auths (30d)', value: ', ', tone: 'accent' },
+        { label: 'Active MA cases', value: '-' },
+        { label: 'Distinct payers', value: '-', hint: 'across active auths' },
+        { label: 'Service codes in use', value: '-', hint: 'service mix' },
+        { label: 'New auths (30d)', value: '-', tone: 'accent' },
       ];
 
   return (

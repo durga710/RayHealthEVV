@@ -31,7 +31,7 @@ const STATUS_META: Record<VisitStatus, { label: string; bg: string; border: stri
 };
 
 function fmtTime(iso: string | null): string {
-  if (!iso) return ', ';
+  if (!iso) return '-';
   return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
@@ -178,8 +178,8 @@ export function TodayBoardPage() {
                   {filtered.map((v) => (
                     <tr key={v.assignmentId}>
                       <td><StatusBadge status={v.status} /></td>
-                      <td style={{ fontWeight: 600, color: '#0F172A' }}>{v.clientName || ', '}</td>
-                      <td>{v.caregiverName || ', '}</td>
+                      <td style={{ fontWeight: 600, color: '#0F172A' }}>{v.clientName || '-'}</td>
+                      <td>{v.caregiverName || '-'}</td>
                       <td style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtTime(v.scheduledStartTime)}</td>
                       <td style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtTime(v.clockInTime)}</td>
                       <td style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtTime(v.clockOutTime)}</td>

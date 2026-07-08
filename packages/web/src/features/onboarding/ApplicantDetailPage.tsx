@@ -95,7 +95,7 @@ function formatStatus(s: string): string {
 }
 
 function formatDate(iso?: string): string {
-  if (!iso) return ', ';
+  if (!iso) return '-';
   try {
     return new Date(iso).toLocaleDateString('en-US', {
       month: 'short',
@@ -384,7 +384,7 @@ export function ApplicantDetailPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {[
                 { label: 'Email', value: applicant.email },
-                { label: 'Phone', value: applicant.phone ?? ', ' },
+                { label: 'Phone', value: applicant.phone ?? '-' },
                 { label: 'Position', value: applicant.position },
                 { label: 'Applied', value: formatDate(applicant.appliedAt) },
               ].map(({ label, value }) => (

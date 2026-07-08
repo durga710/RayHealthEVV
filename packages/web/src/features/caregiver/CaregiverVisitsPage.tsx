@@ -146,7 +146,7 @@ export function CaregiverVisitsPage() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0F172A' }}>
-                    {hours > 0 ? formatHours(hours) : ', '}
+                    {hours > 0 ? formatHours(hours) : '-'}
                   </div>
                   <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>duration</div>
                 </div>

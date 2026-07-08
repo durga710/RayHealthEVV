@@ -20,7 +20,7 @@ const initialCounts: CountState = {
 };
 
 function formatCount(value: number | null): string {
-  if (value === null) return ', ';
+  if (value === null) return '-';
   return new Intl.NumberFormat().format(value);
 }
 
@@ -156,7 +156,7 @@ export function DashboardPage() {
   const roleLabel = user?.role ?? 'admin';
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || '';
 
-  const complianceDisplay = counts.complianceRate === null ? ', ' : `${counts.complianceRate}%`;
+  const complianceDisplay = counts.complianceRate === null ? '-' : `${counts.complianceRate}%`;
   const complianceTint = counts.complianceRate === null
     ? '#94A3B8'
     : counts.complianceRate >= 80

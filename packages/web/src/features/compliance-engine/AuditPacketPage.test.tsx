@@ -78,6 +78,34 @@ const samplePacket = {
       payloadSha256: 'b'.repeat(64)
     }
   ],
+  training: {
+    evaluatedAt: '2026-06-01T14:02:00.000Z',
+    compliantAtVisit: false,
+    records: [
+      {
+        courseId: '00000000-0000-4000-8000-000000000d01',
+        code: 'ORIENT-PA',
+        title: 'New Hire Orientation',
+        required: true,
+        cadence: 'one_time',
+        coveredAtVisit: true,
+        completedAt: '2026-05-01T10:00:00.000Z',
+        expiresAt: null,
+        score: 90
+      },
+      {
+        courseId: '00000000-0000-4000-8000-000000000d02',
+        code: 'ANNUAL-HIPAA',
+        title: 'Annual HIPAA Privacy & Security',
+        required: true,
+        cadence: 'annual',
+        coveredAtVisit: false,
+        completedAt: null,
+        expiresAt: null,
+        score: null
+      }
+    ]
+  },
   aggregator: {
     sandataStatus: 'submitted',
     sandataConfirmationId: 'SAND-CONF-1',
@@ -132,6 +160,12 @@ describe('AuditPacketPage', () => {
     expect(screen.getByText('Alex Approver')).toBeInTheDocument();
     expect(screen.getByText(/exception.filed/i)).toBeInTheDocument();
     expect(screen.getByText('SAND-CONF-1')).toBeInTheDocument();
+    // Training evidence: gap pill + per-course verdicts at time of visit.
+    expect(screen.getByText(/required training gap at visit/i)).toBeInTheDocument();
+    expect(screen.getByText('New Hire Orientation (ORIENT-PA)')).toBeInTheDocument();
+    expect(screen.getByText('Current')).toBeInTheDocument();
+    expect(screen.getByText('Not covered')).toBeInTheDocument();
+    expect(screen.getByText('90%')).toBeInTheDocument();
     // Integrity hash rendered prominently.
     expect(screen.getByText(samplePacket.packet.integritySha256)).toBeInTheDocument();
   });
