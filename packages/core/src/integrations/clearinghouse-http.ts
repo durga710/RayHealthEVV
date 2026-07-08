@@ -40,8 +40,15 @@ function authHeaders(credentials: Record<string, string | undefined>): Record<st
   return {};
 }
 
+/** Regex-free trailing-slash strip (config strings are admin input). */
+function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end -= 1;
+  return value.slice(0, end);
+}
+
 function joinUrl(base: string, path: string): string {
-  const cleanBase = base.replace(/\/+$/, '');
+  const cleanBase = stripTrailingSlashes(base);
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `${cleanBase}${cleanPath}`;
 }

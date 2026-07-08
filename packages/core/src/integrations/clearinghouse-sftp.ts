@@ -55,9 +55,16 @@ function sha256Hex(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
+/** Regex-free trailing-slash strip (config strings are admin input). */
+function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end -= 1;
+  return value.slice(0, end);
+}
+
 function settingString(settings: Record<string, unknown>, key: string, fallback: string): string {
   const value = settings[key];
-  return typeof value === 'string' && value.trim() ? value.trim().replace(/\/+$/, '') : fallback;
+  return typeof value === 'string' && value.trim() ? stripTrailingSlashes(value.trim()) : fallback;
 }
 
 function settingPort(settings: Record<string, unknown>): number {
