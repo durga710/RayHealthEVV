@@ -348,6 +348,144 @@ describe('evv routes', () => {
     expect(mockUpdateVisit).not.toHaveBeenCalled();
   });
 
+  // ── Clock-in time window ──────────────────────────────────────────────────
+
+  function mockWindowedAssignment(startOffsetMin: number, endOffsetMin: number | null) {
+    const now = Date.now();
+    const scheduledStartTime = new Date(now + startOffsetMin * 60_000).toISOString();
+    const scheduledEndTime =
+      endOffsetMin === null ? null : new Date(now + endOffsetMin * 60_000).toISOString();
+    vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
+      getAssignmentForCaregiver: vi.fn().mockResolvedValue({
+        id: assignmentId,
+        caregiverId,
+        clientId: 'ffffffff-ffff-4fff-afff-ffffffffffff',
+        serviceCode: 'T1019',
+        scheduledStartTime,
+        scheduledEndTime
+      })
+    } as any));
+    vi.spyOn(core, 'ClientRepository').mockImplementation(() => ({
+      getClientGeofence: vi.fn().mockResolvedValue(undefined)
+    } as any));
+    return { scheduledStartTime, scheduledEndTime };
+  }
+
+  it('rejects clock-in before the window opens, with the window bounds and an audit row', async () => {
+    const mockCreateVisit = vi.fn();
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      findOpenVisitForAssignment: vi.fn().mockResolvedValue(undefined),
+      createVisit: mockCreateVisit
+    } as any));
+    const auditCreate = vi.fn().mockResolvedValue({});
+    vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({
+      create: auditCreate
+    } as any));
+    // Visit starts in 2 hours.
+    mockWindowedAssignment(120, 180);
+
+    const response = await request(createApp())
+      .post('/evv/clock-in')
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)
+      .send({ assignmentId, location: { lat: 40.4406, lng: -79.9959, accuracy: 10 } });
+
+    expect(response.status).toBe(422);
+    expect(response.body.code).toBe('OUTSIDE_CLOCK_IN_WINDOW');
+    expect(response.body.reason).toBe('too-early');
+    expect(typeof response.body.opensAt).toBe('string');
+    expect(mockCreateVisit).not.toHaveBeenCalled();
+    expect(auditCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'permission.denied',
+        entityType: 'evv.clock-in',
+        payload: expect.objectContaining({ reason: 'clock-in-window', windowReason: 'too-early' })
+      })
+    );
+  });
+
+  it('allows clock-in inside the early-grace window (4 minutes before start)', async () => {
+    const mockCreateVisit = vi.fn().mockImplementation((v) => Promise.resolve({ ...v, id: visitId }));
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      findOpenVisitForAssignment: vi.fn().mockResolvedValue(undefined),
+      createVisit: mockCreateVisit
+    } as any));
+    mockWindowedAssignment(4, 64);
+
+    const response = await request(createApp())
+      .post('/evv/clock-in')
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)
+      .send({ assignmentId, location: { lat: 40.4406, lng: -79.9959, accuracy: 10 } });
+
+    expect(response.status).toBe(201);
+    expect(mockCreateVisit).toHaveBeenCalled();
+  });
+
+  it('rejects clock-in after the scheduled window has passed', async () => {
+    const mockCreateVisit = vi.fn();
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      findOpenVisitForAssignment: vi.fn().mockResolvedValue(undefined),
+      createVisit: mockCreateVisit
+    } as any));
+    vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({
+      create: vi.fn().mockResolvedValue({})
+    } as any));
+    // Sunday-bug repro shape: started 3 days ago, ended 3 days ago + 1h.
+    mockWindowedAssignment(-3 * 24 * 60, -3 * 24 * 60 + 60);
+
+    const response = await request(createApp())
+      .post('/evv/clock-in')
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)
+      .send({ assignmentId, location: { lat: 40.4406, lng: -79.9959, accuracy: 10 } });
+
+    expect(response.status).toBe(422);
+    expect(response.body.reason).toBe('window-closed');
+    expect(mockCreateVisit).not.toHaveBeenCalled();
+  });
+
+  it('accepts an offline capturedAt inside the window even when synced after it closed', async () => {
+    const mockCreateVisit = vi.fn().mockImplementation((v) => Promise.resolve({ ...v, id: visitId }));
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      findOpenVisitForAssignment: vi.fn().mockResolvedValue(undefined),
+      createVisit: mockCreateVisit
+    } as any));
+    // Window: opened 3h ago, closed 1h ago. Punch captured 2h ago (inside).
+    mockWindowedAssignment(-180, -60);
+    const capturedAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+    const response = await request(createApp())
+      .post('/evv/clock-in')
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)
+      .send({ assignmentId, location: { lat: 40.4406, lng: -79.9959, accuracy: 10 }, capturedAt });
+
+    expect(response.status).toBe(201);
+    expect(mockCreateVisit).toHaveBeenCalledWith(expect.objectContaining({ clockInTime: capturedAt }));
+  });
+
+  it('lets a caregiver resume an open visit even after the window closes (409 wins)', async () => {
+    const openVisit = {
+      id: visitId,
+      assignmentId,
+      caregiverId,
+      clockInTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      clockInLocation: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
+      status: 'pending'
+    };
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      findOpenVisitForAssignment: vi.fn().mockResolvedValue(openVisit),
+      createVisit: vi.fn()
+    } as any));
+    // Window fully in the past.
+    mockWindowedAssignment(-5 * 60, -4 * 60);
+
+    const response = await request(createApp())
+      .post('/evv/clock-in')
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)
+      .send({ assignmentId, location: { lat: 40.4406, lng: -79.9959, accuracy: 10 } });
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('VISIT_ALREADY_OPEN');
+  });
+
   it('returns an agency visit count via COUNT (no full fetch)', async () => {
     const countVisitsForAgency = vi.fn().mockResolvedValue(42);
     const getVisitsForAgency = vi.fn();

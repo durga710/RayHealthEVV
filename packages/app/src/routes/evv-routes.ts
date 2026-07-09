@@ -6,6 +6,7 @@ import {
   EvvExceptionRepository,
   EvvRepository,
   ScheduleRepository,
+  checkClockInWindow,
   checkGeofence,
   detectVisitExceptions,
   evvClockInInputSchema,
@@ -193,6 +194,53 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
     // phone regained signal. created_at (server time) preserves the sync lag.
     const punchTime = resolvePunchTime(parsed.data.capturedAt);
     if ('error' in punchTime) return res.status(400).json({ message: punchTime.error });
+
+    // Time-window gate: clock-in opens shortly before the scheduled start and
+    // closes at the scheduled end. Placed AFTER the open-visit 409 so a
+    // caregiver resuming an overrunning open visit always wins, and evaluated
+    // on the resolved punch time so an in-window offline punch synced later
+    // still lands. Fails open for assignments without a real schedule (see
+    // checkClockInWindow docs).
+    const windowViolation = checkClockInWindow(
+      punchTime.time,
+      assignment.scheduledStartTime ?? null,
+      assignment.scheduledEndTime ?? null
+    );
+    if (windowViolation) {
+      try {
+        await new AuditEventRepository(db).create({
+          agencyId: req.auth.agencyId,
+          actorId: req.auth.userId,
+          actorType: 'user',
+          eventType: 'permission.denied',
+          entityType: 'evv.clock-in',
+          entityId: parsed.data.assignmentId,
+          outcome: 'denied',
+          payload: {
+            reason: 'clock-in-window',
+            windowReason: windowViolation.reason,
+            punchTime: punchTime.time,
+            opensAt: windowViolation.opensAt,
+            closesAt: windowViolation.closesAt
+          },
+          occurredAt: new Date().toISOString()
+        });
+      } catch (err) {
+        safeError('Failed to record clock-in-window audit event', err);
+      }
+      return res.status(422).json({
+        message:
+          windowViolation.reason === 'too-early'
+            ? 'This visit is not open for clock-in yet. Clock-in opens 5 minutes before the scheduled start.'
+            : "This visit's scheduled time has ended, so it can no longer be clocked into. Contact your coordinator if you provided this care.",
+        code: 'OUTSIDE_CLOCK_IN_WINDOW' as const,
+        reason: windowViolation.reason,
+        opensAt: windowViolation.opensAt,
+        closesAt: windowViolation.closesAt,
+        scheduledStartTime: assignment.scheduledStartTime ?? null,
+        scheduledEndTime: assignment.scheduledEndTime ?? null
+      });
+    }
 
     const visit = await repo.createVisit({
       assignmentId: parsed.data.assignmentId,

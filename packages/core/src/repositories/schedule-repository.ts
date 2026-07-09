@@ -273,6 +273,8 @@ export class ScheduleRepository {
         'assignments.id',
         'assignments.caregiver_id',
         'assignments.visit_template_id',
+        'assignments.scheduled_start_time',
+        'assignments.scheduled_end_time',
         'clients.id as client_id',
         'authorizations.service_code'
       )
@@ -287,7 +289,15 @@ export class ScheduleRepository {
       caregiverId: row.caregiver_id,
       visitTemplateId: row.visit_template_id,
       clientId: row.client_id,
-      serviceCode: row.service_code ?? undefined
+      serviceCode: row.service_code ?? undefined,
+      // Scheduled window, consumed by the clock-in time gate. Nullable:
+      // legacy/imported assignments may carry no times at all.
+      scheduledStartTime: row.scheduled_start_time
+        ? new Date(row.scheduled_start_time).toISOString()
+        : null,
+      scheduledEndTime: row.scheduled_end_time
+        ? new Date(row.scheduled_end_time).toISOString()
+        : null
     };
   }
 
