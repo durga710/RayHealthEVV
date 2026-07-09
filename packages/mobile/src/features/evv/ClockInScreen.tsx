@@ -33,6 +33,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
 import { haversineM, formatDistance } from '../../lib/geofence';
 import { resolveClockOutLocation, type FixCoords } from '../../lib/evv-location';
+import { offlineEvvQueue, isLocalVisitId } from '../../lib/offline-queue';
 import VisitDocumentationSheet from './VisitDocumentationSheet';
 import { showAppAlert } from '../common/alerts/appAlert';
 import { colors, typography, radii, shadow, gradients } from '../common/tokens';
@@ -386,6 +387,9 @@ export default function ClockInScreen() {
     // How many catalog tasks the caregiver checked off in the documentation
     // sheet, echoed on the completion card.
     tasksDocumented: number;
+    // True when the clock-out was captured offline and queued for sync; the
+    // completion badge must say so instead of claiming the EVV was recorded.
+    offline: boolean;
   } | null>(null);
   // Pre-clock-out documentation sheet. The sheet stays mounted so the
   // caregiver's selections survive closing it to check something.
@@ -489,6 +493,27 @@ export default function ClockInScreen() {
           distanceM: resp.data.distanceM ?? 0,
           allowedM: resp.data.allowedM ?? clientGeofenceM,
         });
+      } else if (!resp) {
+        // No server response = offline / dead zone. Store the punch on the
+        // phone with its capture moment and start the visit locally; the
+        // queue replays it (and its clock-out) when connectivity returns.
+        // The local geofence check already gated the button, and the server
+        // re-verifies against this same captured GPS at replay.
+        const capturedAt = new Date().toISOString();
+        const queued = await offlineEvvQueue.enqueueClockIn({
+          assignmentId,
+          ...(serviceCode ? { serviceCode } : {}),
+          location: { lat: currentCoords.lat, lng: currentCoords.lng, accuracy: accuracy ?? 0 },
+          capturedAt,
+        });
+        setVisit({ id: queued.localVisitId, clockInTime: queued.capturedAt });
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showAppAlert(
+          'Clocked in offline',
+          "No connection right now, so your clock-in is saved on this phone with the exact time and location. It syncs automatically the moment you're back online.",
+          undefined,
+          { variant: 'info', icon: 'cloud-offline-outline' },
+        );
       } else {
         showAppAlert(
           "Clock-in didn't go through",
@@ -533,13 +558,58 @@ export default function ClockInScreen() {
         }
       }
       const resolved = resolveClockOutLocation(live, lastKnown);
-      await apiClient.post(`/api/evv/clock-out/${visit.id}`, {
-        location: resolved.payload,
-        // Service documentation from the sheet. Omitted keys keep the request
-        // identical to the pre-documentation payload when nothing was entered.
-        ...(taskIds.length > 0 ? { taskIds } : {}),
-        ...(note ? { note } : {}),
-      });
+
+      // Ends the visit locally: queues the punch with its capture moment and
+      // shows the completion card in its "saved offline" form. Used both when
+      // the visit itself only exists on this phone (offline clock-in) and
+      // when a normal clock-out can't reach the server.
+      const completeOffline = async () => {
+        const capturedAt = new Date().toISOString();
+        await offlineEvvQueue.enqueueClockOut({
+          visitRef: visit.id,
+          location: resolved.payload,
+          capturedAt,
+          ...(taskIds.length > 0 ? { taskIds } : {}),
+          ...(note ? { note } : {}),
+        });
+        setDocVisible(false);
+        setVisit(null);
+        setCompleted({
+          totalElapsed: elapsed, clockInTime: visit.clockInTime, clockOutTime: capturedAt,
+          locationCaptured: resolved.captured,
+          tasksDocumented: taskIds.length,
+          offline: true,
+        });
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      };
+
+      // A visit that was clocked in offline exists only in the queue; its
+      // clock-out must queue behind it (FIFO replay pairs them up).
+      if (isLocalVisitId(visit.id)) {
+        await completeOffline();
+        return;
+      }
+
+      try {
+        await apiClient.post(`/api/evv/clock-out/${visit.id}`, {
+          location: resolved.payload,
+          // Service documentation from the sheet. Omitted keys keep the request
+          // identical to the pre-documentation payload when nothing was entered.
+          ...(taskIds.length > 0 ? { taskIds } : {}),
+          ...(note ? { note } : {}),
+        });
+      } catch (err: unknown) {
+        const resp = (err as {
+          response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } }
+        })?.response;
+        if (!resp) {
+          // Connection dropped mid-shift: never trap the caregiver in an open
+          // visit. Queue the punch and finish locally.
+          await completeOffline();
+          return;
+        }
+        throw err;
+      }
       const totalElapsed = elapsed;
       const clockInTime = visit.clockInTime;
       const clockOutTime = new Date().toISOString();
@@ -549,6 +619,7 @@ export default function ClockInScreen() {
         totalElapsed, clockInTime, clockOutTime,
         locationCaptured: resolved.captured,
         tasksDocumented: taskIds.length,
+        offline: false,
       });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
@@ -850,18 +921,27 @@ export default function ClockInScreen() {
             </View>
           </View>
 
-          <View style={styles.doneVerified}>
-            <Ionicons
-              name={completed.locationCaptured ? 'shield-checkmark' : 'alert-circle'}
-              size={15}
-              color={completed.locationCaptured ? colors.success : colors.amber}
-            />
-            <Text style={styles.doneVerifiedText}>
-              {completed.locationCaptured
-                ? 'GPS verified · EVV recorded'
-                : 'EVV recorded · location not captured'}
-            </Text>
-          </View>
+          {completed.offline ? (
+            <View style={[styles.doneVerified, styles.doneOffline]}>
+              <Ionicons name="cloud-offline-outline" size={15} color={colors.amberDark} />
+              <Text style={[styles.doneVerifiedText, { color: colors.amberDark }]}>
+                Saved on this phone · syncs when online
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.doneVerified}>
+              <Ionicons
+                name={completed.locationCaptured ? 'shield-checkmark' : 'alert-circle'}
+                size={15}
+                color={completed.locationCaptured ? colors.success : colors.amber}
+              />
+              <Text style={styles.doneVerifiedText}>
+                {completed.locationCaptured
+                  ? 'GPS verified · EVV recorded'
+                  : 'EVV recorded · location not captured'}
+              </Text>
+            </View>
+          )}
 
           {completed.tasksDocumented > 0 ? (
             <View style={styles.doneTasks}>
@@ -1010,6 +1090,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.successBorder,
   },
   doneVerifiedText: { color: colors.successDark, fontSize: 12.5, fontWeight: '700' },
+  doneOffline: { backgroundColor: colors.amberBg, borderColor: colors.amberBorder },
   doneTasks: {
     flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10,
     backgroundColor: '#f0f6fd', borderRadius: radii.pill, paddingHorizontal: 14, paddingVertical: 8,

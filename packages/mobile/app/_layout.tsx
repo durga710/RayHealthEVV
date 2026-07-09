@@ -4,6 +4,7 @@ import { LogBox, View } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { AuthProvider, useAuth } from '../src/lib/AuthContext';
+import { useOfflineEvvSync } from '../src/lib/use-offline-sync';
 import AppAlertProvider from '../src/features/common/alerts/AppAlertProvider';
 import { showAppToast } from '../src/features/common/alerts/appAlert';
 
@@ -62,6 +63,11 @@ export default function RootLayout() {
 function RootContent() {
   const router = useRouter();
   const { isAuthenticated, sessionRevokedMessage } = useAuth();
+
+  // Replay offline-captured EVV punches on launch, on connectivity regained,
+  // and on foreground, only while authenticated (replaying into 401s would
+  // waste attempts before the session is restored).
+  useOfflineEvvSync(isAuthenticated);
 
   // Session-revoked notices now route through the branded toast system
   // instead of the old bespoke slate-gray banner.
