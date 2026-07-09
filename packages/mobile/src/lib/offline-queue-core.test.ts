@@ -50,9 +50,13 @@ describe('OfflineEvvQueue', () => {
     const punch = await queue.enqueueClockIn({
       assignmentId: 'a-1', serviceCode: 'T1019', location: LOCATION, capturedAt: '2026-07-08T10:00:00.000Z',
     });
+    const signature = {
+      strokes: [[[1, 2], [3, 4]] as [number, number][]],
+      width: 320, height: 160, signerRole: 'client' as const,
+    };
     await queue.enqueueClockOut({
       visitRef: punch.localVisitId, location: LOCATION, capturedAt: '2026-07-08T12:00:00.000Z',
-      taskIds: ['134'], note: 'Synced later.',
+      taskIds: ['134'], note: 'Synced later.', signature,
     });
 
     const result = await queue.replay();
@@ -62,7 +66,7 @@ describe('OfflineEvvQueue', () => {
       assignmentId: 'a-1', serviceCode: 'T1019', location: LOCATION, capturedAt: '2026-07-08T10:00:00.000Z',
     });
     expect(post).toHaveBeenNthCalledWith(2, '/api/evv/clock-out/server-visit-1', {
-      location: LOCATION, capturedAt: '2026-07-08T12:00:00.000Z', taskIds: ['134'], note: 'Synced later.',
+      location: LOCATION, capturedAt: '2026-07-08T12:00:00.000Z', taskIds: ['134'], note: 'Synced later.', signature,
     });
     expect(queue.pendingCount()).toBe(0);
   });

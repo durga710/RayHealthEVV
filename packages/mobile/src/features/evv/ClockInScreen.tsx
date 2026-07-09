@@ -34,7 +34,7 @@ import apiClient from '../../lib/api-client';
 import { haversineM, formatDistance } from '../../lib/geofence';
 import { resolveClockOutLocation, type FixCoords } from '../../lib/evv-location';
 import { offlineEvvQueue, isLocalVisitId } from '../../lib/offline-queue';
-import VisitDocumentationSheet from './VisitDocumentationSheet';
+import VisitDocumentationSheet, { type VisitSignatureInput } from './VisitDocumentationSheet';
 import { showAppAlert } from '../common/alerts/appAlert';
 import { colors, typography, radii, shadow, gradients } from '../common/tokens';
 
@@ -387,6 +387,8 @@ export default function ClockInScreen() {
     // How many catalog tasks the caregiver checked off in the documentation
     // sheet, echoed on the completion card.
     tasksDocumented: number;
+    // Whether a verification-of-service signature was collected.
+    signed: boolean;
     // True when the clock-out was captured offline and queued for sync; the
     // completion badge must say so instead of claiming the EVV was recorded.
     offline: boolean;
@@ -527,7 +529,7 @@ export default function ClockInScreen() {
     }
   };
 
-  const handleClockOut = async (taskIds: string[], note: string) => {
+  const handleClockOut = async (taskIds: string[], note: string, signature?: VisitSignatureInput) => {
     if (!visit) return;
     setGeofenceError(null);
     setIsLoading(true);
@@ -571,6 +573,7 @@ export default function ClockInScreen() {
           capturedAt,
           ...(taskIds.length > 0 ? { taskIds } : {}),
           ...(note ? { note } : {}),
+          ...(signature ? { signature } : {}),
         });
         setDocVisible(false);
         setVisit(null);
@@ -578,6 +581,7 @@ export default function ClockInScreen() {
           totalElapsed: elapsed, clockInTime: visit.clockInTime, clockOutTime: capturedAt,
           locationCaptured: resolved.captured,
           tasksDocumented: taskIds.length,
+          signed: Boolean(signature),
           offline: true,
         });
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -597,6 +601,7 @@ export default function ClockInScreen() {
           // identical to the pre-documentation payload when nothing was entered.
           ...(taskIds.length > 0 ? { taskIds } : {}),
           ...(note ? { note } : {}),
+          ...(signature ? { signature } : {}),
         });
       } catch (err: unknown) {
         const resp = (err as {
@@ -619,6 +624,7 @@ export default function ClockInScreen() {
         totalElapsed, clockInTime, clockOutTime,
         locationCaptured: resolved.captured,
         tasksDocumented: taskIds.length,
+        signed: Boolean(signature),
         offline: false,
       });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -943,12 +949,22 @@ export default function ClockInScreen() {
             </View>
           )}
 
-          {completed.tasksDocumented > 0 ? (
-            <View style={styles.doneTasks}>
-              <Ionicons name="checkbox-outline" size={15} color={colors.brandBlue} />
-              <Text style={styles.doneTasksText}>
-                {completed.tasksDocumented} task{completed.tasksDocumented === 1 ? '' : 's'} documented
-              </Text>
+          {completed.tasksDocumented > 0 || completed.signed ? (
+            <View style={styles.doneMetaRow}>
+              {completed.tasksDocumented > 0 ? (
+                <View style={styles.doneTasks}>
+                  <Ionicons name="checkbox-outline" size={15} color={colors.brandBlue} />
+                  <Text style={styles.doneTasksText}>
+                    {completed.tasksDocumented} task{completed.tasksDocumented === 1 ? '' : 's'} documented
+                  </Text>
+                </View>
+              ) : null}
+              {completed.signed ? (
+                <View style={styles.doneTasks}>
+                  <Ionicons name="create-outline" size={15} color={colors.brandBlue} />
+                  <Text style={styles.doneTasksText}>Signature collected</Text>
+                </View>
+              ) : null}
             </View>
           ) : null}
         </Animated.View>
@@ -1091,6 +1107,7 @@ const styles = StyleSheet.create({
   },
   doneVerifiedText: { color: colors.successDark, fontSize: 12.5, fontWeight: '700' },
   doneOffline: { backgroundColor: colors.amberBg, borderColor: colors.amberBorder },
+  doneMetaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   doneTasks: {
     flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10,
     backgroundColor: '#f0f6fd', borderRadius: radii.pill, paddingHorizontal: 14, paddingVertical: 8,

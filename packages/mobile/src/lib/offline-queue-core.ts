@@ -34,6 +34,15 @@ export interface QueuedClockIn {
   capturedAt: string;
 }
 
+/** Verification-of-service signature, same shape the clock-out API accepts. */
+export interface QueuedSignature {
+  strokes: [number, number][][];
+  width: number;
+  height: number;
+  signerRole: 'client' | 'representative';
+  signerName?: string;
+}
+
 export interface QueuedClockOut {
   kind: 'clock-out';
   /** Server visit id, or the localVisitId of a queued clock-in ahead of it. */
@@ -42,6 +51,7 @@ export interface QueuedClockOut {
   capturedAt: string;
   taskIds?: string[];
   note?: string;
+  signature?: QueuedSignature;
 }
 
 export type QueuedPunch = QueuedClockIn | QueuedClockOut;
@@ -240,6 +250,7 @@ export class OfflineEvvQueue {
         capturedAt: punch.capturedAt,
         ...(punch.taskIds && punch.taskIds.length > 0 ? { taskIds: punch.taskIds } : {}),
         ...(punch.note ? { note: punch.note } : {}),
+        ...(punch.signature ? { signature: punch.signature } : {}),
       });
       this.state.punches.shift();
       await this.persist();
