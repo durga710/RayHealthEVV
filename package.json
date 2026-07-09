@@ -33,10 +33,10 @@
     "vite": "^8.0.13"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.60.4",
-    "@rolldown/binding-linux-x64-gnu": "1.0.3",
-    "@esbuild/linux-x64": "0.28.0",
-    "@turbo/linux-64": "2.9.15",
+    "@rollup/rollup-linux-x64-gnu": "4.62.2",
+    "@rolldown/binding-linux-x64-gnu": "1.1.5",
+    "@esbuild/linux-x64": "0.28.1",
+    "@turbo/linux-64": "2.10.4",
     "@unrs/resolver-binding-linux-x64-gnu": "1.12.2",
     "lightningcss-linux-x64-gnu": "1.32.0"
   },
