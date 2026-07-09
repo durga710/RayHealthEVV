@@ -107,4 +107,30 @@ describe('Pennsylvania domain schemas', () => {
       evvClockOutInputSchema.parse({ location, note: 'x'.repeat(2001) })
     ).toThrow();
   });
+
+  it('bounds the e-signature stroke payload', () => {
+    const location = { lat: 40.4406, lng: -79.9959, accuracy: 10 };
+    const base = { width: 320, height: 160, signerRole: 'client' as const };
+
+    expect(() =>
+      evvClockOutInputSchema.parse({
+        location,
+        signature: { ...base, strokes: [[[1, 2], [3, 4]]], signerName: 'Jane Q. Client' }
+      })
+    ).not.toThrow();
+
+    // Empty drawing, non-integer points, and >4000 total points all refuse.
+    expect(() =>
+      evvClockOutInputSchema.parse({ location, signature: { ...base, strokes: [] } })
+    ).toThrow();
+    expect(() =>
+      evvClockOutInputSchema.parse({ location, signature: { ...base, strokes: [[[1.5, 2]]] } })
+    ).toThrow();
+    const tooMany = Array.from({ length: 5 }, () =>
+      Array.from({ length: 900 }, (_, i) => [i % 400, (i * 2) % 400] as [number, number])
+    );
+    expect(() =>
+      evvClockOutInputSchema.parse({ location, signature: { ...base, strokes: tooMany } })
+    ).toThrow('4000-point');
+  });
 });

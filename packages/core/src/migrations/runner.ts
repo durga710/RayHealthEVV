@@ -28,6 +28,7 @@ import * as backfillVisitMaintenanceAgencyId from './2026-06-30-backfill-visit-m
 import * as addUserAgencies from './2026-07-01-add-user-agencies.js';
 import * as addOpenVisitUniqueIndex from './2026-07-06-add-open-visit-unique-index.js';
 import * as addVisitDocumentation from './2026-07-08-add-visit-documentation.js';
+import * as addVisitSignature from './2026-07-09-add-visit-signature.js';
 
 async function run(): Promise<void> {
   const db = createDb();
@@ -39,6 +40,7 @@ async function run(): Promise<void> {
     await addUserAgencies.up(db);
     await addOpenVisitUniqueIndex.up(db);
     await addVisitDocumentation.up(db);
+    await addVisitSignature.up(db);
     process.stderr.write('Migrations complete.\n');
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unknown error';

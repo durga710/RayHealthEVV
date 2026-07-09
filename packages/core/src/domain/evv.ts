@@ -32,6 +32,43 @@ export const evvVisitTaskSchema = z.object({
   duty: z.string().min(1)
 });
 
+/**
+ * Verification-of-service e-signature, captured as stroke vectors (arrays of
+ * [x, y] integer points in the pad's coordinate space) rather than an image:
+ * a few KB of JSON that stays under the API body limit, renders losslessly
+ * as SVG on any surface, and cannot smuggle binary content. Bounds keep a
+ * worst-case payload around 40KB against the 100KB express.json limit.
+ */
+const signaturePointSchema = z.tuple([
+  z.number().int().min(0).max(4000),
+  z.number().int().min(0).max(4000)
+]);
+
+export const evvSignatureInputSchema = z
+  .object({
+    strokes: z.array(z.array(signaturePointSchema).min(1).max(1000)).min(1).max(60),
+    width: z.number().int().positive().max(4000),
+    height: z.number().int().positive().max(4000),
+    // Who signed on the pad. The caregiver's own identity is already proven
+    // by the authenticated punch, so the pad is for the person receiving care.
+    signerRole: z.enum(['client', 'representative']),
+    signerName: z.string().trim().min(1).max(120).optional()
+  })
+  .refine(
+    (sig) => sig.strokes.reduce((total, stroke) => total + stroke.length, 0) <= 4000,
+    { message: 'signature exceeds the 4000-point limit' }
+  );
+
+/** Stored form: the validated input plus the signing moment (= clockOutTime). */
+export const evvSignatureSchema = z.object({
+  strokes: z.array(z.array(signaturePointSchema)),
+  width: z.number(),
+  height: z.number(),
+  signerRole: z.enum(['client', 'representative']),
+  signerName: z.string().nullable().optional(),
+  signedAt: z.string().datetime()
+});
+
 export const evvClockOutInputSchema = z.object({
   location: evvLocationSchema,
   // Optional service documentation captured with the clock-out. taskIds are
@@ -40,7 +77,9 @@ export const evvClockOutInputSchema = z.object({
   taskIds: z.array(z.string().min(1).max(16)).max(100).optional(),
   note: z.string().trim().max(2000).optional(),
   // Store-and-forward capture time, see evvClockInInputSchema.capturedAt.
-  capturedAt: z.string().datetime().optional()
+  capturedAt: z.string().datetime().optional(),
+  // Verification-of-service e-signature drawn on the caregiver's phone.
+  signature: evvSignatureInputSchema.optional()
 });
 
 export const evvVisitSchema = z.object({
@@ -61,6 +100,9 @@ export const evvVisitSchema = z.object({
   // this feature or when the caregiver skipped documentation.
   tasks: z.array(evvVisitTaskSchema).nullable().optional(),
   visitNote: z.string().nullable().optional(),
+  // Verification-of-service e-signature recorded at clock-out; null when the
+  // client couldn't or chose not to sign.
+  signature: evvSignatureSchema.nullable().optional(),
   // Aggregator submission lifecycle. Null until the background job first
   // attempts submission; 'accepted' means Sandata returned a confirmation ID.
   sandataStatus: z.enum(['pending', 'submitted', 'accepted', 'rejected']).nullable().optional(),
@@ -78,3 +120,5 @@ export const evvVisitSchema = z.object({
 export type EvvVisit = z.infer<typeof evvVisitSchema>;
 export type EvvClockInInput = z.infer<typeof evvClockInInputSchema>;
 export type EvvClockOutInput = z.infer<typeof evvClockOutInputSchema>;
+export type EvvSignature = z.infer<typeof evvSignatureSchema>;
+export type EvvSignatureInput = z.infer<typeof evvSignatureInputSchema>;

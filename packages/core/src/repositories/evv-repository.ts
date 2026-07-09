@@ -66,6 +66,8 @@ export class EvvRepository {
     if (visit.tasks !== undefined)
       updateData.tasks = visit.tasks === null ? null : JSON.stringify(visit.tasks);
     if (visit.visitNote !== undefined) updateData.visit_note = visit.visitNote;
+    if (visit.signature !== undefined)
+      updateData.signature = visit.signature === null ? null : JSON.stringify(visit.signature);
 
     const allowedIds = this.db('evv_visits as v')
       .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
@@ -312,6 +314,10 @@ export class EvvRepository {
           ? JSON.parse(row.tasks)
           : ((row.tasks as EvvVisit['tasks']) ?? null),
       visitNote: (row.visit_note as string | null | undefined) ?? null,
+      signature:
+        typeof row.signature === 'string'
+          ? JSON.parse(row.signature)
+          : ((row.signature as EvvVisit['signature']) ?? null),
       sandataStatus: (row.sandata_status as EvvVisit['sandataStatus']) ?? null,
       sandataConfirmationId: (row.sandata_confirmation_id as string | null) ?? null,
       hhaexchangeStatus: (row.hhaexchange_status as EvvVisit['hhaexchangeStatus']) ?? null,

@@ -176,6 +176,72 @@ describe('evv routes', () => {
     expect(mockUpdateVisit).not.toHaveBeenCalled();
   });
 
+  it('stores the verification-of-service signature stamped with the punch time', async () => {
+    const mockGetVisitByIdForAgency = vi.fn().mockResolvedValue({
+      id: visitId,
+      assignmentId,
+      caregiverId,
+      clockInTime: '2026-05-20T14:00:00.000Z',
+      clockInLocation: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
+      status: 'pending'
+    });
+    const mockUpdateVisit = vi.fn().mockImplementation((_id, _agency, patch) =>
+      Promise.resolve({
+        id: visitId, assignmentId, caregiverId,
+        clockInTime: '2026-05-20T14:00:00.000Z',
+        clockInLocation: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
+        ...patch
+      })
+    );
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      getVisitByIdForAgency: mockGetVisitByIdForAgency,
+      updateVisit: mockUpdateVisit
+    } as any));
+
+    const response = await request(createApp())
+      .post(`/evv/clock-out/${visitId}`)
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)
+      .send({
+        location: { lat: 40.4407, lng: -79.996, accuracy: 12 },
+        signature: {
+          strokes: [[[10, 20], [30, 40], [50, 42]], [[60, 10], [80, 25]]],
+          width: 320,
+          height: 160,
+          signerRole: 'client'
+        }
+      });
+
+    expect(response.status).toBe(200);
+    const patch = mockUpdateVisit.mock.calls[0][2];
+    expect(patch.signature).toMatchObject({
+      strokes: [[[10, 20], [30, 40], [50, 42]], [[60, 10], [80, 25]]],
+      width: 320,
+      height: 160,
+      signerRole: 'client',
+      signerName: null
+    });
+    // signedAt is stamped from the punch time, not client-supplied.
+    expect(patch.signature.signedAt).toBe(patch.clockOutTime);
+  });
+
+  it('rejects a malformed signature at clock-out', async () => {
+    const mockUpdateVisit = vi.fn();
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      updateVisit: mockUpdateVisit
+    } as any));
+
+    const response = await request(createApp())
+      .post(`/evv/clock-out/${visitId}`)
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)
+      .send({
+        location: { lat: 40.4407, lng: -79.996, accuracy: 12 },
+        signature: { strokes: [], width: 320, height: 160, signerRole: 'client' }
+      });
+
+    expect(response.status).toBe(400);
+    expect(mockUpdateVisit).not.toHaveBeenCalled();
+  });
+
   it('honors an in-window offline capturedAt at clock-in', async () => {
     const capturedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1h ago
     const mockCreateVisit = vi.fn().mockImplementation((v) => Promise.resolve({ ...v, id: visitId }));

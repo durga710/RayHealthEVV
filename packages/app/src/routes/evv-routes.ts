@@ -332,12 +332,24 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
 
     // updateVisit returns null when the visit is on another tenant OR does
     // not exist. Both surface as 404, we never confirm cross-tenant existence.
+    // Verification-of-service signature: stored with the punch moment as its
+    // signing time (identical for online punches; the original capture time
+    // for offline store-and-forward ones).
+    const signature = parsed.data.signature
+      ? {
+          ...parsed.data.signature,
+          signerName: parsed.data.signature.signerName ?? null,
+          signedAt: clockOutTime
+        }
+      : undefined;
+
     const visit = await repo.updateVisit(id.data, req.auth.agencyId, {
       clockOutTime,
       clockOutLocation: parsed.data.location,
       status,
       ...(tasks ? { tasks } : {}),
-      ...(visitNote ? { visitNote } : {})
+      ...(visitNote ? { visitNote } : {}),
+      ...(signature ? { signature } : {})
     });
     if (!visit) return res.status(404).json({ message: 'Visit not found' });
 
