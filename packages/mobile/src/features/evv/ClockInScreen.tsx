@@ -34,6 +34,7 @@ import apiClient from '../../lib/api-client';
 import { haversineM, formatDistance } from '../../lib/geofence';
 import { resolveClockOutLocation, type FixCoords } from '../../lib/evv-location';
 import { offlineEvvQueue, isLocalVisitId } from '../../lib/offline-queue';
+import { getClockInWindowState, type ClockInWindowState } from '../../lib/clock-in-window';
 import VisitDocumentationSheet, { type VisitSignatureInput } from './VisitDocumentationSheet';
 import { showAppAlert } from '../common/alerts/appAlert';
 import { colors, typography, radii, shadow, gradients } from '../common/tokens';
@@ -333,6 +334,8 @@ export default function ClockInScreen() {
     clientName?: string;
     clientAddress?: string;
     scheduledTime?: string;
+    scheduledEndTime?: string;
+    serverSkewMs?: string;
     serviceCode?: string;
     clientLat?: string;
     clientLng?: string;
@@ -345,6 +348,11 @@ export default function ClockInScreen() {
   const clientName = firstParam(params.clientName);
   const clientAddress = firstParam(params.clientAddress);
   const scheduledTime = firstParam(params.scheduledTime);
+  const scheduledEndTime = firstParam(params.scheduledEndTime);
+  // Server-vs-device clock skew measured by the screen that navigated here;
+  // keeps the window UX honest on a badly set phone clock.
+  const parsedSkew = parseInt(firstParam(params.serverSkewMs) ?? '', 10);
+  const serverSkewMs = Number.isFinite(parsedSkew) ? parsedSkew : 0;
   const serviceCode = firstParam(params.serviceCode);
   // Open visit handed in by the dashboard so this screen can RESUME an
   // in-progress visit (show the running timer + Clock Out) instead of offering
@@ -366,6 +374,21 @@ export default function ClockInScreen() {
   const [distanceM, setDistanceM] = useState<number | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Clock-in time window (UX mirror of the server gate). Re-evaluated on a
+  // 1s tick so the too-early countdown flips the button live at open time.
+  const [windowNow, setWindowNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!scheduledTime) return;
+    const h = setInterval(() => setWindowNow(Date.now()), 1000);
+    return () => clearInterval(h);
+  }, [scheduledTime]);
+  const windowState: ClockInWindowState = getClockInWindowState(
+    windowNow + serverSkewMs,
+    scheduledTime,
+    scheduledEndTime,
+  );
+  const windowOk = windowState.state === 'open' || windowState.state === 'unknown';
 
   const [isLoading, setIsLoading] = useState(false);
   // Seed from the resumable open visit so reopening mid-shift lands on the live
@@ -495,6 +518,17 @@ export default function ClockInScreen() {
           distanceM: resp.data.distanceM ?? 0,
           allowedM: resp.data.allowedM ?? clientGeofenceM,
         });
+      } else if (resp?.status === 422 && resp.data?.code === 'OUTSIDE_CLOCK_IN_WINDOW') {
+        // The local mirror should have disabled the button; reaching here
+        // means the device clock disagrees with the server. Show the
+        // server's verdict, it is the authority.
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        showAppAlert(
+          'Not open for clock-in',
+          resp.data.message ?? 'This visit cannot be clocked into right now.',
+          undefined,
+          { variant: 'warning', icon: 'time-outline' },
+        );
       } else if (!resp) {
         // No server response = offline / dead zone. Store the punch on the
         // phone with its capture moment and start the visit locally; the
@@ -657,7 +691,7 @@ export default function ClockInScreen() {
   };
 
   const isClockedIn = visit !== null;
-  const canClockIn = currentCoords != null && geoStatus === 'inside' && !isLoading;
+  const canClockIn = currentCoords != null && geoStatus === 'inside' && !isLoading && windowOk;
   // Clock-out is intentionally NOT gated on a live fix, see handleClockOut.
   const canClockOut = isClockedIn && !isLoading;
 
@@ -773,6 +807,10 @@ export default function ClockInScreen() {
         <Text style={styles.actionBtnText}>
           {isLoading
             ? 'Clocking in…'
+            : windowState.state === 'expired'
+            ? 'Visit window ended'
+            : windowState.state === 'too-early'
+            ? `Opens at ${formatScheduledTime(new Date(windowState.opensAt).toISOString())}`
             : geoStatus === 'outside'
             ? 'Move closer to clock in'
             : geoStatus === 'requesting' || geoStatus === 'idle'
@@ -857,7 +895,21 @@ export default function ClockInScreen() {
   // gated on the fence, so a "move closer" nudge there would be misleading).
   const statusHint =
     !isClockedIn && !geofenceError && geoStatus !== 'denied' ? (
-      geoStatus === 'outside' && distanceM != null ? (
+      windowState.state === 'expired' ? (
+        <View style={[styles.hintRow, styles.hintNeutral]}>
+          <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+          <Text style={[styles.hintText, { color: colors.textSecondary }]}>
+            {"This visit's scheduled time has passed, so it can no longer be clocked into. If you provided this care, contact your coordinator about a correction."}
+          </Text>
+        </View>
+      ) : windowState.state === 'too-early' ? (
+        <View style={[styles.hintRow, styles.hintOutside]}>
+          <Ionicons name="time-outline" size={16} color={colors.amberDark} />
+          <Text style={[styles.hintText, { color: colors.amberDark }]}>
+            {`Clock-in opens at ${formatScheduledTime(new Date(windowState.opensAt).toISOString())} (in ${formatElapsed(Math.max(1, Math.ceil((windowState.opensAt - (windowNow + serverSkewMs)) / 1000)))}), 5 minutes before the scheduled start.`}
+          </Text>
+        </View>
+      ) : geoStatus === 'outside' && distanceM != null ? (
         <View style={[styles.hintRow, styles.hintOutside]}>
           <Ionicons name="walk-outline" size={16} color={colors.amberDark} />
           <Text style={[styles.hintText, { color: colors.amberDark }]}>

@@ -23,12 +23,14 @@ import { colors, typography, radii, shadow, gradients } from '../common/tokens';
 import { ensureNotificationPermission } from '../../lib/notification-permissions';
 import { fireDevTestShiftAlert, scheduleShiftAlerts } from '../../lib/shift-alert-scheduler';
 import { deriveVisitState, resumableVisit, type VisitState } from '../../lib/visit-state';
+import { getClockInWindowState } from '../../lib/clock-in-window';
 
 interface Assignment {
   id: string;
   clientName: string;
   clientAddress?: string;
   time?: string;
+  endTime?: string;
   serviceCode?: string;
   clientLat?: number | null;
   clientLng?: number | null;
@@ -42,6 +44,7 @@ interface Assignment {
 interface TodayScheduleRow {
   assignmentId: string;
   scheduledStartTime: string | null;
+  scheduledEndTime: string | null;
   clientFirstName: string;
   clientLastName: string;
   clientAddressLine1?: string | null;
@@ -178,6 +181,10 @@ export default function DashboardScreen() {
   // hero card. Ticks once a second only while there are visits to count toward.
   const [nowTs, setNowTs] = useState(() => Date.now());
   const firedForegroundRef = useRef<Set<string>>(new Set());
+  // Device-clock skew vs the server (serverTime − deviceNow), captured on each
+  // /today fetch. Passed to the clock-in screen so its time-window UX agrees
+  // with the server's decision even on a badly set phone clock.
+  const serverSkewMsRef = useRef(0);
 
   const fetchAssignments = async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -188,12 +195,15 @@ export default function DashboardScreen() {
       // "Today's Visits" screen was neither scoped to today nor able to alert.
       const { data } = await apiClient.get('/api/mobile/caregiver/today');
       const rows: TodayScheduleRow[] = data?.schedule ?? [];
+      const serverNow = data?.serverTime ? Date.parse(data.serverTime) : NaN;
+      if (Number.isFinite(serverNow)) serverSkewMsRef.current = serverNow - Date.now();
       const list: Assignment[] = rows.map((r) => ({
         id: r.assignmentId,
         clientName: `${r.clientFirstName ?? ''} ${r.clientLastName ?? ''}`.trim() || 'Client',
         clientAddress:
           [r.clientAddressLine1, r.clientCity, r.clientState].filter(Boolean).join(', ') || undefined,
         time: r.scheduledStartTime ?? undefined,
+        endTime: r.scheduledEndTime ?? undefined,
         // serviceCode is re-derived server-side at clock-in; not needed here.
         serviceCode: undefined,
         clientLat: r.clientLatitude ?? null,
@@ -279,6 +289,8 @@ export default function DashboardScreen() {
           clientName: item.clientName,
           clientAddress: item.clientAddress ?? '',
           scheduledTime: item.time ?? '',
+          scheduledEndTime: item.endTime ?? '',
+          serverSkewMs: String(serverSkewMsRef.current),
           serviceCode: item.serviceCode ?? '',
           clientLat: item.clientLat != null ? String(item.clientLat) : '',
           clientLng: item.clientLng != null ? String(item.clientLng) : '',
@@ -490,9 +502,17 @@ function CardContent({
             <Text style={styles.badgeNowText}>Now</Text>
           </View>
         ) : status === 'past' ? (
-          <View style={styles.badgePast}>
-            <Text style={styles.badgePastText}>Done</Text>
-          </View>
+          // A past visit that was never clocked into is a MISSED visit, not a
+          // done one; the clock-in window has closed on it.
+          getClockInWindowState(Date.now(), item.time, item.endTime).state === 'expired' ? (
+            <View style={styles.badgeMissed}>
+              <Text style={styles.badgeMissedText}>Missed</Text>
+            </View>
+          ) : (
+            <View style={styles.badgePast}>
+              <Text style={styles.badgePastText}>Done</Text>
+            </View>
+          )
         ) : null}
       </View>
       <View style={styles.cardMeta}>
@@ -841,6 +861,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 4,
   },
   badgePastText: { ...typography.caption, fontWeight: '700', color: colors.textMuted },
+  badgeMissed: {
+    backgroundColor: colors.amberBg, borderRadius: radii.pill,
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderWidth: 1, borderColor: colors.amberBorder,
+  },
+  badgeMissedText: { ...typography.caption, fontWeight: '700', color: colors.amberDark },
   badgeInProgress: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.successBg,

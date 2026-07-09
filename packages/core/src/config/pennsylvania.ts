@@ -142,6 +142,14 @@ export const PA_GEOFENCE_TOLERANCE_METERS = 50;
 export const PA_GEOFENCE_TOTAL_METERS = PA_GEOFENCE_BASE_METERS + PA_GEOFENCE_TOLERANCE_METERS;
 /** FLSA-style "de minimis" grace window after the scheduled start (minutes). */
 export const PA_GRACE_PERIOD_MINUTES = 15;
+/** Clock-in opens this many minutes before the scheduled start (product policy). */
+export const PA_EARLY_CLOCK_IN_GRACE_MINUTES = 5;
+/**
+ * Assumed visit-window length (hours) when an assignment has a real scheduled
+ * start but no scheduled end; clock-in closes this long after the start
+ * (product policy, not a regulation).
+ */
+export const DEFAULT_VISIT_WINDOW_HOURS = 4;
 /** VMUR (Visit Maintenance) correction window before the visit is locked (days). */
 export const PA_VMUR_CORRECTION_WINDOW_DAYS = 7;
 /** PA retains EVV + audit records for 7 years, longest in the nation. */
