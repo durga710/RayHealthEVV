@@ -33,6 +33,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
 import { haversineM, formatDistance } from '../../lib/geofence';
 import { resolveClockOutLocation, type FixCoords } from '../../lib/evv-location';
+import VisitDocumentationSheet from './VisitDocumentationSheet';
 import { showAppAlert } from '../common/alerts/appAlert';
 import { colors, typography, radii, shadow, gradients } from '../common/tokens';
 
@@ -382,7 +383,13 @@ export default function ClockInScreen() {
     // Whether an actual GPS coordinate was captured at clock-out. Drives the
     // confirmation badge so it never claims "GPS verified" for a zeroed fix.
     locationCaptured: boolean;
+    // How many catalog tasks the caregiver checked off in the documentation
+    // sheet, echoed on the completion card.
+    tasksDocumented: number;
   } | null>(null);
+  // Pre-clock-out documentation sheet. The sheet stays mounted so the
+  // caregiver's selections survive closing it to check something.
+  const [docVisible, setDocVisible] = useState(false);
   const completeAnim = useRef(new Animated.Value(0)).current;
 
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
@@ -495,7 +502,7 @@ export default function ClockInScreen() {
     }
   };
 
-  const handleClockOut = async () => {
+  const handleClockOut = async (taskIds: string[], note: string) => {
     if (!visit) return;
     setGeofenceError(null);
     setIsLoading(true);
@@ -526,14 +533,29 @@ export default function ClockInScreen() {
         }
       }
       const resolved = resolveClockOutLocation(live, lastKnown);
-      await apiClient.post(`/api/evv/clock-out/${visit.id}`, { location: resolved.payload });
+      await apiClient.post(`/api/evv/clock-out/${visit.id}`, {
+        location: resolved.payload,
+        // Service documentation from the sheet. Omitted keys keep the request
+        // identical to the pre-documentation payload when nothing was entered.
+        ...(taskIds.length > 0 ? { taskIds } : {}),
+        ...(note ? { note } : {}),
+      });
       const totalElapsed = elapsed;
       const clockInTime = visit.clockInTime;
       const clockOutTime = new Date().toISOString();
+      setDocVisible(false);
       setVisit(null);
-      setCompleted({ totalElapsed, clockInTime, clockOutTime, locationCaptured: resolved.captured });
+      setCompleted({
+        totalElapsed, clockInTime, clockOutTime,
+        locationCaptured: resolved.captured,
+        tasksDocumented: taskIds.length,
+      });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
+      // Close the sheet on any failure so the geofence banner / error alert
+      // isn't hidden underneath the modal. Selections survive, the sheet
+      // stays mounted and reopens with the same state.
+      setDocVisible(false);
       const resp = (err as {
         response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } }
       })?.response;
@@ -684,7 +706,10 @@ export default function ClockInScreen() {
     </Pressable>
   ) : (
     <Pressable
-      onPress={handleClockOut}
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setDocVisible(true);
+      }}
       disabled={!canClockOut}
       style={({ pressed }) => [
         styles.actionBtnWrap,
@@ -837,6 +862,15 @@ export default function ClockInScreen() {
                 : 'EVV recorded · location not captured'}
             </Text>
           </View>
+
+          {completed.tasksDocumented > 0 ? (
+            <View style={styles.doneTasks}>
+              <Ionicons name="checkbox-outline" size={15} color={colors.brandBlue} />
+              <Text style={styles.doneTasksText}>
+                {completed.tasksDocumented} task{completed.tasksDocumented === 1 ? '' : 's'} documented
+              </Text>
+            </View>
+          ) : null}
         </Animated.View>
 
         <View style={styles.doneActions}>
@@ -926,6 +960,16 @@ export default function ClockInScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* Kept mounted (not conditional) so task selections survive closing the
+          sheet to double-check something before clocking out. */}
+      <VisitDocumentationSheet
+        visible={docVisible}
+        clientName={clientName}
+        submitting={isLoading}
+        onCancel={() => setDocVisible(false)}
+        onSubmit={(taskIds, note) => void handleClockOut(taskIds, note)}
+      />
     </View>
   );
 }
@@ -966,6 +1010,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.successBorder,
   },
   doneVerifiedText: { color: colors.successDark, fontSize: 12.5, fontWeight: '700' },
+  doneTasks: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10,
+    backgroundColor: '#f0f6fd', borderRadius: radii.pill, paddingHorizontal: 14, paddingVertical: 8,
+    borderWidth: 1, borderColor: '#e0ecf8',
+  },
+  doneTasksText: { color: colors.brandBlue, fontSize: 12.5, fontWeight: '700' },
   doneActions: { width: '100%', maxWidth: 380, gap: 12 },
   doneBtn: {
     flexDirection: 'row', gap: 8,

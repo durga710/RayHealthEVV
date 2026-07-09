@@ -30,6 +30,8 @@ interface EvvVisit {
   clockOutTime?: string;
   status: VisitStatus;
   flagReason?: string | null;
+  tasks?: { id: string; duty: string }[] | null;
+  visitNote?: string | null;
 }
 
 interface CaregiverAssignmentRow {
@@ -184,6 +186,9 @@ export default function VisitsScreen() {
               status: item.status,
               ...(item.serviceCode ? { serviceCode: item.serviceCode } : {}),
               ...(item.flagReason ? { flagReason: item.flagReason } : {}),
+              // Router params are strings; the detail screen JSON-parses this.
+              ...(item.tasks && item.tasks.length > 0 ? { tasks: JSON.stringify(item.tasks) } : {}),
+              ...(item.visitNote ? { visitNote: item.visitNote } : {}),
             },
           })
         }
