@@ -113,6 +113,17 @@ export default function ProfileScreen() {
     });
   };
 
+  const openPrivacyPolicy = () => {
+    Linking.openURL('https://rayhealthevv.com/privacy').catch(() => {
+      showAppAlert(
+        'Privacy policy',
+        'Visit https://rayhealthevv.com/privacy in your browser.',
+        undefined,
+        { variant: 'info', icon: 'shield-checkmark-outline' },
+      );
+    });
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -200,6 +211,13 @@ export default function ProfileScreen() {
             title="Contact Support"
             subtitle="Email RayHealthEVV support"
             onPress={openSupport}
+          />
+          <Row
+            icon="shield-checkmark-outline"
+            tint={colors.success}
+            title="Privacy policy"
+            subtitle="How RayHealthEVV handles your data"
+            onPress={openPrivacyPolicy}
           />
           <Row
             icon="information-circle-outline"

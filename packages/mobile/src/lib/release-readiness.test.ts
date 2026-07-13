@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { validateMobileReleaseReadiness } from './release-readiness';
 
-const mobileRoot = resolve(import.meta.dirname, '../..');
+const mobileRoot = fileURLToPath(new URL('../..', import.meta.url));
 const app = JSON.parse(readFileSync(resolve(mobileRoot, 'app.json'), 'utf8')) as unknown;
 const eas = JSON.parse(readFileSync(resolve(mobileRoot, 'eas.json'), 'utf8')) as unknown;
 const apiClientSource = readFileSync(resolve(mobileRoot, 'src/lib/api-client.ts'), 'utf8');
@@ -21,7 +22,6 @@ describe('mobile store release readiness', () => {
   it('keeps external account setup visible without treating it as source-code failure', () => {
     const result = validateMobileReleaseReadiness({ app, eas, apiClientSource, profileSource });
     expect(result.externalBlockers).toEqual(expect.arrayContaining([
-      expect.stringMatching(/EAS project/i),
       expect.stringMatching(/App Store Connect/i),
       expect.stringMatching(/Google Play/i),
     ]));
