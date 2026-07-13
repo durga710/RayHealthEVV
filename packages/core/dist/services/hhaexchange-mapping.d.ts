@@ -11,9 +11,10 @@
  * The agency-level setting picks which aggregator the export pipeline
  * routes to. States with aggregatorChoice=false (e.g. NJ) force HHAeXchange.
  *
- * Reference: HHAeXchange "Provider EVV Submission File" v6.x layout.
- * Verify against current spec at https://www.hhaexchange.com/ before going
- * live with a paying agency.
+ * IMPORTANT: this is a RayHealth mapping preview, not the Pennsylvania
+ * HHAeXchange Homecare V5 Flat File. PA's official import layout extends
+ * through column CR and needs payer-specific code tables issued during vendor
+ * onboarding. Never transmit this compact preview as a production V5 file.
  */
 import { z } from 'zod';
 export declare const hhaexchangeServiceMappingSchema: z.ZodObject<{

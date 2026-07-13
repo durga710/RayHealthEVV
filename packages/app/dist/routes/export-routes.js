@@ -373,7 +373,7 @@ router.post('/sandata/reconcile', requireCapability('billing.write'), async (req
 /**
  * GET /exports/hhaexchange.csv?from=YYYY-MM-DD&to=YYYY-MM-DD
  *
- * HHAeXchange-aggregator-shaped EVV export, for agencies whose state routes
+ * RayHealth HHAeXchange mapping preview, for agencies whose state routes
  * EVV through HHAeXchange instead of Sandata. Unlike the Sandata skeleton this
  * uses the config-driven builder (services/hhaexchange-mapping.ts): the
  * agency's HHAeXchange config supplies AgencyTaxID / ProviderID, the caregiver
@@ -384,7 +384,8 @@ router.post('/sandata/reconcile', requireCapability('billing.write'), async (req
  *
  * Member ID = the client's import `external_id` (the source-system id, which is
  * the HHAeXchange Member ID for imported clients), falling back to the client
- * UUID for hand-entered clients.
+ * UUID for hand-entered clients. This compact preview is NOT the official PA
+ * Homecare V5 flat file and must not be uploaded to HHAeXchange as one.
  */
 router.get('/hhaexchange.csv', requireCapability('billing.read'), async (req, res) => {
     try {
@@ -451,6 +452,7 @@ router.get('/hhaexchange.csv', requireCapability('billing.read'), async (req, re
             .toISOString()
             .slice(0, 10)}.csv`;
         res.setHeader('content-type', 'text/csv; charset=utf-8');
+        res.setHeader('X-RayHealth-Artifact-Status', 'mapping-preview-not-hhax-v5');
         res.setHeader('content-disposition', `attachment; filename="${filename}"`);
         res.setHeader('X-Skipped', String(skipped.length));
         res.send(body);
