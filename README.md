@@ -38,7 +38,7 @@ audit-grade event log designed for HIPAA-grade privacy controls.
 | 🗓️ **Scheduling & assignments** | Recurring schedules, conflict gating, and caregiver–client assignment with eligibility checks. |
 | ✅ **Compliance engine** | Credential tracking, visit-maintenance exceptions, and a Go-Live readiness checklist. |
 | 💵 **Billing & claims** | 837P claim generation, 835 remittance posting, denial scoring, and payroll export. |
-| 🛰️ **Aggregator submission** | Real Sandata Alternate-EVV (async POST → poll) and HHAeXchange transport, per-agency configured. |
+| 🛰️ **Aggregator submission** | Real Sandata Alternate-EVV (async POST → poll). HHAeXchange mapping/configuration is present, but PA V5/SFTP transmission still requires vendor onboarding, payer code tables, validation, and issued credentials. |
 | 🔒 **Audit defense** | Append-only `audit_events` enforced by a DB trigger, with a compliant retention sweep. |
 | 🤖 **AI surfaces** | A caregiver support assistant and an agency workflow Copilot that emits typed, reviewable actions. |
 

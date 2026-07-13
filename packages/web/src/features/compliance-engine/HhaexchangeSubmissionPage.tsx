@@ -146,13 +146,13 @@ export function HhaexchangeSubmissionPage() {
   return (
     <ComplianceModuleLayout
       title="EVV Submission — HHAeXchange"
-      tagline="Configure the agency's HHAeXchange connection. Configuration and CSV export are live; automated API transmission is not yet implemented."
+      tagline="Configure HHAeXchange onboarding inputs. Pennsylvania production delivery requires the official V5 file, SFTP onboarding, payer code tables, validation, and issued credentials."
       status="scaffold"
       kpis={kpis}
       dataSources={['agency_hhaexchange_config', 'evv_visits']}
       nextSteps={[
-        'Enter the HHAeXchange Tax ID, Provider ID, API base URL, and credentials, then enable the integration.',
-        'Until automated transmission ships, export the HHAeXchange CSV and upload it to the HHAeXchange portal.',
+        'Complete HHAeXchange third-party vendor onboarding and obtain the payer-specific PA EDI code table.',
+        'Use the CSV only to review RayHealth identity mappings; it is not the official PA Homecare V5 upload file.',
       ]}
       related={[{ label: 'EVV Submission — Sandata', to: '/admin/compliance-engine/evv-submission' }, { label: 'Go-Live Checklist', to: '/admin/readiness' }]}
     >
@@ -171,7 +171,7 @@ export function HhaexchangeSubmissionPage() {
           <input id="hhaProviderId" style={input} value={hhaProviderId} onChange={(e) => setHhaProviderId(e.target.value)} placeholder="Provider ID" />
         </div>
         <div style={fieldRow}>
-          <label style={label} htmlFor="apiBaseUrl">API base URL</label>
+          <label style={label} htmlFor="apiBaseUrl">Onboarding endpoint (reserved)</label>
           <input id="apiBaseUrl" style={input} value={apiBaseUrl} onChange={(e) => setApiBaseUrl(e.target.value)} placeholder="https://api.hhaexchange.com/..." />
         </div>
         <div style={fieldRow}>
@@ -180,8 +180,8 @@ export function HhaexchangeSubmissionPage() {
         </div>
 
         <div style={{ ...fieldRow, borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: '1rem' }}>
-          <label style={label}>API credentials {config?.hasCredentials && <span style={{ color: 'var(--color-success, #047857)', fontWeight: 600 }}>· stored</span>}</label>
-          <div style={hint}>Provide either an API key, or a username + password — whichever HHAeXchange issued for this agency.</div>
+          <label style={label}>Issued integration credentials {config?.hasCredentials && <span style={{ color: 'var(--color-success, #047857)', fontWeight: 600 }}>· stored</span>}</label>
+          <div style={hint}>Store only credentials HHAeXchange issued after vendor onboarding/testing. Pennsylvania V5 commonly uses an SFTP account.</div>
           <div style={{ marginTop: '0.6rem' }}>
             <input style={input} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="API key (optional)" autoComplete="off" type="password" />
           </div>
@@ -204,7 +204,7 @@ export function HhaexchangeSubmissionPage() {
 
       <form style={card} onSubmit={onSubmitBatch}>
         <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', color: 'var(--color-text, #0F172A)' }}>Submit a batch</h3>
-        <p style={{ ...hint, marginTop: 0, marginBottom: '1rem' }}>Automated API transmission is not yet implemented — submitting reports the integration status honestly. For now, use the HHAeXchange CSV export and upload it to the portal.</p>
+        <p style={{ ...hint, marginTop: 0, marginBottom: '1rem' }}>Production submission remains disabled until the official PA V5 mapping and HHAeXchange-issued SFTP onboarding artifacts are installed and validated. The current CSV is a mapping preview only.</p>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div>
             <label style={label} htmlFor="from">From</label>
