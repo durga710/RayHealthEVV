@@ -5,7 +5,8 @@ import {
   authorizationSchema,
   caregiverCredentialSchema,
   evvClockInInputSchema,
-  hasCapability
+  hasCapability,
+  visitTaskCompletionBatchSchema,
 } from '../index.js';
 
 describe('Pennsylvania domain schemas', () => {
@@ -84,6 +85,40 @@ describe('Pennsylvania domain schemas', () => {
         serviceCode: 'BAD',
         location: { lat: 140, lng: -79.9959, accuracy: -1 }
       })
+    ).toThrow();
+  });
+
+  it('validates idempotent visit task completion batches', () => {
+    expect(
+      visitTaskCompletionBatchSchema.parse({
+        completions: [
+          {
+            clientEventId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+            taskCode: '122',
+            taskLabel: 'Hygiene',
+            status: 'performed',
+          },
+          {
+            clientEventId: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
+            taskCode: '134',
+            taskLabel: 'Bathing',
+            status: 'refused',
+          },
+        ],
+      }).completions,
+    ).toHaveLength(2);
+
+    expect(() =>
+      visitTaskCompletionBatchSchema.parse({
+        completions: [
+          {
+            clientEventId: 'not-a-uuid',
+            taskCode: 'BAD',
+            taskLabel: '',
+            status: 'done',
+          },
+        ],
+      }),
     ).toThrow();
   });
 });
