@@ -6,16 +6,20 @@ every such "business associate" must sign a written BAA before live PHI
 flows through their systems. This document holds drafted request emails —
 copy, fill in your title/contact info, send.
 
-**Tracking checklist (status as of 2026-05-09):**
+Primary guidance: [HHS cloud-computing guidance](https://www.hhs.gov/hipaa/for-professionals/special-topics/health-information-technology/cloud-computing/index.html)
+states that a cloud provider creating, receiving, maintaining, or transmitting
+ePHI is generally a business associate and that the conduit exception is narrow.
+
+**Tracking checklist (reviewed 2026-07-12):**
 
 - [ ] Vercel — sent / received / signed
 - [ ] Neon — sent / received / signed
-- [ ] Google (Firebase / Cloud) — sent / received / signed
+- [ ] Google — identify the exact Maps/notification services in the production
+      data flow, confirm each is a covered service, and execute the applicable BAA
 - [ ] Resend — sent / received / signed
 - [x] **AWS — Active in AWS Artifact** (verified 2026-05-08)
-- [ ] Cloudflare — request only if storage / Workers / WAF features that
-      retain content are enabled (currently RayHealth uses Cloudflare for
-      DNS + TLS termination only, so a BAA is not yet required — see §6)
+- [ ] Cloudflare — complete and retain a written conduit/business-associate
+      applicability decision based on the actual proxy, WAF, and logging config
 
 When each BAA is signed, store the executed PDF in your password manager
 or a private vault (do **not** commit BAA PDFs to git). Note the signing
@@ -64,9 +68,9 @@ Thanks,
 [Phone, optional]
 ```
 
-**What to expect:** Vercel typically asks you to upgrade to **Enterprise**
-or their **HIPAA-eligible Pro tier** before signing. Pricing is on a
-quote basis. Turn-around is usually 3–7 business days.
+**Current official position:** Vercel's security page says HIPAA support is for
+Enterprise customers, and its Terms prohibit hosting PHI without Vercel's prior
+written approval. Obtain that approval and executed terms before live ePHI.
 
 ---
 
@@ -102,26 +106,31 @@ Thanks,
 [Your title — e.g., Founder, RayHealth EVV]
 ```
 
-**What to expect:** Neon offers BAAs on **Scale** and **Business** tiers.
-If you're on the free or Launch tier, expect to upgrade. They route BAA
-requests through their compliance team; turn-around is typically 5–10
-business days.
+**Current official position:** Neon documents HIPAA as an add-on to the Scale
+plan, with enablement/BAA access through the Console settings. Use
+`hipaa@neon.tech` if the account workflow is unavailable; do not place ePHI in
+the project until the add-on and BAA are active.
 
 ---
 
 ## 3. Google (Firebase + Cloud)
 
-This one is **self-service** — you don't email Google support; you accept
-the BAA in the Google Cloud Console.
+First inventory the Google services actually enabled. This repository uses
+Expo local notifications and an Android Maps key; it does not currently show a
+Firebase Auth or Firestore application path. Do not attest to unused services.
+
+Google requires customers using PHI to accept the Google Cloud BAA and limit
+PHI workloads to services explicitly covered by that BAA. Follow the current
+official Google Cloud privacy/compliance console flow and retain the accepted
+agreement plus covered-service list.
 
 1. Open: <https://console.cloud.google.com>
 2. Top nav → switch to the project that hosts your Firebase: **rayhealthevv**
-3. Left menu → **IAM & Admin** → **Compliance** (or search "BAA")
-4. Find **"Business Associate Agreement"** → click **Review and accept**
+3. Open the current **Privacy compliance and records** / legal-compliance area
+4. Review and accept the **Business Associate Agreement** if the account is eligible
 5. The acceptance flow walks through:
    - Confirming you're the authorized signer
-   - Listing covered services (enable Firebase Cloud Messaging, Firebase
-     Auth, Firestore — even if you don't use all of them yet)
+   - Confirming only currently covered and actually used services
    - Accepting the standard Google BAA terms
 6. Save the confirmation email Google sends you — that's your signed BAA
 
@@ -142,7 +151,7 @@ Cloud project but the Compliance section doesn't show the BAA option.
 
 Project ID: rayhealthevv
 Account email: reyghim1093@gmail.com
-Services we use: Firebase Auth, Firebase Cloud Messaging, Firestore (planned)
+Services under review: Google Maps SDK for Android; Expo notification delivery
 
 Could you please enable the BAA workflow on this project, or confirm
 what project configuration is required?
@@ -188,9 +197,10 @@ Thanks,
 [Your title — e.g., Founder, RayHealth EVV]
 ```
 
-**What to expect:** Resend signs BAAs on **Pro** plan and above. If
-you're on the free tier, expect to upgrade. Pricing is monthly;
-turn-around is usually 2–5 business days.
+**Required evidence:** RayHealth has no current public Resend source proving a
+BAA-eligible tier. Obtain written plan eligibility and an executed BAA directly
+from Resend. Until then, keep PHI/client identifiers out of Resend messages or
+use a separately approved provider.
 
 ---
 
@@ -220,7 +230,7 @@ the contractual protection has to be in place.
 
 ---
 
-## 6. Cloudflare (conditional — currently NOT required)
+## 6. Cloudflare (applicability review required)
 
 Cloudflare sits in front of Vercel for DNS and TLS termination. RayHealth
 **does not** use Cloudflare features that retain customer content
@@ -231,12 +241,12 @@ custom code). Cloudflare's role is limited to:
 - TLS termination (Universal SSL) and re-encryption to the Vercel origin
 - WAF / bot-management rules (operating on metadata, not PHI payloads)
 
-Under HHS guidance, mere conduit transit of encrypted traffic does not
-make a vendor a Business Associate. **No BAA is required from
-Cloudflare today.**
+HHS limits the conduit exception to transmission-only services with only
+transient storage. Because Cloudflare terminates TLS and may apply WAF/logging
+features, RayHealth must document the actual configuration and obtain a written
+applicability decision; this file no longer makes a categorical no-BAA claim.
 
-If RayHealth adds any of the following Cloudflare features, this
-designation changes and a BAA becomes required:
+The following features clearly require a new review before use with ePHI:
 
 - Cloudflare Workers (running custom logic on PHI requests)
 - KV / R2 / D1 / Durable Objects (storing customer content)
