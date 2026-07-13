@@ -293,7 +293,7 @@ router.post('/mobile/login', async (req, res) => {
         // must prompt before showing any agency-scoped data. The token above is
         // scoped to the home agency; /mobile/switch-agency swaps it.
         const agencies = await listMobileAgencies(db, user);
-        res.json({ token, role: user.role, agencyId: user.agencyId, agencies });
+        res.json({ token, userId: user.id, role: user.role, agencyId: user.agencyId, agencies });
     }
     catch {
         res.status(500).json({ message: 'Internal Server Error' });

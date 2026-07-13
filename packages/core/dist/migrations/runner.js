@@ -26,6 +26,7 @@ import * as extendVisitMaintenance from './2026-05-11-extend-visit-maintenance.j
 import * as backfillVisitMaintenanceAgencyId from './2026-06-30-backfill-visit-maintenance-agency-id.js';
 import * as addUserAgencies from './2026-07-01-add-user-agencies.js';
 import * as addVisitTaskCompletions from './2026-07-12-add-visit-task-completions.js';
+import * as addOfflineEvvMetadata from './2026-07-12-add-offline-evv-metadata.js';
 async function run() {
     const db = createDb();
     process.stderr.write('Running migrations...\n');
@@ -35,6 +36,7 @@ async function run() {
         await backfillVisitMaintenanceAgencyId.up(db);
         await addUserAgencies.up(db);
         await addVisitTaskCompletions.up(db);
+        await addOfflineEvvMetadata.up(db);
         process.stderr.write('Migrations complete.\n');
     }
     catch (error) {

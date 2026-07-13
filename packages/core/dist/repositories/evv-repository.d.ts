@@ -49,6 +49,8 @@ export declare class EvvRepository {
     countVisitsForAgency(agencyId: string): Promise<number>;
     /** Single visit within an agency; returns null without leaking cross-tenant existence. */
     getVisitByIdForAgency(id: string, agencyId: string): Promise<EvvVisit | null>;
+    /** Resolve an idempotent clock-in replay without exposing another tenant or caregiver. */
+    getVisitByClockInClientEvent(clientEventId: string, agencyId: string, caregiverId: string): Promise<EvvVisit | null>;
     /**
      * Aggregator-export rows. Each row carries all seven 21st Century Cures
      * Act data points needed by HHAeXchange / Sandata:

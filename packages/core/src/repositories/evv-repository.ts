@@ -25,6 +25,8 @@ export class EvvRepository {
         service_code: visit.serviceCode ?? null,
         client_id: visit.clientId ?? null,
         clock_in_time: visit.clockInTime,
+        clock_in_client_event_id: visit.clockInClientEventId ?? null,
+        clock_in_capture_mode: visit.clockInCaptureMode ?? 'online',
         clock_in_location: JSON.stringify(visit.clockInLocation),
         status: visit.status
       })
@@ -45,6 +47,10 @@ export class EvvRepository {
   ): Promise<EvvVisit | null> {
     const updateData: Record<string, unknown> = {};
     if (visit.clockOutTime) updateData.clock_out_time = visit.clockOutTime;
+    if (visit.clockOutClientEventId) {
+      updateData.clock_out_client_event_id = visit.clockOutClientEventId;
+    }
+    if (visit.clockOutCaptureMode) updateData.clock_out_capture_mode = visit.clockOutCaptureMode;
     if (visit.clockOutLocation)
       updateData.clock_out_location = JSON.stringify(visit.clockOutLocation);
     if (visit.status) updateData.status = visit.status;
@@ -156,6 +162,22 @@ export class EvvRepository {
       .select('v.*')
       .first();
 
+    return row ? this.mapRowToVisit(row) : null;
+  }
+
+  /** Resolve an idempotent clock-in replay without exposing another tenant or caregiver. */
+  async getVisitByClockInClientEvent(
+    clientEventId: string,
+    agencyId: string,
+    caregiverId: string,
+  ): Promise<EvvVisit | null> {
+    const row = await this.db('evv_visits as v')
+      .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
+      .where('u.agency_id', agencyId)
+      .andWhere('v.caregiver_id', caregiverId)
+      .andWhere('v.clock_in_client_event_id', clientEventId)
+      .select('v.*')
+      .first();
     return row ? this.mapRowToVisit(row) : null;
   }
 
@@ -280,6 +302,14 @@ export class EvvRepository {
         clockOut instanceof Date
           ? clockOut.toISOString()
           : (clockOut as string | undefined),
+      clockInClientEventId:
+        (row.clock_in_client_event_id as string | null | undefined) ?? undefined,
+      clockOutClientEventId:
+        (row.clock_out_client_event_id as string | null | undefined) ?? undefined,
+      clockInCaptureMode:
+        (row.clock_in_capture_mode as EvvVisit['clockInCaptureMode']) ?? undefined,
+      clockOutCaptureMode:
+        (row.clock_out_capture_mode as EvvVisit['clockOutCaptureMode']) ?? undefined,
       clockInLocation:
         typeof inLoc === 'string'
           ? JSON.parse(inLoc)

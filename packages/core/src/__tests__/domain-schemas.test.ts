@@ -93,14 +93,14 @@ describe('Pennsylvania domain schemas', () => {
     const clockIn = evvClockInInputSchema.parse({
       assignmentId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
       visitId: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
-      clientEventId: 'cccccccc-cccc-4ccc-cccc-cccccccccccc',
+      clientEventId: 'cccccccc-cccc-4ccc-accc-cccccccccccc',
       occurredAt: '2026-07-12T18:15:00.000Z',
       captureMode: 'offline',
       serviceCode: 'T1019',
       location: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
     });
     const clockOut = evvClockOutInputSchema.parse({
-      clientEventId: 'dddddddd-dddd-4ddd-dddd-dddddddddddd',
+      clientEventId: 'dddddddd-dddd-4ddd-addd-dddddddddddd',
       occurredAt: '2026-07-12T20:15:00.000Z',
       captureMode: 'offline',
       location: { lat: 40.4407, lng: -79.996, accuracy: 12 },
@@ -108,12 +108,12 @@ describe('Pennsylvania domain schemas', () => {
 
     expect(clockIn).toMatchObject({
       visitId: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
-      clientEventId: 'cccccccc-cccc-4ccc-cccc-cccccccccccc',
+      clientEventId: 'cccccccc-cccc-4ccc-accc-cccccccccccc',
       occurredAt: '2026-07-12T18:15:00.000Z',
       captureMode: 'offline',
     });
     expect(clockOut).toMatchObject({
-      clientEventId: 'dddddddd-dddd-4ddd-dddd-dddddddddddd',
+      clientEventId: 'dddddddd-dddd-4ddd-addd-dddddddddddd',
       occurredAt: '2026-07-12T20:15:00.000Z',
       captureMode: 'offline',
     });

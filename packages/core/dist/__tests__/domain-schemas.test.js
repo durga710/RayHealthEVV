@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agencySchema, assignmentInputSchema, authorizationSchema, caregiverCredentialSchema, evvClockInInputSchema, hasCapability, visitTaskCompletionBatchSchema, } from '../index.js';
+import { agencySchema, assignmentInputSchema, authorizationSchema, caregiverCredentialSchema, evvClockInInputSchema, evvClockOutInputSchema, hasCapability, visitTaskCompletionBatchSchema, } from '../index.js';
 describe('Pennsylvania domain schemas', () => {
     it('accepts only Pennsylvania agencies', () => {
         expect(() => agencySchema.parse({ name: 'Keystone Care', state: 'OH', operatingTracks: ['home-health'] })).toThrow('Pennsylvania');
@@ -53,6 +53,34 @@ describe('Pennsylvania domain schemas', () => {
             serviceCode: 'BAD',
             location: { lat: 140, lng: -79.9959, accuracy: -1 }
         })).toThrow();
+    });
+    it('accepts client-generated ids and capture times for offline-safe EVV retries', () => {
+        const clockIn = evvClockInInputSchema.parse({
+            assignmentId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+            visitId: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
+            clientEventId: 'cccccccc-cccc-4ccc-accc-cccccccccccc',
+            occurredAt: '2026-07-12T18:15:00.000Z',
+            captureMode: 'offline',
+            serviceCode: 'T1019',
+            location: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
+        });
+        const clockOut = evvClockOutInputSchema.parse({
+            clientEventId: 'dddddddd-dddd-4ddd-addd-dddddddddddd',
+            occurredAt: '2026-07-12T20:15:00.000Z',
+            captureMode: 'offline',
+            location: { lat: 40.4407, lng: -79.996, accuracy: 12 },
+        });
+        expect(clockIn).toMatchObject({
+            visitId: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
+            clientEventId: 'cccccccc-cccc-4ccc-accc-cccccccccccc',
+            occurredAt: '2026-07-12T18:15:00.000Z',
+            captureMode: 'offline',
+        });
+        expect(clockOut).toMatchObject({
+            clientEventId: 'dddddddd-dddd-4ddd-addd-dddddddddddd',
+            occurredAt: '2026-07-12T20:15:00.000Z',
+            captureMode: 'offline',
+        });
     });
     it('validates idempotent visit task completion batches', () => {
         expect(visitTaskCompletionBatchSchema.parse({

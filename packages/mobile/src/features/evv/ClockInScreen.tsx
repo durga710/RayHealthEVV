@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -28,8 +28,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import apiClient from '../../lib/api-client';
+import { useAuth } from '../../lib/AuthContext';
 import { haversineM, formatDistance } from '../../lib/geofence';
+import {
+  enqueueEvvEvent,
+  listEvvQueue,
+  removeEvvEvent,
+  syncEvvQueue,
+  type EvvQueueScope,
+  type OfflineEvvEvent,
+} from '../../lib/offline-evv-queue';
+import { secureEvvQueueStore, sendEvvEvent } from '../../lib/secure-evv-queue';
+import { createClientEventId } from '../../lib/visit-task-state';
 import { showAppAlert } from '../common/alerts/appAlert';
 import { GeoMap, type GeoStatus } from './GeoMap';
 import { colors, typography, radii, shadow, gradients } from '../common/tokens';
@@ -119,6 +129,7 @@ function SparkleDot({ top, left, size, color, delay }: {
 
 export default function ClockInScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     assignmentId?: string;
@@ -177,6 +188,44 @@ export default function ClockInScreen() {
   const completeAnim = useRef(new Animated.Value(0)).current;
 
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
+  const queueScope: EvvQueueScope | null = useMemo(() => user?.agencyId
+    ? { userId: user.userId ?? 'legacy-user', agencyId: user.agencyId }
+    : null, [user?.agencyId, user?.userId]);
+
+  useEffect(() => {
+    if (!queueScope) return;
+    let active = true;
+    const restoreAndSync = async () => {
+      try {
+        const queued = await listEvvQueue(secureEvvQueueStore, queueScope);
+        if (active && !openVisitId && assignmentId) {
+          const localClockIn = [...queued].reverse().find(
+            (item) => item.event.type === 'clock_in' && item.event.assignmentId === assignmentId,
+          );
+          if (localClockIn?.event.type === 'clock_in') {
+            const hasClockOut = queued.some(
+              (item) => item.event.type === 'clock_out'
+                && item.event.visitId === localClockIn.event.visitId,
+            );
+            if (!hasClockOut) {
+              setVisit({
+                id: localClockIn.event.visitId,
+                clockInTime: localClockIn.event.occurredAt,
+              });
+            }
+          }
+        }
+        await syncEvvQueue(secureEvvQueueStore, queueScope, async (event) => {
+          await sendEvvEvent(event, 'offline');
+        });
+      } catch {
+        // SecureStore can be temporarily unavailable while the device is
+        // locked. The next focus/visit attempt retries without losing data.
+      }
+    };
+    void restoreAndSync();
+    return () => { active = false; };
+  }, [assignmentId, openVisitId, queueScope]);
 
   const applyFix = useCallback((loc: Location.LocationObject) => {
     const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
@@ -254,26 +303,47 @@ export default function ClockInScreen() {
     setGeofenceError(null);
     setIsLoading(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const occurredAt = new Date().toISOString();
+    const offlineEvent: OfflineEvvEvent = {
+      type: 'clock_in',
+      eventId: createClientEventId(),
+      visitId: createClientEventId(),
+      assignmentId,
+      ...(serviceCode ? { serviceCode } : {}),
+      occurredAt,
+      location: { lat: currentCoords.lat, lng: currentCoords.lng, accuracy: accuracy ?? 0 },
+    };
+    let wasQueued = false;
     try {
-      const { data } = await apiClient.post('/api/evv/clock-in', {
-        assignmentId,
-        ...(serviceCode ? { serviceCode } : {}),
-        location: { lat: currentCoords.lat, lng: currentCoords.lng, accuracy: accuracy ?? 0 },
-      });
-      setVisit({ id: data.id, clockInTime: data.clockInTime ?? new Date().toISOString() });
+      if (!queueScope) throw new Error('The signed-in account is missing its agency scope.');
+      await enqueueEvvEvent(secureEvvQueueStore, queueScope, offlineEvent);
+      wasQueued = true;
+      const { data } = await sendEvvEvent(offlineEvent, 'online');
+      await removeEvvEvent(secureEvvQueueStore, queueScope, offlineEvent.eventId);
+      setVisit({ id: data.id, clockInTime: data.clockInTime ?? occurredAt });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       const resp = (err as {
         response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } }
       })?.response;
       if (resp?.status === 422 && resp.data?.code === 'GEOFENCE_OUT_OF_BOUNDS') {
+        if (queueScope) await removeEvvEvent(secureEvvQueueStore, queueScope, offlineEvent.eventId);
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         setGeofenceError({
           message: resp.data.message ?? 'You are outside the allowed zone.',
           distanceM: resp.data.distanceM ?? 0,
           allowedM: resp.data.allowedM ?? clientGeofenceM,
         });
+      } else if (wasQueued && (!resp || resp.status === 408 || resp.status === 429 || (resp.status ?? 0) >= 500)) {
+        setVisit({ id: offlineEvent.visitId, clockInTime: occurredAt });
+        showAppAlert(
+          'Clock-in saved offline',
+          'Your encrypted punch is stored on this device and will sync automatically when service returns.',
+          undefined,
+          { variant: 'info', icon: 'cloud-offline-outline' },
+        );
       } else {
+        if (queueScope) await removeEvvEvent(secureEvvQueueStore, queueScope, offlineEvent.eventId);
         showAppAlert(
           "Clock-in didn't go through",
           "Something interrupted your check-in. Give it another try — your visit hasn't started yet.",
@@ -291,6 +361,8 @@ export default function ClockInScreen() {
     setGeofenceError(null);
     setIsLoading(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    let queuedClockOut: OfflineEvvEvent | null = null;
+    let wasQueued = false;
     try {
       // A caregiver must always be able to END a shift. Use the live fix if we
       // have one, otherwise fall back to last-known (they almost certainly had
@@ -309,15 +381,34 @@ export default function ClockInScreen() {
           // ignore — send a zeroed location below and let the server decide
         }
       }
-      await apiClient.post(`/api/evv/clock-out/${visit.id}`, {
+      if (!queueScope) throw new Error('The signed-in account is missing its agency scope.');
+      const clockOutTime = new Date().toISOString();
+      queuedClockOut = {
+        type: 'clock_out',
+        eventId: createClientEventId(),
+        visitId: visit.id,
+        occurredAt: clockOutTime,
         location: coords
           ? { lat: coords.lat, lng: coords.lng, accuracy: acc ?? 0 }
           : { lat: 0, lng: 0, accuracy: 0 },
+      };
+      await enqueueEvvEvent(secureEvvQueueStore, queueScope, queuedClockOut);
+      wasQueued = true;
+      let sendError: unknown;
+      const sync = await syncEvvQueue(secureEvvQueueStore, queueScope, async (event) => {
+        try {
+          await sendEvvEvent(event, event.eventId === queuedClockOut?.eventId ? 'online' : 'offline');
+        } catch (error) {
+          sendError = error;
+          throw error;
+        }
       });
+      if (!sync.synced.includes(queuedClockOut.eventId)) {
+        throw sendError ?? Object.assign(new Error('Clock-out remains queued'), { retryable: true });
+      }
       const totalElapsed = elapsed;
       const visitId = visit.id;
       const clockInTime = visit.clockInTime;
-      const clockOutTime = new Date().toISOString();
       setVisit(null);
       setCompleted({ visitId, totalElapsed, clockInTime, clockOutTime });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -326,13 +417,36 @@ export default function ClockInScreen() {
         response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } }
       })?.response;
       if (resp?.status === 422 && resp.data?.code === 'GEOFENCE_OUT_OF_BOUNDS') {
+        if (queueScope && queuedClockOut) {
+          await removeEvvEvent(secureEvvQueueStore, queueScope, queuedClockOut.eventId);
+        }
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         setGeofenceError({
           message: resp.data.message ?? 'You are outside the allowed zone.',
           distanceM: resp.data.distanceM ?? 0,
           allowedM: resp.data.allowedM ?? clientGeofenceM,
         });
+      } else if (wasQueued && queuedClockOut && (!resp || resp.status === 408 || resp.status === 429 || (resp.status ?? 0) >= 500)) {
+        const totalElapsed = elapsed;
+        const visitId = visit.id;
+        const clockInTime = visit.clockInTime;
+        setVisit(null);
+        setCompleted({
+          visitId,
+          totalElapsed,
+          clockInTime,
+          clockOutTime: queuedClockOut.occurredAt,
+        });
+        showAppAlert(
+          'Clock-out saved offline',
+          'Your encrypted punch is stored on this device and will sync automatically when service returns.',
+          undefined,
+          { variant: 'info', icon: 'cloud-offline-outline' },
+        );
       } else {
+        if (queueScope && queuedClockOut) {
+          await removeEvvEvent(secureEvvQueueStore, queueScope, queuedClockOut.eventId);
+        }
         showAppAlert(
           "Clock-out didn't go through",
           'Something interrupted your check-out. Give it another try — your visit is still open.',

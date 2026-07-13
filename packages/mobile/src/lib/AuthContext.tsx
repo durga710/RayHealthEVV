@@ -8,6 +8,7 @@ const USER_KEY = 'rayhealth_mobile_user';
 const AGENCIES_KEY = 'rayhealth_mobile_agencies';
 
 export interface MobileUser {
+  userId?: string;
   role: string;
   agencyId: string;
   /** Display name of the agency the current token is scoped to. */
@@ -139,11 +140,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // against the server before treating the session as authenticated.
       try {
         const { data } = await apiClient.get('/api/auth/me', { skipAuthHandler: true } as never);
-        const me = (data ?? {}) as { role?: string; agencyId?: string; firstName?: string | null };
+        const me = (data ?? {}) as { userId?: string; role?: string; agencyId?: string; firstName?: string | null };
         const cachedJson = await SecureStore.getItemAsync(USER_KEY);
         const cached = cachedJson ? (JSON.parse(cachedJson) as Partial<MobileUser>) : null;
         const agencyId = me.agencyId ?? cached?.agencyId ?? '';
         const nextUser: MobileUser = {
+          userId: me.userId ?? cached?.userId,
           role: me.role ?? cached?.role ?? '',
           agencyId,
           // /me doesn't carry the agency name; keep the cached one as long as
@@ -211,12 +213,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persistAgencies(memberships);
 
     const homeAgency = memberships.find((a) => a.agencyId === data.agencyId);
-    let nextUser: MobileUser = { role: data.role, agencyId: data.agencyId, agencyName: homeAgency?.agencyName };
+    let nextUser: MobileUser = { userId: data.userId, role: data.role, agencyId: data.agencyId, agencyName: homeAgency?.agencyName };
     // The login response doesn't carry the caregiver's name; fetch it for the
     // dashboard greeting. Best-effort — never block sign-in on it.
     try {
       const me = await apiClient.get('/api/auth/me');
-      const firstName = (me.data as { firstName?: string | null })?.firstName;
+      const profile = me.data as { userId?: string; firstName?: string | null };
+      const firstName = profile?.firstName;
+      if (profile?.userId) nextUser = { ...nextUser, userId: profile.userId };
       if (firstName) nextUser = { ...nextUser, firstName };
     } catch {
       /* greeting personalization is non-critical */
@@ -263,12 +267,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await SecureStore.setItemAsync(TOKEN_KEY, data.token);
       setMobileAccessToken(data.token);
 
-      let nextUser: MobileUser = { role: data.role, agencyId: data.agencyId, agencyName: data.agencyName };
+      let nextUser: MobileUser = { userId: data.userId ?? currentUser?.userId, role: data.role, agencyId: data.agencyId, agencyName: data.agencyName };
       // The caregiver is a different record at each agency — refresh the
       // greeting name under the new scope. Best-effort, like login.
       try {
         const me = await apiClient.get('/api/auth/me');
-        const firstName = (me.data as { firstName?: string | null })?.firstName;
+        const profile = me.data as { userId?: string; firstName?: string | null };
+        const firstName = profile?.firstName;
+        if (profile?.userId) nextUser = { ...nextUser, userId: profile.userId };
         if (firstName) nextUser = { ...nextUser, firstName };
       } catch {
         /* greeting personalization is non-critical */

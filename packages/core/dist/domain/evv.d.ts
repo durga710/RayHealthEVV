@@ -11,8 +11,19 @@ export declare const evvLocationSchema: z.ZodObject<{
     lng: z.ZodNumber;
     accuracy: z.ZodNumber;
 }, z.core.$strip>;
+export declare const evvCaptureModeSchema: z.ZodEnum<{
+    online: "online";
+    offline: "offline";
+}>;
 export declare const evvClockInInputSchema: z.ZodObject<{
+    clientEventId: z.ZodOptional<z.ZodString>;
+    occurredAt: z.ZodOptional<z.ZodString>;
+    captureMode: z.ZodOptional<z.ZodEnum<{
+        online: "online";
+        offline: "offline";
+    }>>;
     assignmentId: z.ZodString;
+    visitId: z.ZodOptional<z.ZodString>;
     location: z.ZodObject<{
         lat: z.ZodNumber;
         lng: z.ZodNumber;
@@ -26,6 +37,12 @@ export declare const evvClockInInputSchema: z.ZodObject<{
     }>>;
 }, z.core.$strip>;
 export declare const evvClockOutInputSchema: z.ZodObject<{
+    clientEventId: z.ZodOptional<z.ZodString>;
+    occurredAt: z.ZodOptional<z.ZodString>;
+    captureMode: z.ZodOptional<z.ZodEnum<{
+        online: "online";
+        offline: "offline";
+    }>>;
     location: z.ZodObject<{
         lat: z.ZodNumber;
         lng: z.ZodNumber;
@@ -45,6 +62,16 @@ export declare const evvVisitSchema: z.ZodObject<{
     }>>;
     clockInTime: z.ZodString;
     clockOutTime: z.ZodOptional<z.ZodString>;
+    clockInClientEventId: z.ZodOptional<z.ZodString>;
+    clockOutClientEventId: z.ZodOptional<z.ZodString>;
+    clockInCaptureMode: z.ZodOptional<z.ZodEnum<{
+        online: "online";
+        offline: "offline";
+    }>>;
+    clockOutCaptureMode: z.ZodOptional<z.ZodEnum<{
+        online: "online";
+        offline: "offline";
+    }>>;
     clockInLocation: z.ZodObject<{
         lat: z.ZodNumber;
         lng: z.ZodNumber;

@@ -109,6 +109,10 @@ export async function up(knex: Knex): Promise<void> {
       table.uuid('client_id');
       table.timestamp('clock_in_time').notNullable();
       table.timestamp('clock_out_time');
+      table.uuid('clock_in_client_event_id').nullable().unique();
+      table.uuid('clock_out_client_event_id').nullable().unique();
+      table.string('clock_in_capture_mode', 10).notNullable().defaultTo('online');
+      table.string('clock_out_capture_mode', 10).nullable();
       table.jsonb('clock_in_location').notNullable();
       table.jsonb('clock_out_location');
       table.string('status').notNullable().defaultTo('pending');
@@ -124,6 +128,26 @@ export async function up(knex: Knex): Promise<void> {
     if (!(await knex.schema.hasColumn('evv_visits', 'client_id'))) {
       await knex.schema.alterTable('evv_visits', (table) => {
         table.uuid('client_id');
+      });
+    }
+    if (!(await knex.schema.hasColumn('evv_visits', 'clock_in_client_event_id'))) {
+      await knex.schema.alterTable('evv_visits', (table) => {
+        table.uuid('clock_in_client_event_id').nullable().unique();
+      });
+    }
+    if (!(await knex.schema.hasColumn('evv_visits', 'clock_out_client_event_id'))) {
+      await knex.schema.alterTable('evv_visits', (table) => {
+        table.uuid('clock_out_client_event_id').nullable().unique();
+      });
+    }
+    if (!(await knex.schema.hasColumn('evv_visits', 'clock_in_capture_mode'))) {
+      await knex.schema.alterTable('evv_visits', (table) => {
+        table.string('clock_in_capture_mode', 10).notNullable().defaultTo('online');
+      });
+    }
+    if (!(await knex.schema.hasColumn('evv_visits', 'clock_out_capture_mode'))) {
+      await knex.schema.alterTable('evv_visits', (table) => {
+        table.string('clock_out_capture_mode', 10).nullable();
       });
     }
   }
@@ -399,6 +423,8 @@ export async function up(knex: Knex): Promise<void> {
     { table: 'users', name: 'users_role_check', expression: "role IN ('admin','coordinator','caregiver','family')" },
     { table: 'sessions', name: 'sessions_role_check', expression: "role IN ('admin','coordinator','caregiver','family')" },
     { table: 'evv_visits', name: 'evv_visits_status_check', expression: "status IN ('pending','verified','flagged')" },
+    { table: 'evv_visits', name: 'evv_visits_clock_in_capture_mode_check', expression: "clock_in_capture_mode IN ('online','offline')" },
+    { table: 'evv_visits', name: 'evv_visits_clock_out_capture_mode_check', expression: "clock_out_capture_mode IS NULL OR clock_out_capture_mode IN ('online','offline')" },
     { table: 'caregivers', name: 'caregivers_status_check', expression: "status IN ('active','inactive','terminated')" },
     { table: 'audit_events', name: 'audit_events_actor_type_check', expression: "actor_type IN ('user','service','system')" },
     { table: 'audit_events', name: 'audit_events_outcome_check', expression: "outcome IN ('success','failure','denied')" },
@@ -466,11 +492,13 @@ export async function up(knex: Knex): Promise<void> {
             'claim.generated','claim.validated','claim.submitted','claim.status-changed',
             'payroll.exported',
             'evv.sandata.submitted','evv.sandata.reconciled',
+            'evv.sandata.altevv.submitted','evv.sandata.altevv.polled',
             'evv.hhaexchange.submitted','evv.hhaexchange.reconciled',
+            'evv.tasks.completed','evv.offline.synced',
             'data.imported','claim.remittance.posted',
             'schedule.recurring.materialized',
             'platform.login.success','platform.login.failure',
-            'agency.review.approved','agency.review.rejected',
+            'agency.review.requested','agency.review.approved','agency.review.rejected',
             'account.suspended','account.reactivated'
           ));
       END IF;
@@ -609,6 +637,8 @@ export async function up(knex: Knex): Promise<void> {
              OR NEW.service_code IS DISTINCT FROM OLD.service_code
              OR NEW.clock_in_time <> OLD.clock_in_time
              OR NEW.clock_in_location::text <> OLD.clock_in_location::text
+             OR NEW.clock_in_client_event_id IS DISTINCT FROM OLD.clock_in_client_event_id
+             OR NEW.clock_in_capture_mode IS DISTINCT FROM OLD.clock_in_capture_mode
           THEN
             RAISE EXCEPTION 'evv_visits is immutable; corrections must go through visit_maintenance';
           END IF;

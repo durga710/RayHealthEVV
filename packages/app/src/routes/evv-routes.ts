@@ -19,6 +19,23 @@ import { safeError } from '../security/safe-log.js';
 
 const router = Router();
 
+const MAX_OFFLINE_CAPTURE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_CAPTURE_CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+function resolveCaptureTime(occurredAt?: string): string | null {
+  if (!occurredAt) return new Date().toISOString();
+  const captured = new Date(occurredAt).getTime();
+  const now = Date.now();
+  if (
+    !Number.isFinite(captured)
+    || captured < now - MAX_OFFLINE_CAPTURE_AGE_MS
+    || captured > now + MAX_CAPTURE_CLOCK_SKEW_MS
+  ) {
+    return null;
+  }
+  return new Date(captured).toISOString();
+}
+
 /**
  * Build the friendly 422 envelope for a geofence violation. Distance is
  * already rounded by `checkGeofence`. Message is human-readable so the
@@ -162,6 +179,18 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
 
     const db = req.app.get('db');
     const repo = new EvvRepository(db);
+    const clockInTime = resolveCaptureTime(parsed.data.occurredAt);
+    if (!clockInTime) {
+      return res.status(400).json({ message: 'Captured clock-in time is outside the allowed window' });
+    }
+    if (parsed.data.clientEventId) {
+      const replay = await repo.getVisitByClockInClientEvent(
+        parsed.data.clientEventId,
+        req.auth.agencyId,
+        req.auth.caregiverId,
+      );
+      if (replay) return res.json(replay);
+    }
     const scheduleRepo = new ScheduleRepository(db);
     // Resolve client_id (Cures-Act #2 — beneficiary) from the assignment's
     // visit_template. Snapshotting it onto the visit row keeps the row
@@ -233,14 +262,34 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
     }
 
     const visit = await repo.createVisit({
+      id: parsed.data.visitId,
       assignmentId: parsed.data.assignmentId,
       caregiverId: req.auth.caregiverId,
       clientId: assignment.clientId,
       serviceCode,
-      clockInTime: new Date().toISOString(),
+      clockInTime,
+      clockInClientEventId: parsed.data.clientEventId,
+      clockInCaptureMode: parsed.data.captureMode ?? 'online',
       clockInLocation: parsed.data.location,
       status: 'pending'
     });
+    if (parsed.data.captureMode === 'offline') {
+      try {
+        await new AuditEventRepository(db).create({
+          agencyId: req.auth.agencyId,
+          actorId: req.auth.userId,
+          actorType: 'user',
+          eventType: 'evv.offline.synced',
+          entityType: 'evv.clock-in',
+          entityId: visit.id!,
+          outcome: 'success',
+          payload: { capturedAt: clockInTime, receivedAt: new Date().toISOString() },
+          occurredAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        safeError('Failed to audit offline EVV clock-in sync', error);
+      }
+    }
     res.status(201).json(visit);
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
@@ -273,6 +322,11 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
     // call. Return the already-completed record unchanged instead.
     if (existing.clockOutTime) {
       return res.json(existing);
+    }
+
+    const clockOutTime = resolveCaptureTime(parsed.data.occurredAt);
+    if (!clockOutTime || new Date(clockOutTime).getTime() < new Date(existing.clockInTime).getTime()) {
+      return res.status(400).json({ message: 'Captured clock-out time is outside the visit window' });
     }
 
     // Geofence gate at clock-out. Same fail-open semantics as clock-in.
@@ -313,8 +367,6 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
       }
     }
 
-    const clockOutTime = new Date().toISOString();
-
     // Best-effort scheduled-start lookup for late-clock-in detection.
     let scheduledStartTime: string | null = null;
     try {
@@ -344,6 +396,8 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
     const visit = await repo.updateVisit(id.data, req.auth.agencyId, {
       clockOutTime,
       clockOutLocation: parsed.data.location,
+      clockOutClientEventId: parsed.data.clientEventId,
+      clockOutCaptureMode: parsed.data.captureMode ?? 'online',
       status
     });
     if (!visit) return res.status(404).json({ message: 'Visit not found' });
@@ -375,6 +429,24 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
         });
       } catch (err) {
         safeError('Failed to persist EVV exceptions', err);
+      }
+    }
+
+    if (parsed.data.captureMode === 'offline') {
+      try {
+        await new AuditEventRepository(db).create({
+          agencyId: req.auth.agencyId,
+          actorId: req.auth.userId,
+          actorType: 'user',
+          eventType: 'evv.offline.synced',
+          entityType: 'evv.clock-out',
+          entityId: id.data,
+          outcome: 'success',
+          payload: { capturedAt: clockOutTime, receivedAt: new Date().toISOString() },
+          occurredAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        safeError('Failed to audit offline EVV clock-out sync', error);
       }
     }
 

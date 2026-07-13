@@ -52,6 +52,9 @@ export const auditEventTypes = [
     // Care-plan task outcomes recorded by the assigned caregiver. Payloads only
     // contain aggregate counts/statuses, never task labels or client names.
     'evv.tasks.completed',
+    // A device-captured punch reached the API after being retained in the
+    // encrypted offline queue. Payload contains timing metadata only, never GPS.
+    'evv.offline.synced',
     // Bulk migration import (clients / caregivers / authorizations CSV load).
     'data.imported',
     // ERA / 835 remittance posting (payer payment file matched back onto claims).
