@@ -1,144 +1,146 @@
-# RayHealth Mobile — EAS Build & Release Runbook
+# RayHealth EVV Mobile — EAS Release Runbook
 
-Steps to take the `@rayhealth/mobile` Expo app from local source to App Store
-and Google Play. None of these can be done from the coding agent — they
-require upstream developer-account credentials.
+The mobile app is an Expo SDK 54 managed project in `packages/mobile`. This is
+the operational path for producing signed iOS and Android store binaries.
 
----
+## Source preflight
 
-## 0. Preconditions
+From the repository root:
 
-- **Expo account** — sign in with `npx eas login` (free tier OK).
-- **Apple Developer Program** ($99/year) for iOS / TestFlight / App Store.
-- **Google Play Console** ($25 one-time) for Android internal track / Play Store.
-- **App icon + splash + store screenshots** — the mobile package already
-  has standard Expo assets. You may want custom branded ones in
-  `packages/mobile/assets/`.
+```bash
+npm run check
+npm run release:check --workspace=@rayhealth/mobile
+```
 
-## 1. Install EAS CLI and link the project
+The second command verifies identifiers, privacy declarations, EAS profiles,
+store metadata, API environment wiring, and committed placeholders. It also
+prints the remaining account-owned steps.
+
+## One-time account setup
+
+1. Join the Apple Developer Program and create an App Store Connect record for
+   bundle ID `com.rayhealth.evv`.
+2. Create the Google Play app with package `com.rayhealth.evv`, enable Play App
+   Signing, and complete the first Android upload manually (required before API
+   submissions).
+3. From `packages/mobile`, authenticate and link the Expo project:
+
+   ```bash
+   npx eas-cli@latest login
+   npx eas-cli@latest init
+   ```
+
+   Commit only the generated `expo.extra.eas.projectId`; never commit account
+   credentials.
+4. In the EAS project, configure the production environment:
+
+   - `EXPO_PUBLIC_API_URL=https://rayhealthevv.com` as plain text.
+   - `GOOGLE_MAPS_ANDROID_API_KEY` as sensitive, restricted in Google Cloud to
+     the Android package/signing certificate and Maps SDK for Android.
+5. Configure Apple signing through `npx eas-cli@latest credentials --platform ios`.
+6. Upload the Google Play service-account JSON to EAS. A local temporary copy,
+   if needed for the first submission, must be named
+   `packages/mobile/google-service-account.json`; it is gitignored.
+
+## Privacy and store answers
+
+The native iOS privacy manifest is generated from `app.json`. It declares no
+tracking and linked app-functionality use of name, email, user ID, precise
+location, and health/care-task information. Required-reason API entries are
+aggregated from the installed Expo/React Native dependencies.
+
+App Store Connect and Google Play answers must match actual behavior:
+
+- Tracking/advertising: no.
+- Precise location: collected, linked, app functionality (EVV punches).
+- Name, email, user/account ID: collected, linked, authentication/app functionality.
+- Health/care-task outcomes: collected, linked, app functionality.
+- Encryption: standard TLS/keychain/keystore use; iOS declares
+  `ITSAppUsesNonExemptEncryption=false` for the export-compliance exemption.
+- Privacy policy: `https://rayhealthevv.com/privacy`.
+- Support: `https://rayhealthevv.com/contact`.
+
+The same privacy-policy link is available inside the app under Profile.
+
+## Store metadata and screenshots
+
+Apple listing copy is versioned in `packages/mobile/store.config.json` and can
+be validated/pushed after an iOS binary is processed:
 
 ```bash
 cd packages/mobile
-npx eas login
-npx eas init   # creates project on EAS, writes projectId into app.json
+npx eas-cli@latest metadata:push
 ```
 
-Choose **Managed** workflow (no native code yet).
+EAS Metadata currently covers Apple only. Enter the same reviewed copy in
+Google Play manually. Capture at least these phone screenshots with synthetic
+staging data—never real PHI:
 
-## 2. Configure EAS profiles
+1. Login.
+2. Today's assigned visits.
+3. GPS/geofence clock-in.
+4. Visit-in-progress timer.
+5. Clock-out completion.
+6. Care-plan task outcomes.
+7. Encrypted offline recovery banner (optional).
 
-Create `packages/mobile/eas.json`:
+The v1 config intentionally sets `supportsTablet=false`; enable it only after
+iPad layout QA and iPad screenshots exist.
 
-```json
-{
-  "cli": { "version": ">= 12.0.0" },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal",
-      "ios": { "simulator": true }
-    },
-    "production": {
-      "autoIncrement": true,
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://rayhealthevv.com"
-      }
-    }
-  },
-  "submit": { "production": {} }
-}
-```
+## Build and test
 
-## 3. Verify against prod API before building
+Run the checked-in manual EAS workflow from `packages/mobile`:
 
 ```bash
-EXPO_PUBLIC_API_URL=https://rayhealthevv.com npx expo start --tunnel
+npx eas-cli@latest workflow:run create-production-builds.yml
 ```
 
-Open the dev client on a phone, log in as the admin from `RUNBOOK_DEPLOY.md`.
-Test clock-in, clock-out, dashboard. Confirm:
-- JWT carries `jti` (decode at jwt.io)
-- `mobile_sessions` table gets a row (check Neon)
-- `/auth/mobile/logout` revokes — second request with same JWT returns 401
-
-## 4. Build for iOS
+Or build each platform directly:
 
 ```bash
-npx eas build --platform ios --profile production
+npx eas-cli@latest build --platform ios --profile production
+npx eas-cli@latest build --platform android --profile production
 ```
 
-EAS will:
-1. Prompt for Apple Developer credentials. Sign in.
-2. Generate a distribution certificate + provisioning profile (auto-managed).
-3. Bundle the JS, archive into an `.ipa`, sign.
-4. Output a build URL on `expo.dev`.
+Install a preview/internal build on real devices and verify:
 
-~10–20 minutes.
+- Sign in, session restore, logout, and agency switching.
+- Schedule load and encrypted offline fallback.
+- Location permission denial and grant paths.
+- In-zone and out-of-zone clock-in behavior.
+- Clock-out and care-plan task submission.
+- Offline clock-in/out followed by ordered replay.
+- Privacy and support links.
 
-## 5. Build for Android
+## First submission
+
+Submit iOS after the App Store Connect record and signing connection exist:
 
 ```bash
-npx eas build --platform android --profile production
+npx eas-cli@latest submit --platform ios --latest --profile production
 ```
 
-EAS will:
-1. Prompt to upload an existing keystore OR generate one (let it generate;
-   back it up via `npx eas credentials`).
-2. Bundle, build `.aab`, sign.
-3. Output build URL.
-
-## 6. Submit to the stores
-
-### iOS → TestFlight
+Upload the first Android `.aab` manually in Play Console. After Google enables
+API submissions for the app, later builds can use:
 
 ```bash
-npx eas submit --platform ios --latest
+npx eas-cli@latest submit --platform android --latest --profile production
 ```
 
-In App Store Connect:
-1. TestFlight → invite yourself + testers.
-2. Smoke test login, clock-in, clock-out, dashboard.
-3. Submit for review with metadata + screenshots when ready.
+Start Android on the internal track. Use TestFlight internal testing for iOS.
+Promote only after the real-device checklist passes and the store privacy forms
+are published.
 
-### Android → Internal Testing → Production
+## Release evidence
 
-```bash
-npx eas submit --platform android --latest
-```
+For every candidate, retain:
 
-In Google Play Console:
-1. Internal testing → add testers → install via testing link.
-2. Smoke test.
-3. Production rollout when ready.
+- Git commit and version.
+- Passing `npm run check` and `release:check` output.
+- EAS build URLs and native build numbers.
+- TestFlight/Play internal smoke-test result.
+- Store privacy questionnaire review date.
+- Reviewer demo-account owner and reset procedure (not its password).
 
-## 7. After submission — what to monitor
-
-- **`mobile_sessions` table** — one row per active install. Stale rows
-  (never logged out, never expired) indicate a crashed logout or
-  uninstalled app.
-- **`audit_events` `auth.login.failure` with `authMethod=bearer`** —
-  credential stuffing against the mobile login endpoint.
-- **App store reviews** mentioning crashes, GPS, or login.
-
-## 8. OTA updates (no app-store resubmit)
-
-Anything pure JS (route logic, UI copy, audit-event payload shape):
-
-```bash
-npx eas update --branch production --message "fix: <one-line>"
-```
-
-Native-code changes (new permissions, native modules, icon) require a full
-rebuild + resubmit.
-
----
-
-## NOT covered here
-
-- Rotating signing certs / keystores (back up via `eas credentials`).
-- Custom push notifications (needs APNs/FCM keys).
-- Deep linking (universal-link config).
-- TestFlight build expiry (90 days; rebuild after).
+Never place reviewer passwords, signing keys, App Store API keys, Play service
+accounts, production `.env` files, or screenshots containing PHI in Git.
