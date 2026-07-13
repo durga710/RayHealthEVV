@@ -3,6 +3,7 @@ type JsonRecord = Record<string, unknown>;
 export interface MobileReleaseReadinessInput {
   app: unknown;
   eas: unknown;
+  store: unknown;
   apiClientSource: string;
   profileSource: string;
 }
@@ -44,6 +45,7 @@ export function validateMobileReleaseReadiness(
   const infoPlist = record(ios.infoPlist);
   const privacy = record(ios.privacyManifests);
   const eas = record(input.eas);
+  const store = record(input.store);
   const builds = record(eas.build);
   const production = record(builds.production);
 
@@ -99,6 +101,26 @@ export function validateMobileReleaseReadiness(
   const productionAndroid = record(production.android);
   if (productionAndroid.buildType !== 'app-bundle') {
     errors.push('Android production must build an app bundle.');
+  }
+
+  const apple = record(store.apple);
+  const englishStoreInfo = record(record(apple.info)['en-US']);
+  if (store.configVersion !== 0) errors.push('EAS store metadata configVersion must be 0.');
+  if (!englishStoreInfo.title || String(englishStoreInfo.title).length > 30) {
+    errors.push('App Store title is missing or exceeds 30 characters.');
+  }
+  if (!englishStoreInfo.subtitle || String(englishStoreInfo.subtitle).length > 30) {
+    errors.push('App Store subtitle is missing or exceeds 30 characters.');
+  }
+  if (!englishStoreInfo.description || !Array.isArray(englishStoreInfo.keywords)) {
+    errors.push('App Store description and keywords must be versioned in store.config.json.');
+  }
+  for (const [field, expected] of [
+    ['privacyPolicyUrl', 'https://rayhealthevv.com/privacy'],
+    ['supportUrl', 'https://rayhealthevv.com/contact'],
+    ['marketingUrl', 'https://rayhealthevv.com'],
+  ] as const) {
+    if (englishStoreInfo[field] !== expected) errors.push(`App Store ${field} must be ${expected}.`);
   }
 
   const externalBlockers = [

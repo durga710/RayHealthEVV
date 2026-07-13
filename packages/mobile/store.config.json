@@ -1,0 +1,19 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "categories": ["MEDICAL", "BUSINESS"],
+    "info": {
+      "en-US": {
+        "title": "RayHealth EVV",
+        "subtitle": "Care visits, on the clock",
+        "description": "RayHealth EVV helps caregivers complete assigned home-care visits accurately and securely.\n\nCaregivers can:\n• View today’s assigned visits and schedules\n• Record GPS-verified clock-in and clock-out events\n• Resume an active visit after reopening the app\n• Record performed, refused, or incomplete care-plan tasks\n• Preserve punches in encrypted device storage during a network interruption and sync them when connectivity returns\n• Review visit history, training, profile, and linked agencies\n\nRayHealth EVV is designed for authorized caregivers working with participating home-care agencies. An agency-issued account is required. The app supports Electronic Visit Verification workflows; it does not provide medical advice, diagnosis, or treatment recommendations.\n\nLocation is requested only while recording an EVV clock-in or clock-out. RayHealth does not use personal data for advertising or cross-app tracking.",
+        "keywords": ["EVV", "caregiver", "home care", "clock in", "visits", "Pennsylvania"],
+        "promoText": "Secure EVV clock-in, clock-out, care tasks, and encrypted offline recovery for authorized home-care caregivers.",
+        "releaseNotes": "Initial release with caregiver schedules, GPS-verified EVV punches, care-plan task outcomes, training access, and encrypted offline recovery.",
+        "marketingUrl": "https://rayhealthevv.com",
+        "supportUrl": "https://rayhealthevv.com/contact",
+        "privacyPolicyUrl": "https://rayhealthevv.com/privacy"
+      }
+    }
+  }
+}
