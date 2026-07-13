@@ -89,6 +89,17 @@ export async function readCachedVisitSchedule(
   return rows;
 }
 
+export async function clearCachedVisitSchedule(
+  store: EvvQueueStore,
+  scope: EvvQueueScope,
+): Promise<void> {
+  const ids = await readIndex(store, scope);
+  for (const assignmentId of ids) {
+    await store.deleteItemAsync(rowKey(scope, assignmentId));
+  }
+  await store.deleteItemAsync(indexKey(scope));
+}
+
 export function mergeQueuedVisitState(
   rows: CachedVisitScheduleRow[],
   queue: EvvQueueItem[],

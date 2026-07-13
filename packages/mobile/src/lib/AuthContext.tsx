@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import * as SecureStore from 'expo-secure-store';
 import apiClient, { setMobileAccessToken, setUnauthorizedHandler } from './api-client';
 import { cancelAllShiftAlerts } from './shift-alert-scheduler';
+import { clearCachedVisitSchedule } from './offline-visit-cache';
+import { secureEvvQueueStore } from './secure-evv-queue';
 
 const TOKEN_KEY = 'rayhealth_mobile_access_token';
 const USER_KEY = 'rayhealth_mobile_user';
@@ -73,6 +75,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore — proceed with clearing the session regardless */
     }
+    // The visit schedule contains client names, addresses, and coordinates.
+    // It is safe to re-fetch, so remove it on logout/401. Pending EVV punches
+    // stay encrypted and account-scoped until they can sync; deleting those
+    // would destroy legally significant visit evidence during an outage.
+    if (user?.userId && user.agencyId) {
+      try {
+        await clearCachedVisitSchedule(secureEvvQueueStore, {
+          userId: user.userId,
+          agencyId: user.agencyId,
+        });
+      } catch {
+        /* best effort — session credentials are still cleared below */
+      }
+    }
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);
     await SecureStore.deleteItemAsync(AGENCIES_KEY);
@@ -81,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setAgencies([]);
     setNeedsAgencySelection(false);
-  }, []);
+  }, [user]);
 
   const dismissSessionRevoked = useCallback(() => {
     if (dismissTimerRef.current) {
