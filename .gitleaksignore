@@ -9,3 +9,10 @@
 # but the value is checked into source intentionally — every mobile client
 # reads/writes the same key — and grants access to nothing on its own.
 72e0509b694716bac129c92c02fc4a58e6638072:packages/mobile/src/lib/notification-permissions.ts:generic-api-key:15
+
+# docs/compliance/hipaa/RISK_REGISTER.md R-009 mitigation prose:
+# The generic-api-key rule matched the words "credentials, certification/UAT
+# evidence" inside a risk-register table row — plain English describing what
+# to obtain from vendors, not a secret value. The live file has since been
+# reworded; this entry covers the historical commit already in the branch.
+d7312b99abb41eb4dfc161a40a91a18190054700:docs/compliance/hipaa/RISK_REGISTER.md:generic-api-key:28
