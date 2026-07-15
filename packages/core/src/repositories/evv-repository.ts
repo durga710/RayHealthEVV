@@ -40,6 +40,8 @@ export class EvvRepository {
         service_code: visit.serviceCode ?? null,
         client_id: visit.clientId ?? null,
         clock_in_time: visit.clockInTime,
+        clock_in_client_event_id: visit.clockInClientEventId ?? null,
+        clock_in_capture_mode: visit.clockInCaptureMode ?? 'online',
         clock_in_location: JSON.stringify(visit.clockInLocation),
         status: visit.status
       })
@@ -60,9 +62,18 @@ export class EvvRepository {
   ): Promise<EvvVisit | null> {
     const updateData: Record<string, unknown> = {};
     if (visit.clockOutTime) updateData.clock_out_time = visit.clockOutTime;
+    if (visit.clockOutClientEventId) {
+      updateData.clock_out_client_event_id = visit.clockOutClientEventId;
+    }
+    if (visit.clockOutCaptureMode) updateData.clock_out_capture_mode = visit.clockOutCaptureMode;
     if (visit.clockOutLocation)
       updateData.clock_out_location = JSON.stringify(visit.clockOutLocation);
     if (visit.status) updateData.status = visit.status;
+    if (visit.tasks !== undefined)
+      updateData.tasks = visit.tasks === null ? null : JSON.stringify(visit.tasks);
+    if (visit.visitNote !== undefined) updateData.visit_note = visit.visitNote;
+    if (visit.signature !== undefined)
+      updateData.signature = visit.signature === null ? null : JSON.stringify(visit.signature);
 
     const allowedIds = this.db('evv_visits as v')
       .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
@@ -171,6 +182,22 @@ export class EvvRepository {
       .select('v.*')
       .first();
 
+    return row ? this.mapRowToVisit(row) : null;
+  }
+
+  /** Resolve an idempotent clock-in replay without exposing another tenant or caregiver. */
+  async getVisitByClockInClientEvent(
+    clientEventId: string,
+    agencyId: string,
+    caregiverId: string,
+  ): Promise<EvvVisit | null> {
+    const row = await this.db('evv_visits as v')
+      .join('users as u', 'u.caregiver_id', 'v.caregiver_id')
+      .where('u.agency_id', agencyId)
+      .andWhere('v.caregiver_id', caregiverId)
+      .andWhere('v.clock_in_client_event_id', clientEventId)
+      .select('v.*')
+      .first();
     return row ? this.mapRowToVisit(row) : null;
   }
 
@@ -295,6 +322,14 @@ export class EvvRepository {
         clockOut instanceof Date
           ? clockOut.toISOString()
           : (clockOut as string | undefined),
+      clockInClientEventId:
+        (row.clock_in_client_event_id as string | null | undefined) ?? undefined,
+      clockOutClientEventId:
+        (row.clock_out_client_event_id as string | null | undefined) ?? undefined,
+      clockInCaptureMode:
+        (row.clock_in_capture_mode as EvvVisit['clockInCaptureMode']) ?? undefined,
+      clockOutCaptureMode:
+        (row.clock_out_capture_mode as EvvVisit['clockOutCaptureMode']) ?? undefined,
       clockInLocation:
         typeof inLoc === 'string'
           ? JSON.parse(inLoc)
@@ -304,10 +339,23 @@ export class EvvRepository {
           ? JSON.parse(outLoc)
           : (outLoc as EvvVisit['clockOutLocation']),
       status: row.status as EvvVisit['status'],
+      tasks:
+        typeof row.tasks === 'string'
+          ? JSON.parse(row.tasks)
+          : ((row.tasks as EvvVisit['tasks']) ?? null),
+      visitNote: (row.visit_note as string | null | undefined) ?? null,
+      signature:
+        typeof row.signature === 'string'
+          ? JSON.parse(row.signature)
+          : ((row.signature as EvvVisit['signature']) ?? null),
       sandataStatus: (row.sandata_status as EvvVisit['sandataStatus']) ?? null,
       sandataConfirmationId: (row.sandata_confirmation_id as string | null) ?? null,
       hhaexchangeStatus: (row.hhaexchange_status as EvvVisit['hhaexchangeStatus']) ?? null,
-      hhaexchangeConfirmationId: (row.hhaexchange_confirmation_id as string | null) ?? null
+      hhaexchangeConfirmationId: (row.hhaexchange_confirmation_id as string | null) ?? null,
+      createdAt:
+        row.created_at instanceof Date
+          ? row.created_at.toISOString()
+          : ((row.created_at as string | undefined) ?? undefined)
     };
   }
 

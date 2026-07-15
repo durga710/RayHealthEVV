@@ -28,15 +28,31 @@ jobs:
           origin="${RAYHEALTH_PROD_ORIGIN:-https://rayhealthevv.com}"
           origin="${origin%/}"
 
+          # Each probe gets three attempts with backoff. The first request after
+          # a quiet period routinely catches a serverless/Neon cold start (a
+          # slow response or a transient 503 while compute resumes); a real
+          # outage still fails because all three attempts fail. Observed cold
+          # start: first hit 503 after ~5s, immediate 200s afterwards.
           probe() {
             local name="$1"
             local path="$2"
             local out="$3"
-            echo "Probing ${name}: ${origin}${path}"
-            curl --fail --silent --show-error --max-time 10 \
-              --header 'accept: application/json' \
-              "${origin}${path}" \
-              --output "${out}"
+            local attempt
+            for attempt in 1 2 3; do
+              echo "Probing ${name} (attempt ${attempt}/3): ${origin}${path}"
+              if curl --fail --silent --show-error --max-time 20 \
+                --header 'accept: application/json' \
+                "${origin}${path}" \
+                --output "${out}"; then
+                return 0
+              fi
+              if [ "${attempt}" -lt 3 ]; then
+                echo "::notice::${name} probe attempt ${attempt} failed (cold start?); retrying in $((attempt * 5))s"
+                sleep $((attempt * 5))
+              fi
+            done
+            echo "::error::${name} probe failed after 3 attempts"
+            return 1
           }
 
           probe "liveness" "/api/health" "health.json"

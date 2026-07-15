@@ -1,0 +1,39 @@
+name: audit-retention
+
+# Archives audit rows only after the seven-year RayHealth floor. The job writes
+# a non-PHI run record to audit_retention_runs and emits the same summary in the
+# Actions log. Production setup requires the DATABASE_URL repository secret.
+on:
+  schedule:
+    - cron: '11 7 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: audit-retention
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    name: archive audit evidence past retention floor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.x'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build core workspace
+        run: npm run build --workspace=@rayhealth/core
+
+      - name: Run retention sweep
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx packages/app/src/scripts/run-audit-retention-sweep.ts

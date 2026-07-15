@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
@@ -13,6 +13,7 @@ import { createEmailClient, buildPasswordResetUrl } from '../email/email-client.
 import { safeError } from '../security/safe-log.js';
 import { CURRENT_TERMS_VERSION } from '../terms.js';
 import { verifySync } from 'otplib';
+import { getMobileSessionStore, type MobileSessionStore } from '../services/mobile-session-store.js';
 
 const router = Router();
 type AuditEventDb = ConstructorParameters<typeof AuditEventRepository>[0];
@@ -283,21 +284,25 @@ const MOBILE_TOKEN_TTL_SECONDS = 8 * 60 * 60;
  * Issue a revocable mobile bearer token. Each token carries a `jti` backed by a
  * `mobile_sessions` row, so logout and password-reset can terminate it
  * server-side, a valid signature alone is no longer sufficient to authenticate
- * (see authContext). Returns the signed JWT.
+ * (see authContext). Takes the injectable session store so tests can observe
+ * or fail session creation without a live database. Returns the signed JWT.
  */
 async function issueMobileToken(
-  db: AuditEventDb,
+  mobileSessions: MobileSessionStore,
   claims: { sub: string; agencyId: string; role: string; caregiverId?: string },
   deviceLabel?: string,
 ): Promise<string> {
-  const jti = crypto.randomUUID();
+  const jti = randomUUID();
   const expiresAt = new Date(Date.now() + MOBILE_TOKEN_TTL_SECONDS * 1000).toISOString();
-  await new MobileSessionRepository(db).create({
+  const session = await mobileSessions.create({
     userId: claims.sub,
     tokenJti: jti,
     deviceLabel,
     expiresAt,
   });
+  if (!session.id) {
+    throw new Error('Mobile session creation did not return an id');
+  }
   return jwt.sign(claims, jwtSecret(), {
     expiresIn: MOBILE_TOKEN_TTL_SECONDS,
     algorithm: 'HS256',
@@ -338,7 +343,7 @@ router.post('/mobile/login', async (req, res) => {
       return;
     }
 
-    const token = await issueMobileToken(db, {
+    const token = await issueMobileToken(getMobileSessionStore(req), {
       sub: user.id,
       agencyId: user.agencyId,
       role: user.role,
@@ -361,7 +366,7 @@ router.post('/mobile/login', async (req, res) => {
     // must prompt before showing any agency-scoped data. The token above is
     // scoped to the home agency; /mobile/switch-agency swaps it.
     const agencies = await listMobileAgencies(db, user);
-    res.json({ token, role: user.role, agencyId: user.agencyId, agencies });
+    res.json({ token, userId: user.id, role: user.role, agencyId: user.agencyId, agencies });
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
   }
@@ -419,7 +424,7 @@ router.post('/mobile/login/2fa', async (req, res) => {
       return;
     }
 
-    const token = await issueMobileToken(db, {
+    const token = await issueMobileToken(getMobileSessionStore(req), {
       sub: row.id,
       agencyId: row.agency_id,
       role: row.role,
@@ -574,7 +579,7 @@ router.post('/bootstrap', async (req, res) => {
 
     // Issue a revocable bearer token (jti + mobile_sessions row) so it satisfies
     // authContext, which now requires every bearer token to be server-revocable.
-    const token = await issueMobileToken(db, {
+    const token = await issueMobileToken(getMobileSessionStore(req), {
       sub: user.id,
       agencyId: user.agencyId,
       role: user.role,
@@ -624,6 +629,42 @@ router.post('/logout', authContext, requireCsrf, async (req, res) => {
       });
     }
     res.clearCookie(SESSION_COOKIE_NAME, clearSessionCookieOptions());
+    res.status(204).send();
+  } catch {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Mobile bearer logout revokes the server-side jti before the device deletes
+// its local token. A copied token therefore stops working immediately instead
+// of remaining valid for the rest of its eight-hour lifetime.
+router.post('/mobile/logout', authContext, async (req, res) => {
+  if (
+    req.auth.authMethod !== 'bearer' ||
+    !req.auth.tokenJti ||
+    !req.auth.mobileSessionId
+  ) {
+    res.status(401).json({ message: 'Invalid or expired token' });
+    return;
+  }
+
+  try {
+    const db = req.app.get('db');
+    await getMobileSessionStore(req).revokeByJti(
+      req.auth.tokenJti,
+      new Date().toISOString(),
+    );
+    await recordAuditEvent(db, {
+      agencyId: req.auth.agencyId,
+      actorId: req.auth.userId,
+      actorType: 'user',
+      eventType: 'session.revoked',
+      entityType: 'mobile_session',
+      entityId: req.auth.mobileSessionId,
+      outcome: 'success',
+      payload: { authMethod: 'bearer' },
+      occurredAt: new Date().toISOString(),
+    });
     res.status(204).send();
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
@@ -815,17 +856,22 @@ router.post('/mobile/switch-agency', authContext, requireCsrf, async (req, res) 
       return;
     }
 
-    const token = await issueMobileToken(db, {
+    const mobileSessions = getMobileSessionStore(req);
+    const token = await issueMobileToken(mobileSessions, {
       sub: userId,
       agencyId: membership.agencyId,
       role: membership.role,
       caregiverId: membership.caregiverId,
     });
 
-    // Invalidate the token being switched away from so only one mobile token is
-    // live per device after a re-scope.
+    // Switching agency scopes replaces the current bearer session. Revoke the
+    // old jti only after the new session row exists so a transient insert
+    // failure cannot strand the caregiver without a usable token.
     if (req.auth.tokenJti) {
-      await new MobileSessionRepository(db).revokeByJti(req.auth.tokenJti, new Date().toISOString());
+      await mobileSessions.revokeByJti(
+        req.auth.tokenJti,
+        new Date().toISOString(),
+      );
     }
 
     await recordAuditEvent(db, {

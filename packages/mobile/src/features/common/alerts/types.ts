@@ -2,7 +2,7 @@ import type { Ionicons } from '@expo/vector-icons';
 
 export type IoniconName = keyof typeof Ionicons.glyphMap;
 
-export type DialogVariant = 'confirm' | 'destructive' | 'success' | 'error' | 'info';
+export type DialogVariant = 'confirm' | 'destructive' | 'success' | 'error' | 'info' | 'warning';
 export type ToastVariant = 'success' | 'info' | 'warning';
 
 export interface AlertButton {

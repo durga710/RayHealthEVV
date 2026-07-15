@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -105,6 +105,9 @@ export default function ScheduleScreen() {
   const [rows, setRows] = useState<ScheduleRow[]>([]);
   const [mode, setMode] = useState<ViewMode>('list');
   const [error, setError] = useState<string | null>(null);
+  // Device-clock skew vs the server, forwarded to the clock-in screen so its
+  // time-window UX matches the server decision on a badly set phone clock.
+  const serverSkewMsRef = useRef(0);
 
   // Animated segmented control: the active pill slides between the two halves
   // of the measured track instead of the background swapping instantly.
@@ -135,17 +138,22 @@ export default function ScheduleScreen() {
   const load = useCallback(async () => {
     try {
       let schedule: ScheduleRow[] = [];
+      let serverTime: string | undefined;
       try {
         // Preferred: full multi-day window for the calendar.
-        const res = await apiClient.get<{ schedule: ScheduleRow[] }>('/api/mobile/caregiver/schedule?days=30');
+        const res = await apiClient.get<{ schedule: ScheduleRow[]; serverTime?: string }>('/api/mobile/caregiver/schedule?days=30');
         schedule = res.data?.schedule ?? [];
+        serverTime = res.data?.serverTime;
       } catch {
         // The /schedule endpoint may not be deployed yet, fall back to the
         // always-available "today" window (same row shape) so the tab still
         // shows visits instead of an empty state.
-        const res = await apiClient.get<{ schedule: ScheduleRow[] }>('/api/mobile/caregiver/today');
+        const res = await apiClient.get<{ schedule: ScheduleRow[]; serverTime?: string }>('/api/mobile/caregiver/today');
         schedule = res.data?.schedule ?? [];
+        serverTime = res.data?.serverTime;
       }
+      const serverNow = serverTime ? Date.parse(serverTime) : NaN;
+      if (Number.isFinite(serverNow)) serverSkewMsRef.current = serverNow - Date.now();
       setRows(schedule);
       setError(null);
     } catch {
@@ -207,6 +215,8 @@ export default function ScheduleScreen() {
         clientName: `${r.clientFirstName} ${r.clientLastName}`.trim(),
         ...(address ? { clientAddress: address } : {}),
         ...(r.scheduledStartTime ? { scheduledTime: r.scheduledStartTime } : {}),
+        ...(r.scheduledEndTime ? { scheduledEndTime: r.scheduledEndTime } : {}),
+        serverSkewMs: String(serverSkewMsRef.current),
         ...(r.clientLatitude != null ? { clientLat: String(r.clientLatitude) } : {}),
         ...(r.clientLongitude != null ? { clientLng: String(r.clientLongitude) } : {}),
         clientGeofenceM: String(r.geofenceRadiusM),

@@ -6,6 +6,7 @@ const monorepoRoot = path.resolve(projectRoot, '../..');
 
 // react@19.1.0 lives here. matches the renderer bundled in react-native@0.81.5
 const LOCAL_REACT = path.resolve(projectRoot, 'node_modules/react');
+const LOCAL_REACT_DOM = path.resolve(projectRoot, 'node_modules/react-dom');
 
 // react-native-maps is native-only; on web it imports react-native internals
 // that don't exist there and break `expo export`. Redirect it to a web shim
@@ -38,6 +39,18 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   }
   if (moduleName === 'react/jsx-dev-runtime') {
     return { filePath: path.resolve(LOCAL_REACT, 'jsx-dev-runtime.js'), type: 'sourceFile' };
+  }
+  if (moduleName === 'react-dom') {
+    return { filePath: path.resolve(LOCAL_REACT_DOM, 'index.js'), type: 'sourceFile' };
+  }
+  if (moduleName === 'react-dom/client') {
+    return { filePath: path.resolve(LOCAL_REACT_DOM, 'client.js'), type: 'sourceFile' };
+  }
+  if (moduleName === 'react-dom/server') {
+    return {
+      filePath: path.resolve(LOCAL_REACT_DOM, platform === 'web' ? 'server.browser.js' : 'server.node.js'),
+      type: 'sourceFile',
+    };
   }
   if (moduleName === 'react-native-maps' && platform === 'web') {
     return { filePath: MAPS_WEB_SHIM, type: 'sourceFile' };

@@ -1,8 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { MobileSessionRepository, SessionRepository, type AppRole } from '@rayhealth/core';
+import { SessionRepository, type AppRole } from '@rayhealth/core';
 import { readCookie, SESSION_COOKIE_NAME } from '../security/cookies.js';
 import { hashOpaqueToken } from '../security/token-hashing.js';
+import { getMobileSessionStore } from '../services/mobile-session-store.js';
 import { assertCronAuthorized } from './cron-auth.js';
 
 interface JwtPayload {
@@ -78,9 +79,9 @@ export async function authContext(req: Request, res: Response, next: NextFunctio
       res.status(401).json({ message: 'Invalid or expired token' });
       return;
     }
-    const mobileSession = await new MobileSessionRepository(req.app.get('db')).findActiveByJti(
+    const mobileSession = await getMobileSessionStore(req).findActiveByJti(
       payload.jti,
-      new Date().toISOString()
+      new Date().toISOString(),
     );
     if (!mobileSession) {
       res.status(401).json({ message: 'Invalid or expired token' });
@@ -93,7 +94,8 @@ export async function authContext(req: Request, res: Response, next: NextFunctio
       userId: payload.sub,
       caregiverId: payload.caregiverId,
       authMethod: 'bearer',
-      tokenJti: payload.jti
+      tokenJti: payload.jti,
+      mobileSessionId: mobileSession.id,
     };
     next();
   } catch {

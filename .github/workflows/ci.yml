@@ -129,3 +129,21 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npx vitest run
         working-directory: packages/web
+
+  test-mobile:
+    name: test-mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck --workspace=@rayhealth/mobile
+      - run: npm run test --workspace=@rayhealth/mobile
+      - run: npm run build --workspace=@rayhealth/mobile

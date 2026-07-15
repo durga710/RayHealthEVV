@@ -179,7 +179,14 @@ router.get('/:visitId', requireCapability('audit.read'), async (req, res) => {
       scheduledStartTime: schedule?.scheduledStartTime ?? null,
       scheduledEndTime: schedule?.scheduledEndTime ?? null,
       clockInTime: visit.clockInTime,
-      clockOutTime: visit.clockOutTime ?? null
+      clockOutTime: visit.clockOutTime ?? null,
+      // Service documentation captured at clock-out (catalog-snapshotted
+      // tasks + caregiver note + verification-of-service signature). Part of
+      // the packet body, so covered by the integrity hash like every other
+      // visit fact.
+      tasks: visit.tasks ?? null,
+      visitNote: visit.visitNote ?? null,
+      signature: visit.signature ?? null
     };
 
     // ---- parties, minimum necessary ---------------------------------------

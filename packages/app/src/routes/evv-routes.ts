@@ -6,12 +6,16 @@ import {
   EvvExceptionRepository,
   EvvRepository,
   ScheduleRepository,
+  VisitTaskCompletionRepository,
+  checkClockInWindow,
   checkGeofence,
   detectVisitExceptions,
   evvClockInInputSchema,
   evvClockOutInputSchema,
   evvServiceCodeSchema,
-  evvVisitIdSchema
+  evvVisitIdSchema,
+  paTasks,
+  visitTaskCompletionBatchSchema
 } from '@rayhealth/core';
 import { safeError } from '../security/safe-log.js';
 
@@ -29,6 +33,33 @@ function geofenceRejection(envelope: { distanceM: number; allowedM: number }) {
     distanceM: envelope.distanceM,
     allowedM: envelope.allowedM
   };
+}
+
+// Store-and-forward window bounds. A replayed offline punch may not claim a
+// future capture time (small allowance for device clock skew) and may not be
+// older than the retention window, a queue should drain well within 72h and
+// anything older needs a manual VMUR correction, not a silent backdate.
+const CAPTURED_AT_MAX_SKEW_MS = 5 * 60 * 1000;
+const CAPTURED_AT_MAX_AGE_MS = 72 * 60 * 60 * 1000;
+
+/**
+ * Resolve the effective punch time: the client-supplied offline capture time
+ * when present and within bounds, otherwise the server clock. Returns an
+ * error string for out-of-window values so callers reject rather than
+ * silently substituting server time (the client should hear its stamp was
+ * refused).
+ */
+function resolvePunchTime(capturedAt: string | undefined): { time: string } | { error: string } {
+  if (!capturedAt) return { time: new Date().toISOString() };
+  const captured = Date.parse(capturedAt);
+  const now = Date.now();
+  if (captured > now + CAPTURED_AT_MAX_SKEW_MS) {
+    return { error: 'capturedAt is in the future' };
+  }
+  if (captured < now - CAPTURED_AT_MAX_AGE_MS) {
+    return { error: 'capturedAt is older than the 72h offline window; file a visit correction instead' };
+  }
+  return { time: new Date(captured).toISOString() };
 }
 
 router.get('/visits', requireCapability('evv.read'), async (req, res) => {
@@ -66,6 +97,91 @@ router.get('/visits/count', requireCapability('evv.read'), async (req, res) => {
   }
 });
 
+router.get('/visits/:id/tasks', requireCapability('evv.read'), async (req, res) => {
+  try {
+    const rawId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0];
+    const id = evvVisitIdSchema.safeParse(rawId);
+    if (!id.success) return res.status(400).json({ message: 'Valid visit id is required' });
+
+    const db = req.app.get('db');
+    const visit = await new EvvRepository(db).getVisitByIdForAgency(id.data, req.auth.agencyId);
+    if (!visit) return res.status(404).json({ message: 'Visit not found' });
+    if (req.auth.role === 'caregiver' && visit.caregiverId !== req.auth.caregiverId) {
+      return res.status(404).json({ message: 'Visit not found' });
+    }
+
+    const result = await new VisitTaskCompletionRepository(db).getForVisit(id.data, req.auth.agencyId);
+    res.json(result);
+  } catch (error) {
+    safeError('Failed to load visit task completion state', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.put('/visits/:id/tasks', requireCapability('evv.write'), async (req, res) => {
+  try {
+    if (!req.auth.caregiverId) {
+      return res.status(403).json({ message: 'User is not authorized as a caregiver' });
+    }
+    const rawId = typeof req.params.id === 'string' ? req.params.id : req.params.id[0];
+    const id = evvVisitIdSchema.safeParse(rawId);
+    const parsed = visitTaskCompletionBatchSchema.safeParse(req.body ?? {});
+    if (!id.success || !parsed.success) {
+      return res.status(400).json({ message: 'Valid visit id and task completions are required' });
+    }
+
+    const db = req.app.get('db');
+    const visit = await new EvvRepository(db).getVisitByIdForAgency(id.data, req.auth.agencyId);
+    if (!visit || visit.caregiverId !== req.auth.caregiverId) {
+      return res.status(404).json({ message: 'Visit not found' });
+    }
+
+    const repo = new VisitTaskCompletionRepository(db);
+    const current = await repo.getForVisit(id.data, req.auth.agencyId);
+    const allowed = new Set(
+      current.plan.map((task) => `${task.taskCode ?? ''}:${task.taskLabel.toLowerCase()}`),
+    );
+    const hasUnknownTask = parsed.data.completions.some(
+      (task) => !allowed.has(`${task.taskCode ?? ''}:${task.taskLabel.toLowerCase()}`),
+    );
+    if (hasUnknownTask) {
+      return res.status(422).json({ message: 'Every completion must match the visit care plan' });
+    }
+
+    const completions = await repo.upsertBatch({
+      agencyId: req.auth.agencyId,
+      visitId: id.data,
+      caregiverId: req.auth.caregiverId,
+      completions: parsed.data.completions,
+    });
+
+    const statusCounts = completions.reduce<Record<string, number>>((counts, item) => {
+      counts[item.status] = (counts[item.status] ?? 0) + 1;
+      return counts;
+    }, {});
+    try {
+      await new AuditEventRepository(db).create({
+        agencyId: req.auth.agencyId,
+        actorId: req.auth.userId,
+        actorType: 'user',
+        eventType: 'evv.tasks.completed',
+        entityType: 'evv.visit',
+        entityId: id.data,
+        outcome: 'success',
+        payload: { completionCount: completions.length, statusCounts },
+        occurredAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      safeError('Failed to audit visit task completions', error);
+    }
+
+    res.json({ completions });
+  } catch (error) {
+    safeError('Failed to persist visit task completions', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
   try {
     if (!req.auth.caregiverId) return res.status(403).json({ message: 'User is not authorized as a caregiver' });
@@ -75,6 +191,16 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
 
     const db = req.app.get('db');
     const repo = new EvvRepository(db);
+    // Offline replay idempotency: a queued punch that already synced returns
+    // the visit it created instead of opening a duplicate.
+    if (parsed.data.clientEventId) {
+      const replay = await repo.getVisitByClockInClientEvent(
+        parsed.data.clientEventId,
+        req.auth.agencyId,
+        req.auth.caregiverId,
+      );
+      if (replay) return res.json(replay);
+    }
     const scheduleRepo = new ScheduleRepository(db);
     // Resolve client_id (Cures-Act #2, beneficiary) from the assignment's
     // visit_template. Snapshotting it onto the visit row keeps the row
@@ -160,15 +286,88 @@ router.post('/clock-in', requireCapability('evv.write'), async (req, res) => {
       });
     }
 
+    // Offline store-and-forward punches replay with their original capture
+    // time so the visit reflects when care actually started, not when the
+    // phone regained signal. created_at (server time) preserves the sync lag.
+    const punchTime = resolvePunchTime(parsed.data.capturedAt);
+    if ('error' in punchTime) return res.status(400).json({ message: punchTime.error });
+
+    // Time-window gate: clock-in opens shortly before the scheduled start and
+    // closes at the scheduled end. Placed AFTER the open-visit 409 so a
+    // caregiver resuming an overrunning open visit always wins, and evaluated
+    // on the resolved punch time so an in-window offline punch synced later
+    // still lands. Fails open for assignments without a real schedule (see
+    // checkClockInWindow docs).
+    const windowViolation = checkClockInWindow(
+      punchTime.time,
+      assignment.scheduledStartTime ?? null,
+      assignment.scheduledEndTime ?? null
+    );
+    if (windowViolation) {
+      try {
+        await new AuditEventRepository(db).create({
+          agencyId: req.auth.agencyId,
+          actorId: req.auth.userId,
+          actorType: 'user',
+          eventType: 'permission.denied',
+          entityType: 'evv.clock-in',
+          entityId: parsed.data.assignmentId,
+          outcome: 'denied',
+          payload: {
+            reason: 'clock-in-window',
+            windowReason: windowViolation.reason,
+            punchTime: punchTime.time,
+            opensAt: windowViolation.opensAt,
+            closesAt: windowViolation.closesAt
+          },
+          occurredAt: new Date().toISOString()
+        });
+      } catch (err) {
+        safeError('Failed to record clock-in-window audit event', err);
+      }
+      return res.status(422).json({
+        message:
+          windowViolation.reason === 'too-early'
+            ? 'This visit is not open for clock-in yet. Clock-in opens 5 minutes before the scheduled start.'
+            : "This visit's scheduled time has ended, so it can no longer be clocked into. Contact your coordinator if you provided this care.",
+        code: 'OUTSIDE_CLOCK_IN_WINDOW' as const,
+        reason: windowViolation.reason,
+        opensAt: windowViolation.opensAt,
+        closesAt: windowViolation.closesAt,
+        scheduledStartTime: assignment.scheduledStartTime ?? null,
+        scheduledEndTime: assignment.scheduledEndTime ?? null
+      });
+    }
+
     const visit = await repo.createVisit({
+      id: parsed.data.visitId,
       assignmentId: parsed.data.assignmentId,
       caregiverId: req.auth.caregiverId,
       clientId: assignment.clientId,
       serviceCode,
-      clockInTime: new Date().toISOString(),
+      clockInTime: punchTime.time,
+      clockInClientEventId: parsed.data.clientEventId,
+      clockInCaptureMode: parsed.data.captureMode ?? 'online',
       clockInLocation: parsed.data.location,
       status: 'pending'
     });
+    if (parsed.data.captureMode === 'offline') {
+      try {
+        await new AuditEventRepository(db).create({
+          agencyId: req.auth.agencyId,
+          actorId: req.auth.userId,
+          actorType: 'user',
+          eventType: 'evv.offline.synced',
+          entityType: 'evv.clock-in',
+          entityId: visit.id!,
+          outcome: 'success',
+          payload: { capturedAt: punchTime.time, receivedAt: new Date().toISOString() },
+          occurredAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        safeError('Failed to audit offline EVV clock-in sync', error);
+      }
+    }
     res.status(201).json(visit);
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
@@ -184,6 +383,28 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
     if (!id.success || !parsed.success) {
       return res.status(400).json({ message: 'Valid visit id and GPS location are required' });
     }
+
+    // Resolve documented task IDs against the PA task catalog and snapshot
+    // {id, duty} onto the visit (self-contained for audit packet/aggregator,
+    // same philosophy as the clock-in service-code snapshot). Unknown codes
+    // are rejected rather than silently dropped, a client sending garbage
+    // should hear about it before the visit is closed.
+    let tasks: Array<{ id: string; duty: string }> | undefined;
+    if (parsed.data.taskIds && parsed.data.taskIds.length > 0) {
+      const catalog = new Map(paTasks.map((t) => [t.id, t]));
+      const unknown = parsed.data.taskIds.filter((taskId) => !catalog.has(taskId));
+      if (unknown.length > 0) {
+        return res.status(400).json({
+          message: `Unknown task code(s): ${unknown.join(', ')}`,
+          code: 'UNKNOWN_TASK_CODE'
+        });
+      }
+      tasks = [...new Set(parsed.data.taskIds)].map((taskId) => {
+        const t = catalog.get(taskId)!;
+        return { id: t.id, duty: t.duty };
+      });
+    }
+    const visitNote = parsed.data.note ? parsed.data.note : undefined;
 
     const db = req.app.get('db');
     const repo = new EvvRepository(db);
@@ -241,7 +462,14 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
       }
     }
 
-    const clockOutTime = new Date().toISOString();
+    // Offline store-and-forward: honor the original capture time within the
+    // window, and never let a clock-out land before its own clock-in.
+    const punchTime = resolvePunchTime(parsed.data.capturedAt);
+    if ('error' in punchTime) return res.status(400).json({ message: punchTime.error });
+    if (Date.parse(punchTime.time) <= Date.parse(existing.clockInTime)) {
+      return res.status(400).json({ message: 'capturedAt is before this visit clocked in' });
+    }
+    const clockOutTime = punchTime.time;
 
     // Best-effort scheduled-start lookup for late-clock-in detection.
     let scheduledStartTime: string | null = null;
@@ -269,10 +497,26 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
 
     // updateVisit returns null when the visit is on another tenant OR does
     // not exist. Both surface as 404, we never confirm cross-tenant existence.
+    // Verification-of-service signature: stored with the punch moment as its
+    // signing time (identical for online punches; the original capture time
+    // for offline store-and-forward ones).
+    const signature = parsed.data.signature
+      ? {
+          ...parsed.data.signature,
+          signerName: parsed.data.signature.signerName ?? null,
+          signedAt: clockOutTime
+        }
+      : undefined;
+
     const visit = await repo.updateVisit(id.data, req.auth.agencyId, {
       clockOutTime,
       clockOutLocation: parsed.data.location,
-      status
+      clockOutClientEventId: parsed.data.clientEventId,
+      clockOutCaptureMode: parsed.data.captureMode ?? 'online',
+      status,
+      ...(tasks ? { tasks } : {}),
+      ...(visitNote ? { visitNote } : {}),
+      ...(signature ? { signature } : {})
     });
     if (!visit) return res.status(404).json({ message: 'Visit not found' });
 
@@ -303,6 +547,24 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
         });
       } catch (err) {
         safeError('Failed to persist EVV exceptions', err);
+      }
+    }
+
+    if (parsed.data.captureMode === 'offline') {
+      try {
+        await new AuditEventRepository(db).create({
+          agencyId: req.auth.agencyId,
+          actorId: req.auth.userId,
+          actorType: 'user',
+          eventType: 'evv.offline.synced',
+          entityType: 'evv.clock-out',
+          entityId: id.data,
+          outcome: 'success',
+          payload: { capturedAt: clockOutTime, receivedAt: new Date().toISOString() },
+          occurredAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        safeError('Failed to audit offline EVV clock-out sync', error);
       }
     }
 

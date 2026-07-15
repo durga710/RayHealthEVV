@@ -60,6 +60,19 @@ export default function VisitDetailScreen() {
   const status = (one(params.status) ?? 'pending') as 'verified' | 'flagged' | 'pending';
   const serviceCode = one(params.serviceCode);
   const flagReason = one(params.flagReason);
+  const visitNote = one(params.visitNote);
+  // Tasks arrive JSON-stringified through router params; a malformed value
+  // degrades to "no documentation" rather than crashing the screen.
+  const tasks: { id: string; duty: string }[] = (() => {
+    const raw = one(params.tasks);
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((t) => t && typeof t.duty === 'string') : [];
+    } catch {
+      return [];
+    }
+  })();
 
   const inProgress = !clockOutTime;
   const meta =
@@ -115,6 +128,29 @@ export default function VisitDetailScreen() {
           <Row label="Service" value={service} />
         </View>
 
+        {/* Care documented at clock-out */}
+        {tasks.length > 0 || visitNote ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Care documented</Text>
+            {tasks.length > 0 ? (
+              <View style={styles.taskChips}>
+                {tasks.map((t) => (
+                  <View key={t.id} style={styles.taskChip}>
+                    <Ionicons name="checkmark" size={12} color={colors.brandBlue} />
+                    <Text style={styles.taskChipText}>{t.duty}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            {visitNote ? (
+              <View style={[styles.noteBox, tasks.length > 0 && { marginTop: 12 }]}>
+                <Text style={styles.noteLabel}>Visit note</Text>
+                <Text style={styles.noteText}>{visitNote}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         <View style={styles.evvNote}>
           <Ionicons name="lock-closed" size={13} color={colors.textMuted} style={{ marginTop: 1 }} />
           <Text style={styles.evvNoteText}>
@@ -160,6 +196,21 @@ const styles = StyleSheet.create({
   },
   rowLabel: { ...typography.sub, fontWeight: '600', color: colors.textSecondary },
   rowValue: { fontSize: 14, color: colors.textPrimary, fontWeight: '800' },
+
+  taskChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  taskChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: '#f0f6fd', borderRadius: radii.pill,
+    paddingHorizontal: 11, paddingVertical: 6,
+    borderWidth: 1, borderColor: '#e0ecf8',
+  },
+  taskChipText: { fontSize: 12, fontWeight: '700', color: colors.brandBlue },
+  noteBox: {
+    backgroundColor: colors.inputBg, borderRadius: radii.md, padding: 13,
+    borderWidth: 1, borderColor: colors.inputBorder,
+  },
+  noteLabel: { ...typography.label, fontSize: 10, letterSpacing: 0.6, color: colors.textMuted, marginBottom: 5 },
+  noteText: { fontSize: 13.5, color: colors.textPrimary, lineHeight: 20, fontWeight: '500' },
 
   evvNote: {
     flexDirection: 'row', gap: 9, alignItems: 'flex-start',

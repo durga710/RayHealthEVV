@@ -10,6 +10,7 @@ export interface AuthContext {
   csrfTokenHash?: string;
   // Bearer-only: the JWT's `jti` claim, looked up against mobile_sessions.
   tokenJti?: string;
+  mobileSessionId?: string;
 }
 
 /** Platform super-admin context, set only by requirePlatformAdmin. */

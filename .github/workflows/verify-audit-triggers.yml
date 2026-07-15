@@ -6,8 +6,8 @@ name: verify-audit-triggers
 # instead of waiting for the yearly review window.
 #
 # A non-zero exit here is a SEV-1 per INCIDENT_RESPONSE.md §5.3:
-# either audit_events_block_mutation_trg or evv_visits_enforce_immutability_trg
-# has been removed or weakened, which is exactly the failure mode the
+# a hot-audit, archived-audit, or EVV immutability trigger has been removed or
+# weakened, which is exactly the failure mode the
 # trigger is supposed to prevent. GitHub will email the repo owner on
 # any failed run.
 #
