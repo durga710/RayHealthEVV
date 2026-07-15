@@ -20,6 +20,7 @@ const VARIANT_STYLE: Record<DialogVariant, { accent: string; accentDark: string;
   success: { accent: colors.success, accentDark: '#15803d', badgeBg: colors.successBg, defaultIcon: 'checkmark' },
   confirm: { accent: colors.brandBlue, accentDark: colors.navy, badgeBg: '#eaf2fb', defaultIcon: 'help-circle-outline' },
   info: { accent: colors.brandBlue, accentDark: colors.navy, badgeBg: '#eaf2fb', defaultIcon: 'information-circle-outline' },
+  warning: { accent: colors.amber, accentDark: colors.amberDark, badgeBg: colors.amberBg, defaultIcon: 'warning-outline' },
 };
 
 const SPARKLE_DOTS = [

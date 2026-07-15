@@ -33,6 +33,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import apiClient from '../../lib/api-client';
 import { haversineM, formatDistance } from '../../lib/geofence';
 import { resolveClockOutLocation, type FixCoords } from '../../lib/evv-location';
+import { offlineEvvQueue, isLocalVisitId } from '../../lib/offline-queue';
+import { getClockInWindowState, type ClockInWindowState } from '../../lib/clock-in-window';
+import VisitDocumentationSheet, { type VisitSignatureInput } from './VisitDocumentationSheet';
 import { showAppAlert } from '../common/alerts/appAlert';
 import { colors, typography, radii, shadow, gradients } from '../common/tokens';
 
@@ -331,6 +334,8 @@ export default function ClockInScreen() {
     clientName?: string;
     clientAddress?: string;
     scheduledTime?: string;
+    scheduledEndTime?: string;
+    serverSkewMs?: string;
     serviceCode?: string;
     clientLat?: string;
     clientLng?: string;
@@ -343,6 +348,11 @@ export default function ClockInScreen() {
   const clientName = firstParam(params.clientName);
   const clientAddress = firstParam(params.clientAddress);
   const scheduledTime = firstParam(params.scheduledTime);
+  const scheduledEndTime = firstParam(params.scheduledEndTime);
+  // Server-vs-device clock skew measured by the screen that navigated here;
+  // keeps the window UX honest on a badly set phone clock.
+  const parsedSkew = parseInt(firstParam(params.serverSkewMs) ?? '', 10);
+  const serverSkewMs = Number.isFinite(parsedSkew) ? parsedSkew : 0;
   const serviceCode = firstParam(params.serviceCode);
   // Open visit handed in by the dashboard so this screen can RESUME an
   // in-progress visit (show the running timer + Clock Out) instead of offering
@@ -365,6 +375,21 @@ export default function ClockInScreen() {
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(null);
 
+  // Clock-in time window (UX mirror of the server gate). Re-evaluated on a
+  // 1s tick so the too-early countdown flips the button live at open time.
+  const [windowNow, setWindowNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!scheduledTime) return;
+    const h = setInterval(() => setWindowNow(Date.now()), 1000);
+    return () => clearInterval(h);
+  }, [scheduledTime]);
+  const windowState: ClockInWindowState = getClockInWindowState(
+    windowNow + serverSkewMs,
+    scheduledTime,
+    scheduledEndTime,
+  );
+  const windowOk = windowState.state === 'open' || windowState.state === 'unknown';
+
   const [isLoading, setIsLoading] = useState(false);
   // Seed from the resumable open visit so reopening mid-shift lands on the live
   // timer + Clock Out, not a fresh Clock In.
@@ -382,7 +407,18 @@ export default function ClockInScreen() {
     // Whether an actual GPS coordinate was captured at clock-out. Drives the
     // confirmation badge so it never claims "GPS verified" for a zeroed fix.
     locationCaptured: boolean;
+    // How many catalog tasks the caregiver checked off in the documentation
+    // sheet, echoed on the completion card.
+    tasksDocumented: number;
+    // Whether a verification-of-service signature was collected.
+    signed: boolean;
+    // True when the clock-out was captured offline and queued for sync; the
+    // completion badge must say so instead of claiming the EVV was recorded.
+    offline: boolean;
   } | null>(null);
+  // Pre-clock-out documentation sheet. The sheet stays mounted so the
+  // caregiver's selections survive closing it to check something.
+  const [docVisible, setDocVisible] = useState(false);
   const completeAnim = useRef(new Animated.Value(0)).current;
 
   const locationSubRef = useRef<Location.LocationSubscription | null>(null);
@@ -482,6 +518,38 @@ export default function ClockInScreen() {
           distanceM: resp.data.distanceM ?? 0,
           allowedM: resp.data.allowedM ?? clientGeofenceM,
         });
+      } else if (resp?.status === 422 && resp.data?.code === 'OUTSIDE_CLOCK_IN_WINDOW') {
+        // The local mirror should have disabled the button; reaching here
+        // means the device clock disagrees with the server. Show the
+        // server's verdict, it is the authority.
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        showAppAlert(
+          'Not open for clock-in',
+          resp.data.message ?? 'This visit cannot be clocked into right now.',
+          undefined,
+          { variant: 'warning', icon: 'time-outline' },
+        );
+      } else if (!resp) {
+        // No server response = offline / dead zone. Store the punch on the
+        // phone with its capture moment and start the visit locally; the
+        // queue replays it (and its clock-out) when connectivity returns.
+        // The local geofence check already gated the button, and the server
+        // re-verifies against this same captured GPS at replay.
+        const capturedAt = new Date().toISOString();
+        const queued = await offlineEvvQueue.enqueueClockIn({
+          assignmentId,
+          ...(serviceCode ? { serviceCode } : {}),
+          location: { lat: currentCoords.lat, lng: currentCoords.lng, accuracy: accuracy ?? 0 },
+          capturedAt,
+        });
+        setVisit({ id: queued.localVisitId, clockInTime: queued.capturedAt });
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showAppAlert(
+          'Clocked in offline',
+          "No connection right now, so your clock-in is saved on this phone with the exact time and location. It syncs automatically the moment you're back online.",
+          undefined,
+          { variant: 'info', icon: 'cloud-offline-outline' },
+        );
       } else {
         showAppAlert(
           "Clock-in didn't go through",
@@ -495,7 +563,7 @@ export default function ClockInScreen() {
     }
   };
 
-  const handleClockOut = async () => {
+  const handleClockOut = async (taskIds: string[], note: string, signature?: VisitSignatureInput) => {
     if (!visit) return;
     setGeofenceError(null);
     setIsLoading(true);
@@ -526,14 +594,79 @@ export default function ClockInScreen() {
         }
       }
       const resolved = resolveClockOutLocation(live, lastKnown);
-      await apiClient.post(`/api/evv/clock-out/${visit.id}`, { location: resolved.payload });
+
+      // Ends the visit locally: queues the punch with its capture moment and
+      // shows the completion card in its "saved offline" form. Used both when
+      // the visit itself only exists on this phone (offline clock-in) and
+      // when a normal clock-out can't reach the server.
+      const completeOffline = async () => {
+        const capturedAt = new Date().toISOString();
+        await offlineEvvQueue.enqueueClockOut({
+          visitRef: visit.id,
+          location: resolved.payload,
+          capturedAt,
+          ...(taskIds.length > 0 ? { taskIds } : {}),
+          ...(note ? { note } : {}),
+          ...(signature ? { signature } : {}),
+        });
+        setDocVisible(false);
+        setVisit(null);
+        setCompleted({
+          totalElapsed: elapsed, clockInTime: visit.clockInTime, clockOutTime: capturedAt,
+          locationCaptured: resolved.captured,
+          tasksDocumented: taskIds.length,
+          signed: Boolean(signature),
+          offline: true,
+        });
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      };
+
+      // A visit that was clocked in offline exists only in the queue; its
+      // clock-out must queue behind it (FIFO replay pairs them up).
+      if (isLocalVisitId(visit.id)) {
+        await completeOffline();
+        return;
+      }
+
+      try {
+        await apiClient.post(`/api/evv/clock-out/${visit.id}`, {
+          location: resolved.payload,
+          // Service documentation from the sheet. Omitted keys keep the request
+          // identical to the pre-documentation payload when nothing was entered.
+          ...(taskIds.length > 0 ? { taskIds } : {}),
+          ...(note ? { note } : {}),
+          ...(signature ? { signature } : {}),
+        });
+      } catch (err: unknown) {
+        const resp = (err as {
+          response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } }
+        })?.response;
+        if (!resp) {
+          // Connection dropped mid-shift: never trap the caregiver in an open
+          // visit. Queue the punch and finish locally.
+          await completeOffline();
+          return;
+        }
+        throw err;
+      }
       const totalElapsed = elapsed;
       const clockInTime = visit.clockInTime;
       const clockOutTime = new Date().toISOString();
+      setDocVisible(false);
       setVisit(null);
-      setCompleted({ totalElapsed, clockInTime, clockOutTime, locationCaptured: resolved.captured });
+      setCompleted({
+        totalElapsed, clockInTime, clockOutTime,
+        locationCaptured: resolved.captured,
+        tasksDocumented: taskIds.length,
+        signed: Boolean(signature),
+        offline: false,
+      });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
+      // Close the sheet on any failure so the geofence banner / error alert
+      // isn't hidden underneath the modal. Selections survive, the sheet
+      // stays mounted and reopens with the same state.
+      setDocVisible(false);
       const resp = (err as {
         response?: { status?: number; data?: { code?: string; message?: string; distanceM?: number; allowedM?: number } }
       })?.response;
@@ -558,7 +691,7 @@ export default function ClockInScreen() {
   };
 
   const isClockedIn = visit !== null;
-  const canClockIn = currentCoords != null && geoStatus === 'inside' && !isLoading;
+  const canClockIn = currentCoords != null && geoStatus === 'inside' && !isLoading && windowOk;
   // Clock-out is intentionally NOT gated on a live fix, see handleClockOut.
   const canClockOut = isClockedIn && !isLoading;
 
@@ -674,6 +807,10 @@ export default function ClockInScreen() {
         <Text style={styles.actionBtnText}>
           {isLoading
             ? 'Clocking in…'
+            : windowState.state === 'expired'
+            ? 'Visit window ended'
+            : windowState.state === 'too-early'
+            ? `Opens at ${formatScheduledTime(new Date(windowState.opensAt).toISOString())}`
             : geoStatus === 'outside'
             ? 'Move closer to clock in'
             : geoStatus === 'requesting' || geoStatus === 'idle'
@@ -684,7 +821,10 @@ export default function ClockInScreen() {
     </Pressable>
   ) : (
     <Pressable
-      onPress={handleClockOut}
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setDocVisible(true);
+      }}
       disabled={!canClockOut}
       style={({ pressed }) => [
         styles.actionBtnWrap,
@@ -755,7 +895,21 @@ export default function ClockInScreen() {
   // gated on the fence, so a "move closer" nudge there would be misleading).
   const statusHint =
     !isClockedIn && !geofenceError && geoStatus !== 'denied' ? (
-      geoStatus === 'outside' && distanceM != null ? (
+      windowState.state === 'expired' ? (
+        <View style={[styles.hintRow, styles.hintNeutral]}>
+          <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+          <Text style={[styles.hintText, { color: colors.textSecondary }]}>
+            {"This visit's scheduled time has passed, so it can no longer be clocked into. If you provided this care, contact your coordinator about a correction."}
+          </Text>
+        </View>
+      ) : windowState.state === 'too-early' ? (
+        <View style={[styles.hintRow, styles.hintOutside]}>
+          <Ionicons name="time-outline" size={16} color={colors.amberDark} />
+          <Text style={[styles.hintText, { color: colors.amberDark }]}>
+            {`Clock-in opens at ${formatScheduledTime(new Date(windowState.opensAt).toISOString())} (in ${formatElapsed(Math.max(1, Math.ceil((windowState.opensAt - (windowNow + serverSkewMs)) / 1000)))}), 5 minutes before the scheduled start.`}
+          </Text>
+        </View>
+      ) : geoStatus === 'outside' && distanceM != null ? (
         <View style={[styles.hintRow, styles.hintOutside]}>
           <Ionicons name="walk-outline" size={16} color={colors.amberDark} />
           <Text style={[styles.hintText, { color: colors.amberDark }]}>
@@ -825,18 +979,46 @@ export default function ClockInScreen() {
             </View>
           </View>
 
-          <View style={styles.doneVerified}>
-            <Ionicons
-              name={completed.locationCaptured ? 'shield-checkmark' : 'alert-circle'}
-              size={15}
-              color={completed.locationCaptured ? colors.success : colors.amber}
-            />
-            <Text style={styles.doneVerifiedText}>
-              {completed.locationCaptured
-                ? 'GPS verified · EVV recorded'
-                : 'EVV recorded · location not captured'}
-            </Text>
-          </View>
+          {completed.offline ? (
+            <View style={[styles.doneVerified, styles.doneOffline]}>
+              <Ionicons name="cloud-offline-outline" size={15} color={colors.amberDark} />
+              <Text style={[styles.doneVerifiedText, { color: colors.amberDark }]}>
+                Saved on this phone · syncs when online
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.doneVerified}>
+              <Ionicons
+                name={completed.locationCaptured ? 'shield-checkmark' : 'alert-circle'}
+                size={15}
+                color={completed.locationCaptured ? colors.success : colors.amber}
+              />
+              <Text style={styles.doneVerifiedText}>
+                {completed.locationCaptured
+                  ? 'GPS verified · EVV recorded'
+                  : 'EVV recorded · location not captured'}
+              </Text>
+            </View>
+          )}
+
+          {completed.tasksDocumented > 0 || completed.signed ? (
+            <View style={styles.doneMetaRow}>
+              {completed.tasksDocumented > 0 ? (
+                <View style={styles.doneTasks}>
+                  <Ionicons name="checkbox-outline" size={15} color={colors.brandBlue} />
+                  <Text style={styles.doneTasksText}>
+                    {completed.tasksDocumented} task{completed.tasksDocumented === 1 ? '' : 's'} documented
+                  </Text>
+                </View>
+              ) : null}
+              {completed.signed ? (
+                <View style={styles.doneTasks}>
+                  <Ionicons name="create-outline" size={15} color={colors.brandBlue} />
+                  <Text style={styles.doneTasksText}>Signature collected</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
         </Animated.View>
 
         <View style={styles.doneActions}>
@@ -926,6 +1108,16 @@ export default function ClockInScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* Kept mounted (not conditional) so task selections survive closing the
+          sheet to double-check something before clocking out. */}
+      <VisitDocumentationSheet
+        visible={docVisible}
+        clientName={clientName}
+        submitting={isLoading}
+        onCancel={() => setDocVisible(false)}
+        onSubmit={(taskIds, note) => void handleClockOut(taskIds, note)}
+      />
     </View>
   );
 }
@@ -966,6 +1158,14 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.successBorder,
   },
   doneVerifiedText: { color: colors.successDark, fontSize: 12.5, fontWeight: '700' },
+  doneOffline: { backgroundColor: colors.amberBg, borderColor: colors.amberBorder },
+  doneMetaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
+  doneTasks: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10,
+    backgroundColor: '#f0f6fd', borderRadius: radii.pill, paddingHorizontal: 14, paddingVertical: 8,
+    borderWidth: 1, borderColor: '#e0ecf8',
+  },
+  doneTasksText: { color: colors.brandBlue, fontSize: 12.5, fontWeight: '700' },
   doneActions: { width: '100%', maxWidth: 380, gap: 12 },
   doneBtn: {
     flexDirection: 'row', gap: 8,

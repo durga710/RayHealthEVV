@@ -1,6 +1,7 @@
 import type { EvvVisit } from '../domain/evv.js';
 import type { EvvException } from '../domain/evv-exception.js';
 import { EvvComplianceService } from './evv-compliance-service.js';
+import { PA_GRACE_PERIOD_MINUTES } from '../config/pennsylvania.js';
 
 export type DetectedExceptionType = EvvException['exceptionType'];
 
@@ -21,7 +22,9 @@ export interface DetectExceptionOptions {
   accuracyThresholdM?: number;
 }
 
-const DEFAULT_GRACE_MINUTES = 15;
+// Single source of truth for the PA de-minimis grace window; previously a
+// hardcoded duplicate of the pennsylvania.ts constant.
+const DEFAULT_GRACE_MINUTES = PA_GRACE_PERIOD_MINUTES;
 const DEFAULT_ACCURACY_THRESHOLD_M = 100;
 
 /**

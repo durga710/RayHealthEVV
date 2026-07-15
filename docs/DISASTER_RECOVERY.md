@@ -160,7 +160,7 @@ becomes a Neon support escalation.
 | Database internal | Neon nightly backups | per Neon retention policy |
 | Build artifacts | Rebuilt by Vercel from source during deploy | Same as code + dependency lockfile |
 | Vercel env vars | Manually exported quarterly to encrypted password manager | up to one quarter old in worst case |
-| Mobile app source | `packages/mobile` in this repository | Same as code |
+| Mobile app source | `packages/mobile` in this monorepo; Expo/EAS release metadata is versioned beside it | Same as code |
 
 **Quarterly env var export (manual procedure):**
 
@@ -181,7 +181,7 @@ After any recovery action:
 - [ ] `curl https://rayhealthevv.com/api/health` returns `{"ok":true}`
 - [ ] `curl -X POST https://rayhealthevv.com/api/auth/mobile/login` with
       a valid caregiver returns a JWT
-- [ ] `node scripts/verify-audit-triggers.mjs` exits 0 (all 6 checks pass)
+- [ ] `node scripts/verify-audit-triggers.mjs` exits 0 (all configured hot-audit, archived-audit, and EVV checks pass)
 - [ ] `audit_events` row count is reasonable (not zero — that would mean
       a partial restore that lost the audit trail)
 - [ ] At least one full EVV cycle (login → clock-in → clock-out → logout)
@@ -217,13 +217,8 @@ Once per year (target: each February, before the audit cycle):
 2. Practice a full PITR to a 30-minute-ago timestamp on that branch
 3. Run `verify-audit-triggers.mjs` against the restored branch
 4. Run a synthetic EVV cycle against the restored branch
-5. Document the drill outcome with
-   [`OPERATIONAL_DRILLS.md`](./compliance/hipaa/OPERATIONAL_DRILLS.md) and
-   update [`RISK_REGISTER.md`](./compliance/hipaa/RISK_REGISTER.md) if the
-   drill changes residual risk
-
-The template exists, but the drill is not complete until evidence and signoff
-are stored in the private compliance vault.
+5. Store the drill artifact privately and record its evidence ID in
+   `docs/compliance/hipaa/CONTROL_EVIDENCE_REGISTER.md`; update risks as needed
 
 The drill is a control under `SECURITY_POLICY.md` §5.6 (annual
 evaluation) and must be retained as evidence per HIPAA §164.316.

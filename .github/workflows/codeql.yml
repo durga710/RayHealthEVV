@@ -19,6 +19,12 @@ jobs:
     name: analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # GitHub Advanced Security (code scanning) is not available on this
+    # private repo's plan, so the SARIF upload fails on every run with
+    # "Code scanning is not enabled for this repository" and paints every
+    # commit/PR red. Non-blocking until GHAS is enabled (or the repo goes
+    # public), at which point real findings fail the run again.
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:

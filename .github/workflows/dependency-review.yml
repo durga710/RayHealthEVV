@@ -13,6 +13,12 @@ jobs:
     name: dependency-review
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # The dependency-review API requires the dependency graph + GitHub
+    # Advanced Security, which this private repo's plan does not include —
+    # the action fails on every PR with "Dependency review is not supported
+    # on this repository". Non-blocking until GHAS is enabled (or the repo
+    # goes public), at which point CVE/license findings fail the run again.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
         with:

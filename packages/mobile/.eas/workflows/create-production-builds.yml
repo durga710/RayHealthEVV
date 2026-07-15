@@ -1,0 +1,16 @@
+name: Create RayHealth production builds
+
+jobs:
+  build_android:
+    name: Build Android app bundle
+    type: build
+    params:
+      platform: android
+      profile: production
+
+  build_ios:
+    name: Build iOS archive
+    type: build
+    params:
+      platform: ios
+      profile: production

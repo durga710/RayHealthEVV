@@ -1,105 +1,44 @@
-# RayHealth EVV HIPAA Risk Register
+# RayHealth EVV — Security and Privacy Risk Register
 
-**Authored by Durga Ghimeray**
+**Version:** 1.0
+**Assessment date:** 2026-07-12
+**Owner:** Privacy Officer / Security Officer
+**Review cadence:** Quarterly, annually as part of the formal risk analysis,
+and within 30 days of a material architecture or vendor change
 
-**Assessment date:** 2026-07-08
-**Owner:** RayHealth EVV Privacy / Security Officer
-**Status:** Draft control artifact; pending officer review, evidence attachment,
-and signature before real PHI onboarding.
+This register records known security, privacy, availability, and compliance
+risks for the RayHealth platform. It is an operational input to the HIPAA
+Security Rule risk-analysis process; it is not a certification or legal opinion.
 
-This register is the working risk analysis artifact for RayHealth EVV. It does
-not, by itself, certify HIPAA compliance. Before any real Protected Health
-Information (PHI) is loaded into the platform, the Privacy / Security Officer
-must review each row, attach private evidence where required, approve residual
-risk, and retain the signed version in the compliance vault.
+Scores use likelihood × impact on a 1–5 scale. Review Low (1–4), Moderate
+(5–9), High (10–16), and Critical (17–25) items at the stated cadence. Store
+supporting evidence in the private compliance vault and record only its
+non-sensitive evidence ID here.
 
-## Methodology
+| ID | Risk | L | I | Score | Current controls | Treatment / exit criterion | Owner | Status |
+|---|---|---:|---:|---:|---|---|---|---|
+| R-001 | Live ePHI reaches a cloud or messaging vendor before a BAA is executed | 4 | 5 | 20 | AWS BAA recorded active; application fails closed when Bedrock is unavailable; vendor tracker exists | Keep production data synthetic until Vercel, Neon, Google, and Resend applicability is confirmed and required BAAs are executed; record vault evidence IDs | Privacy Officer | Open — launch blocker |
+| R-002 | A lost or shared caregiver phone exposes locally retained visit data | 3 | 5 | Expo SecureStore with this-device-only keychain accessibility; data scoped by user and agency; cache limited to 100 assignments; schedule cache cleared on logout/401 | Validate device-loss procedure and remote session revocation in production; consider managed-device requirements for higher-risk agencies | Security Officer | Mitigated; verify in production |
+| R-003 | A copied mobile JWT remains usable after logout or device loss | 2 | 5 | Source now issues a unique `jti`, requires an active `mobile_sessions` row on every bearer request, revokes on logout, and replaces the row on agency switch | Apply the schema and deploy; run login → logout → rejected-token production smoke and retain evidence | Engineering | Source complete; deployment evidence pending |
+| R-004 | Archived audit evidence can be altered after leaving the hot table | 2 | 5 | Source adds `audit_events_archive_block_mutation_trg`; verifier checks hot audit, archived audit, and EVV immutability triggers | Apply migration and obtain a passing production `verify-audit-triggers` run | Engineering | Source complete; deployment evidence pending |
+| R-005 | A secret exposed in chat, logs, Git history, or a local file enables production access | 3 | 5 | Encrypted platform variables; secret scan; no secrets in release metadata; prior AWS key exposure documented | Confirm compromised AWS key deactivation/rotation in IAM; rotate on exposure; retain incident/vault evidence, never identifiers in Git | Security Officer | Open |
+| R-006 | Recovery cannot meet the stated RTO/RPO because no current drill evidence exists | 3 | 5 | Disaster-recovery runbook; Neon PITR design; immutable schema history | Complete a branch-based restore drill, verify triggers and a synthetic EVV cycle, then record evidence ID and measured RTO/RPO | Security Officer | Open |
+| R-007 | A vulnerability remains undetected without an independent penetration test | 3 | 4 | CI, CodeQL, dependency review, secret scan, unit/integration tests | Schedule an independent authenticated multi-tenant and mobile/API assessment before broad production rollout | Security Officer | Open |
+| R-008 | Transactional email or push content discloses PHI unnecessarily | 3 | 4 | Push design prohibits PHI payloads; notification cleanup on logout; drafted vendor BAA steps | Minimize all templates, test redaction, execute applicable BAA, and review payload samples quarterly | Privacy Officer | Open |
+| R-009 | An uncertified HHAeXchange or clearinghouse payload is treated as production-ready | 2 | 5 | UI/docs label HHA output as a mapping preview; production config defaults disabled | Obtain vendor-issued specs, payer code tables, issued integration credentials, certification and UAT evidence, and selected clearinghouse companion guide | Product / Engineering | Externally blocked |
+| R-010 | Public product claims describe controls or features that are not implemented | 4 | 4 | Some pages distinguish roadmap features; release checks prevent selected placeholders | Complete the repository-wide claims-to-evidence audit and remove or qualify unsupported IVR, fraud, family, and certification claims | Product | Open — Sprint 6 |
 
-This register follows the HIPAA Security Rule risk-analysis concept in 45 CFR
-§ 164.308(a)(1)(ii)(A): identify potential risks and vulnerabilities to the
-confidentiality, integrity, and availability of ePHI held by the organization.
-HHS OCR guidance emphasizes that risk analysis is foundational, that the
-Security Rule does not prescribe a single methodology, and that all ePHI
-created, received, maintained, or transmitted is in scope.
+## Review procedure
 
-Official references:
+1. Confirm the system inventory, vendors, data flows, and supported states.
+2. Review incidents, audit anomalies, dependency findings, and vendor changes.
+3. Re-score every open item and add newly identified threats or vulnerabilities.
+4. Assign a dated treatment and evidence ID; do not mark an item closed from a
+   source commit alone when deployment or operational proof is required.
+5. Sign the review in the private compliance vault and update the review log.
 
-- HHS OCR, Guidance on Risk Analysis:
-  <https://www.hhs.gov/hipaa/for-professionals/security/guidance/guidance-risk-analysis/index.html>
-- HHS OCR, Summary of the HIPAA Security Rule:
-  <https://www.hhs.gov/hipaa/for-professionals/security/laws-regulations/index.html>
+## Review log
 
-## Scope
-
-In scope:
-
-- ePHI in the web app, API, mobile app, database, audit logs, document storage,
-  AI workflows, claims workflows, exports, notifications, and support/admin
-  workflows.
-- PHI-bearing data classes: client demographics, Medicaid identifiers, client
-  service address and GPS coordinates, EVV visit records, schedules,
-  assignments, authorizations, claims/remittance data, caregiver/staff
-  identifiers, credential records, audit events, and support/admin prompts that
-  may reference agency operations.
-- Subprocessors and infrastructure: Vercel, Neon, AWS Bedrock, AWS document /
-  email infrastructure, Firebase / Google Cloud, Cloudflare, and any future
-  transactional email or notification processor.
-
-Out of scope for this draft:
-
-- Legal review of customer BAA templates.
-- Third-party penetration-test findings.
-- Cyber-liability insurance underwriting.
-- Private signed BAA PDFs, console screenshots, access rosters, and training
-  records. Those must be retained outside git.
-
-## Scoring
-
-| Score | Likelihood | Impact |
+| Date | Reviewer | Result |
 |---|---|---|
-| Low | Unlikely under current controls | Limited operational or compliance impact |
-| Medium | Plausible or control depends on manual process | Reportable operational issue or contained PHI exposure risk |
-| High | Likely without additional controls, or external blocker remains | Serious PHI, audit, contractual, or availability impact |
-| Critical | Could cause broad PHI exposure, major service outage, or failed audit defense | Severe business and compliance impact |
-
-Residual risk reflects the risk after current controls, not the original threat.
-
-## Risk Register
-
-| ID | Risk | Inherent risk | Current controls | Residual risk | Status / next action |
-|---|---|---:|---|---:|---|
-| R-001 | Vendor BAA chain incomplete before real PHI flows to subprocessors | Critical | Neon BAA active with HIPAA mode; AWS BAA active; public Trust Center and policy pages state no real PHI until remaining vendor BAAs are complete | High | **Open.** Execute and retain Vercel, Google Firebase / Cloud, and Resend or replacement transactional-email BAAs before real PHI onboarding |
-| R-002 | Customer BAA / agency contracting not executed before production PHI use | Critical | Public copy now states BAA execution is required before PHI processing | High | **Open.** Finalize customer BAA template and execution workflow before first production agency |
-| R-003 | Formal HIPAA risk analysis not yet officer-signed | High | This draft register exists; security policy references annual review requirement | High | **Open.** Officer must review, update evidence, approve residual risk, sign, and vault the signed copy |
-| R-004 | Cross-tenant PHI exposure through repository or route scoping bug | Critical | Repository patterns require `agencyId`; organization scoping documentation; route tests and focused isolation suites exist | Medium | **Open.** Run skipped DB-backed cross-tenant suites against real Postgres before real PHI |
-| R-005 | PHI read/write/export occurs without a defensible audit trail | Critical | Audit middleware covers PHI-bearing reads and writes; bulk exports and AI actions have fail-closed audit paths; audit table mutation trigger; audit health probe | Medium | **Mitigate.** Add dedicated monitoring/alerting for audit-write failures before PHI |
-| R-006 | Authenticated route identifiers leak to non-BAA analytics provider | High | `dropAuthenticatedEvents` drops authenticated SPA routes; `security:scan` now guards the Analytics `beforeSend` mount | Low | **Mitigated in code.** Reassess after Vercel BAA execution or analytics changes |
-| R-007 | AI prompt or response routes PHI to a non-BAA model provider | Critical | AWS Bedrock only; no non-BAA fallback; production rejects Gemini/OpenAI keys; prompts are PHI-minimized; transcript text is not retained for admin assistant | Low | **Mitigated in code.** Reverify AWS BAA and model configuration annually |
-| R-008 | Database snapshot exposes PHI because not all PHI fields are application-encrypted | High | Medicaid IDs and caregiver NPIs use AES-256-GCM application-layer encryption; Neon storage encryption under active BAA / HIPAA mode for remaining fields | Medium | **Accepted pending officer approval.** Keep evidence in vault and reassess whether additional field encryption is warranted |
-| R-009 | Mobile device loss exposes caregiver session or cached PHI | High | Expo SecureStore for auth token storage; no offline PHI visit cache currently committed | Medium | **Mitigate.** Add mobile device/security policy before agency rollout; reassess if offline PHI cache ships |
-| R-010 | Production outage, database issue, or failed deploy interrupts EVV operations | High | Vercel deploys from source; Neon PITR; disaster-recovery runbook; scheduled health/db/audit smoke workflow; restore-rehearsal template exists | Medium | **Open.** Execute restore rehearsal, document RTO/RPO evidence, and add dedicated uptime alerting before PHI |
-| R-011 | Admin or operator credential compromise | High | HttpOnly cookie sessions; CSRF; console MFA expectations; encrypted Vercel env vars; bootstrap secret disabled after first admin; workforce access roster/procedure template exists | Medium | **Mitigate.** Complete private roster entries, enforce least privilege, and document quarterly access reviews |
-| R-012 | Unremediated application vulnerability before launch | High | Unit/integration tests; security surface scanner; dependency overrides; public support/admin AI hardened | High | **Open.** Complete independent penetration test and remediation before real PHI |
-| R-013 | Incident-response plan is drafted but not rehearsed | High | Incident response plan, tabletop template, and monitoring runbook exist; production smoke workflow captures baseline signals | High | **Open.** Run tabletop exercise, assign contacts, and preserve exercise evidence before real PHI |
-| R-014 | Notification or email payload discloses PHI through a pending or misconfigured vendor | High | Firebase push payloads are designed to avoid PHI; BAA tracker keeps Google and Resend/replacement email processor as pending | Medium | **Open.** Keep PHI out of notification/email payloads until BAA and payload review are complete |
-| R-015 | Secrets, access keys, BAA PDFs, or private compliance evidence are committed to git | High | `.env` ignored; examples contain blanks; security docs warn not to record key IDs or BAA PDFs; previous key exposure was documented as compromised | Medium | **Mitigate.** Add periodic secret scanning and keep private evidence in vault only |
-
-## Required Approvals Before Real PHI
-
-- [ ] Privacy / Security Officer reviewed every risk row.
-- [ ] Residual risks accepted or assigned remediation owners.
-- [ ] Remaining vendor BAAs executed and stored in the private vault.
-- [ ] Customer BAA template approved and ready for execution.
-- [ ] Third-party penetration test completed and critical/high findings
-  remediated.
-- [ ] Restore rehearsal completed and evidence retained.
-- [ ] Incident-response tabletop completed and evidence retained.
-- [ ] Workforce access roster completed with real private entries and training
-  records.
-- [ ] DB-backed cross-tenant isolation tests run against real Postgres.
-
-## Review Log
-
-| Date | Reviewer | Change |
-|---|---|---|
-| 2026-07-08 | Founder + assistant | Initial draft risk register created from current repo controls, audit reports, and HHS OCR risk-analysis guidance. |
+| 2026-07-12 | Engineering-assisted source review | Initial current-repository register created; two source control gaps fixed, with production evidence explicitly pending |

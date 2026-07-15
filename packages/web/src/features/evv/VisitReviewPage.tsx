@@ -10,6 +10,9 @@ interface EvvVisit {
   clockInTime: string;
   clockOutTime?: string;
   status: 'pending' | 'verified' | 'flagged' | 'corrected';
+  tasks?: { id: string; duty: string }[] | null;
+  visitNote?: string | null;
+  signature?: { signerRole: 'client' | 'representative'; signerName?: string | null } | null;
 }
 
 interface StaffMember { id: string; email: string; role: string; }
@@ -171,6 +174,7 @@ export function VisitReviewPage() {
               <th>Caregiver</th>
               <th>Clock In</th>
               <th>Clock Out</th>
+              <th>Documentation</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -182,6 +186,36 @@ export function VisitReviewPage() {
                 <td style={{ whiteSpace: 'nowrap', color: '#475569', fontSize: '0.8125rem' }}>{new Date(visit.clockInTime).toLocaleString()}</td>
                 <td style={{ whiteSpace: 'nowrap', color: '#475569', fontSize: '0.8125rem' }}>
                   {visit.clockOutTime ? new Date(visit.clockOutTime).toLocaleString() : <em style={{ color: '#94A3B8' }}>In progress</em>}
+                </td>
+                <td style={{ maxWidth: 240 }}>
+                  {visit.tasks && visit.tasks.length > 0 ? (
+                    <div
+                      title={visit.tasks.map((t) => t.duty).join(', ')}
+                      style={{ fontSize: '0.78rem', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    >
+                      <strong style={{ color: '#1a5fa8' }}>{visit.tasks.length}</strong>{' '}
+                      task{visit.tasks.length === 1 ? '' : 's'}: {visit.tasks.map((t) => t.duty).join(', ')}
+                    </div>
+                  ) : null}
+                  {visit.visitNote ? (
+                    <div
+                      title={visit.visitNote}
+                      style={{ fontSize: '0.75rem', color: '#64748B', fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    >
+                      “{visit.visitNote}”
+                    </div>
+                  ) : null}
+                  {visit.signature ? (
+                    <span
+                      title={`Signed by ${visit.signature.signerRole === 'client' ? 'the client' : 'a representative'}${visit.signature.signerName ? ` (${visit.signature.signerName})` : ''}`}
+                      style={{ display: 'inline-block', marginTop: '0.15rem', fontSize: '0.68rem', fontWeight: 700, color: '#059669', background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.18)', borderRadius: '999px', padding: '0.12rem 0.5rem' }}
+                    >
+                      Signed
+                    </span>
+                  ) : null}
+                  {!(visit.tasks && visit.tasks.length > 0) && !visit.visitNote && !visit.signature ? (
+                    <em style={{ color: '#94A3B8', fontSize: '0.78rem' }}>None</em>
+                  ) : null}
                 </td>
                 <td>
                   <span className={statusBadgeClass(visit.status)} style={{ textTransform: 'capitalize' }}>{visit.status}</span>
