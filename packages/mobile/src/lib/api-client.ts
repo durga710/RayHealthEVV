@@ -1,7 +1,5 @@
 import { create as axiosCreate, type AxiosInstance } from 'axios';
-import Constants from 'expo-constants';
-
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'https://rayhealthevv.com';
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '') || 'https://rayhealthevv.com';
 let accessToken: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 

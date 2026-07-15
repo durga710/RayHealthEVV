@@ -55,6 +55,28 @@ const TRIGGERS = [
     ]
   },
   {
+    name: 'audit_events_archive_block_mutation_trg',
+    table: 'audit_events_archive',
+    expectedFires: { update: true, delete: true, truncate: true },
+    probes: [
+      {
+        label: 'UPDATE audit_events_archive',
+        sql: `UPDATE audit_events_archive SET outcome = 'probe' WHERE id = '${PROBE_UUID}'`,
+        expectedSubstring: 'append-only'
+      },
+      {
+        label: 'DELETE audit_events_archive',
+        sql: `DELETE FROM audit_events_archive WHERE id = '${PROBE_UUID}'`,
+        expectedSubstring: 'append-only'
+      },
+      {
+        label: 'TRUNCATE audit_events_archive',
+        sql: 'TRUNCATE audit_events_archive',
+        expectedSubstring: 'append-only'
+      }
+    ]
+  },
+  {
     name: 'evv_visits_enforce_immutability_trg',
     table: 'evv_visits',
     expectedFires: { update: true, delete: false, truncate: false },

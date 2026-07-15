@@ -1,9 +1,7 @@
 # RayHealth EVV — HIPAA Incident Response Plan
 
-**Authored by Durga Ghimeray**
-
-**Version:** 1.0
-**Effective:** 2026-05-09
+**Version:** 1.1
+**Effective:** 2026-07-12
 **Owner:** RayHealth EVV Privacy Officer / Security Officer
 **Review cadence:** Annually, after any material incident, and within 30 days of any major architecture change
 
@@ -19,7 +17,7 @@ engage counsel immediately.
 
 > **Authorship note.** Ported from a predecessor codebase on 2026-05-08
 > and adapted to match the controls actually shipped in
-> `rayhealth-evv-clean`. Where the prior version referenced separate
+> `rayhealth-evv`. Where the prior version referenced separate
 > `audit_revisions` / `auth_events` tables, this version routes everything
 > through the single `audit_events` table that is present in this repo.
 > See §13 review log.
@@ -42,7 +40,7 @@ This plan applies to:
 Systems in scope:
 
 - `rayhealthevv.com` web app and API (Vercel project `rayhealth-evv-platform-app`)
-- Mobile caregiver app (Expo / React Native / Expo Router, package `packages/mobile`)
+- Mobile caregiver app (Expo SDK 54 managed project at `packages/mobile`)
 - AWS Bedrock-backed AI inference (`/api/support/chat`, `/api/admin-assistant/chat`)
 - Neon Postgres (project `late-art-87716813`)
 - Cloudflare edge (DNS + TLS termination)
@@ -156,11 +154,12 @@ Do **not** store raw PHI in the incident title or in external chat tools.
 Take the narrowest action that stops harm:
 
 - revoke or rotate compromised credentials in Vercel (`/v9/projects/{id}/env`)
-- disable the affected user account in `users` (set `password_hash` to a
-  rotation sentinel and revoke all rows in `mobile_sessions` for that user)
-- force re-authentication by deleting the relevant rows in `mobile_sessions`
-  (mobile JWT) and `sessions` (web cookie); the bearer-JWT path rejects
-  tokens whose `jti` is no longer in `mobile_sessions`
+- suspend the affected account through the platform-admin control (or set the
+  supported suspension field during an emergency) and revoke its sessions;
+  never corrupt `password_hash` as an improvised lock
+- force re-authentication by setting `revoked_at` on the relevant
+  `mobile_sessions` and `sessions` rows; the bearer path rejects a JWT when its
+  `jti` does not resolve to an active row
 - disable a vulnerable route by deploying a guard or removing the route
   mount in `packages/app/src/app.ts`
 - pause Resend or Firebase delivery if messages may leak PHI
@@ -183,9 +182,9 @@ If log tampering is suspected, run the trigger verifier:
 DATABASE_URL=… node scripts/verify-audit-triggers.mjs
 ```
 
-A non-zero exit means either the `audit_events_block_mutation_trg` or
-`evv_visits_enforce_immutability_trg` trigger has been removed or altered.
-That itself is a SEV-1 — escalate immediately.
+A non-zero exit means a required hot-audit, archived-audit, or EVV
+immutability trigger is absent or fails its live probe. That itself is a SEV-1
+until explained and contained.
 
 ### 5.4 AI-Specific Containment
 
@@ -284,8 +283,8 @@ Required recovery checks:
 
 - patch deployed and verified (`curl https://rayhealthevv.com/api/health`
   returns 200 + `{"ok":true}`)
-- session repository revocations applied (`mobile_sessions` rows deleted
-  for affected users; cookie `sessions` rows revoked)
+- session repository revocations applied (`revoked_at` set on affected
+  `mobile_sessions` and cookie `sessions` rows)
 - risky feature flag or route remains disabled until validated
 - audit logging functioning (`scripts/verify-audit-triggers.mjs` exits 0)
 - agency scoping functioning (manually run a test query for the suspect
@@ -376,7 +375,9 @@ Retain these artifacts with the incident record:
 - final breach assessment
 - notice records, if notices were sent
 
-Retain incident documentation for **at least 6 years** (HIPAA §164.530(j)).
+Retain incident documentation for **at least 6 years** under the RayHealth
+documentation policy aligned to 45 CFR §164.316(b)(2), or longer when a legal
+hold, contract, or notification obligation applies.
 
 ---
 
@@ -405,4 +406,4 @@ Retain incident documentation for **at least 6 years** (HIPAA §164.530(j)).
 |---|---|---|
 | 2026-05-07 | Founder (predecessor repo) | Initial plan authored |
 | 2026-05-08 | Founder + assistant | Ported into `rayhealth-evv-clean`; replaced predecessor `audit_revisions` / `auth_events` references with the single `audit_events` table that ships in this repo; pinned the trigger verifier script path; added Cloudflare to subprocessor list; pinned the active Bedrock model ID; cross-referenced `ORGANIZATION_SCOPING_SECURITY.md` for tenant-isolation recovery checks |
-| 2026-07-07 | Founder + assistant | Corrected the mobile scope from a predecessor Capacitor project to the current `packages/mobile` Expo / React Native app. |
+| 2026-07-12 | Engineering-assisted control review | Updated the mobile architecture, replaced unsafe password-hash/session-deletion containment advice with supported suspension and revocation, added archived-audit trigger coverage, and corrected incident-document retention attribution. |

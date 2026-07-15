@@ -14,8 +14,10 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "eslint app src",
-    "build": "expo export",
-    "test": "vitest run"
+    "build": "NODE_PATH=./node_modules expo export",
+    "test": "vitest run",
+    "typecheck": "node scripts/generate-route-types.mjs && tsc --noEmit",
+    "release:check": "node --import tsx scripts/check-release-readiness.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

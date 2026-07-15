@@ -1,13 +1,13 @@
 # RayHealth EVV — Data Retention and Disposal Policy
 
-**Version:** 1.0
-**Effective:** 2026-05-09
+**Version:** 1.1
+**Effective:** 2026-07-12
 **Owner:** RayHealth EVV Privacy Officer / Security Officer
 **Review cadence:** Annually and within 30 days of any major regulatory or architecture change
 
 This policy defines how long RayHealth EVV retains security, operational,
-and ePHI-bearing records. It supports HIPAA documentation retention
-requirements (45 CFR §164.530(j)), state home-care retention rules,
+and ePHI-bearing records. It supports HIPAA Security Rule documentation
+retention (45 CFR §164.316(b)(2)), state home-care retention rules,
 payer audit readiness, and safe disposal controls.
 
 This is an internal operating policy, not legal advice. Covered entities
@@ -16,7 +16,7 @@ longer retention. **When rules conflict, the stricter rule wins.**
 
 > **Authorship note.** Ported from a predecessor codebase on 2026-05-08
 > and adapted to match the controls actually shipped in
-> `rayhealth-evv-clean`. The predecessor referenced separate
+> `rayhealth-evv`. The predecessor referenced separate
 > `audit_revisions` and `auth_events` tables; this version routes
 > everything through the single `audit_events` table.
 
@@ -44,7 +44,7 @@ retention.
 | Category | Examples (tables) | Minimum retention | Notes |
 |---|---|---:|---|
 | HIPAA compliance documentation | `docs/compliance/hipaa/*.md`, signed BAAs, training records, incident records | 6 years | Measured from creation or last effective date |
-| Audit logs | `audit_events` (every PHI access, mutation, login, permission decision) | 6 years | Append-only at the DB layer (`audit_events_block_mutation_trg`); never edited in place |
+| Audit logs | `audit_events`, `audit_events_archive` | 7 years | RayHealth operational policy; both tables have append-only mutation triggers. The seven-year period is a risk/payer/state policy choice, not a claim that HIPAA explicitly mandates seven years of every audit event. |
 | Client and clinical records | `clients`, `authorizations`, `evv_exceptions` | 7 years default | Use longer state or payer rule if required |
 | EVV records | `evv_visits`, `visit_maintenance`, GPS coordinates, exception workflow | 7 years default | Never shorter than the applicable state EVV floor; `evv_visits` rows are immutable by trigger (`evv_visits_enforce_immutability_trg`) — corrections go to `visit_maintenance` |
 | Caregiver records | `caregivers`, `caregiver_credentials`, `assignments`, training records | 7 years default | Some personnel subcategories may have separate labor-law rules |
@@ -85,14 +85,15 @@ Data may be deleted only when **all** of the following are true:
 
 Deletion rules:
 
-- **Do not** rewrite audit history. The `audit_events_block_mutation_trg`
-  trigger refuses any UPDATE/DELETE/TRUNCATE attempt on `audit_events`.
+- **Do not** rewrite audit history. The `audit_events_block_mutation_trg` and
+  `audit_events_archive_block_mutation_trg` triggers refuse
+  UPDATE/DELETE/TRUNCATE on hot and archived evidence.
   An attempted bypass is itself a SEV-1 incident per
   `INCIDENT_RESPONSE.md` §5.3.
 - **Do not** hard-delete records needed for pending claims or
   investigations.
-- Log deletion or archival actions in the audit trail
-  (`audit_events.event_type='record.deleted'` or similar) so disposal
+- Log deletion or archival actions in the audit trail using an allowed event
+  type such as `phi.delete` with a non-PHI payload so disposal
   itself is captured.
 - Dispose of exports and local files using encrypted storage and secure
   deletion practices.
@@ -170,15 +171,19 @@ Required controls:
 - no PHI in public issue trackers or unmanaged local notes
 - quarterly review of retention exceptions and legal holds
 
-Automation status as of 2026-05-09:
+Automation status as of 2026-07-12:
 
-- `audit_events` immutability is enforced at the database layer (verified
-  via `scripts/verify-audit-triggers.mjs`)
+- Hot and archived audit-event immutability is defined at the database layer
+  and checked by `scripts/verify-audit-triggers.mjs`
 - `evv_visits` immutability is enforced at the database layer (same
   verifier)
-- Time-based retention sweep automation for non-audit tables is **not yet
-  centralized**; manual review remains required before destructive
-  retention actions
+- `.github/workflows/audit-retention.yml` schedules the seven-year audit
+  archive sweep and logs each result in `audit_retention_runs`; it is not
+  operational evidence until the production secret is configured and a run is
+  retained
+- Time-based disposal for non-audit tables is **not centralized**; legal-hold,
+  payer, contract, and agency approval still require manual review before any
+  destructive action
 
 Until centralized automation exists, this policy is the controlling
 standard.
@@ -197,6 +202,11 @@ Any exception must be:
 If a state launches new requirements or RayHealth expands to a new state,
 update this policy within 30 days.
 
+Authoritative references:
+
+- [HHS HIPAA Audit Protocol — §164.316(b)(2) documentation time limit](https://www.hhs.gov/hipaa/for-professionals/compliance-enforcement/audit/protocol/index.html)
+- [28 Pa. Code §601.36 — seven-year home-health clinical-record retention](https://www.pacodeandbulletin.gov/Display/pacode?d=reduce&file=%2Fsecure%2Fpacode%2Fdata%2F028%2Fchapter601%2Fs601.36.html)
+
 ---
 
 ## 10. Review Log
@@ -205,3 +215,4 @@ update this policy within 30 days.
 |---|---|---|
 | 2026-05-07 | Founder (predecessor repo) | Initial policy authored |
 | 2026-05-08 | Founder + assistant | Ported into `rayhealth-evv-clean`; replaced predecessor `audit_revisions` / `auth_events` references with the single `audit_events` table; added rows for `mobile_sessions`, `sessions`, `support_conversations`, `contact_submissions` retention; pinned the trigger verifier script path; cross-linked `INCIDENT_RESPONSE.md` and `DISASTER_RECOVERY.md` |
+| 2026-07-12 | Engineering-assisted control review | Corrected the HIPAA documentation citation; set the audit-event period as a RayHealth seven-year policy; protected archived evidence from mutation; corrected the allowed deletion audit event; added the scheduled retention workflow and separated source readiness from production evidence. Pennsylvania's seven-year clinical-record rule is 28 Pa. Code §601.36(b). |

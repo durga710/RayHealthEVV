@@ -504,4 +504,83 @@ describe('evv routes', () => {
     // Must NOT fall back to hauling every visit row.
     expect(getVisitsForAgency).not.toHaveBeenCalled();
   });
+
+  it('uses client ids and the captured timestamp for an offline clock-in', async () => {
+    const getVisitByClockInClientEvent = vi.fn().mockResolvedValue(null);
+    const createVisit = vi.fn().mockImplementation(async (visit) => visit);
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      getVisitByClockInClientEvent,
+      createVisit,
+      findOpenVisitForAssignment: vi.fn().mockResolvedValue(undefined),
+    } as never));
+    vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
+      getAssignmentForCaregiver: vi.fn().mockResolvedValue({
+        id: assignmentId,
+        caregiverId,
+        clientId: 'ffffffff-ffff-4fff-afff-ffffffffffff',
+        serviceCode: 'T1019',
+      }),
+    } as never));
+    vi.spyOn(core, 'ClientRepository').mockImplementation(() => ({
+      getClientGeofence: vi.fn().mockResolvedValue(undefined),
+    } as never));
+
+    const occurredAt = new Date(Date.now() - 60_000).toISOString();
+    const eventId = 'eeeeeeee-eeee-4eee-aeee-eeeeeeeeeeee';
+    const response = await request(createApp())
+      .post('/evv/clock-in')
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)
+      .send({
+        assignmentId,
+        visitId,
+        clientEventId: eventId,
+        capturedAt: occurredAt,
+        captureMode: 'offline',
+        serviceCode: 'T1019',
+        location: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
+      });
+
+    expect(response.status).toBe(201);
+    expect(getVisitByClockInClientEvent).toHaveBeenCalledWith(eventId, 'agency-1', caregiverId);
+    expect(createVisit).toHaveBeenCalledWith(expect.objectContaining({
+      id: visitId,
+      clockInClientEventId: eventId,
+      clockInCaptureMode: 'offline',
+      clockInTime: occurredAt,
+    }));
+  });
+
+  it('returns the original visit for a repeated clock-in event', async () => {
+    const existing = {
+      id: visitId,
+      assignmentId,
+      caregiverId,
+      clockInTime: '2026-07-12T18:15:00.000Z',
+      clockInLocation: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
+      status: 'pending',
+    };
+    const getVisitByClockInClientEvent = vi.fn().mockResolvedValue(existing);
+    const createVisit = vi.fn();
+    vi.spyOn(core, 'EvvRepository').mockImplementation(() => ({
+      getVisitByClockInClientEvent,
+      createVisit,
+    } as never));
+
+    const response = await request(createApp())
+      .post('/evv/clock-in')
+      .set('Authorization', `Bearer ${makeToken('caregiver', 'agency-1', 'user-1', caregiverId)}`)
+      .send({
+        assignmentId,
+        visitId,
+        clientEventId: 'eeeeeeee-eeee-4eee-aeee-eeeeeeeeeeee',
+        capturedAt: new Date(Date.now() - 60_000).toISOString(),
+        captureMode: 'offline',
+        serviceCode: 'T1019',
+        location: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.id).toBe(visitId);
+    expect(createVisit).not.toHaveBeenCalled();
+  });
 });

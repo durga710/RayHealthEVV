@@ -34,6 +34,12 @@ dist/
 *.log
 turbo-*.log
 
+# Mobile store credentials are provisioned through EAS, never committed.
+packages/mobile/google-service-account.json
+packages/mobile/*.p8
+packages/mobile/*.mobileprovision
+packages/mobile/*.keystore
+
 # Test / E2E output — generated, never commit (screenshots, video, traces, runs)
 e2e-artifacts/
 **/test-results/

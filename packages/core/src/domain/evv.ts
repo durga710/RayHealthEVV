@@ -10,15 +10,27 @@ export const evvLocationSchema = z.object({
   accuracy: z.number().finite().nonnegative()
 });
 
-export const evvClockInInputSchema = z.object({
+export const evvCaptureModeSchema = z.enum(['online', 'offline']);
+
+// Offline store-and-forward metadata. `capturedAt` carries the original
+// punch moment so a replayed offline punch keeps the real care time (the
+// route bounds the window: no future stamps beyond clock skew, nothing
+// older than 72h). `clientEventId` is the client-minted idempotency key,
+// replaying the same event returns the already-created visit instead of a
+// duplicate. `captureMode: 'offline'` marks the punch for sync auditing.
+const evvCaptureMetadataSchema = z.object({
+  clientEventId: z.string().uuid().optional(),
+  capturedAt: z.string().datetime({ offset: true }).optional(),
+  captureMode: evvCaptureModeSchema.optional()
+});
+
+export const evvClockInInputSchema = evvCaptureMetadataSchema.extend({
   assignmentId: z.string().uuid(),
+  // Client-generated visit id, lets an offline app reference the visit
+  // (e.g. queue its clock-out) before the clock-in has synced.
+  visitId: z.string().uuid().optional(),
   location: evvLocationSchema,
-  serviceCode: evvServiceCodeSchema.optional(),
-  // Store-and-forward: when the mobile app captured this punch offline, the
-  // original capture moment rides along at replay so the visit carries the
-  // real punch time, not the sync time. The route bounds the window (no
-  // future stamps beyond clock skew, nothing older than 72h).
-  capturedAt: z.string().datetime().optional()
+  serviceCode: evvServiceCodeSchema.optional()
 });
 
 /**
@@ -69,15 +81,13 @@ export const evvSignatureSchema = z.object({
   signedAt: z.string().datetime()
 });
 
-export const evvClockOutInputSchema = z.object({
+export const evvClockOutInputSchema = evvCaptureMetadataSchema.extend({
   location: evvLocationSchema,
   // Optional service documentation captured with the clock-out. taskIds are
   // PA task-catalog IDs; the route resolves them against paTasks and rejects
   // unknown codes, so the DB only ever stores catalog-backed snapshots.
   taskIds: z.array(z.string().min(1).max(16)).max(100).optional(),
   note: z.string().trim().max(2000).optional(),
-  // Store-and-forward capture time, see evvClockInInputSchema.capturedAt.
-  capturedAt: z.string().datetime().optional(),
   // Verification-of-service e-signature drawn on the caregiver's phone.
   signature: evvSignatureInputSchema.optional()
 });
@@ -92,6 +102,10 @@ export const evvVisitSchema = z.object({
   serviceCode: evvServiceCodeSchema.optional(),
   clockInTime: z.string().datetime(),
   clockOutTime: z.string().datetime().optional(),
+  clockInClientEventId: z.string().uuid().optional(),
+  clockOutClientEventId: z.string().uuid().optional(),
+  clockInCaptureMode: evvCaptureModeSchema.optional(),
+  clockOutCaptureMode: evvCaptureModeSchema.optional(),
   clockInLocation: evvLocationSchema,
   clockOutLocation: evvLocationSchema.optional(),
   status: z.enum(['pending', 'verified', 'flagged']).default('pending'),

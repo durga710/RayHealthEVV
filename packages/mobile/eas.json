@@ -5,35 +5,27 @@
   },
   "build": {
     "development": {
+      "environment": "development",
       "developmentClient": true,
       "distribution": "internal",
-      "ios": { "simulator": true },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "http://localhost:3000"
-      }
+      "ios": { "simulator": true }
     },
     "preview": {
+      "environment": "preview",
       "distribution": "internal",
-      "channel": "preview",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://rayhealthevv.com"
-      }
+      "channel": "preview"
     },
     "production": {
+      "environment": "production",
       "autoIncrement": true,
       "channel": "production",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://rayhealthevv.com"
+      "android": {
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
     "production": {
-      "ios": {
-        "appleId": "reyghim1093@gmail.com",
-        "ascAppId": "FILL_IN_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "FILL_IN_APPLE_TEAM_ID"
-      },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",
         "track": "internal"

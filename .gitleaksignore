@@ -9,3 +9,16 @@
 # but the value is checked into source intentionally — every mobile client
 # reads/writes the same key — and grants access to nothing on its own.
 72e0509b694716bac129c92c02fc4a58e6638072:packages/mobile/src/lib/notification-permissions.ts:generic-api-key:15
+
+# docs/compliance/hipaa/RISK_REGISTER.md R-009 mitigation prose:
+# The generic-api-key rule matched plain English in a risk-register table row
+# (a list of onboarding artifacts to obtain from vendors), not a secret value.
+# The live file has since been reworded; this entry covers the historical
+# commit already in the branch.
+d7312b99abb41eb4dfc161a40a91a18190054700:docs/compliance/hipaa/RISK_REGISTER.md:generic-api-key:28
+
+# This file's own earlier revision: the explanatory comment above originally
+# quoted the matched prose verbatim, which re-triggered the same rule on the
+# allowlist file itself. The comment no longer quotes it; this covers the
+# historical commit.
+ccfbb4e53b95ead67d4199b513faeeb561202dc6:.gitleaksignore:generic-api-key:14
