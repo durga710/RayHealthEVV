@@ -17,7 +17,36 @@ interface EvvVisit {
 
 interface StaffMember { id: string; email: string; role: string; }
 
+interface FraudFactor {
+  type: string;
+  severity: number;
+  contribution: number;
+  explanation: string;
+}
+interface FraudVerdict {
+  visitId: string;
+  score: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  status: 'verified' | 'review' | 'rejected';
+  triggeredCount: number;
+  factors: FraudFactor[];
+}
+
 type Banner = { kind: 'success' | 'error'; text: string } | null;
+
+const RISK_COLOR: Record<FraudVerdict['riskLevel'], string> = {
+  low: '#64748B',
+  medium: '#D97706',
+  high: '#EA580C',
+  critical: '#DC2626',
+};
+
+const SIGNAL_LABEL: Record<string, string> = {
+  impossible_travel: 'Impossible travel',
+  duplicate_visit: 'Duplicate visit',
+  gps_anomaly: 'GPS / geofence anomaly',
+  abnormal_duration: 'Abnormal duration',
+};
 
 const statusBadgeClass = (status: EvvVisit['status']): string => {
   const map: Record<EvvVisit['status'], string> = {
@@ -35,6 +64,8 @@ export function VisitReviewPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [banner, setBanner] = useState<Banner>(null);
+  const [fraudByVisit, setFraudByVisit] = useState<Map<string, FraudVerdict>>(new Map());
+  const [expandedFraud, setExpandedFraud] = useState<string | null>(null);
 
   const caregiverLabel = (id: string) => {
     const s = staff.find(x => x.id === id);
@@ -54,6 +85,13 @@ export function VisitReviewPage() {
       })
       .catch((err: Error) => setLoadError(err.message || 'Failed to load visits'))
       .finally(() => setLoading(false));
+
+    // Fraud scoring is additive and must never block the visit table: on any
+    // failure (or an agency without the capability) the Risk column just stays
+    // empty rather than surfacing an error.
+    getJson<{ verdicts: FraudVerdict[] }>('/api/fraud/flagged?minScore=1&limit=200')
+      .then((res) => setFraudByVisit(new Map((res.verdicts || []).map((v) => [v.visitId, v]))))
+      .catch(() => setFraudByVisit(new Map()));
   }, []);
 
   useEffect(() => { fetchVisits(); }, [fetchVisits]);
@@ -175,13 +213,18 @@ export function VisitReviewPage() {
               <th>Clock In</th>
               <th>Clock Out</th>
               <th>Documentation</th>
+              <th>Risk</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {visits.map((visit) => (
-              <tr key={visit.id}>
+            {visits.map((visit) => {
+              const fraud = fraudByVisit.get(visit.id);
+              const expanded = expandedFraud === visit.id;
+              return (
+              <React.Fragment key={visit.id}>
+              <tr>
                 <td>{caregiverLabel(visit.caregiverId)}</td>
                 <td style={{ whiteSpace: 'nowrap', color: '#475569', fontSize: '0.8125rem' }}>{new Date(visit.clockInTime).toLocaleString()}</td>
                 <td style={{ whiteSpace: 'nowrap', color: '#475569', fontSize: '0.8125rem' }}>
@@ -218,6 +261,26 @@ export function VisitReviewPage() {
                   ) : null}
                 </td>
                 <td>
+                  {fraud ? (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedFraud(expanded ? null : visit.id)}
+                      title={`Fraud score ${fraud.score}/100 — ${fraud.triggeredCount} signal${fraud.triggeredCount === 1 ? '' : 's'}. Click for details.`}
+                      style={{
+                        cursor: 'pointer', border: `1px solid ${RISK_COLOR[fraud.riskLevel]}40`,
+                        background: `${RISK_COLOR[fraud.riskLevel]}14`, color: RISK_COLOR[fraud.riskLevel],
+                        borderRadius: '999px', padding: '0.18rem 0.6rem', fontSize: '0.72rem', fontWeight: 800,
+                        display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                      }}
+                    >
+                      {fraud.score} · {fraud.riskLevel}
+                      <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>{expanded ? '▲' : '▼'}</span>
+                    </button>
+                  ) : (
+                    <span style={{ color: '#94A3B8', fontSize: '0.78rem' }}>Clear</span>
+                  )}
+                </td>
+                <td>
                   <span className={statusBadgeClass(visit.status)} style={{ textTransform: 'capitalize' }}>{visit.status}</span>
                 </td>
                 <td>
@@ -242,7 +305,32 @@ export function VisitReviewPage() {
                   </div>
                 </td>
               </tr>
-            ))}
+              {expanded && fraud && (
+                <tr>
+                  <td colSpan={7} style={{ background: '#F8FAFC', borderTop: `2px solid ${RISK_COLOR[fraud.riskLevel]}` }}>
+                    <div style={{ padding: '0.5rem 0.25rem' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: RISK_COLOR[fraud.riskLevel], textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.5rem' }}>
+                        Why this visit scored {fraud.score}/100
+                      </div>
+                      {fraud.factors.length === 0 ? (
+                        <em style={{ color: '#94A3B8', fontSize: '0.8rem' }}>No individual signals recorded.</em>
+                      ) : (
+                        <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                          {fraud.factors.map((f, i) => (
+                            <li key={i} style={{ fontSize: '0.8rem', color: '#334155' }}>
+                              <strong>{SIGNAL_LABEL[f.type] ?? f.type}</strong>
+                              <span style={{ color: '#64748B' }}> ({Math.round(f.contribution * 100)}% of score)</span>: {f.explanation}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       )}
