@@ -1,7 +1,7 @@
 # RayHealth EVV — Control Evidence Register
 
-**Version:** 1.0
-**Effective:** 2026-07-12
+**Version:** 1.1
+**Effective:** 2026-07-16
 **Owner:** Privacy Officer / Security Officer
 
 This register says what evidence must exist and when. Actual screenshots,
@@ -15,7 +15,8 @@ in the private compliance vault—not Git. Use opaque IDs such as
 | Audit retention | Nightly | `audit_retention_runs` success row and Actions run ID; quarterly review of errors and legal holds | `.github/workflows/audit-retention.yml`; `/admin/audit-retention/status` | Workflow source ready; production secret/run confirmation required |
 | Mobile session revocation | Every mobile release | Token `jti`, active session row, successful logout, replay rejected with 401 | Mobile session lifecycle tests | Source verified; production smoke pending |
 | Access review | Quarterly and on workforce change | Console/user export for Vercel, Neon, AWS, Google, Resend, GitHub; reviewer sign-off; removals | `WORKFORCE_ACCESS.md` | First signed review pending |
-| BAA/subprocessor review | Quarterly and before vendor receives ePHI | Executed agreement ID/date or documented non-applicability decision; covered-service list | `BAA_REQUEST_EMAILS.md`; Security Policy §10 | AWS recorded active; remaining reviews pending |
+| BAA/subprocessor review | Quarterly and before vendor receives ePHI | Executed agreement ID/date or documented non-applicability decision; covered-service list | `BAA_REQUEST_EMAILS.md`; Security Policy §10 | AWS/Neon recorded active; Vercel, Google, Resend, Cloudflare, and the selected claims clearinghouse pending |
+| Clearinghouse claim transport | Every release affecting claim submission; before enabling a non-sandbox transport for an agency | Transport type, endpoint SSRF-validation, AES-256-GCM credential envelope, executed clearinghouse BAA ID, and the live-vs-sandbox setting; a passing connectivity test run ID | `clearinghouse-transport.ts`; `agency-clearinghouse-config-repository.ts`; `RISK_REGISTER.md` R-011 | Source controls verified; sandbox-only pending clearinghouse BAA + companion guide |
 | Risk analysis | Annually and after material change | Signed assessment, updated scores/treatments, architecture/data-flow inventory | `RISK_REGISTER.md` | Initial register complete; formal signed review pending |
 | Disaster recovery | Annually and after material recovery change | Restore timestamp, measured RTO/RPO, trigger verification, synthetic EVV smoke, lessons/actions | `docs/DISASTER_RECOVERY.md` | Drill pending |
 | Incident response | Annual tabletop and after every incident | Scenario/timeline, assigned roles, decisions, notifications assessment, corrective actions | `INCIDENT_RESPONSE.md` | Tabletop pending |

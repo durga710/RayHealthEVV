@@ -48,7 +48,7 @@ retention.
 | Client and clinical records | `clients`, `authorizations`, `evv_exceptions` | 7 years default | Use longer state or payer rule if required |
 | EVV records | `evv_visits`, `visit_maintenance`, GPS coordinates, exception workflow | 7 years default | Never shorter than the applicable state EVV floor; `evv_visits` rows are immutable by trigger (`evv_visits_enforce_immutability_trg`) — corrections go to `visit_maintenance` |
 | Caregiver records | `caregivers`, `caregiver_credentials`, `assignments`, training records | 7 years default | Some personnel subcategories may have separate labor-law rules |
-| Billing and payroll records | claims, remits, invoices, payroll support (currently roadmap) | 7 years | Aligns with tax and audit expectations |
+| Billing and payroll records | `claims`, `claim_remittances`, `clearinghouse_remittance_files`, invoices, payroll export | 7 years | Aligns with tax and audit expectations. `clearinghouse_remittance_files` is a dedupe ledger holding filename + content sha256 + counts only — the raw 835 remittance text is not persisted at rest; parsed CLP postings live in `claim_remittances` and follow claim retention |
 | Mobile session records | `mobile_sessions` | until revoked or expired, then 6 years for audit linkage | Row is the revocation handle for the bearer JWT (jti); deletion only after audit retention satisfied via the corresponding `audit_events.session.revoked` row |
 | Web session records | `sessions` | until revoked or expired, then 6 years | Same logic as mobile sessions |
 | Marketing/support traces | `contact_submissions`, `support_conversations` | 6 years | Free-text content visitors may type; treated as potentially PHI-bearing even when collected from anonymous visitors |

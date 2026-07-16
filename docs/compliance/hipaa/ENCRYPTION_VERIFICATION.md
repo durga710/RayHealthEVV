@@ -17,8 +17,9 @@ every PHI field has application-layer encryption.
 | Other Postgres fields | Neon-managed storage encryption | Vendor-asserted; collect current contractual/security evidence |
 | Application secrets | Environment variables on deployment platforms; repository security scan rejects selected secret surfaces | Source/process control; platform configuration evidence required |
 | Mobile credential | Expo SecureStore in `packages/mobile/src/lib/AuthContext.tsx`; deleted on logout/401; bearer token has server-side `jti` revocation | Verified in source and API/mobile tests |
-| Offline EVV queue | Expo SecureStore adapter requests `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`; maximum 50 punches; keys scoped by user/agency; ordered replay and idempotent event IDs | Verified in source and tests |
-| Offline schedule cache | Same SecureStore adapter; maximum 100 assignments; scoped by user/agency; removed on logout/401 | Verified in source and tests |
+| Offline EVV queue | AsyncStorage store `rayhealth.evv-offline-queue.v1` in `packages/mobile/src/lib/offline-queue.ts`, protected by OS file-based encryption (iOS Data Protection / Android FBE); FIFO ordered replay with local-visit-id remapping and `clientEventId` server-side idempotency; definitively rejected punches capped at 20 in a failures list | Verified in source and tests |
+| Offline schedule cache | Expo SecureStore adapter (`packages/mobile/src/lib/secure-store.ts`) requesting `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`; maximum 100 assignments; scoped by user/agency; removed on logout/401 | Verified in source and tests |
+| Clearinghouse claim transport | 837P transmitted over SFTP (SSH) or HTTPS only, SSRF-guarded in `clearinghouse-transport.ts`; per-agency credentials sealed with AES-256-GCM (`cell-cipher.ts`, write-only, never logged); the credential-free sandbox transport is the default; the 835 ledger persists filename + sha256 + counts, not raw remittance content | Verified in source and tests; live clearinghouse BAA + companion guide pending |
 | AWS Bedrock transport/storage | AWS SDK TLS path; Bedrock-managed service encryption | Code path verified; storage vendor-asserted; BAA recorded active 2026-05-08 and needs annual evidence |
 | Firebase, Resend, Vercel, Cloudflare | Vendor-managed transport/storage according to enabled service | Vendor-asserted; BAA/applicability and configuration evidence pending |
 
@@ -30,6 +31,7 @@ envelope is `v1:<base64(iv‖tag‖ciphertext)>`; `ENCRYPTION_KEY` supplies the
 
 - `clients.medicaid_number`
 - `caregivers.npi`
+- `agency_clearinghouse_config.credentials_encrypted` (trading-partner SFTP/API credentials, not PHI but a production-access secret)
 
 All other database PHI relies on Neon-managed encryption at rest. Do not market
 the platform as application-encrypting every field.
@@ -78,3 +80,4 @@ tradeoff tracked in `RISK_REGISTER.md`, not a claim of zero residual device risk
 |---|---|---|
 | 2026-05-07 to 2026-05-09 | Founder + assistant | Predecessor/current-repository encryption review and initial mobile secure-storage work |
 | 2026-07-12 | Engineering-assisted control review | Removed stale two-mobile-project/Capacitor claims; documented the production Expo app, bounded encrypted offline cache/queue, revocable mobile sessions, current evidence gaps, and precise communication limits |
+| 2026-07-16 | Engineering-assisted control review | Corrected the offline EVV queue row to the unified AsyncStorage queue (OS file-based encryption, failures capped at 20) after the two mobile queues were merged; added clearinghouse claim transport (SFTP/HTTPS in transit, AES-256-GCM credentials at rest) and the `agency_clearinghouse_config.credentials_encrypted` column |

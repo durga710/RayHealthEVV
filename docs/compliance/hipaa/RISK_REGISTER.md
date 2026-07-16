@@ -1,7 +1,7 @@
 # RayHealth EVV — Security and Privacy Risk Register
 
-**Version:** 1.0
-**Assessment date:** 2026-07-12
+**Version:** 1.1
+**Assessment date:** 2026-07-16
 **Owner:** Privacy Officer / Security Officer
 **Review cadence:** Quarterly, annually as part of the formal risk analysis,
 and within 30 days of a material architecture or vendor change
@@ -17,7 +17,7 @@ non-sensitive evidence ID here.
 
 | ID | Risk | L | I | Score | Current controls | Treatment / exit criterion | Owner | Status |
 |---|---|---:|---:|---:|---|---|---|---|
-| R-001 | Live ePHI reaches a cloud or messaging vendor before a BAA is executed | 4 | 5 | 20 | AWS BAA recorded active; application fails closed when Bedrock is unavailable; vendor tracker exists | Keep production data synthetic until Vercel, Neon, Google, and Resend applicability is confirmed and required BAAs are executed; record vault evidence IDs | Privacy Officer | Open — launch blocker |
+| R-001 | Live ePHI reaches a cloud or messaging vendor before a BAA is executed | 4 | 5 | 20 | AWS BAA recorded active; application fails closed when Bedrock is unavailable; vendor tracker exists | Keep production data synthetic until Vercel, Neon, Google, Resend, and the selected claims clearinghouse (see R-011) applicability is confirmed and required BAAs are executed; record vault evidence IDs | Privacy Officer | Open — launch blocker |
 | R-002 | A lost or shared caregiver phone exposes locally retained visit data | 3 | 5 | Expo SecureStore with this-device-only keychain accessibility; data scoped by user and agency; cache limited to 100 assignments; schedule cache cleared on logout/401 | Validate device-loss procedure and remote session revocation in production; consider managed-device requirements for higher-risk agencies | Security Officer | Mitigated; verify in production |
 | R-003 | A copied mobile JWT remains usable after logout or device loss | 2 | 5 | Source now issues a unique `jti`, requires an active `mobile_sessions` row on every bearer request, revokes on logout, and replaces the row on agency switch | Apply the schema and deploy; run login → logout → rejected-token production smoke and retain evidence | Engineering | Source complete; deployment evidence pending |
 | R-004 | Archived audit evidence can be altered after leaving the hot table | 2 | 5 | Source adds `audit_events_archive_block_mutation_trg`; verifier checks hot audit, archived audit, and EVV immutability triggers | Apply migration and obtain a passing production `verify-audit-triggers` run | Engineering | Source complete; deployment evidence pending |
@@ -27,6 +27,7 @@ non-sensitive evidence ID here.
 | R-008 | Transactional email or push content discloses PHI unnecessarily | 3 | 4 | Push design prohibits PHI payloads; notification cleanup on logout; drafted vendor BAA steps | Minimize all templates, test redaction, execute applicable BAA, and review payload samples quarterly | Privacy Officer | Open |
 | R-009 | An uncertified HHAeXchange or clearinghouse payload is treated as production-ready | 2 | 5 | UI/docs label HHA output as a mapping preview; production config defaults disabled | Obtain vendor-issued specs, payer code tables, issued integration credentials, certification and UAT evidence, and selected clearinghouse companion guide | Product / Engineering | Externally blocked |
 | R-010 | Public product claims describe controls or features that are not implemented | 4 | 4 | Some pages distinguish roadmap features; release checks prevent selected placeholders | Complete the repository-wide claims-to-evidence audit and remove or qualify unsupported IVR, fraud, family, and certification claims | Product | Open — Sprint 6 |
+| R-011 | Client ePHI in an 837P claim reaches an external clearinghouse before a BAA is executed, or travels over an unverified transport | 3 | 5 | 15 | Sandbox transport (no network, no real credentials) is the default and the integration is disabled per agency until explicitly configured; real SFTP/HTTPS transports validate the endpoint against SSRF host rules at construction and call time (`clearinghouse-transport.ts`), REST is HTTPS-only and an SFTP host may not resolve to a private address; per-agency credentials are sealed with AES-256-GCM (`cell-cipher.ts`, write-only, never returned or logged); upstream error bodies are never reflected; the 835 ledger stores filename + content sha256 + counts only, not raw remittance text | Execute a BAA with the selected clearinghouse and obtain its companion guide, payer code tables, and UAT evidence before enabling any non-sandbox transport with production ePHI; add the clearinghouse to the subprocessor inventory (see R-001) and record the vault evidence ID | Privacy Officer / Engineering | Source controls verified; sandbox-only until clearinghouse BAA + certification |
 
 ## Review procedure
 
@@ -42,3 +43,4 @@ non-sensitive evidence ID here.
 | Date | Reviewer | Result |
 |---|---|---|
 | 2026-07-12 | Engineering-assisted source review | Initial current-repository register created; two source control gaps fixed, with production evidence explicitly pending |
+| 2026-07-16 | Engineering-assisted source review | Added R-011 for the clearinghouse 837P/835 transport shipped in #118 (external ePHI path); extended R-001 subprocessor scope to the selected clearinghouse. Transport-security controls verified in source; sandbox-only until a clearinghouse BAA and certification exist |

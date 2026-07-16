@@ -22,6 +22,8 @@ ePHI is generally a business associate and that the conduit exception is narrow.
 - [x] **AWS — Active in AWS Artifact** (verified 2026-05-08)
 - [ ] Cloudflare — complete and retain a written conduit/business-associate
       applicability decision based on the actual proxy, WAF, and logging config
+- [ ] Claims clearinghouse — select the trading partner, then execute its BAA
+      before enabling any non-sandbox 837P/835 transport (see §7)
 
 When each BAA is signed, store the executed PDF in your password manager
 or a private vault (do **not** commit BAA PDFs to git). Note the signing
@@ -261,10 +263,62 @@ sales channel — `enterprise@cloudflare.com` — and update this section.
 
 ---
 
+## 7. Claims clearinghouse (trading partner)
+
+The billing engine can transmit **837P professional claims** to an external
+clearinghouse and ingest **835 remittance advice** back (`clearinghouse-transport.ts`,
+shipped in #118). An 837P carries ePHI — client name, date of birth, Medicaid
+ID, service dates, and diagnosis/procedure codes — so any clearinghouse that
+receives it is a business associate and needs a signed BAA before live claims
+flow.
+
+**Current posture (no BAA required yet):** the default transport is the built-in
+**sandbox** simulator — no network, no real credentials, no ePHI leaves the
+platform. Real SFTP/HTTPS transports are disabled per agency until explicitly
+configured. Do **not** switch an agency to a live transport with production ePHI
+until its clearinghouse BAA is executed and recorded here.
+
+The specific vendor depends on the agency's payer (e.g., Availity, Change
+Healthcare/Optum, Waystar, Office Ally). Once selected, request the BAA and
+companion guide:
+
+```
+Subject: BAA + 837P/835 companion guide request — RayHealth EVV
+
+Hi [Clearinghouse] onboarding team,
+
+RayHealth EVV (rayhealthevv.com) is a home-care EVV and billing platform.
+We intend to submit 837P professional claims and retrieve 835 remittance
+advice through your clearinghouse on behalf of enrolled home-care agencies.
+Because 837P transactions contain electronic Protected Health Information,
+we need the following before sending live claims:
+
+1. A signed Business Associate Agreement under HIPAA §164.308(b)(1)
+2. Your 837P/835 companion guide and payer code tables
+3. Trading-partner / submitter enrollment and test (UAT) credentials
+4. The connection method and its security requirements (SFTP host + key
+   exchange, or HTTPS endpoint + auth), and any IP allowlisting
+
+Account/contact: reyghim1093@gmail.com
+
+Thanks,
+[Your name]
+[Your title — e.g., Founder, RayHealth EVV]
+```
+
+**Required evidence before go-live:** executed BAA ID/date recorded in the
+checklist above and in `CONTROL_EVIDENCE_REGISTER.md`, the companion guide and
+payer tables retained in the private vault, and a passing sandbox→UAT
+connectivity test. Until then, keep every agency on the sandbox transport
+(tracked as R-011 in `RISK_REGISTER.md`).
+
+---
+
 ## After the remaining BAAs are signed
 
-Remaining outstanding BAAs as of 2026-07-07: Vercel, Google Firebase /
-Cloud, and Resend. AWS and Neon are active.
+Remaining outstanding BAAs as of 2026-07-16: Vercel, Google Firebase /
+Cloud, Resend, and the selected claims clearinghouse (§7, only when an agency
+moves off the sandbox transport). AWS and Neon are active.
 
 1. Save executed PDFs in your password manager / private vault
 2. Update the checklist at the top of this doc with signing dates
@@ -282,14 +336,17 @@ the honest answer based on the current architecture:
 
 - **Subprocessors:** RayHealth EVV processes PHI through these
   subprocessors: Vercel (compute), Neon (Postgres), Google Firebase
-  (push notifications), Resend (email), AWS Bedrock (AI inference).
-  Cloudflare provides DNS + TLS in front of Vercel but does not store
-  PHI (see §6). Each that touches PHI is itself a covered Business
-  Associate.
+  (push notifications), Resend (email), AWS Bedrock (AI inference), and —
+  once an agency enables a live transport — the selected claims
+  clearinghouse (837P/835 exchange, see §7). Cloudflare provides DNS + TLS
+  in front of Vercel but does not store PHI (see §6). Each that touches PHI
+  is itself a covered Business Associate.
 - **Data classification:** PHI categories handled — caregiver and client
   names, contact details, visit timestamps, GPS visit-verification
   coordinates, encrypted Medicaid IDs (`clients.medicaid_number`), care
-  plan free-text notes, billing-rate data, family communication content.
+  plan free-text notes, billing-rate data, family communication content,
+  and 837P claim content (client name, DOB, Medicaid ID, service dates,
+  diagnosis/procedure codes) when a live clearinghouse transport is enabled.
 - **Encryption at rest:** Application-layer AES-256-GCM on Medicaid IDs
   and caregiver NPIs (verified, see `ENCRYPTION_VERIFICATION.md` §3.2);
   vendor-managed encryption is relied on for the rest of the database
