@@ -7,7 +7,7 @@ interface Course {
   code: string;
   title: string;
   description: string;
-  cadence: 'one_time' | 'annual' | 'biennial' | 'certification';
+  cadence: 'one_time' | 'semi_annual' | 'annual' | 'biennial' | 'certification';
   required: boolean;
   durationMinutes: number;
   expiresAfterDays: number | null;
@@ -30,6 +30,7 @@ interface ProgressData {
 
 const CADENCE_LABEL: Record<string, string> = {
   one_time: 'Orientation',
+  semi_annual: 'Semi-Annual Training',
   annual: 'Annual Training',
   biennial: 'Biennial Training',
   certification: 'Certifications',

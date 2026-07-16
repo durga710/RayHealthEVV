@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getJson } from '../../lib/api-client.js';
 
-type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
+type CourseCadence = 'one_time' | 'semi_annual' | 'annual' | 'biennial' | 'certification';
 type EnrollmentStatus = 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'expired';
 
 interface LearningCourse {
@@ -180,6 +180,7 @@ function cadenceLabel(cadence: CourseCadence): string {
   switch (cadence) {
     case 'one_time': return 'One-time';
     case 'annual': return 'Annual';
+    case 'semi_annual': return 'Every 6 months';
     case 'biennial': return 'Biennial';
     case 'certification': return 'Certification';
   }

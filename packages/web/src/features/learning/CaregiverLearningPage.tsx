@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getJson, postJson } from '../../lib/api-client.js';
 import { EnrollCaregiverModal } from './EnrollCaregiverModal.js';
 
-type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
+type CourseCadence = 'one_time' | 'semi_annual' | 'annual' | 'biennial' | 'certification';
 type EnrollmentStatus = 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'expired';
 
 interface LearningCourse {

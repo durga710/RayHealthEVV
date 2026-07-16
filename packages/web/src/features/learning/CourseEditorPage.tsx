@@ -15,7 +15,7 @@ import { getJson, postJson, patchJson } from '../../lib/api-client.js';
  * completion when passed.
  */
 
-type Cadence = 'one_time' | 'annual' | 'biennial' | 'certification';
+type Cadence = 'one_time' | 'semi_annual' | 'annual' | 'biennial' | 'certification';
 
 interface QuizQuestion {
   question: string;
@@ -53,6 +53,7 @@ interface Course {
 const CADENCES: Array<{ value: Cadence; label: string }> = [
   { value: 'one_time', label: 'One-time' },
   { value: 'annual', label: 'Annual' },
+  { value: 'semi_annual', label: 'Every 6 months' },
   { value: 'biennial', label: 'Every 2 years' },
   { value: 'certification', label: 'Certification (expires)' },
 ];

@@ -12,12 +12,16 @@
  *   - The pair lets us reconstruct who knew what when, for audit purposes
  */
 
-export type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
+export type CourseCadence = 'one_time' | 'semi_annual' | 'annual' | 'biennial' | 'certification';
 export type EnrollmentStatus = 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'expired';
 
 export interface CourseModule {
   title: string;
   content: string;
+  /** Optional illustration shown above the lesson text. Public https URL. */
+  imageUrl?: string | null;
+  /** Accessibility description for the illustration. */
+  imageAlt?: string | null;
 }
 
 export interface QuizQuestion {

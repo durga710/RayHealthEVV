@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -114,6 +115,9 @@ export default function CoursePlayerScreen() {
   const [video, setVideo] = useState<VideoProgress>(initialVideoProgress());
   const [videoKey, setVideoKey] = useState(0);
   const [videoFullscreen, setVideoFullscreen] = useState(false);
+  // Section illustrations that failed to load are hidden rather than showing
+  // a broken frame (e.g. offline, or the asset is not deployed yet).
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const canSkipVideo = isTestingAccount(user);
   const startedRef = useRef(false);
@@ -520,6 +524,7 @@ export default function CoursePlayerScreen() {
     const section = modules.sections[sectionIndex];
     if (!section) return null;
     const blocks = parseLessonContent(section.content);
+    const imageUrl = section.imageUrl && !failedImages.has(section.imageUrl) ? section.imageUrl : null;
     return (
       <View style={styles.card}>
         <View style={styles.sectionHeader}>
@@ -528,6 +533,17 @@ export default function CoursePlayerScreen() {
           </View>
           <Text style={[styles.sectionTitle, readingHeading, { flex: 1 }]}>{section.title}</Text>
         </View>
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.sectionImage}
+            contentFit="cover"
+            transition={200}
+            accessible
+            accessibilityLabel={section.imageAlt ?? section.title}
+            onError={() => setFailedImages((prev) => new Set(prev).add(imageUrl))}
+          />
+        ) : null}
         {blocks.map(renderBlock)}
       </View>
     );
@@ -988,6 +1004,12 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.textPrimary },
 
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  sectionImage: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: radii.md,
+    backgroundColor: colors.pressedBg,
+  },
   sectionIconCircle: {
     width: 44,
     height: 44,

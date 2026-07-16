@@ -21,7 +21,14 @@ const quizQuestionSchema = z
 const modulesSchema = z.object({
   objectives: z.array(z.string().max(500)).max(20).default([]),
   sections: z
-    .array(z.object({ title: z.string().min(1).max(200), content: z.string().min(1).max(20000) }))
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        content: z.string().min(1).max(20000),
+        imageUrl: z.string().url().max(500).nullable().optional(),
+        imageAlt: z.string().max(300).nullable().optional(),
+      }),
+    )
     .max(40)
     .default([]),
   note: z.string().max(2000).optional(),
@@ -34,7 +41,7 @@ const courseBodySchema = z.object({
   code: z.string().min(1).max(64),
   title: z.string().min(1).max(200),
   description: z.string().max(4000).default(''),
-  cadence: z.enum(['one_time', 'annual', 'biennial', 'certification']),
+  cadence: z.enum(['one_time', 'semi_annual', 'annual', 'biennial', 'certification']),
   expiresAfterDays: z.number().int().positive().max(3650).nullable().default(null),
   required: z.boolean().default(true),
   durationMinutes: z.number().int().min(0).max(100000).default(0),

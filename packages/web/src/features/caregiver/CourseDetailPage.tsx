@@ -5,6 +5,8 @@ import { postJson, getJson } from '../../lib/api-client.js';
 interface CourseSection {
   title: string;
   content: string;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
 }
 
 interface QuizQuestion {
@@ -539,6 +541,14 @@ export function CourseDetailPage() {
                   </button>
                   {isOpen && (
                     <div style={{ padding: '0 1.25rem 1.25rem', borderTop: '1px solid #F1F5F9' }}>
+                      {section.imageUrl && (
+                        <img
+                          src={section.imageUrl}
+                          alt={section.imageAlt ?? section.title}
+                          style={{ width: '100%', maxHeight: 320, objectFit: 'cover', borderRadius: 10, marginTop: '1rem', display: 'block' }}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      )}
                       <p style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.8, margin: '1rem 0 0' }}>
                         {section.content}
                       </p>

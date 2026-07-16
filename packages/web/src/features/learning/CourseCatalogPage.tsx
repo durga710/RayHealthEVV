@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getJson } from '../../lib/api-client.js';
 
-type CourseCadence = 'one_time' | 'annual' | 'biennial' | 'certification';
+type CourseCadence = 'one_time' | 'semi_annual' | 'annual' | 'biennial' | 'certification';
 
 interface LearningCourse {
   id: string;
@@ -25,6 +25,7 @@ interface ApiResponse<T> {
 const CADENCE_LABEL: Record<CourseCadence, string> = {
   one_time: 'One-time',
   annual: 'Annual',
+  semi_annual: 'Semi-Annual',
   biennial: 'Biennial',
   certification: 'Certification',
 };
