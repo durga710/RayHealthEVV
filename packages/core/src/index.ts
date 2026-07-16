@@ -41,6 +41,7 @@ export * from './services/payroll-export-service.js';
 export * from './services/command-center-service.js';
 export * from './security/cell-cipher.js';
 export * from './security/geofence.js';
+export * from './services/fraud/index.js';
 export * from './domain/mobile-session.js';
 export * from './repositories/mobile-session-repository.js';
 export * from './repositories/mobile-session-repository.js';

@@ -41,6 +41,7 @@ import agencyClearinghouseConfigRoutes from './routes/agency-clearinghouse-confi
 import copilotRoutes from './routes/copilot-routes.js';
 import supportRoutes from './routes/support-routes.js';
 import complianceEngineRoutes from './routes/compliance-engine-routes.js';
+import fraudRoutes from './routes/fraud-routes.js';
 import commandCenterRoutes from './routes/command-center-routes.js';
 import exportRoutes from './routes/export-routes.js';
 import importRoutes from './routes/import-routes.js';
@@ -323,6 +324,7 @@ export function createApp(options: { mobileSessionStore?: MobileSessionStore } =
     app.use(`${prefix}/compliance-engine`, complianceEngineRoutes);
     app.use(`${prefix}/command-center`, copilotLimiter, commandCenterRoutes);
     app.use(`${prefix}/documents`, documentRoutes);
+    app.use(`${prefix}/fraud`, fraudRoutes);
   }
 
   return app;
