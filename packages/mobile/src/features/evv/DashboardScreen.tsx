@@ -23,18 +23,14 @@ import { colors, typography, radii, shadow, gradients } from '../common/tokens';
 import { ensureNotificationPermission } from '../../lib/notification-permissions';
 import { fireDevTestShiftAlert, scheduleShiftAlerts } from '../../lib/shift-alert-scheduler';
 import { deriveVisitState, resumableVisit, type VisitState } from '../../lib/visit-state';
-import {
-  listEvvQueue,
-  syncEvvQueue,
-  type EvvQueueScope,
-} from '../../lib/offline-evv-queue';
+import { offlineEvvQueue } from '../../lib/offline-queue';
 import {
   cacheVisitSchedule,
   mergeQueuedVisitState,
   readCachedVisitSchedule,
   type CachedVisitScheduleRow,
 } from '../../lib/offline-visit-cache';
-import { secureEvvQueueStore, sendEvvEvent } from '../../lib/secure-evv-queue';
+import { secureKvStore, type CacheScope } from '../../lib/secure-store';
 import { getClockInWindowState } from '../../lib/clock-in-window';
 
 interface Assignment {
@@ -183,18 +179,16 @@ export default function DashboardScreen() {
   // /today fetch. Passed to the clock-in screen so its time-window UX agrees
   // with the server's decision even on a badly set phone clock.
   const serverSkewMsRef = useRef(0);
-  const queueScope: EvvQueueScope | null = useMemo(() => user?.agencyId
+  const cacheScope: CacheScope | null = useMemo(() => user?.agencyId
     ? { userId: user.userId ?? 'legacy-user', agencyId: user.agencyId }
     : null, [user?.agencyId, user?.userId]);
 
   const fetchAssignments = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
     const renderRows = async (rows: TodayScheduleRow[]) => {
-      const queued = queueScope
-        ? await listEvvQueue(secureEvvQueueStore, queueScope).catch(() => [])
-        : [];
-      setQueueAttentionCount(queued.filter((item) => item.status === 'needs_attention').length);
-      const mergedRows = mergeQueuedVisitState(rows, queued);
+      await offlineEvvQueue.init().catch(() => {});
+      setQueueAttentionCount(offlineEvvQueue.failures().length);
+      const mergedRows = mergeQueuedVisitState(rows, offlineEvvQueue.pendingPunches());
       const list: Assignment[] = mergedRows.map((r) => ({
         id: r.assignmentId,
         clientName: `${r.clientFirstName ?? ''} ${r.clientLastName ?? ''}`.trim() || 'Client',
@@ -215,15 +209,10 @@ export default function DashboardScreen() {
       return list;
     };
     try {
-      if (queueScope) {
-        try {
-          await syncEvvQueue(secureEvvQueueStore, queueScope, async (event) => {
-            await sendEvvEvent(event, 'offline');
-          });
-        } catch {
-          // A temporarily locked keychain must not prevent a live schedule fetch.
-        }
-      }
+      // Nudge the offline queue to flush now that we're clearly online (about to
+      // fetch). It's idempotent and also runs on launch/reconnect/foreground via
+      // useOfflineEvvSync; a failure here must never block the live fetch.
+      await offlineEvvQueue.replay().catch(() => {});
       // Purpose-built mobile endpoint: TODAY's window (12h back / 24h forward)
       // with the scheduled start time the shift-alert scheduler needs. The old
       // /assignments/caregiver returned every assignment with no time, so the
@@ -232,9 +221,9 @@ export default function DashboardScreen() {
       const rows: TodayScheduleRow[] = data?.schedule ?? [];
       const serverNow = data?.serverTime ? Date.parse(data.serverTime) : NaN;
       if (Number.isFinite(serverNow)) serverSkewMsRef.current = serverNow - Date.now();
-      if (queueScope) {
+      if (cacheScope) {
         try {
-          await cacheVisitSchedule(secureEvvQueueStore, queueScope, rows);
+          await cacheVisitSchedule(secureKvStore, cacheScope, rows);
         } catch {
           // The live response remains usable even if local encrypted caching fails.
         }
@@ -248,8 +237,8 @@ export default function DashboardScreen() {
       }
     } catch (requestError) {
       const status = (requestError as { response?: { status?: number } })?.response?.status;
-      const cached = status !== 401 && queueScope
-        ? await readCachedVisitSchedule(secureEvvQueueStore, queueScope).catch(() => [])
+      const cached = status !== 401 && cacheScope
+        ? await readCachedVisitSchedule(secureKvStore, cacheScope).catch(() => [])
         : [];
       if (cached.length > 0) {
         await renderRows(cached);
@@ -262,7 +251,7 @@ export default function DashboardScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [queueScope]);
+  }, [cacheScope]);
 
   // Refetch on focus so visits/schedule changes made in the web app appear
   // when the caregiver opens or returns to the dashboard, not only on a

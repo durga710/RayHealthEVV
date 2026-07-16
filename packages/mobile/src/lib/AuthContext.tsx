@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import apiClient, { setMobileAccessToken, setUnauthorizedHandler } from './api-client';
 import { cancelAllShiftAlerts } from './shift-alert-scheduler';
 import { clearCachedVisitSchedule } from './offline-visit-cache';
-import { secureEvvQueueStore } from './secure-evv-queue';
+import { secureKvStore } from './secure-store';
 
 const TOKEN_KEY = 'rayhealth_mobile_access_token';
 const USER_KEY = 'rayhealth_mobile_user';
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // would destroy legally significant visit evidence during an outage.
     if (user?.userId && user.agencyId) {
       try {
-        await clearCachedVisitSchedule(secureEvvQueueStore, {
+        await clearCachedVisitSchedule(secureKvStore, {
           userId: user.userId,
           agencyId: user.agencyId,
         });

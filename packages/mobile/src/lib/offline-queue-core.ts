@@ -138,6 +138,11 @@ export class OfflineEvvQueue {
     return this.state.punches.length;
   }
 
+  /** Snapshot of the queued-but-not-yet-synced punches, in replay (FIFO) order. */
+  pendingPunches(): QueuedPunch[] {
+    return [...this.state.punches];
+  }
+
   failures(): FailedPunch[] {
     return [...this.state.failures];
   }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { EvvQueueItem, EvvQueueStore } from './offline-evv-queue';
+import type { SecureKvStore } from './secure-store';
+import type { QueuedClockIn, QueuedClockOut } from './offline-queue-core';
 import {
   cacheVisitSchedule,
   clearCachedVisitSchedule,
@@ -8,7 +9,7 @@ import {
   type CachedVisitScheduleRow,
 } from './offline-visit-cache';
 
-function memoryStore(): EvvQueueStore {
+function memoryStore(): SecureKvStore {
   const values = new Map<string, string>();
   return {
     getItemAsync: async (key) => values.get(key) ?? null,
@@ -55,53 +56,44 @@ describe('encrypted offline visit cache', () => {
   });
 
   it('overlays a pending local clock-in and clock-out without mutating cached rows', () => {
-    const clockIn: EvvQueueItem = {
-      status: 'pending',
-      event: {
-        type: 'clock_in',
-        eventId: 'event-in',
-        visitId: 'visit-local',
-        assignmentId: row.assignmentId,
-        occurredAt: '2026-07-12T18:05:00.000Z',
-        location: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
-      },
+    // The queued clock-out references the clock-in by the local visit id the
+    // offline queue assigns before the server does.
+    const clockIn: QueuedClockIn = {
+      kind: 'clock-in',
+      localVisitId: 'local-visit',
+      assignmentId: row.assignmentId,
+      location: { lat: 40.4406, lng: -79.9959, accuracy: 10 },
+      capturedAt: '2026-07-12T18:05:00.000Z',
     };
-    const clockOut: EvvQueueItem = {
-      status: 'pending',
-      event: {
-        type: 'clock_out',
-        eventId: 'event-out',
-        visitId: 'visit-local',
-        occurredAt: '2026-07-12T20:05:00.000Z',
-        location: { lat: 40.4407, lng: -79.996, accuracy: 12 },
-      },
+    const clockOut: QueuedClockOut = {
+      kind: 'clock-out',
+      visitRef: 'local-visit',
+      location: { lat: 40.4407, lng: -79.996, accuracy: 12 },
+      capturedAt: '2026-07-12T20:05:00.000Z',
     };
 
     expect(mergeQueuedVisitState([row], [clockIn])[0]).toMatchObject({
-      currentVisitId: 'visit-local',
+      currentVisitId: 'local-visit',
       currentVisitStatus: 'pending',
       currentClockInTime: '2026-07-12T18:05:00.000Z',
       currentClockOutTime: null,
     });
     expect(mergeQueuedVisitState([row], [clockIn, clockOut])[0]).toMatchObject({
-      currentVisitId: 'visit-local',
+      currentVisitId: 'local-visit',
+      currentVisitStatus: 'verified',
       currentClockOutTime: '2026-07-12T20:05:00.000Z',
     });
     expect(row.currentVisitId).toBeNull();
   });
 
-  it('does not treat quarantined punches as completed visits', () => {
-    const quarantined: EvvQueueItem = {
-      status: 'needs_attention',
-      event: {
-        type: 'clock_in',
-        eventId: 'event-in',
-        visitId: 'visit-local',
-        assignmentId: row.assignmentId,
-        occurredAt: '2026-07-12T18:05:00.000Z',
-        location: { lat: 0, lng: 0, accuracy: 0 },
-      },
+  it('leaves a row untouched when queued punches belong to another assignment', () => {
+    const clockIn: QueuedClockIn = {
+      kind: 'clock-in',
+      localVisitId: 'local-visit',
+      assignmentId: 'some-other-assignment',
+      location: { lat: 0, lng: 0, accuracy: 0 },
+      capturedAt: '2026-07-12T18:05:00.000Z',
     };
-    expect(mergeQueuedVisitState([row], [quarantined])).toEqual([row]);
+    expect(mergeQueuedVisitState([row], [clockIn])).toEqual([row]);
   });
 });

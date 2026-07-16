@@ -1,8 +1,5 @@
-import type {
-  EvvQueueItem,
-  EvvQueueScope,
-  EvvQueueStore,
-} from './offline-evv-queue';
+import type { CacheScope, SecureKvStore } from './secure-store';
+import type { QueuedClockIn, QueuedClockOut, QueuedPunch } from './offline-queue-core';
 
 export interface CachedVisitScheduleRow {
   assignmentId: string;
@@ -29,15 +26,15 @@ function safePart(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 
-function indexKey(scope: EvvQueueScope): string {
+function indexKey(scope: CacheScope): string {
   return `rayhealth_visit_cache_index_${safePart(scope.userId)}_${safePart(scope.agencyId)}`;
 }
 
-function rowKey(scope: EvvQueueScope, assignmentId: string): string {
+function rowKey(scope: CacheScope, assignmentId: string): string {
   return `rayhealth_visit_cache_row_${safePart(scope.userId)}_${safePart(scope.agencyId)}_${safePart(assignmentId)}`;
 }
 
-async function readIndex(store: EvvQueueStore, scope: EvvQueueScope): Promise<string[]> {
+async function readIndex(store: SecureKvStore, scope: CacheScope): Promise<string[]> {
   const raw = await store.getItemAsync(indexKey(scope));
   if (!raw) return [];
   try {
@@ -49,8 +46,8 @@ async function readIndex(store: EvvQueueStore, scope: EvvQueueScope): Promise<st
 }
 
 export async function cacheVisitSchedule(
-  store: EvvQueueStore,
-  scope: EvvQueueScope,
+  store: SecureKvStore,
+  scope: CacheScope,
   rows: CachedVisitScheduleRow[],
 ): Promise<void> {
   if (rows.length > MAX_CACHED_ASSIGNMENTS) {
@@ -73,8 +70,8 @@ export async function cacheVisitSchedule(
 }
 
 export async function readCachedVisitSchedule(
-  store: EvvQueueStore,
-  scope: EvvQueueScope,
+  store: SecureKvStore,
+  scope: CacheScope,
 ): Promise<CachedVisitScheduleRow[]> {
   const ids = await readIndex(store, scope);
   const rows: CachedVisitScheduleRow[] = [];
@@ -92,8 +89,8 @@ export async function readCachedVisitSchedule(
 }
 
 export async function clearCachedVisitSchedule(
-  store: EvvQueueStore,
-  scope: EvvQueueScope,
+  store: SecureKvStore,
+  scope: CacheScope,
 ): Promise<void> {
   const ids = await readIndex(store, scope);
   for (const assignmentId of ids) {
@@ -102,27 +99,33 @@ export async function clearCachedVisitSchedule(
   await store.deleteItemAsync(indexKey(scope));
 }
 
+/**
+ * Overlay the still-queued offline punches onto the cached schedule so a visit
+ * clocked in/out while offline reads as in-progress/verified until it syncs.
+ * `punches` is the live offline queue's pending snapshot (offlineEvvQueue
+ * .pendingPunches()); a queued clock-out references its clock-in by the
+ * local visit id the queue assigns before the server does.
+ */
 export function mergeQueuedVisitState(
   rows: CachedVisitScheduleRow[],
-  queue: EvvQueueItem[],
+  punches: QueuedPunch[],
 ): CachedVisitScheduleRow[] {
-  const pending = queue.filter((item) => item.status === 'pending');
   return rows.map((row) => {
-    const localClockIn = [...pending].reverse().find(
-      (item) => item.event.type === 'clock_in' && item.event.assignmentId === row.assignmentId,
+    const localClockIn = [...punches].reverse().find(
+      (p): p is QueuedClockIn => p.kind === 'clock-in' && p.assignmentId === row.assignmentId,
     );
-    const visitId = localClockIn?.event.visitId ?? row.currentVisitId;
+    const visitId = localClockIn?.localVisitId ?? row.currentVisitId;
     if (!visitId) return row;
-    const localClockOut = [...pending].reverse().find(
-      (item) => item.event.type === 'clock_out' && item.event.visitId === visitId,
+    const localClockOut = [...punches].reverse().find(
+      (p): p is QueuedClockOut => p.kind === 'clock-out' && p.visitRef === visitId,
     );
     if (!localClockIn && !localClockOut) return row;
     return {
       ...row,
       currentVisitId: visitId,
       currentVisitStatus: localClockOut ? 'verified' : 'pending',
-      currentClockInTime: localClockIn?.event.occurredAt ?? row.currentClockInTime,
-      currentClockOutTime: localClockOut?.event.occurredAt ?? row.currentClockOutTime,
+      currentClockInTime: localClockIn?.capturedAt ?? row.currentClockInTime,
+      currentClockOutTime: localClockOut?.capturedAt ?? row.currentClockOutTime,
     };
   });
 }
