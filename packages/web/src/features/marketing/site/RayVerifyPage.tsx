@@ -43,7 +43,7 @@ interface Layer {
 const layers: Layer[] = [
   { t: 'Location verification', s: 'live', b: 'GPS at clock-in and clock-out, checked against the client’s geofenced service address with a per-client radius.',
     i: mkic(<><circle cx="12" cy="10" r="3" /><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z" /></>) },
-  { t: 'Fraud intelligence', s: 'live', b: 'Impossible-travel, duplicate visits, shared-device patterns and over-billing anomalies, scored on every visit with a plain-English reason.',
+  { t: 'Fraud intelligence', s: 'live', b: 'Impossible travel, duplicate visits, geofence anomalies and abnormal-duration outliers, scored on every visit with a plain-English reason.',
     i: mkic(<><path d="M12 3l8 4v5c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7l8-4Z" /><path d="m9 12 2 2 4-4" /></>) },
   { t: 'Identity verification', s: 'soon', b: 'A selfie match confirming the person clocking in is the authorized caregiver on the assignment, not a borrowed phone.',
     i: mkic(<><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6" /></>) },
@@ -90,7 +90,7 @@ interface Stat {
 const stats: Stat[] = [
   { v: '0-100', l: 'Explainable trust score on every visit' },
   { v: 'GPS', l: 'Geofence-anchored at clock-in and clock-out' },
-  { v: '6+', l: 'Fraud signals scored per visit today' },
+  { v: '4', l: 'Fraud signals scored per visit today' },
   { v: 'Audit', l: 'Tamper-evident evidence package on file' },
 ];
 
@@ -101,7 +101,7 @@ interface Faq {
 
 const faqs: Faq[] = [
   { q: 'What is RayVerify?', a: 'RayVerify is the verification engine inside RayHealthEVV. Where EVV proves a phone was near an address at a time, RayVerify adds a trust layer, location, device and fraud intelligence today, with identity and liveness rolling out, and turns each visit into an explainable trust score with an audit-ready evidence package.' },
-  { q: 'What is live today versus rolling out?', a: 'Live today: GPS geofencing and the fraud-intelligence signals (impossible travel, geofence breach, duplicates, over-billing, shared-device and schedule anomalies), plus the evidence package. Rolling out: biometric identity verification, liveness detection and device-trust scoring. We flag those clearly everywhere so you always know what is running on real visit data.' },
+  { q: 'What is live today versus rolling out?', a: 'Live today: GPS geofencing and four fraud-intelligence signals scored on every visit — impossible travel, duplicate visits, geofence anomalies and abnormal-duration outliers — plus the evidence package. Rolling out: biometric identity verification, liveness detection, device-trust scoring and shared-device detection. We flag those clearly everywhere so you always know what is running on real visit data.' },
   { q: 'How is the trust score explainable?', a: 'Every signal that contributes to a visit’s score comes with a plain-English reason, not a black-box number. Reviewers see exactly why a visit was flagged, which is what makes the score defensible in front of an auditor.' },
   { q: 'Do I need RayVerify to use RayHealthEVV?', a: 'No. GPS-verified EVV works on its own. RayVerify is the trust layer on top, turn it on per agency when you want fraud scoring and verification evidence beyond a basic location ping.' },
 ];

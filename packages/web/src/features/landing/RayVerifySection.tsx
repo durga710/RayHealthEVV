@@ -32,7 +32,7 @@ const PIPELINE: Stage[] = [
   { label: 'Liveness', detail: 'Real person, not a photo or replay', status: 'soon', glyph: <><path d="M12 3v2M12 19v2M3 12h2M19 12h2" /><circle cx="12" cy="12" r="4" /></> },
   { label: 'Location', detail: 'GPS inside the client geofence', status: 'live', glyph: <><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11Z" /><circle cx="12" cy="10" r="2.5" /></> },
   { label: 'Device trust', detail: 'Genuine device, not an emulator', status: 'soon', glyph: <><rect x="6" y="3" width="12" height="18" rx="2" /><path d="M11 18h2" /></> },
-  { label: 'Fraud engine', detail: 'Impossible travel, duplicates, anomalies', status: 'live', glyph: <><path d="M12 3l8 4v5c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7l8-4Z" /><path d="m9 12 2 2 4-4" /></> },
+  { label: 'Fraud engine', detail: 'Impossible travel, duplicates, geofence & duration anomalies', status: 'live', glyph: <><path d="M12 3l8 4v5c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7l8-4Z" /><path d="m9 12 2 2 4-4" /></> },
 ];
 
 const LAYERS = [
