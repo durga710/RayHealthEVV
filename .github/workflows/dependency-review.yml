@@ -20,7 +20,7 @@ jobs:
     # goes public), at which point CVE/license findings fail the run again.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/dependency-review-action@v5
