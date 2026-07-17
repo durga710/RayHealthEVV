@@ -1,6 +1,8 @@
 import type { Knex } from 'knex';
 import type { RecurringSchedule, RecurringScheduleStatus } from '../domain/recurring-schedule.js';
 import { expandRecurrence } from '../services/recurrence-service.js';
+import { planMaterialization } from '../services/materialization-planner.js';
+import type { ConflictExistingAssignment } from '../services/schedule-conflict-service.js';
 
 /** A recurring schedule joined with display names, for the list view. */
 export interface RecurringScheduleView {
@@ -21,7 +23,12 @@ export interface RecurringScheduleView {
 export interface MaterializeResult {
   scheduleId: string;
   created: number;
+  /** Occurrences that already had an assignment for this caregiver + template. */
   skipped: number;
+  /** Occurrences refused because they would double-book the caregiver. */
+  conflicted: number;
+  /** Human-readable reason per conflicted occurrence, for the coordinator. */
+  conflicts: string[];
 }
 
 /** One upcoming recurring occurrence that has no assignment generated yet. */
@@ -122,6 +129,13 @@ export class RecurringScheduleRepository {
    * from a prior run or a manual booking) is skipped, never duplicated. Paused
    * / ended schedules generate nothing. Throws if the schedule or its template
    * isn't in the agency.
+   *
+   * Also refuses to double-book: an occurrence whose window overlaps one the
+   * caregiver already has for a *different* template is reported in
+   * `conflicts` and not inserted. The date-dedup above cannot see that case ,
+   * two clients with overlapping recurring patterns are different templates, so
+   * every occurrence looked new. This is the only writer of real scheduled
+   * windows, which is what makes overlap decidable here at all.
    */
   async materialize(
     agencyId: string,
@@ -133,7 +147,9 @@ export class RecurringScheduleRepository {
       .where({ id: scheduleId, agency_id: agencyId })
       .first()) as Record<string, unknown> | undefined;
     if (!sched) throw new Error('recurring schedule not found in this agency');
-    if (sched.status !== 'active') return { scheduleId, created: 0, skipped: 0 };
+    if (sched.status !== 'active') {
+      return { scheduleId, created: 0, skipped: 0, conflicted: 0, conflicts: [] };
+    }
 
     // Confirm the visit template still belongs to this agency.
     const tpl = await this.db('visit_templates as vt')
@@ -159,28 +175,39 @@ export class RecurringScheduleRepository {
       windowStart,
       windowEnd,
     );
-    if (occurrences.length === 0) return { scheduleId, created: 0, skipped: 0 };
+    if (occurrences.length === 0) {
+      return { scheduleId, created: 0, skipped: 0, conflicted: 0, conflicts: [] };
+    }
 
-    // Existing assignment dates for this caregiver + template across the window
-    //, dedup against both prior materializations and manual bookings.
+    // The caregiver's whole booked window across EVERY template, not just this
+    // schedule's. The same-template rows drive date dedup (below); the rest are
+    // what makes cross-client double-booking visible at all.
     const existingRows = (await this.db('assignments')
       .where('caregiver_id', sched.caregiver_id as string)
-      .andWhere('visit_template_id', sched.visit_template_id as string)
       .whereNotNull('scheduled_start_time')
       .andWhere('scheduled_start_time', '>=', `${windowStart}T00:00:00.000Z`)
       .andWhere('scheduled_start_time', '<=', `${windowEnd}T23:59:59.999Z`)
-      .select('scheduled_start_time')) as Array<{ scheduled_start_time: string | Date }>;
-    const existingDates = new Set(
-      existingRows.map((r) => new Date(r.scheduled_start_time).toISOString().slice(0, 10)),
-    );
+      .select('visit_template_id', 'scheduled_start_time', 'scheduled_end_time')) as Array<{
+      visit_template_id: string;
+      scheduled_start_time: string | Date;
+      scheduled_end_time: string | Date | null;
+    }>;
 
-    let created = 0;
-    let skipped = 0;
-    for (const o of occurrences) {
-      if (existingDates.has(o.date)) {
-        skipped += 1;
-        continue;
-      }
+    const booked: ConflictExistingAssignment[] = existingRows.map((r) => ({
+      visitTemplateId: r.visit_template_id,
+      visitDate: new Date(r.scheduled_start_time).toISOString().slice(0, 10),
+      scheduledStart: new Date(r.scheduled_start_time).toISOString(),
+      scheduledEnd: r.scheduled_end_time ? new Date(r.scheduled_end_time).toISOString() : undefined,
+    }));
+
+    // Decide everything up front (pure, tested), then do only I/O below.
+    const plan = planMaterialization({
+      visitTemplateId: sched.visit_template_id as string,
+      occurrences,
+      booked,
+    });
+
+    for (const o of plan.insert) {
       await this.db('assignments').insert({
         id: this.db.raw('gen_random_uuid()'),
         caregiver_id: sched.caregiver_id as string,
@@ -189,10 +216,15 @@ export class RecurringScheduleRepository {
         scheduled_end_time: o.endsAt,
         recurring_schedule_id: scheduleId,
       });
-      existingDates.add(o.date);
-      created += 1;
     }
-    return { scheduleId, created, skipped };
+
+    return {
+      scheduleId,
+      created: plan.insert.length,
+      skipped: plan.skipped,
+      conflicted: plan.conflicts.length,
+      conflicts: plan.conflicts,
+    };
   }
 
   /**

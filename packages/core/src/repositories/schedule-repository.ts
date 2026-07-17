@@ -133,15 +133,27 @@ export class ScheduleRepository {
   }
 
   /**
-   * Existing (template, date) pairs for a caregiver, for duplicate detection.
-   * `excludeAssignmentId` omits one assignment from the result so a reschedule of
-   * an existing assignment doesn't flag itself as a duplicate.
+   * The caregiver's existing assignments, for the conflict gate: the (template,
+   * date) pair for duplicate detection, plus the scheduled window for
+   * time-overlap detection. `excludeAssignmentId` omits one assignment so a
+   * reschedule of an existing assignment doesn't flag itself.
+   *
+   * `scheduledEnd` is undefined for manual bookings , createAssignment writes a
+   * midnight start and no end , and the conflict gate reads that as "no
+   * time-of-day", falling back to the duplicate rule for those rows.
    */
   async getCaregiverScheduleForConflict(
     caregiverId: string,
     agencyId: string,
     excludeAssignmentId?: string,
-  ): Promise<Array<{ visitTemplateId: string; visitDate?: string }>> {
+  ): Promise<
+    Array<{
+      visitTemplateId: string;
+      visitDate?: string;
+      scheduledStart?: string;
+      scheduledEnd?: string;
+    }>
+  > {
     const query = this.db('assignments')
       .join('visit_templates', 'assignments.visit_template_id', 'visit_templates.id')
       .join('clients', 'visit_templates.client_id', 'clients.id')
@@ -151,12 +163,15 @@ export class ScheduleRepository {
     const rows = await query.select(
       'assignments.visit_template_id',
       'assignments.scheduled_start_time',
+      'assignments.scheduled_end_time',
     );
     return rows.map((row) => ({
       visitTemplateId: row.visit_template_id as string,
       visitDate: row.scheduled_start_time
         ? new Date(row.scheduled_start_time as string | Date).toISOString().slice(0, 10)
         : undefined,
+      scheduledStart: toIsoOrNull(row.scheduled_start_time) ?? undefined,
+      scheduledEnd: toIsoOrNull(row.scheduled_end_time) ?? undefined,
     }));
   }
 

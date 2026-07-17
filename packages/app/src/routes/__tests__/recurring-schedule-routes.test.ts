@@ -107,7 +107,9 @@ describe('recurring schedule routes', () => {
   });
 
   it('materializes one schedule and audits the run', async () => {
-    const materialize = vi.fn().mockResolvedValue({ scheduleId: 'rs-1', created: 6, skipped: 2 });
+    const materialize = vi
+      .fn()
+      .mockResolvedValue({ scheduleId: 'rs-1', created: 6, skipped: 2, conflicted: 0, conflicts: [] });
     vi.spyOn(core, 'RecurringScheduleRepository').mockImplementation(() => ({ materialize } as any));
     const auditCreate = vi.fn().mockResolvedValue({});
     vi.spyOn(core, 'AuditEventRepository').mockImplementation(() => ({ create: auditCreate } as any));
@@ -125,8 +127,8 @@ describe('recurring schedule routes', () => {
 
   it('materializes all active schedules and aggregates counts', async () => {
     const materializeAllActive = vi.fn().mockResolvedValue([
-      { scheduleId: 'rs-1', created: 4, skipped: 0 },
-      { scheduleId: 'rs-2', created: 2, skipped: 3 },
+      { scheduleId: 'rs-1', created: 4, skipped: 0, conflicted: 0, conflicts: [] },
+      { scheduleId: 'rs-2', created: 2, skipped: 3, conflicted: 0, conflicts: [] },
     ]);
     vi.spyOn(core, 'RecurringScheduleRepository').mockImplementation(
       () => ({ materializeAllActive } as any),
@@ -141,7 +143,43 @@ describe('recurring schedule routes', () => {
       .send({});
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ schedules: 2, created: 6, skipped: 3 });
+    expect(res.body).toMatchObject({ schedules: 2, created: 6, skipped: 3, conflicted: 0 });
+  });
+
+  it('surfaces refused double-bookings from the bulk run instead of dropping them', async () => {
+    // A coordinator reading only created/skipped would think every visit
+    // generated; the refused ones have to reach the response and the audit.
+    const materializeAllActive = vi.fn().mockResolvedValue([
+      { scheduleId: 'rs-1', created: 4, skipped: 0, conflicted: 0, conflicts: [] },
+      {
+        scheduleId: 'rs-2',
+        created: 1,
+        skipped: 0,
+        conflicted: 2,
+        conflicts: [
+          '2026-06-15: Caregiver is already booked 2026-06-15 10:00-12:00 UTC, which overlaps this visit.',
+          '2026-06-17: Caregiver is already booked 2026-06-17 10:00-12:00 UTC, which overlaps this visit.',
+        ],
+      },
+    ]);
+    vi.spyOn(core, 'RecurringScheduleRepository').mockImplementation(
+      () => ({ materializeAllActive } as any),
+    );
+    const auditCreate = vi.fn().mockResolvedValue({});
+    vi.spyOn(core, 'AuditEventRepository').mockImplementation(
+      () => ({ create: auditCreate } as any),
+    );
+
+    const res = await request(createApp())
+      .post('/recurring-schedules/materialize')
+      .set('Authorization', `Bearer ${makeToken('coordinator')}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ schedules: 2, created: 5, skipped: 0, conflicted: 2 });
+    expect(res.body.conflicts).toHaveLength(2);
+    expect(res.body.conflicts[0]).toContain('overlaps');
+    expect(auditCreate.mock.calls[0][0].payload.conflicted).toBe(2);
   });
 
   it('forbids caregivers from creating recurring schedules', async () => {

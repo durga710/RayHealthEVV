@@ -10,8 +10,11 @@
  *
  * Materialization expands a pattern into concrete `assignments` over a rolling
  * horizon (default 14 days, max 90), idempotently, re-running never
- * double-books a date. Reads use schedule.read; every mutation uses
- * schedule.write (admin + coordinator; caregivers excluded).
+ * double-books a date. An occurrence that would overlap a visit the caregiver
+ * already has for another client is refused and reported in `conflicts`, so
+ * `created + skipped` alone never tells the whole story. Reads use
+ * schedule.read; every mutation uses schedule.write (admin + coordinator;
+ * caregivers excluded).
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -211,14 +214,22 @@ router.post('/materialize', requireCapability('schedule.write'), async (req: Req
     );
     const created = results.reduce((s, r) => s + r.created, 0);
     const skipped = results.reduce((s, r) => s + r.skipped, 0);
-    await auditMaterialize(db, req, {
+    // Refused double-bookings must surface here, not only on the per-schedule
+    // route , a coordinator reading "created: 5, skipped: 0" would otherwise
+    // never learn that visits were dropped.
+    const conflicted = results.reduce((s, r) => s + r.conflicted, 0);
+    const conflicts = results.flatMap((r) => r.conflicts);
+    const summary = {
       schedules: results.length,
       created,
       skipped,
+      conflicted,
+      conflicts,
       windowStart: start,
       windowEnd: end,
-    });
-    res.json({ schedules: results.length, created, skipped, windowStart: start, windowEnd: end });
+    };
+    await auditMaterialize(db, req, summary);
+    res.json(summary);
   } catch (err) {
     safeError('materialize all recurring schedules failed', err);
     res.status(500).json({ message: 'Internal Server Error' });
