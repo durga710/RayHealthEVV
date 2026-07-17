@@ -67,7 +67,10 @@ describe('recurring schedule routes', () => {
     const create = vi.fn().mockResolvedValue({ id: 'rs-99' });
     vi.spyOn(core, 'RecurringScheduleRepository').mockImplementation(() => ({ create } as any));
     vi.spyOn(core, 'CaregiverRepository').mockImplementation(
-      () => ({ findById: vi.fn().mockResolvedValue({ id: 'caregiver-1' }) } as any),
+      () => ({
+        findById: vi.fn().mockResolvedValue({ id: 'caregiver-1' }),
+        getCredentials: vi.fn().mockResolvedValue([]),
+      } as any),
     );
     vi.spyOn(core, 'ScheduleRepository').mockImplementation(
       () => ({ getTemplateClient: vi.fn().mockResolvedValue({ clientId: 'client-1' }) } as any),
@@ -80,7 +83,35 @@ describe('recurring schedule routes', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBe('rs-99');
+    // No credentials on file → advisory, not a block.
+    expect(res.body.warnings.some((w: string) => w.includes('credential on file'))).toBe(true);
     expect(create).toHaveBeenCalled();
+  });
+
+  it('refuses a recurring schedule for a caregiver with an expired credential', async () => {
+    const create = vi.fn();
+    vi.spyOn(core, 'RecurringScheduleRepository').mockImplementation(() => ({ create } as any));
+    vi.spyOn(core, 'CaregiverRepository').mockImplementation(
+      () => ({
+        findById: vi.fn().mockResolvedValue({ id: 'caregiver-1' }),
+        getCredentials: vi.fn().mockResolvedValue([
+          { credentialType: 'license', status: 'expired', expiresAt: '2026-01-01' },
+        ]),
+      } as any),
+    );
+    vi.spyOn(core, 'ScheduleRepository').mockImplementation(
+      () => ({ getTemplateClient: vi.fn().mockResolvedValue({ clientId: 'client-1' }) } as any),
+    );
+
+    const res = await request(createApp())
+      .post('/recurring-schedules')
+      .set('Authorization', `Bearer ${makeToken('coordinator')}`)
+      .send(validBody);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('CREDENTIAL_EXPIRED');
+    expect(res.body.message).toContain('license');
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('rejects an invalid pattern with 400', async () => {

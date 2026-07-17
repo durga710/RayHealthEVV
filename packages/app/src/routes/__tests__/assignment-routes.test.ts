@@ -53,7 +53,39 @@ describe('assignment routes', () => {
     expect(mockCreateAssignment).toHaveBeenCalled();
   });
 
-  it('warns (does not block) when the caregiver has non-active credentials', async () => {
+  it('blocks with 409 CREDENTIAL_EXPIRED when the caregiver has an expired credential', async () => {
+    const createAssignment = vi.fn();
+    vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
+      createAssignment,
+      getTemplateClient: vi.fn().mockResolvedValue({ clientId: 'client-1' }),
+      getCaregiverScheduleForConflict: vi.fn().mockResolvedValue([])
+    } as any));
+    vi.spyOn(core, 'CaregiverRepository').mockImplementation(() => ({
+      findById: vi.fn().mockResolvedValue({ id: 'caregiver-1', agencyId: 'agency-id', status: 'active' }),
+      getCredentials: vi.fn().mockResolvedValue([
+        { credentialType: 'tb-screening', status: 'expired', expiresAt: '2026-01-01' }
+      ])
+    } as any));
+    vi.spyOn(core, 'ClientRepository').mockImplementation(() => ({
+      getAuthorizations: vi.fn().mockResolvedValue([])
+    } as any));
+    vi.spyOn(core, 'ClaimRepository').mockImplementation(() => ({
+      getBilledLineUnits: vi.fn().mockResolvedValue([])
+    } as any));
+
+    const response = await request(createApp())
+      .post('/assignments')
+      .set('Authorization', `Bearer ${makeToken('coordinator')}`)
+      .send({ clientId: 'client-1', caregiverId: 'caregiver-1', visitTemplateId: 'template-1', visitDate: '2026-05-20' });
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('CREDENTIAL_EXPIRED');
+    expect(response.body.message).toContain('tb-screening');
+    expect(createAssignment).not.toHaveBeenCalled();
+  });
+
+  it('warns (does not block) on missing or pending credentials', async () => {
+    const farFuture = new Date(Date.now() + 365 * 86_400_000).toISOString().slice(0, 10);
     vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
       createAssignment: vi.fn().mockResolvedValue({ id: '124', caregiverId: 'caregiver-1', visitTemplateId: 'template-1' }),
       getTemplateClient: vi.fn().mockResolvedValue({ clientId: 'client-1' }),
@@ -62,7 +94,7 @@ describe('assignment routes', () => {
     vi.spyOn(core, 'CaregiverRepository').mockImplementation(() => ({
       findById: vi.fn().mockResolvedValue({ id: 'caregiver-1', agencyId: 'agency-id', status: 'active' }),
       getCredentials: vi.fn().mockResolvedValue([
-        { credentialType: 'tb-screening', status: 'expired' }
+        { credentialType: 'tb-screening', status: 'pending', expiresAt: farFuture }
       ])
     } as any));
     vi.spyOn(core, 'ClientRepository').mockImplementation(() => ({
@@ -81,7 +113,8 @@ describe('assignment routes', () => {
       .send({ clientId: 'client-1', caregiverId: 'caregiver-1', visitTemplateId: 'template-1', visitDate: '2026-05-20' });
 
     expect(response.status).toBe(201);
-    expect(response.body.warnings.some((w: string) => w.includes('non-active credentials'))).toBe(true);
+    expect(response.body.warnings.some((w: string) => w.includes('pending verification'))).toBe(true);
+    expect(response.body.warnings.some((w: string) => w.includes('credential on file'))).toBe(true);
   });
 
   it('forbids caregivers from creating assignments', async () => {

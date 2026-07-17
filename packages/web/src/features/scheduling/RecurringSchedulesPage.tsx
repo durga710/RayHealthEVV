@@ -133,7 +133,7 @@ export function RecurringSchedulesPage() {
       return;
     }
     try {
-      await postJson<{ id: string }>('/api/recurring-schedules', {
+      const { warnings } = await postJson<{ id: string; warnings?: string[] }>('/api/recurring-schedules', {
         caregiverId,
         visitTemplateId,
         daysOfWeek: Array.from(daysOfWeek),
@@ -147,7 +147,13 @@ export function RecurringSchedulesPage() {
       setDaysOfWeek(new Set([1, 2, 3, 4, 5]));
       setStartDate('');
       setEndDate('');
-      setBanner({ kind: 'success', text: 'Recurring schedule created.' });
+      setBanner({
+        kind: 'success',
+        text:
+          warnings && warnings.length > 0
+            ? `Recurring schedule created. Review before visits run: ${warnings.join(' ')}`
+            : 'Recurring schedule created.',
+      });
       loadSchedules();
     } catch (err) {
       setBanner({ kind: 'error', text: (err as Error).message || 'Failed to create recurring schedule.' });

@@ -46,7 +46,7 @@ router.post('/', requireCapability('schedule.write'), async (req, res) => {
     }
 
     // Run the shared safety checks (cross-tenant caregiver guard, credential
-    // advisory, template→client resolution, duplicate-booking + authorization
+    // gate, template→client resolution, duplicate-booking + authorization
     // coverage gate). Same logic the reschedule path uses, so the two can't drift.
     const checks = await evaluateAssignmentChecks(db, req.auth.agencyId, {
       caregiverId: parsed.data.caregiverId,
@@ -65,6 +65,13 @@ router.post('/', requireCapability('schedule.write'), async (req, res) => {
         message: checks.hardConflicts[0],
         code: 'SCHEDULE_CONFLICT',
         conflicts: checks.hardConflicts,
+      });
+    }
+    if (checks.credentialBlocks.length > 0) {
+      return res.status(409).json({
+        message: checks.credentialBlocks[0],
+        code: 'CREDENTIAL_EXPIRED',
+        conflicts: checks.credentialBlocks,
       });
     }
 
@@ -181,6 +188,13 @@ router.put('/:id', requireCapability('schedule.write'), async (req, res) => {
         message: checks.hardConflicts[0],
         code: 'SCHEDULE_CONFLICT',
         conflicts: checks.hardConflicts,
+      });
+    }
+    if (checks.credentialBlocks.length > 0) {
+      return res.status(409).json({
+        message: checks.credentialBlocks[0],
+        code: 'CREDENTIAL_EXPIRED',
+        conflicts: checks.credentialBlocks,
       });
     }
 

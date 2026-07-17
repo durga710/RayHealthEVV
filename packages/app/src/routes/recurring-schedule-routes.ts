@@ -23,6 +23,7 @@ import type { Knex } from 'knex';
 import {
   AuditEventRepository,
   CaregiverRepository,
+  CredentialComplianceService,
   RecurringScheduleRepository,
   ScheduleRepository,
   recurringScheduleSchema,
@@ -89,7 +90,8 @@ router.post('/', requireCapability('schedule.write'), async (req: Request, res: 
     const db = req.app.get('db') as Knex;
     const agencyId = req.auth.agencyId;
 
-    const caregiver = await new CaregiverRepository(db).findById(parsed.data.caregiverId, agencyId);
+    const caregiverRepo = new CaregiverRepository(db);
+    const caregiver = await caregiverRepo.findById(parsed.data.caregiverId, agencyId);
     if (!caregiver) {
       res.status(404).json({ message: 'caregiver not found in this agency' });
       return;
@@ -103,8 +105,23 @@ router.post('/', requireCapability('schedule.write'), async (req: Request, res: 
       return;
     }
 
+    // Same credential gate as one-off assignment creation: a recurring pattern
+    // is a standing order for visits, so an expired credential must not be
+    // laundered through it. Advisories ride back on the 201 for the coordinator.
+    const credentialGate = new CredentialComplianceService().gateForBooking(
+      await caregiverRepo.getCredentials(parsed.data.caregiverId, agencyId),
+    );
+    if (credentialGate.blocks.length > 0) {
+      res.status(409).json({
+        message: credentialGate.blocks[0],
+        code: 'CREDENTIAL_EXPIRED',
+        conflicts: credentialGate.blocks,
+      });
+      return;
+    }
+
     const { id } = await new RecurringScheduleRepository(db).create(agencyId, parsed.data);
-    res.status(201).json({ id });
+    res.status(201).json({ id, warnings: credentialGate.warnings });
   } catch (err) {
     safeError('create recurring schedule failed', err);
     res.status(500).json({ message: 'Internal Server Error' });

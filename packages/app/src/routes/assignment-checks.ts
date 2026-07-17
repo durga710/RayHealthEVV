@@ -2,7 +2,8 @@
  * Shared assignment safety checks used by BOTH the create (POST) and
  * reschedule/reassign (PUT) paths so the two can never drift apart. Gathers the
  * caregiver, the template's client, the client's live authorization burn-down,
- * and runs the pure schedule-conflict gate. Returns the raw pieces; the caller
+ * and runs the pure schedule-conflict + credential gates. Returns the raw
+ * pieces; the caller
  * decides the HTTP shaping (403 / 404 / 409 / warnings) so each route keeps its
  * existing contract.
  */
@@ -11,9 +12,9 @@ import {
   CaregiverRepository,
   ClaimRepository,
   ClientRepository,
+  CredentialComplianceService,
   ScheduleRepository,
   checkScheduleConflicts,
-  evaluateCredentialEligibility,
   type ConflictAuthorization,
 } from '@rayhealth/core';
 
@@ -33,7 +34,9 @@ export interface AssignmentCheckResult {
   templateClient: { clientId: string } | null;
   /** Blocking conflicts (e.g. duplicate booking). Non-empty → caller should 409. */
   hardConflicts: string[];
-  /** Non-blocking advisories (coverage, exhausted units, non-active credentials). */
+  /** Expired-credential stops. Non-empty → caller should 409 CREDENTIAL_EXPIRED. */
+  credentialBlocks: string[];
+  /** Non-blocking advisories (coverage, exhausted units, credential follow-ups). */
   warnings: string[];
 }
 
@@ -48,20 +51,18 @@ export async function evaluateAssignmentChecks(
   // Cross-tenant guard: the caregiver must belong to this agency.
   const caregiver = await caregiverRepo.findById(input.caregiverId, agencyId);
   if (!caregiver) {
-    return { caregiver: null, templateClient: null, hardConflicts: [], warnings: [] };
+    return { caregiver: null, templateClient: null, hardConflicts: [], credentialBlocks: [], warnings: [] };
   }
 
-  // Credential advisory (warning, not a block, a renewal may be in flight).
+  // Credential gate: expired credentials block the booking; missing / expiring
+  // soon / pending verification are advisories (see gateForBooking's rationale).
   const credentials = await caregiverRepo.getCredentials(input.caregiverId, agencyId);
-  const credCheck = evaluateCredentialEligibility({
-    operatingTrack: 'personal-assistance',
-    credentials: credentials.map((c) => ({ credentialType: c.credentialType, status: c.status })),
-  });
+  const credentialGate = new CredentialComplianceService().gateForBooking(credentials);
 
   // Resolve the template's client (also validates the template is in-agency).
   const templateClient = await scheduleRepo.getTemplateClient(input.visitTemplateId, agencyId);
   if (!templateClient) {
-    return { caregiver: { id: input.caregiverId }, templateClient: null, hardConflicts: [], warnings: [] };
+    return { caregiver: { id: input.caregiverId }, templateClient: null, hardConflicts: [], credentialBlocks: [], warnings: [] };
   }
 
   // Conflict inputs: the caregiver's other assignments (duplicate detection,
@@ -100,17 +101,11 @@ export async function evaluateAssignmentChecks(
     authorizations,
   });
 
-  const warnings = [
-    ...conflicts.warnings,
-    ...(credCheck.eligible
-      ? []
-      : [`Caregiver has non-active credentials: ${credCheck.reasons.join(', ')}`]),
-  ];
-
   return {
     caregiver: { id: input.caregiverId },
     templateClient: { clientId: templateClient.clientId },
     hardConflicts: conflicts.hardConflicts,
-    warnings,
+    credentialBlocks: credentialGate.blocks,
+    warnings: [...conflicts.warnings, ...credentialGate.warnings],
   };
 }

@@ -18,7 +18,9 @@
  *    all-day one) would false-positive every same-day assignment.
  * A window-less assignment therefore falls back to the duplicate rule alone.
  *
- * Credential gating stays out of scope here (see credential-policy-service).
+ * Credential gating stays out of scope here (see
+ * CredentialComplianceService.gateForBooking, applied in the routes' shared
+ * assignment checks).
  */
 
 interface ScheduledWindow {
