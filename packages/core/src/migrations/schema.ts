@@ -1680,6 +1680,31 @@ export async function up(knex: Knex): Promise<void> {
   if (await knex.schema.hasTable('evv_visits')) {
     await knex.raw('ALTER TABLE evv_visits ALTER COLUMN assignment_id DROP NOT NULL');
   }
+
+  // ── R29. ERA service-line detail + remark codes ─────────────────────────
+  // 835 postings now capture SVC service-line payment breakdowns and RARC
+  // remark codes (LQ/MOA) alongside the claim-level CAS adjustments, so a
+  // biller can see per-line what was paid/cut and the payer's commentary.
+  // Each column guarded independently so a partially-applied prior run can
+  // never leave one of the pair permanently missing.
+  if (
+    (await knex.schema.hasTable('claim_remittances')) &&
+    !(await knex.schema.hasColumn('claim_remittances', 'service_lines'))
+  ) {
+    await knex.schema.alterTable('claim_remittances', (t) => {
+      // [{procedureCode, modifiers, chargeCents, paidCents, units, serviceDate, adjustments, remarkCodes}]
+      t.jsonb('service_lines').notNullable().defaultTo('[]');
+    });
+  }
+  if (
+    (await knex.schema.hasTable('claim_remittances')) &&
+    !(await knex.schema.hasColumn('claim_remittances', 'remark_codes'))
+  ) {
+    await knex.schema.alterTable('claim_remittances', (t) => {
+      // Claim-level RARCs (MOA / pre-SVC LQ), ["N362", ...]
+      t.jsonb('remark_codes').notNullable().defaultTo('[]');
+    });
+  }
 }
 
 export async function down(knex: Knex): Promise<void> {

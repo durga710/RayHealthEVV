@@ -25,9 +25,12 @@ import {
   AuditEventRepository,
   ClaimRepository,
   ClearinghouseRemittanceFileRepository,
+  adjustmentGroupLabel,
   buildPayrollExport,
   canTransitionClaim,
   claimStatuses,
+  describeCarc,
+  describeRarc,
   generateClaims,
   hasCapability,
   parse835,
@@ -36,6 +39,8 @@ import {
   type BilledLineUnits,
   type Claim,
   type ClaimStatus,
+  type Era835Adjustment,
+  type Era835ServiceLine,
 } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 import { assertCronAuthorized } from '../middleware/cron-auth.js';
@@ -512,12 +517,42 @@ function toClaimDetailResponse(claim: Claim): Record<string, unknown> {
 
 // ── ERA / 835 remittance posting ────────────────────────────────────────────
 
+/** CAS adjustment decorated with the CARC dictionary for display. */
+function decorateAdjustment(a: Era835Adjustment) {
+  return {
+    ...a,
+    groupLabel: adjustmentGroupLabel(a.group),
+    description: describeCarc(a.reasonCode),
+  };
+}
+
+/** RARC decorated with its dictionary description. */
+function decorateRemark(code: string) {
+  return { code, description: describeRarc(code) };
+}
+
+/** SVC service line decorated for display (adjustments + remarks described). */
+function decorateServiceLine(l: Era835ServiceLine) {
+  return {
+    ...l,
+    adjustments: l.adjustments.map(decorateAdjustment),
+    remarkCodes: l.remarkCodes.map(decorateRemark),
+  };
+}
+
 /** GET /billing/remittances, recent remittance postings. */
 router.get('/remittances', requireCapability('billing.read'), async (req: Request, res: Response) => {
   try {
     const db = req.app.get('db') as Knex;
     const list = await new ClaimRepository(db).listRemittances(req.auth.agencyId);
-    res.json(list);
+    res.json(
+      list.map((r) => ({
+        ...r,
+        adjustments: r.adjustments.map(decorateAdjustment),
+        remarkCodes: r.remarkCodes.map(decorateRemark),
+        serviceLines: (r.serviceLines as Era835ServiceLine[]).map(decorateServiceLine),
+      })),
+    );
   } catch (err) {
     safeError('list remittances failed', err);
     res.status(500).json({ message: 'Internal Server Error' });
@@ -563,7 +598,9 @@ router.post(
           chargeCents: c.chargeCents,
           paidCents: c.paidCents,
           patientResponsibilityCents: c.patientResponsibilityCents,
-          adjustments: c.adjustments,
+          adjustments: c.adjustments.map(decorateAdjustment),
+          remarkCodes: c.remarkCodes.map(decorateRemark),
+          serviceLines: c.lines.map(decorateServiceLine),
         })),
       });
     } catch (err) {
