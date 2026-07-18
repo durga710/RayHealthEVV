@@ -30,6 +30,86 @@ describe('remittance (835) routes', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ total: 1, matchedCount: 1, traceNumber: 'CHK-1' });
     expect(res.body.claims[0]).toMatchObject({ controlNumber: 'CLAIM-001', matched: true });
+    // Adjustments arrive decorated with the CARC dictionary.
+    expect(res.body.claims[0].adjustments[0]).toMatchObject({
+      group: 'CO',
+      groupLabel: 'Contractual obligation',
+      reasonCode: '45',
+      description: expect.stringContaining('fee schedule'),
+    });
+  });
+
+  it('previews SVC service lines with decorated line adjustments and RARC remarks', async () => {
+    vi.spyOn(core, 'ClaimRepository').mockImplementation(() => ({
+      matchControlNumbers: vi.fn().mockResolvedValue(new Set()),
+    } as any));
+
+    const eraWithLines = [
+      'CLP*CLAIM-002*2*400.00*300.00*0~',
+      'MOA***N362~',
+      'SVC*HC:T1019*250.00*200.00**10~',
+      'DTM*472*20260601~',
+      'CAS*CO*45*50.00~',
+      'LQ*HE*N362~',
+    ].join('');
+
+    const res = await request(createApp())
+      .post('/billing/remittances/preview')
+      .set('Authorization', `Bearer ${makeToken('admin')}`)
+      .set('content-type', 'text/plain')
+      .send(eraWithLines);
+
+    expect(res.status).toBe(200);
+    const claim = res.body.claims[0];
+    expect(claim.remarkCodes[0]).toMatchObject({
+      code: 'N362',
+      description: expect.stringContaining('units of service exceeds'),
+    });
+    expect(claim.serviceLines).toHaveLength(1);
+    expect(claim.serviceLines[0]).toMatchObject({
+      procedureCode: 'T1019',
+      units: 10,
+      serviceDate: '2026-06-01',
+    });
+    expect(claim.serviceLines[0].adjustments[0].description).toContain('fee schedule');
+    expect(claim.serviceLines[0].remarkCodes[0].code).toBe('N362');
+  });
+
+  it('lists remittance history with decorated adjustments, remarks, and lines', async () => {
+    vi.spyOn(core, 'ClaimRepository').mockImplementation(() => ({
+      listRemittances: vi.fn().mockResolvedValue([
+        {
+          id: 'rem-1',
+          claimId: null,
+          controlNumber: 'CLAIM-003',
+          matched: false,
+          statusCode: '4',
+          chargeCents: 10000,
+          paidCents: 0,
+          adjustmentCents: 10000,
+          patientResponsibilityCents: 0,
+          traceNumber: 'CHK-2',
+          postedAt: '2026-07-01T00:00:00.000Z',
+          adjustments: [{ group: 'CO', reasonCode: '197', amountCents: 10000 }],
+          remarkCodes: ['N54'],
+          serviceLines: [],
+        },
+      ]),
+    } as any));
+
+    const res = await request(createApp())
+      .get('/billing/remittances')
+      .set('Authorization', `Bearer ${makeToken('admin')}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].adjustments[0]).toMatchObject({
+      reasonCode: '197',
+      description: expect.stringContaining('authorization'),
+    });
+    expect(res.body[0].remarkCodes[0]).toMatchObject({
+      code: 'N54',
+      description: expect.stringContaining('pre-certified'),
+    });
   });
 
   it('posts an 835 and returns matched/unmatched counts', async () => {

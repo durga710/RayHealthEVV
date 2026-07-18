@@ -12,7 +12,7 @@ import type {
 import type { PayrollVisit } from '../services/payroll-export-service.js';
 import type { PaServiceCode } from '../config/pennsylvania.js';
 import type { Era835 } from '../services/edi-835.js';
-import { eraStatusToClaimStatus, summarizeAdjustments } from '../services/edi-835.js';
+import { allAdjustments, eraStatusToClaimStatus, summarizeAdjustments } from '../services/edi-835.js';
 import { decryptCell } from '../security/cell-cipher.js';
 
 export interface EraPostResult {
@@ -305,11 +305,23 @@ export class ClaimRepository {
     patientResponsibilityCents: number;
     traceNumber: string | null;
     postedAt: string | null;
+    adjustments: Array<{ group: string; reasonCode: string; amountCents: number }>;
+    remarkCodes: string[];
+    serviceLines: unknown[];
   }>> {
     const rows = (await this.db('claim_remittances')
       .where('agency_id', agencyId)
       .orderBy('posted_at', 'desc')
       .limit(Math.min(limit, 500))) as Array<Record<string, unknown>>;
+    // jsonb columns come back parsed from pg but as strings from some drivers;
+    // normalize either way, and default [] for rows that predate R29.
+    const asArray = (v: unknown): unknown[] => {
+      if (Array.isArray(v)) return v;
+      if (typeof v === 'string') {
+        try { return JSON.parse(v) as unknown[]; } catch { return []; }
+      }
+      return [];
+    };
     return rows.map((r) => ({
       id: r.id as string,
       claimId: (r.claim_id as string | null) ?? null,
@@ -325,6 +337,13 @@ export class ClaimRepository {
         r.posted_at instanceof Date
           ? r.posted_at.toISOString()
           : (r.posted_at as string | null) ?? null,
+      adjustments: asArray(r.adjustment_codes) as Array<{
+        group: string;
+        reasonCode: string;
+        amountCents: number;
+      }>,
+      remarkCodes: asArray(r.remark_codes) as string[],
+      serviceLines: asArray(r.service_lines),
     }));
   }
 
@@ -354,6 +373,10 @@ export class ClaimRepository {
           c.chargeCents - c.paidCents - c.patientResponsibilityCents,
         );
 
+        // Line-level CAS lives on c.lines since SVC parsing landed; the
+        // stored/summarized adjustment set is the full claim roll-up.
+        const adjustments = allAdjustments(c);
+
         await trx('claim_remittances').insert({
           id: trx.raw('gen_random_uuid()'),
           agency_id: agencyId,
@@ -365,7 +388,9 @@ export class ClaimRepository {
           paid_cents: c.paidCents,
           patient_responsibility_cents: c.patientResponsibilityCents,
           adjustment_cents: adjustmentCents,
-          adjustment_codes: JSON.stringify(c.adjustments),
+          adjustment_codes: JSON.stringify(adjustments),
+          service_lines: JSON.stringify(c.lines),
+          remark_codes: JSON.stringify(c.remarkCodes),
           trace_number: era.traceNumber,
           matched: Boolean(claimId),
         });
@@ -377,7 +402,7 @@ export class ClaimRepository {
               status: eraStatusToClaimStatus(c.derivedStatus),
               paid_cents: c.paidCents,
               payer_claim_id: c.payerClaimControlNumber ?? null,
-              status_reason: summarizeAdjustments(c.adjustments),
+              status_reason: summarizeAdjustments(adjustments),
               updated_at: trx.fn.now(),
             });
         }

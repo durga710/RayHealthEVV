@@ -2,6 +2,32 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getJson, postJson, postText } from '../../lib/api-client.js';
 import { ComplianceModuleLayout, type KpiTile } from './ComplianceModuleLayout.js';
 
+interface Adjustment {
+  group: string;
+  groupLabel?: string;
+  reasonCode: string;
+  amountCents: number;
+  /** CARC dictionary description; null for codes outside the curated set. */
+  description?: string | null;
+}
+
+interface Remark {
+  code: string;
+  /** RARC dictionary description; null for codes outside the curated set. */
+  description?: string | null;
+}
+
+interface ServiceLine {
+  procedureCode: string;
+  modifiers: string[];
+  chargeCents: number;
+  paidCents: number;
+  units: number;
+  serviceDate: string | null;
+  adjustments: Adjustment[];
+  remarkCodes: Remark[];
+}
+
 interface PreviewClaim {
   controlNumber: string;
   matched: boolean;
@@ -9,7 +35,9 @@ interface PreviewClaim {
   chargeCents: number;
   paidCents: number;
   patientResponsibilityCents: number;
-  adjustments: { group: string; reasonCode: string; amountCents: number }[];
+  adjustments: Adjustment[];
+  remarkCodes: Remark[];
+  serviceLines: ServiceLine[];
 }
 
 interface PreviewResponse {
@@ -59,6 +87,52 @@ interface RemittanceRow {
   patientResponsibilityCents: number;
   traceNumber: string | null;
   postedAt: string | null;
+  adjustments: Adjustment[];
+  remarkCodes: Remark[];
+  serviceLines: ServiceLine[];
+}
+
+/** "CO/45 — Charge exceeds fee schedule… ($12.00)"; bare code when undescribed. */
+function adjText(a: Adjustment): string {
+  const label = a.description ? `${a.group}/${a.reasonCode} — ${a.description}` : `${a.group}/${a.reasonCode}`;
+  return `${label} (${usd(a.amountCents)})`;
+}
+
+function remarkText(r: Remark): string {
+  return r.description ? `${r.code} — ${r.description}` : r.code;
+}
+
+/** Compact adjustment + remark detail block shared by preview and history rows. */
+function AdjustmentDetail({ adjustments, remarks, lines }: {
+  adjustments: Adjustment[];
+  remarks: Remark[];
+  lines: ServiceLine[];
+}) {
+  if (adjustments.length === 0 && remarks.length === 0 && lines.length === 0) {
+    return <span style={{ color: '#94A3B8' }}>—</span>;
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.78rem' }}>
+      {adjustments.map((a, i) => (
+        <div key={`a-${i}`} style={{ color: 'var(--color-text-muted)' }}>{adjText(a)}</div>
+      ))}
+      {remarks.map((r, i) => (
+        <div key={`r-${i}`} style={{ color: '#7C3AED' }}>Remark {remarkText(r)}</div>
+      ))}
+      {lines.map((l, i) => (
+        <div key={`l-${i}`} style={{ paddingLeft: '0.6rem', borderLeft: '2px solid #E2E8F0' }}>
+          <span style={{ fontFamily: 'var(--font-mono)' }}>{l.procedureCode}{l.modifiers.length ? `:${l.modifiers.join(':')}` : ''}</span>
+          {l.serviceDate ? ` ${l.serviceDate}` : ''} · {l.units} unit{l.units === 1 ? '' : 's'} · {usd(l.paidCents)} of {usd(l.chargeCents)}
+          {l.adjustments.map((a, j) => (
+            <div key={`la-${j}`} style={{ color: 'var(--color-text-muted)' }}>{adjText(a)}</div>
+          ))}
+          {l.remarkCodes.map((r, j) => (
+            <div key={`lr-${j}`} style={{ color: '#7C3AED' }}>Remark {remarkText(r)}</div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 const usdFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -299,8 +373,8 @@ export function RemittancePage() {
                     <td style={{ textTransform: 'capitalize' }}>{c.derivedStatus}</td>
                     <td>{usd(c.chargeCents)}</td>
                     <td>{usd(c.paidCents)}</td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                      {c.adjustments.map((a) => `${a.group}/${a.reasonCode} ${usd(a.amountCents)}`).join('; ')}
+                    <td>
+                      <AdjustmentDetail adjustments={c.adjustments} remarks={c.remarkCodes ?? []} lines={c.serviceLines ?? []} />
                     </td>
                   </tr>
                 ))}
@@ -359,7 +433,7 @@ export function RemittancePage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Control #</th><th>Match</th><th>Charge</th><th>Paid</th><th>Adj</th><th>Trace</th>
+                <th>Control #</th><th>Match</th><th>Charge</th><th>Paid</th><th>Adj</th><th>Why (CARC / RARC)</th><th>Trace</th>
               </tr>
             </thead>
             <tbody>
@@ -370,6 +444,9 @@ export function RemittancePage() {
                   <td>{usd(r.chargeCents)}</td>
                   <td>{usd(r.paidCents)}</td>
                   <td>{usd(r.adjustmentCents)}</td>
+                  <td>
+                    <AdjustmentDetail adjustments={r.adjustments ?? []} remarks={r.remarkCodes ?? []} lines={r.serviceLines ?? []} />
+                  </td>
                   <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{r.traceNumber ?? '-'}</td>
                 </tr>
               ))}

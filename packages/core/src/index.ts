@@ -64,6 +64,7 @@ export * from './services/hhaexchange-mapping.js';
 export * from './services/audit-retention-sweep.js';
 export * from './services/import-service.js';
 export * from './services/edi-835.js';
+export * from './services/carc-rarc.js';
 export * from './domain/recurring-schedule.js';
 export * from './services/recurrence-service.js';
 export * from './repositories/recurring-schedule-repository.js';
