@@ -46,10 +46,50 @@ describe('public agency hiring pages', () => {
     const res = await request(createApp())
       .put('/agencies/current/public-page')
       .set('Authorization', `Bearer ${makeToken('admin')}`)
-      .send({ slug: 'CyanjelCareLLC', about: 'Hi' });
+      .send({
+        slug: 'CyanjelCareLLC',
+        about: 'Hi',
+        profile: {
+          displayName: 'Cyanjel Home Care',
+          tagline: 'Because Home Is Where Care Feels Best',
+          phone: '(412) 555-0100',
+          services: [{ name: 'Respite Care', blurb: 'Temporary compassionate support.' }],
+        },
+      });
 
     expect(res.status).toBe(200);
-    expect(updatePublicPage).toHaveBeenCalledWith('agency-1', { slug: 'cyanjelcarellc', about: 'Hi' });
+    expect(updatePublicPage).toHaveBeenCalledWith('agency-1', {
+      slug: 'cyanjelcarellc',
+      about: 'Hi',
+      profile: expect.objectContaining({ displayName: 'Cyanjel Home Care' }),
+    });
+  });
+
+  it('preserves the stored profile when the field is omitted (slug-only update)', async () => {
+    const updatePublicPage = vi.fn().mockResolvedValue({ slug: 'new-slug', about: null, profile: { displayName: 'Kept' } });
+    vi.spyOn(core, 'AgencyRepository').mockImplementation(() => ({ updatePublicPage } as any));
+
+    const res = await request(createApp())
+      .put('/agencies/current/public-page')
+      .set('Authorization', `Bearer ${makeToken('admin')}`)
+      .send({ slug: 'new-slug' });
+
+    expect(res.status).toBe(200);
+    // profile must be undefined (leave unchanged), never null (which clears).
+    expect(updatePublicPage).toHaveBeenCalledWith('agency-1', {
+      slug: 'new-slug',
+      about: null,
+      profile: undefined,
+    });
+    expect(res.body.profile).toMatchObject({ displayName: 'Kept' });
+  });
+
+  it('rejects an invalid profile (bad email) with 400', async () => {
+    const res = await request(createApp())
+      .put('/agencies/current/public-page')
+      .set('Authorization', `Bearer ${makeToken('admin')}`)
+      .send({ slug: 'some-agency', profile: { email: 'not-an-email' } });
+    expect(res.status).toBe(400);
   });
 
   it('rejects reserved and malformed slugs, and 409s a taken slug', async () => {

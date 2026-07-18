@@ -74,6 +74,16 @@ function billingFromApi(data: Partial<Record<keyof BillingForm, string | null>>)
 
 type Banner = { kind: 'success' | 'error'; text: string } | null;
 
+interface PublicPageProfile {
+  displayName?: string;
+  tagline?: string;
+  phone?: string;
+  email?: string;
+  addressLine?: string;
+  hours?: string;
+  services?: { name: string; blurb?: string }[];
+}
+
 export function AgencySetupPage() {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [name, setName] = useState('');
@@ -94,6 +104,18 @@ export function AgencySetupPage() {
   // Public hiring page (rayhealthevv.com/<slug>).
   const [pageSlug, setPageSlug] = useState('');
   const [pageAbout, setPageAbout] = useState('');
+  const [pageDisplayName, setPageDisplayName] = useState('');
+  const [pageTagline, setPageTagline] = useState('');
+  const [pagePhone, setPagePhone] = useState('');
+  const [pageEmail, setPageEmail] = useState('');
+  const [pageAddress, setPageAddress] = useState('');
+  const [pageHours, setPageHours] = useState('');
+  // One service per line, 'Name: short description'.
+  const [pageServices, setPageServices] = useState('');
+  // Only send the profile once we've loaded the stored one , if the initial
+  // GET failed, submitting empty fields must not wipe the server's copy (the
+  // API preserves the profile when the field is omitted).
+  const [pageProfileLoaded, setPageProfileLoaded] = useState(false);
   const [pageBanner, setPageBanner] = useState<Banner>(null);
   const [pageSaving, setPageSaving] = useState(false);
 
@@ -115,10 +137,23 @@ export function AgencySetupPage() {
         setFees(asDollars);
       })
       .catch(() => { /* fee schedule optional on first load */ });
-    getJson<{ slug: string | null; about: string | null }>('/api/agencies/current/public-page')
+    getJson<{ slug: string | null; about: string | null; profile: PublicPageProfile | null }>(
+      '/api/agencies/current/public-page',
+    )
       .then(data => {
         setPageSlug(data.slug ?? '');
         setPageAbout(data.about ?? '');
+        const prof = data.profile ?? {};
+        setPageDisplayName(prof.displayName ?? '');
+        setPageTagline(prof.tagline ?? '');
+        setPagePhone(prof.phone ?? '');
+        setPageEmail(prof.email ?? '');
+        setPageAddress(prof.addressLine ?? '');
+        setPageHours(prof.hours ?? '');
+        setPageServices(
+          (prof.services ?? []).map(s => (s.blurb ? `${s.name}: ${s.blurb}` : s.name)).join('\n'),
+        );
+        setPageProfileLoaded(true);
       })
       .catch(() => { /* public page optional on first load */ });
   }, []);
@@ -127,10 +162,38 @@ export function AgencySetupPage() {
     e.preventDefault();
     setPageBanner(null);
     setPageSaving(true);
+    // 'Name: blurb' per line → services array (blank lines skipped).
+    const services = pageServices
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .slice(0, 12)
+      .map(line => {
+        const idx = line.indexOf(':');
+        return idx > 0
+          ? { name: line.slice(0, idx).trim(), blurb: line.slice(idx + 1).trim() || undefined }
+          : { name: line };
+      });
+    const profile: PublicPageProfile = {
+      displayName: pageDisplayName.trim() || undefined,
+      tagline: pageTagline.trim() || undefined,
+      phone: pagePhone.trim() || undefined,
+      email: pageEmail.trim() || undefined,
+      addressLine: pageAddress.trim() || undefined,
+      hours: pageHours.trim() || undefined,
+      services: services.length > 0 ? services : undefined,
+    };
+    const hasProfile = Object.values(profile).some(v => v !== undefined);
     try {
       const saved = await putJson<{ slug: string | null; about: string | null }>(
         '/api/agencies/current/public-page',
-        { slug: pageSlug.trim() || null, about: pageAbout.trim() || null },
+        {
+          slug: pageSlug.trim() || null,
+          about: pageAbout.trim() || null,
+          // Omit the field entirely when the stored profile never loaded ,
+          // the API preserves it; sending null here would wipe it.
+          ...(pageProfileLoaded ? { profile: hasProfile ? profile : null } : {}),
+        },
       );
       setPageSlug(saved.slug ?? '');
       setPageAbout(saved.about ?? '');
@@ -484,6 +547,32 @@ export function AgencySetupPage() {
               Lowercase letters, numbers, and hyphens. Leave blank to take the page offline.
             </span>
           </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.9rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label htmlFor="publicDisplayName" className="label">Display name</label>
+              <input id="publicDisplayName" className="input-field" maxLength={120} value={pageDisplayName} onChange={e => setPageDisplayName(e.target.value)} placeholder="Cyanjel Home Care" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label htmlFor="publicTagline" className="label">Tagline</label>
+              <input id="publicTagline" className="input-field" maxLength={160} value={pageTagline} onChange={e => setPageTagline(e.target.value)} placeholder="Because Home Is Where Care Feels Best" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label htmlFor="publicPhone" className="label">Phone</label>
+              <input id="publicPhone" className="input-field" maxLength={30} value={pagePhone} onChange={e => setPagePhone(e.target.value)} placeholder="(412) 555-0100" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label htmlFor="publicEmail" className="label">Public email</label>
+              <input id="publicEmail" className="input-field" type="email" maxLength={200} value={pageEmail} onChange={e => setPageEmail(e.target.value)} placeholder="hello@youragency.com" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label htmlFor="publicAddress" className="label">Office address</label>
+              <input id="publicAddress" className="input-field" maxLength={200} value={pageAddress} onChange={e => setPageAddress(e.target.value)} placeholder="90 Clairton Blvd, STE 09, Pittsburgh, PA 15236" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label htmlFor="publicHours" className="label">Office hours</label>
+              <input id="publicHours" className="input-field" maxLength={120} value={pageHours} onChange={e => setPageHours(e.target.value)} placeholder="Mon–Fri 10:00am–5:00pm" />
+            </div>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
             <label htmlFor="publicAbout" className="label">About your agency</label>
             <textarea
@@ -494,6 +583,17 @@ export function AgencySetupPage() {
               value={pageAbout}
               onChange={e => setPageAbout(e.target.value)}
               placeholder="Tell applicants who you are, the communities you serve, and why caregivers love working with you."
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <label htmlFor="publicServices" className="label">Services <span style={{ color: '#94A3B8', fontWeight: 400 }}>(one per line, "Name: short description")</span></label>
+            <textarea
+              id="publicServices"
+              className="input-field"
+              rows={6}
+              value={pageServices}
+              onChange={e => setPageServices(e.target.value)}
+              placeholder={'Personal Care: Assistance with bathing, grooming, dressing, and mobility\nCompanionship: Friendly support and meaningful interaction'}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

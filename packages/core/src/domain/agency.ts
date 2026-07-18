@@ -57,3 +57,31 @@ export const publicSlugSchema = z
 export function normalizePublicSlug(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, '-');
 }
+
+/**
+ * Everything the public hiring page shows beyond the slug + about text. All
+ * optional , the page renders sensible fallbacks , and every string is
+ * length-capped because this is agency-editable content served to the public.
+ */
+export const publicProfileSchema = z.object({
+  /** Brand name when it differs from the registered name ('Cyanjel Home Care'). */
+  displayName: z.string().max(120).optional(),
+  /** One-line promise ('Because Home Is Where Care Feels Best'). */
+  tagline: z.string().max(160).optional(),
+  phone: z.string().max(30).optional(),
+  email: z.string().email().max(200).optional(),
+  addressLine: z.string().max(200).optional(),
+  /** Office hours line ('Mon–Fri 10am–5pm'). */
+  hours: z.string().max(120).optional(),
+  services: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(80),
+        blurb: z.string().max(300).optional(),
+      }),
+    )
+    .max(12)
+    .optional(),
+});
+
+export type PublicProfile = z.infer<typeof publicProfileSchema>;

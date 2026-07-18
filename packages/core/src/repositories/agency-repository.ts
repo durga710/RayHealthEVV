@@ -1,5 +1,18 @@
 import type { Knex } from 'knex';
-import type { Agency, AgencyTheme } from '../domain/agency.js';
+import type { Agency, AgencyTheme, PublicProfile } from '../domain/agency.js';
+import { publicProfileSchema } from '../domain/agency.js';
+
+/** Stored jsonb → validated profile; malformed/legacy rows read as null. */
+function parseProfile(raw: unknown): PublicProfile | null {
+  if (!raw) return null;
+  try {
+    const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const parsed = publicProfileSchema.safeParse(value);
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface AgencyRow {
   id: string;
@@ -227,13 +240,21 @@ export class AgencyRepository {
   }
 
   /** The agency's public hiring-page settings (for the admin settings UI). */
-  async getPublicPage(id: string): Promise<{ slug: string | null; about: string | null } | null> {
+  async getPublicPage(
+    id: string,
+  ): Promise<{ slug: string | null; about: string | null; profile: PublicProfile | null } | null> {
     const row = (await this.db('agencies')
       .where({ id })
-      .select('public_slug', 'public_about')
-      .first()) as { public_slug?: string | null; public_about?: string | null } | undefined;
+      .select('public_slug', 'public_about', 'public_profile')
+      .first()) as
+      | { public_slug?: string | null; public_about?: string | null; public_profile?: unknown }
+      | undefined;
     if (!row) return null;
-    return { slug: row.public_slug ?? null, about: row.public_about ?? null };
+    return {
+      slug: row.public_slug ?? null,
+      about: row.public_about ?? null,
+      profile: parseProfile(row.public_profile),
+    };
   }
 
   /**
@@ -243,36 +264,55 @@ export class AgencyRepository {
    */
   async getPublicPageBySlug(
     slug: string,
-  ): Promise<{ agencyId: string; name: string; state: string; about: string | null } | null> {
+  ): Promise<{
+    agencyId: string;
+    name: string;
+    state: string;
+    about: string | null;
+    profile: PublicProfile | null;
+  } | null> {
     const row = (await this.db('agencies')
       .where({ public_slug: slug })
-      .select('id', 'name', 'state', 'public_about')
+      .select('id', 'name', 'state', 'public_about', 'public_profile')
       .first()) as
-      | { id: string; name: string; state: string; public_about?: string | null }
+      | { id: string; name: string; state: string; public_about?: string | null; public_profile?: unknown }
       | undefined;
     if (!row) return null;
-    return { agencyId: row.id, name: row.name, state: row.state, about: row.public_about ?? null };
+    return {
+      agencyId: row.id,
+      name: row.name,
+      state: row.state,
+      about: row.public_about ?? null,
+      profile: parseProfile(row.public_profile),
+    };
   }
 
   /**
-   * Set the public slug + about text. Returns 'conflict' when another agency
-   * already owns the slug (unique index is the source of truth , the check is
-   * done by attempting the write, not read-then-write).
+   * Set the public slug + about text + profile. `profile` semantics: absent
+   * (undefined) leaves the stored profile untouched , a caller updating only
+   * the slug must never wipe it , while an explicit null clears it. Returns
+   * 'conflict' when another agency already owns the slug (unique index is the
+   * source of truth , the check is done by attempting the write, not
+   * read-then-write), and the freshly-read stored state on success.
    */
   async updatePublicPage(
     id: string,
-    page: { slug: string | null; about: string | null },
-  ): Promise<{ slug: string | null; about: string | null } | 'conflict' | null> {
+    page: { slug: string | null; about: string | null; profile?: PublicProfile | null },
+  ): Promise<
+    { slug: string | null; about: string | null; profile: PublicProfile | null } | 'conflict' | null
+  > {
+    const cols: Record<string, unknown> = {
+      public_slug: page.slug,
+      public_about: page.about,
+      updated_at: this.db.fn.now() as unknown as string,
+    };
+    if (page.profile !== undefined) {
+      cols.public_profile = page.profile ? JSON.stringify(page.profile) : null;
+    }
     try {
-      const updated = await this.db('agencies')
-        .where({ id })
-        .update({
-          public_slug: page.slug,
-          public_about: page.about,
-          updated_at: this.db.fn.now() as unknown as string,
-        });
+      const updated = await this.db('agencies').where({ id }).update(cols);
       if (updated === 0) return null;
-      return { slug: page.slug, about: page.about };
+      return this.getPublicPage(id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('unique') || msg.includes('duplicate') || msg.includes('23505')) {

@@ -1728,6 +1728,21 @@ export async function up(knex: Knex): Promise<void> {
       t.text('public_about').nullable();
     });
   }
+  // ── R31. Public hiring page: full agency profile ─────────────────────────
+  // The public page grew from name+about into a real agency homepage: display
+  // name (legal name may differ from the brand, e.g. RayCareLLC operating as
+  // "Cyanjel Home Care"), tagline, contact info, and a services list. One
+  // validated jsonb blob , the shape is enforced by publicProfileSchema at
+  // the API layer, and adding a field never needs another migration.
+  if (
+    (await knex.schema.hasTable('agencies')) &&
+    !(await knex.schema.hasColumn('agencies', 'public_profile'))
+  ) {
+    await knex.schema.alterTable('agencies', (t) => {
+      t.jsonb('public_profile').nullable();
+    });
+  }
+
   if (
     (await knex.schema.hasTable('onboarding_documents')) &&
     !(await knex.schema.hasColumn('onboarding_documents', 'file_data'))

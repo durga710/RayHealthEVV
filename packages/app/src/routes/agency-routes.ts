@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { AgencyRepository, normalizePublicSlug, publicSlugSchema } from '@rayhealth/core';
+import { AgencyRepository, normalizePublicSlug, publicProfileSchema, publicSlugSchema } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 
 const router = Router();
@@ -169,6 +169,7 @@ const publicPageBodySchema = z.object({
   // slug rules apply, so 'CyanjelCareLLC' becomes 'cyanjelcarellc'.
   slug: z.string().max(80).nullable(),
   about: z.string().max(2000).nullable().optional(),
+  profile: publicProfileSchema.nullable().optional(),
 });
 
 router.get('/current/public-page', requireCapability('agency.read'), async (req, res) => {
@@ -203,9 +204,10 @@ router.put('/current/public-page', requireCapability('agency.write'), async (req
     slug = normalized;
   }
   try {
+    // profile absent = leave stored profile untouched; explicit null = clear.
     const result = await new AgencyRepository(req.app.get('db')).updatePublicPage(
       req.auth.agencyId,
-      { slug, about: parsed.data.about ?? null },
+      { slug, about: parsed.data.about ?? null, profile: parsed.data.profile },
     );
     if (result === 'conflict') {
       res.status(409).json({ message: 'That page address is already taken by another agency.' });
