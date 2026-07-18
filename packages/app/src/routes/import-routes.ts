@@ -309,13 +309,18 @@ router.post('/:entity/commit', async (req: Request, res: Response) => {
             serviceCode: row.serviceCode,
             clockInTime: row.clockInTime,
             clockOutTime: row.clockOutTime,
+            // Canonical evvLocationSchema shape ({lat, lng, accuracy}) so every
+            // downstream reader (Sandata mapper, exports, audit packets) sees
+            // the coordinates. accuracy 0 = "as reported by the source system";
+            // `source` marks provenance. Without coordinates the row is
+            // GPS-less, which downstream already handles.
             clockInLocation:
               row.clockInLatitude !== undefined
-                ? { latitude: row.clockInLatitude, longitude: row.clockInLongitude, source: 'import' }
+                ? { lat: row.clockInLatitude, lng: row.clockInLongitude, accuracy: 0, source: 'import' }
                 : { source: 'import' },
             clockOutLocation:
               row.clockOutLatitude !== undefined
-                ? { latitude: row.clockOutLatitude, longitude: row.clockOutLongitude, source: 'import' }
+                ? { lat: row.clockOutLatitude, lng: row.clockOutLongitude, accuracy: 0, source: 'import' }
                 : undefined,
             status: row.status,
           });

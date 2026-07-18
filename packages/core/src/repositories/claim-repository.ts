@@ -444,6 +444,10 @@ export class ClaimRepository {
       .join('caregivers', 'evv_visits.caregiver_id', 'caregivers.id')
       .leftJoin('clients', 'evv_visits.client_id', 'clients.id')
       .where('caregivers.agency_id', agencyId)
+      // Imported historical visits (external_id set) were already adjudicated
+      // and billed by the prior platform , generating claims from them would
+      // double-bill the payer on cutover. They stay visible everywhere else.
+      .whereNull('evv_visits.external_id')
       .andWhere('evv_visits.clock_in_time', '>=', startIso)
       .andWhere('evv_visits.clock_in_time', '<=', endIso)
       .select(

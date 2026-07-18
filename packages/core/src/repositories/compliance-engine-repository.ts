@@ -598,9 +598,11 @@ export class ComplianceEngineRepository {
         'authorizations',
       )
         .join('clients', 'authorizations.client_id', 'clients.id')
-        .join('visit_templates', 'visit_templates.client_id', 'clients.id')
-        .join('assignments', 'assignments.visit_template_id', 'visit_templates.id')
-        .join('evv_visits', 'evv_visits.assignment_id', 'assignments.id')
+        // Join visits on the Cures-Act client_id snapshot, not through
+        // assignments: imported historical visits carry no assignment (R28)
+        // and would silently vanish from utilization, under-counting every
+        // authorization window that overlaps imported history.
+        .join('evv_visits', 'evv_visits.client_id', 'clients.id')
         .whereIn('authorizations.id', idList)
         .whereNotNull('evv_visits.clock_out_time')
         .andWhereRaw(

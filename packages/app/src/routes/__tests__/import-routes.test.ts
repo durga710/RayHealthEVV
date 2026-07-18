@@ -105,9 +105,10 @@ describe('import routes', () => {
 
   describe('visits (EVV history)', () => {
     const VISITS_CSV =
-      'external_id,client_external_id,caregiver_external_id,service_code,clock_in_time,clock_out_time,status\n' +
-      'V-1,C-1,G-1,T1019,2024-03-01T09:00:00Z,2024-03-01T11:00:00Z,verified\n' +
-      'V-2,C-1,G-1,S5125,2024-03-02T09:00:00Z,2024-03-02T10:30:00Z,\n';
+      'external_id,client_external_id,caregiver_external_id,service_code,clock_in_time,clock_out_time,' +
+      'clock_in_latitude,clock_in_longitude,status\n' +
+      'V-1,C-1,G-1,T1019,2024-03-01T09:00:00Z,2024-03-01T11:00:00Z,40.44,-79.99,verified\n' +
+      'V-2,C-1,G-1,S5125,2024-03-02T09:00:00Z,2024-03-02T10:30:00Z,,,\n';
 
     /** db stub: lookup tables resolve external ids; transaction passes through. */
     function makeDb(clients: Array<{ id: string; external_id: string }>, caregivers: Array<{ id: string; external_id: string }>) {
@@ -176,7 +177,14 @@ describe('import routes', () => {
           caregiverId: 'caregiver-uuid',
           serviceCode: 'T1019',
           status: 'verified',
+          // Canonical evvLocationSchema field names , downstream consumers
+          // (Sandata mapper, exports, audit packets) read .lat/.lng.
+          clockInLocation: { lat: 40.44, lng: -79.99, accuracy: 0, source: 'import' },
         }),
+      );
+      // GPS-less row stores the provenance marker only.
+      expect(insertVisitForImport).toHaveBeenCalledWith(
+        expect.objectContaining({ externalId: 'V-2', clockInLocation: { source: 'import' } }),
       );
     });
 

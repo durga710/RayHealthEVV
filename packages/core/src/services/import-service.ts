@@ -409,9 +409,12 @@ function validateAuthorizationRow(rec: Record<string, string>): {
 }
 
 function isValidIsoInstant(v: string): boolean {
-  // Accept full ISO-8601 instants ('2024-03-01T09:00:00Z', with offset or
-  // milliseconds) and reject bare dates , a visit needs a time of day.
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) return false;
+  // Require a full ISO-8601 instant WITH an explicit timezone (Z or ±HH:MM).
+  // A bare date has no time of day, and a naive datetime would be parsed as
+  // the server's local time , the same CSV row would store a different
+  // clock_in_time depending on the process TZ, which is unacceptable for
+  // compliance timestamps. Prior-system exports must state their offset.
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/i.test(v)) return false;
   return !Number.isNaN(Date.parse(v));
 }
 
@@ -439,10 +442,10 @@ function validateVisitRow(rec: Record<string, string>): {
   }
   if (!clockIn) errors.push('clock_in_time is required');
   else if (!isValidIsoInstant(clockIn)) {
-    errors.push('clock_in_time must be an ISO-8601 datetime (e.g. 2024-03-01T09:00:00Z)');
+    errors.push('clock_in_time must be an ISO-8601 datetime with timezone (e.g. 2024-03-01T09:00:00Z or 2024-03-01T09:00:00-05:00)');
   }
   if (clockOut !== undefined && !isValidIsoInstant(clockOut)) {
-    errors.push('clock_out_time must be an ISO-8601 datetime');
+    errors.push('clock_out_time must be an ISO-8601 datetime with timezone');
   }
   if (
     clockOut !== undefined &&

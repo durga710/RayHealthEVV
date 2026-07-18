@@ -150,6 +150,15 @@ describe('validateImportRecords, visits', () => {
     expect(v.clockInLatitude).toBeUndefined();
   });
 
+  it('rejects a timezone-naive datetime (would be parsed as server-local time)', () => {
+    const { results } = parseAndValidate(
+      'visits',
+      HEADER + 'V-9,C-1,G-1,T1019,2024-03-01T09:00:00,,,,,,\n',
+    );
+    expect(results[0].status).toBe('error');
+    expect(results[0].errors.some((e) => e.includes('with timezone'))).toBe(true);
+  });
+
   it('requires external_id, links, and a real ISO instant', () => {
     const { results } = parseAndValidate(
       'visits',
