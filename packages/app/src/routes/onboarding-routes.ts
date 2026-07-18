@@ -454,7 +454,13 @@ router.post('/portal/:token/documents/:docId', uploadBody, async (req, res) => {
       res.status(400).json({ message: 'Invalid token' });
       return;
     }
-    const contentType = (req.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase();
+    // Headers are typed string | string[]; take exactly one string before it
+    // can flow anywhere (CodeQL js/type-confusion-through-parameter-tampering).
+    const rawContentType = req.headers['content-type'];
+    const contentType = String(Array.isArray(rawContentType) ? rawContentType[0] : rawContentType ?? '')
+      .split(';')[0]
+      .trim()
+      .toLowerCase();
     if (!UPLOAD_CONTENT_TYPES.has(contentType)) {
       res.status(415).json({
         message: 'Upload must be a JPEG, PNG, WebP image or a PDF',
