@@ -142,6 +142,29 @@ describe('assignment routes', () => {
     expect(createAssignment).not.toHaveBeenCalled();
   });
 
+  it('400s a PUT that sets times on an assignment with no effective visit date', async () => {
+    const updateAssignment = vi.fn();
+    vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
+      // Unscheduled ("on-call") assignment: no visitDate on file.
+      getAssignmentById: vi.fn().mockResolvedValue({
+        id: 'a-1',
+        caregiverId: 'caregiver-1',
+        visitTemplateId: 'template-1',
+        clientId: 'client-1'
+      }),
+      updateAssignment
+    } as any));
+
+    const response = await request(createApp())
+      .put('/assignments/a-1')
+      .set('Authorization', `Bearer ${makeToken('coordinator')}`)
+      .send({ startTime: '09:00', endTime: '11:00' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toContain('visit date');
+    expect(updateAssignment).not.toHaveBeenCalled();
+  });
+
   it('400s a PUT that sets only one time bound', async () => {
     vi.spyOn(core, 'ScheduleRepository').mockImplementation(() => ({
       getAssignmentById: vi.fn().mockResolvedValue({

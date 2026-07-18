@@ -210,6 +210,16 @@ router.put('/:id', requireCapability('schedule.write'), async (req, res) => {
       return res.status(404).json({ message: 'Assignment not found' });
     }
 
+    // Mirror the create-schema invariant on the EFFECTIVE assignment: setting a
+    // time window requires a visit date to anchor it. Without this, times
+    // patched onto a date-less assignment would be silently discarded by the
+    // repository (date null → whole window cleared) while the route said 200.
+    const effectiveDate =
+      patch.visitDate !== undefined ? patch.visitDate : (current.visitDate ?? null);
+    if (typeof patch.startTime === 'string' && !effectiveDate) {
+      return res.status(400).json({ message: 'a visit date is required when times are set' });
+    }
+
     const checks = await evaluateAssignmentChecks(db, req.auth.agencyId, {
       caregiverId: patch.caregiverId ?? current.caregiverId,
       visitTemplateId: patch.visitTemplateId ?? current.visitTemplateId,
