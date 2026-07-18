@@ -108,6 +108,17 @@ describe('parse835', () => {
     expect(allAdjustments(claim)).toHaveLength(2);
   });
 
+  it('honors the ISA16-declared component separator for SVC composites', () => {
+    // Valid 106-char ISA declaring '>' as the component separator (index 104).
+    const isa =
+      'ISA*00*          *00*          *ZZ*SENDER         *ZZ*RECEIVER       *260701*1200*^*00501*000000001*0*P*>~';
+    const era = parse835(
+      isa + 'CLP*CLAIM-030*1*100.00*100.00*0~' + 'SVC*HC>T1019>U1*100.00*100.00**4~',
+    );
+    expect(era.claims[0].lines[0].procedureCode).toBe('T1019');
+    expect(era.claims[0].lines[0].modifiers).toEqual(['U1']);
+  });
+
   it('resets the line scope at the next CLP so CAS lands on the new claim header', () => {
     const era = parse835(
       [

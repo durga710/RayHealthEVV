@@ -85,12 +85,19 @@ export function parse835(text: string): Era835 {
   const trimmed = text.replace(/^﻿/, '').trim();
   if (!trimmed) throw new Error('Empty remittance file');
 
-  // Detect separators from the ISA envelope (fixed 106-char segment) when present.
+  // Detect separators from the ISA envelope (fixed 106-char segment) when
+  // present. ISA16 (index 104) declares the component separator used inside
+  // composites like SVC01; ':' is the near-universal US healthcare convention
+  // but a trading partner may declare '>' or another delimiter. Ignore an
+  // alphanumeric char there , that's a malformed envelope, not a separator.
   let elementSep = '*';
   let segTerm = '~';
+  let componentSep = ':';
   if (trimmed.startsWith('ISA') && trimmed.length > 105) {
     elementSep = trimmed[3];
     segTerm = trimmed[105];
+    const isa16 = trimmed[104];
+    if (isa16 && !/[A-Za-z0-9]/.test(isa16)) componentSep = isa16;
   }
 
   // Split into segments. Tolerate the segment terminator OR a bare newline so
@@ -135,9 +142,9 @@ export function parse835(text: string): Era835 {
       currentLine = null;
       claims.push(current);
     } else if (tag === 'SVC' && current) {
-      // SVC01 is a composite: qualifier:procedure[:modifiers...]. The composite
-      // separator is ':' in practice; tolerate a bare code too.
-      const parts = (el[1] ?? '').split(':');
+      // SVC01 is a composite: qualifier<sep>procedure[<sep>modifiers...] using
+      // the ISA16 component separator (':' by convention); tolerate a bare code.
+      const parts = (el[1] ?? '').split(componentSep);
       const procedureCode = parts.length > 1 ? parts[1] : parts[0];
       currentLine = {
         procedureCode,
