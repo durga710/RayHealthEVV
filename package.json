@@ -38,7 +38,7 @@
     "@esbuild/linux-x64": "0.28.1",
     "@turbo/linux-64": "2.10.5",
     "@unrs/resolver-binding-linux-x64-gnu": "1.12.2",
-    "lightningcss-linux-x64-gnu": "1.32.0"
+    "lightningcss-linux-x64-gnu": "1.33.0"
   },
   "overrides": {
     "@vercel/node": {
