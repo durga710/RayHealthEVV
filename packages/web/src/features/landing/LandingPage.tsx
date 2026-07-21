@@ -178,8 +178,11 @@ function CSS() {
   color:var(--body-c); background:var(--paper); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
 }
 .rh *{box-sizing:border-box;}
-.rh h1,.rh h2,.rh h3,.rh h4{color:var(--ink); margin:0; font-weight:600; letter-spacing:-0.02em;}
-.rh p{margin:0;}
+.rh h1,.rh h2,.rh h3,.rh h4{color:var(--ink); font-weight:600; letter-spacing:-0.02em;}
+/* Margin resets use :where() so they add no specificity: any single-class
+   rule (.rh-h2, .rh-rolefoot, ...) can set its own margins and win. */
+.rh :where(h1,h2,h3,h4){margin:0;}
+.rh :where(p){margin:0;}
 .rh :where(a){text-decoration:none; color:inherit;}
 html{scroll-behavior:smooth;}
 .rh [id]{scroll-margin-top:88px;}
