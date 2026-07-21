@@ -46,10 +46,6 @@ export class CredentialComplianceService {
     };
   }
 
-  isEligibleForAssignment(credentials: CaregiverCredential[]): boolean {
-    return this.evaluate(credentials).compliant;
-  }
-
   /**
    * The booking-time credential gate shared by assignment creation, reschedule,
    * and recurring-schedule creation.

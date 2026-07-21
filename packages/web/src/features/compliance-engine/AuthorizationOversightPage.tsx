@@ -71,7 +71,7 @@ const URGENCY_STYLE: Record<AuthorizationListRow['urgency'], { bg: string; fg: s
   critical: { bg: 'var(--color-accent-bg)',  fg: 'var(--color-accent)',        label: '≤14d' },
   warning:  { bg: 'var(--color-warning-bg)', fg: 'var(--color-warning)',       label: '≤30d' },
   info:     { bg: 'var(--color-primary-bg)', fg: 'var(--color-primary-dark)',  label: '≤90d' },
-  ok:       { bg: '#F1F5F9',                  fg: 'var(--color-text-secondary)', label: 'OK' },
+  ok:       { bg: 'var(--color-bg)',          fg: 'var(--color-text-secondary)', label: 'OK' },
 };
 
 function todayIso(): string {

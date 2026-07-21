@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getJson } from '../../lib/api-client.js';
 
@@ -23,7 +23,6 @@ type SummaryKey = keyof EngineSummary;
 interface ModuleCard {
   title: string;
   blurb: string;
-  status: 'scaffold' | 'beta' | 'live';
   to: string;
   kpiLabel: string;
   /** Static placeholder shown when no live summary is available. */
@@ -46,7 +45,6 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Medicaid Workflow',
     blurb: 'CHC eligibility, prior auths, and PA Medicaid service mix readiness across 3 MCOs.',
-    status: 'live',
     to: '/admin/compliance-engine/medicaid',
     kpiLabel: 'Active MA cases',
     fallbackValue: '-',
@@ -54,8 +52,7 @@ const MODULES: ModuleCard[] = [
   },
   {
     title: 'Audit Defense',
-    blurb: 'Defensible CSV packets from audit_events + VMUR + Sandata, signed with a reproducible SHA-256 manifest, sized to PA’s 48-hour DHS SLA.',
-    status: 'live',
+    blurb: 'Defensible CSV packets from audit_events + VMUR + Sandata with a reproducible SHA-256 manifest hash, sized to PA’s 48-hour DHS SLA.',
     to: '/admin/compliance-engine/audit-defense',
     kpiLabel: 'Audit events (30d)',
     fallbackValue: '-',
@@ -64,7 +61,6 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Payroll Reconciliation',
     blurb: 'Match EVV-verified hours to payroll inside PA’s 15-min grace window (FLSA de minimis).',
-    status: 'live',
     to: '/admin/compliance-engine/payroll',
     kpiLabel: 'Verified hours (7d)',
     fallbackValue: '-',
@@ -74,7 +70,6 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Claim Matching',
     blurb: 'Pair billable claims to verified EVV visits; route to Sandata for PROMISe MMIS.',
-    status: 'live',
     to: '/admin/compliance-engine/claims',
     kpiLabel: 'Claim-ready (7d)',
     fallbackValue: '-',
@@ -83,7 +78,6 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Authorization Oversight',
     blurb: 'Drill-down list with live unit balance (EVV-consumed vs authorized), 14/30/90-day expiry lenses, and CHC quarterly review tracking per 55 Pa. Code Ch. 6000.',
-    status: 'live',
     to: '/admin/compliance-engine/authorizations',
     kpiLabel: 'Active authorizations',
     fallbackValue: '-',
@@ -92,7 +86,6 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Exception Resolution',
     blurb: 'Unified open-exception queue with row-level drill-down + bulk acknowledge that writes one audit event per ack. Sized to PA’s 48-hour DHS SLA.',
-    status: 'live',
     to: '/admin/compliance-engine/exceptions',
     kpiLabel: 'Open exceptions',
     fallbackValue: '-',
@@ -101,7 +94,6 @@ const MODULES: ModuleCard[] = [
   {
     title: 'Credentials & Background',
     blurb: 'PA PATCH + FBI + Child Abuse + CNA + HHA + RN supervision compliance.',
-    status: 'live',
     to: '/admin/compliance-engine/credentials',
     kpiLabel: 'Active credentials',
     fallbackValue: '-',
@@ -269,20 +261,23 @@ export function ComplianceOverviewPage() {
                   >
                     {module.title}
                   </h3>
+                  {/* The badge reflects the actual data state of the KPI on
+                      this card, not a hardcoded label: green only when the
+                      number shown really came from the live summary. */}
                   <span
                     style={{
                       backgroundColor:
-                        module.status === 'live'
+                        summary !== null
                           ? 'var(--color-success-bg)'
-                          : module.status === 'beta'
-                          ? 'var(--color-accent-bg)'
+                          : summaryUnavailable
+                          ? 'var(--color-warning-bg)'
                           : 'var(--color-primary-bg)',
                       borderRadius: 999,
                       color:
-                        module.status === 'live'
+                        summary !== null
                           ? 'var(--color-success)'
-                          : module.status === 'beta'
-                          ? 'var(--color-accent)'
+                          : summaryUnavailable
+                          ? 'var(--color-warning)'
                           : 'var(--color-primary-dark)',
                       fontSize: '0.65rem',
                       fontWeight: 800,
@@ -291,7 +286,7 @@ export function ComplianceOverviewPage() {
                       textTransform: 'uppercase',
                     }}
                   >
-                    {module.status}
+                    {summary !== null ? 'live' : summaryUnavailable ? 'no data' : 'loading'}
                   </span>
                 </header>
                 <p

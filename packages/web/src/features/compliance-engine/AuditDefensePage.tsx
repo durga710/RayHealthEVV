@@ -204,7 +204,8 @@ export function AuditDefensePage() {
       ]}
       related={[
         { label: 'Visit Review', to: '/admin/review' },
-        { label: 'Corrections Queue', to: '/admin/corrections' },
+        { label: 'Audit Events', to: '/admin/audit-events' },
+        { label: 'Audit Packet', to: '/admin/audit-packet' },
       ]}
     >
       <div style={sectionCard}>

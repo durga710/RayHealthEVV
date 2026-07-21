@@ -29,48 +29,39 @@ const TABLE = 'visit_maintenance'
 export async function up(knex: Knex): Promise<void> {
   if (!(await knex.schema.hasTable(TABLE))) return
 
-  await knex.schema.alterTable(TABLE, async (table) => {
-    // ----- PA DHS VMUR fields -----
-    if (!(await knex.schema.hasColumn(TABLE, 'reason_category_code'))) {
-      // Sandata reason category, e.g. MTLB, MFLA, AGRS, OTHR. Stored as
-      // string rather than enum so the live list can be updated without a
-      // migration when PA DHS revises it.
-      table.string('reason_category_code', 8).nullable()
+  // The hasColumn checks must run BEFORE alterTable: knex compiles the DDL
+  // synchronously when the builder callback returns, so awaiting inside the
+  // callback produces an empty ALTER and none of the columns get added (an
+  // earlier version of this migration did exactly that, leaving fresh
+  // databases without any of these columns).
+  //
+  // Column notes:
+  //   - reason_category_code: Sandata reason category (MTLB, MFLA, AGRS,
+  //     OTHR). String rather than enum so the live list can change without
+  //     a migration when PA DHS revises it.
+  //   - correction_code: what changed about the visit, set by the route
+  //     handler from the original_*/adjusted_* diff.
+  //   - originator_role: 'caregiver' | 'coordinator' | 'admin'.
+  //   - incomplete_signature_reason: free text, only required when a
+  //     signature is absent and the agency still submits the correction.
+  //   - agency_id: denormalized owning agency for fast per-agency
+  //     review-queue queries (authoritative link is visit → caregiver).
+  const adds: Array<[string, (t: Knex.AlterTableBuilder) => void]> = [
+    ['reason_category_code', (t) => { t.string('reason_category_code', 8).nullable() }],
+    ['correction_code', (t) => { t.string('correction_code', 32).nullable() }],
+    ['originator_role', (t) => { t.string('originator_role', 16).nullable() }],
+    ['caregiver_signature_present', (t) => { t.boolean('caregiver_signature_present').nullable() }],
+    ['client_signature_present', (t) => { t.boolean('client_signature_present').nullable() }],
+    ['incomplete_signature_reason', (t) => { t.text('incomplete_signature_reason').nullable() }],
+    ['approver_id', (t) => { t.uuid('approver_id').nullable() }],
+    ['approved_at', (t) => { t.timestamp('approved_at').nullable() }],
+    ['agency_id', (t) => { t.uuid('agency_id').nullable() }]
+  ]
+  for (const [col, build] of adds) {
+    if (!(await knex.schema.hasColumn(TABLE, col))) {
+      await knex.schema.alterTable(TABLE, build)
     }
-    if (!(await knex.schema.hasColumn(TABLE, 'correction_code'))) {
-      // What changed about the visit. Set by the route handler based on
-      // the diff between original_* and adjusted_* timestamps + payload.
-      table.string('correction_code', 32).nullable()
-    }
-    if (!(await knex.schema.hasColumn(TABLE, 'originator_role'))) {
-      // 'caregiver' | 'coordinator' | 'admin', which actor initiated.
-      table.string('originator_role', 16).nullable()
-    }
-    if (!(await knex.schema.hasColumn(TABLE, 'caregiver_signature_present'))) {
-      table.boolean('caregiver_signature_present').nullable()
-    }
-    if (!(await knex.schema.hasColumn(TABLE, 'client_signature_present'))) {
-      table.boolean('client_signature_present').nullable()
-    }
-    if (!(await knex.schema.hasColumn(TABLE, 'incomplete_signature_reason'))) {
-      // Free-text, only required when one of the signatures is absent
-      // and the agency still wants to submit the correction. Sandata
-      // accepts this with appropriate documentation per PA DHS guidance.
-      table.text('incomplete_signature_reason').nullable()
-    }
-    if (!(await knex.schema.hasColumn(TABLE, 'approver_id'))) {
-      table.uuid('approver_id').nullable()
-    }
-    if (!(await knex.schema.hasColumn(TABLE, 'approved_at'))) {
-      table.timestamp('approved_at').nullable()
-    }
-    if (!(await knex.schema.hasColumn(TABLE, 'agency_id'))) {
-      // Denormalized for fast per-agency review-queue queries. Not
-      // strictly required (visit_id → evv_visits → assignment → ...)
-      // but every read currently traverses this graph.
-      table.uuid('agency_id').nullable()
-    }
-  })
+  }
 }
 
 export async function down(knex: Knex): Promise<void> {

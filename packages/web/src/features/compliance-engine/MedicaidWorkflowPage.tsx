@@ -84,13 +84,19 @@ export function MedicaidWorkflowPage() {
     setSubmitting(true);
     setSubmitMsg(null);
     try {
-      const result = await postJson<{ marked: number }>('/api/exports/sandata/submit', {
+      const result = await postJson<{
+        status: 'ok';
+        batchId: string;
+        submitted: number;
+        accepted: number;
+        rejected: number;
+      }>('/api/exports/sandata/submit', {
         from: sandataFrom || undefined,
         to: sandataTo || undefined,
       });
       setSubmitMsg({
         kind: 'ok',
-        text: `${result.marked} verified visit${result.marked === 1 ? '' : 's'} marked as submitted to Sandata.`,
+        text: `Batch ${result.batchId}: ${result.submitted} visit${result.submitted === 1 ? '' : 's'} submitted to Sandata (${result.accepted} accepted, ${result.rejected} rejected).`,
       });
     } catch (err) {
       setSubmitMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Submission failed' });
@@ -118,13 +124,19 @@ export function MedicaidWorkflowPage() {
     setHhaxSubmitting(true);
     setHhaxMsg(null);
     try {
-      const result = await postJson<{ marked: number }>('/api/exports/hhaexchange/submit', {
+      const result = await postJson<{
+        status: 'ok';
+        batchId: string;
+        submitted: number;
+        accepted: number;
+        rejected: number;
+      }>('/api/exports/hhaexchange/submit', {
         from: hhaxFrom || undefined,
         to: hhaxTo || undefined,
       });
       setHhaxMsg({
         kind: 'ok',
-        text: `${result.marked} verified visit${result.marked === 1 ? '' : 's'} marked as submitted to HHAeXchange.`,
+        text: `Batch ${result.batchId}: ${result.submitted} visit${result.submitted === 1 ? '' : 's'} submitted to HHAeXchange (${result.accepted} accepted, ${result.rejected} rejected).`,
       });
     } catch (err) {
       setHhaxMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Submission failed' });

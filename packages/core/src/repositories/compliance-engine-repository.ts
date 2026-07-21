@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Knex } from 'knex';
+import { paServiceCodeUnitMinutes } from '../config/pennsylvania.js';
 
 /**
  * Counts of records that would land in a PA audit-defense packet for the
@@ -494,13 +495,14 @@ export class ComplianceEngineRepository {
    * Paginated, agency-scoped detail list of authorizations with computed
    * `unitsUsed` / `unitsRemaining` per row.
    *
-   * `unitsUsed` sums `EXTRACT(EPOCH FROM (clock_out − clock_in))/3600` for
-   * evv_visits whose `clock_in_time` falls inside the authorization window
-   * (start_date..end_date) **and** whose assignment → visit_template → client
-   * matches the authorization's client. Treats 1 unit = 1 hour, which matches
-   * the most common PA personal-care/home-health codes (S5125, T1019). Service
-   * codes that use a different unit basis (15-min increments, 30-min) need a
-   * follow-up: that's tracked in `docs/compliance/states/pennsylvania.md`.
+   * `unitsUsed` follows the same semantics as claim generation
+   * (`claim-generation-service.ts`): a completed visit consumes units on the
+   * authorization whose client, service code, and date window it matches.
+   * Units convert per `paServiceCodeUnitMinutes`, so 15-minute codes
+   * (T1019/S5125/T1004) yield 4 units per hour and per-visit codes (T1021)
+   * yield 1 unit per completed visit. Visits with no `service_code` snapshot
+   * are unbillable and therefore consume no units, matching how claim
+   * generation treats them.
    *
    * The `filter` selector maps to one of the same buckets the overview surface
    * already uses, plus an `expiring-90d` lens for the CHC quarterly review
@@ -587,23 +589,53 @@ export class ComplianceEngineRepository {
         'clients.last_name as last_name',
       )) as AuthListBaseRow[];
 
-    // Compute units consumed per visible authorization in a single query.
-    // The join chain `evv_visits → assignments → visit_templates → clients`
-    // maps a visit back to a client; we then filter by clock_in_time inside
-    // [start_date, end_date] and sum `(out − in) / 3600`.
+    // Compute units consumed per visible authorization in a single query,
+    // mirroring claim generation: match visits by client + service code +
+    // date window, convert per-visit duration to units per the service
+    // code's unit basis. Client matching prefers the Cures-Act client_id
+    // snapshot (imported historical visits carry the snapshot but no usable
+    // assignment chain, R28) and falls back through assignment →
+    // visit_template for legacy rows that pre-date the snapshot.
     const idList = baseRows.map((r) => r.id);
     const usedByAuth = new Map<string, number>();
     if (idList.length > 0) {
-      const usageRows = await this.db<{ auth_id: string; hours: number | string | null }>(
+      // One CASE arm per code in the static paServiceCodeUnitMinutes config,
+      // so unit math stays in lockstep with claim generation: 15-minute codes
+      // round each visit's minutes to units; per-visit codes (unit minutes 0,
+      // T1021) count 1 unit per completed visit; codes outside the config
+      // fall back to 1 unit = 1 hour rather than dropping the usage. Every
+      // VALUE is a `?` binding, never interpolated into the SQL text (pgAudit
+      // logs full statement text on the HIPAA database); only the arm count,
+      // fixed by the config's size, shapes the statement.
+      const armSql: string[] = [];
+      const armBindings: Array<string | number> = [];
+      for (const [code, mins] of Object.entries(paServiceCodeUnitMinutes)) {
+        if (mins === 0) {
+          armSql.push('WHEN authorizations.service_code = ? THEN 1');
+          armBindings.push(code);
+        } else {
+          armSql.push(
+            'WHEN authorizations.service_code = ? THEN ROUND(EXTRACT(EPOCH FROM (evv_visits.clock_out_time - evv_visits.clock_in_time)) / 60.0 / ?)',
+          );
+          armBindings.push(code, mins);
+        }
+      }
+      const unitsExpression = [
+        'COALESCE(SUM(CASE',
+        ...armSql,
+        'ELSE ROUND(EXTRACT(EPOCH FROM (evv_visits.clock_out_time - evv_visits.clock_in_time)) / 3600.0)',
+        'END), 0)::float as units',
+      ].join(' ');
+      const usageRows = await this.db<{ auth_id: string; units: number | string | null }>(
         'authorizations',
       )
-        .join('clients', 'authorizations.client_id', 'clients.id')
-        // Join visits on the Cures-Act client_id snapshot, not through
-        // assignments: imported historical visits carry no assignment (R28)
-        // and would silently vanish from utilization, under-counting every
-        // authorization window that overlaps imported history.
-        .join('evv_visits', 'evv_visits.client_id', 'clients.id')
+        .join('evv_visits', 'evv_visits.service_code', 'authorizations.service_code')
+        .leftJoin('assignments', 'evv_visits.assignment_id', 'assignments.id')
+        .leftJoin('visit_templates', 'assignments.visit_template_id', 'visit_templates.id')
         .whereIn('authorizations.id', idList)
+        .whereRaw(
+          'COALESCE(evv_visits.client_id, visit_templates.client_id) = authorizations.client_id',
+        )
         .whereNotNull('evv_visits.clock_out_time')
         .andWhereRaw(
           'evv_visits.clock_in_time::date BETWEEN authorizations.start_date AND authorizations.end_date',
@@ -611,12 +643,10 @@ export class ComplianceEngineRepository {
         .groupBy('authorizations.id')
         .select(
           'authorizations.id as auth_id',
-          this.db.raw(
-            'COALESCE(SUM(EXTRACT(EPOCH FROM (evv_visits.clock_out_time - evv_visits.clock_in_time)) / 3600.0), 0)::float as hours',
-          ),
+          this.db.raw(unitsExpression, armBindings),
         );
       for (const u of usageRows) {
-        usedByAuth.set(String(u.auth_id), Number(u.hours ?? 0));
+        usedByAuth.set(String(u.auth_id), Number(u.units ?? 0));
       }
     }
 
@@ -864,23 +894,46 @@ export class ComplianceEngineRepository {
   ): Promise<ClaimReadinessBlockers> {
     const sixtyDaysAgo = new Date(Date.now() - 60 * 86_400_000).toISOString();
 
-    const rows = await this.db('evv_visits as v')
-      .join('caregivers as cg', 'cg.id', 'v.caregiver_id')
+    // Shared filter for both the detail page and the counts, so the counts
+    // always describe the FULL matching set even when the list is truncated.
+    const blockerScope = () =>
+      this.db('evv_visits as v')
+        .join('caregivers as cg', 'cg.id', 'v.caregiver_id')
+        .where('cg.agency_id', agencyId)
+        .andWhere((qb) => {
+          qb.where((open) => {
+            open.whereNotNull('v.clock_in_time').whereNull('v.clock_out_time');
+          })
+            .orWhere((flagged) => {
+              flagged.where('v.status', 'flagged').andWhere('v.clock_in_time', '>=', sixtyDaysAgo);
+            })
+            .orWhere((pending) => {
+              pending.where('v.status', 'pending').andWhere('v.clock_in_time', '>=', sixtyDaysAgo);
+            });
+        });
+
+    // Aggregate counts over the whole matching set, bucketed with the same
+    // precedence as the row mapper below: open (no clock-out) first, then
+    // status. COUNT(*) FILTER is Postgres-specific, which this repo already
+    // relies on elsewhere (EXTRACT/::date raw SQL).
+    const countRow = await blockerScope().first<{
+      open_count: string;
+      flagged_count: string;
+      pending_count: string;
+      total_count: string;
+    }>(
+      this.db.raw(`
+        COUNT(*) FILTER (WHERE v.clock_out_time IS NULL) as open_count,
+        COUNT(*) FILTER (WHERE v.clock_out_time IS NOT NULL AND v.status = 'flagged') as flagged_count,
+        COUNT(*) FILTER (WHERE v.clock_out_time IS NOT NULL AND v.status = 'pending') as pending_count,
+        COUNT(*) as total_count
+      `),
+    );
+
+    const rows = await blockerScope()
       .leftJoin('assignments as a', 'a.id', 'v.assignment_id')
       .leftJoin('visit_templates as vt', 'vt.id', 'a.visit_template_id')
       .leftJoin('clients as c', 'c.id', 'vt.client_id')
-      .where('cg.agency_id', agencyId)
-      .andWhere((qb) => {
-        qb.where((open) => {
-          open.whereNotNull('v.clock_in_time').whereNull('v.clock_out_time');
-        })
-          .orWhere((flagged) => {
-            flagged.where('v.status', 'flagged').andWhere('v.clock_in_time', '>=', sixtyDaysAgo);
-          })
-          .orWhere((pending) => {
-            pending.where('v.status', 'pending').andWhere('v.clock_in_time', '>=', sixtyDaysAgo);
-          });
-      })
       .orderByRaw('v.clock_in_time ASC NULLS LAST')
       .limit(limit + 1)
       .select(
@@ -915,10 +968,10 @@ export class ComplianceEngineRepository {
     });
 
     const counts = {
-      open: blockers.filter((b) => b.reason === 'open').length,
-      flagged: blockers.filter((b) => b.reason === 'flagged').length,
-      pending: blockers.filter((b) => b.reason === 'pending').length,
-      total: blockers.length,
+      open: Number(countRow?.open_count ?? 0),
+      flagged: Number(countRow?.flagged_count ?? 0),
+      pending: Number(countRow?.pending_count ?? 0),
+      total: Number(countRow?.total_count ?? 0),
     };
 
     return { counts, truncated, blockers };
@@ -942,9 +995,13 @@ export class ComplianceEngineRepository {
         .join('caregivers', 'evv_visits.caregiver_id', 'caregivers.id')
         .where('caregivers.agency_id', agencyId);
 
+    // "Verified hours" means exactly that: only visits that passed EVV
+    // verification (status='verified') count toward payroll-ready hours.
+    // Flagged and pending visits are excluded until they clear review.
     const row7 = await agencyScope()
       .where('evv_visits.clock_in_time', '>=', sevenDaysAgo)
       .whereNotNull('evv_visits.clock_out_time')
+      .where('evv_visits.status', 'verified')
       .first<{ hours: number | string | null }>(
         this.db.raw(
           'COALESCE(SUM(EXTRACT(EPOCH FROM (evv_visits.clock_out_time - evv_visits.clock_in_time)) / 3600.0), 0)::float as hours',
@@ -954,6 +1011,7 @@ export class ComplianceEngineRepository {
     const row30 = await agencyScope()
       .where('evv_visits.clock_in_time', '>=', thirtyDaysAgo)
       .whereNotNull('evv_visits.clock_out_time')
+      .where('evv_visits.status', 'verified')
       .first<{ hours: number | string | null }>(
         this.db.raw(
           'COALESCE(SUM(EXTRACT(EPOCH FROM (evv_visits.clock_out_time - evv_visits.clock_in_time)) / 3600.0), 0)::float as hours',
@@ -1281,6 +1339,7 @@ export interface ClaimBlocker {
 
 /** Actionable claim-readiness blockers: the visits standing between you and a clean claim run. */
 export interface ClaimReadinessBlockers {
+  /** Counts over the FULL matching set, not just the returned page. */
   counts: { open: number; flagged: number; pending: number; total: number };
   /** True when more blockers exist than were returned (refine / paginate). */
   truncated: boolean;
@@ -1289,9 +1348,9 @@ export interface ClaimReadinessBlockers {
 
 /** Counts powering the Payroll Reconciliation snapshot. */
 export interface PayrollReconciliationCounts {
-  /** Verified hours (clock_out - clock_in) in the trailing 7 days. */
+  /** Hours (clock_out - clock_in) of `status='verified'` visits in the trailing 7 days. */
   verifiedHoursLast7d: number;
-  /** Verified hours (clock_out - clock_in) in the trailing 30 days. */
+  /** Hours (clock_out - clock_in) of `status='verified'` visits in the trailing 30 days. */
   verifiedHoursLast30d: number;
   /** Visits with both clock-in and clock-out in the trailing 7 days. */
   completedVisitsLast7d: number;

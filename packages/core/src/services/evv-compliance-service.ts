@@ -40,8 +40,4 @@ export class EvvComplianceService {
     const unique = [...new Set(missing)];
     return { valid: unique.length === 0, missingElements: unique, warnings };
   }
-
-  isSubmittable(visit: EvvVisit): boolean {
-    return this.validate(visit).valid;
-  }
 }

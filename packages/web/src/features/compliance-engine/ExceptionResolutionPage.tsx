@@ -283,8 +283,7 @@ export function ExceptionResolutionPage() {
       ]}
       related={[
         { label: 'Visit Review', to: '/admin/review' },
-        { label: 'Corrections Queue', to: '/admin/corrections' },
-        { label: 'Corrections Tracking', to: '/admin/corrections/tracking' },
+        { label: 'Audit Events', to: '/admin/audit-events' },
       ]}
     >
       <div style={sectionCard}>
