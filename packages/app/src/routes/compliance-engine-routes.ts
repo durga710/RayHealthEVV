@@ -13,6 +13,7 @@ import {
   PA_RN_SUPERVISION_CHC_DAYS,
   PA_SANDATA_SUBMISSION_WINDOW_DAYS,
   auditPacketRowToCsv,
+  paChcMcos,
   paComplianceCredentials,
   paExceptionTypes,
 } from '@rayhealth/core';
@@ -435,8 +436,9 @@ router.get(
  * GET /api/compliance-engine/claims/overview
  *
  * Claim Matching readiness, counts of EVV visits by status (verified =
- * claim-ready, flagged = not-ready, pending = in-flight). Capability `evv.read`
- * (admin + coordinator). Policy block echoes the 7-day Sandata submission window.
+ * claim-ready, flagged = not-ready, pending = in-flight). Capability
+ * `billing.read` (admin + coordinator). Policy block echoes the 7-day Sandata
+ * submission window.
  */
 router.get(
   '/claims/overview',
@@ -497,7 +499,8 @@ router.get(
  *
  * Payroll Reconciliation snapshot derived from EVV-verified clock events:
  * verified hours in the trailing 7 / 30 days, completed visits in 7 days,
- * and currently in-progress shifts. Capability `evv.read` (admin + coordinator).
+ * and currently in-progress shifts. Capability `billing.read`
+ * (admin + coordinator).
  */
 router.get(
   '/payroll/overview',
@@ -565,11 +568,7 @@ router.get(
         counts,
         policy: {
           chcQuarterlyReviewDays: PA_RN_SUPERVISION_CHC_DAYS,
-          chcMcos: [
-            'AmeriHealth Caritas Northeast',
-            'Pennsylvania Health & Wellness',
-            'UPMC Community HealthChoices',
-          ],
+          chcMcos: paChcMcos,
         },
       });
     } catch (error) {
@@ -585,8 +584,8 @@ router.get(
  * Unified open-exception count for the agency: total open EVV exceptions plus
  * a breakdown by `exception_type` (late-clock-in / missing-location /
  * manual-entry / telephony-fallback), plus `vmurPending` from visit_maintenance.
- * Capability `evv.read` (admin + coordinator); caregiver has evv.write but
- * not evv.read and is rejected.
+ * Capability `audit.read` (admin only): exception queues expose cross-caregiver
+ * audit detail, so coordinators and caregivers are rejected.
  */
 router.get(
   '/exceptions/overview',
@@ -627,8 +626,8 @@ const exceptionListQuerySchema = z.object({
  *
  * Paginated list of open EVV exceptions (`approved_at IS NULL`) for the agency,
  * joined to the underlying `evv_visits` so each row carries the visit's
- * clock-in time. Coordinators use this to age the queue against the 48-hour
- * PA DHS SLA. Capability `evv.read` (admin + coordinator).
+ * clock-in time. Used to age the queue against the 48-hour PA DHS SLA.
+ * Capability `audit.read` (admin only), same rationale as the overview.
  */
 router.get(
   '/exceptions/list',
