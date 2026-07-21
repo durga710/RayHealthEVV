@@ -187,6 +187,7 @@ html{scroll-behavior:smooth;}
 
 /* buttons */
 .rh-btn{display:inline-flex; align-items:center; gap:.5rem; height:44px; padding:0 1.25rem; border-radius:10px; font-size:.9375rem; font-weight:550; transition:transform .16s ease, background .16s ease, box-shadow .16s ease, border-color .16s ease;}
+button.rh-btn{border:0; cursor:pointer; font-family:inherit;}
 .rh-btn-pri{background:var(--accent); color:white; box-shadow:0 1px 0 rgba(10,30,20,.04), 0 8px 24px -12px color-mix(in srgb, var(--accent) 60%, transparent);}
 .rh-btn-pri:hover{background:var(--accent-deep); transform:translateY(-1px);}
 .rh-btn-ghost{color:var(--ink); border:1px solid var(--line-2); background:var(--paper);}
@@ -360,6 +361,11 @@ html{scroll-behavior:smooth;}
 .rh-roi-field label{font-size:.8125rem; font-weight:600; color:var(--ink-soft); margin-bottom:.35rem; display:block;}
 .rh-roi-field input{width:100%;}
 .rh-roi-outputs{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:.75rem; align-content:start;}
+.rh-roi-outputs.ready .metric-card{animation:rh-roi-pop .5s cubic-bezier(.2,.7,.2,1) both;}
+.rh-roi-outputs.ready .metric-card:nth-child(2){animation-delay:.08s;}
+.rh-roi-outputs.ready .metric-card:nth-child(3){animation-delay:.16s;}
+@keyframes rh-roi-pop{from{opacity:0; transform:translateY(10px) scale(.98);} to{opacity:1; transform:none;}}
+@media(prefers-reduced-motion:reduce){.rh-roi-outputs.ready .metric-card{animation:none;}}
 .rh-roi-cta{margin-top:1.25rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap;}
 .rh-roi-note{font-size:.8125rem; color:var(--muted); max-width:60ch;}
 @media(max-width:820px){.rh-roi-card{grid-template-columns:1fr;}}
@@ -578,18 +584,61 @@ function TheaterAudit() {
   );
 }
 
+/**
+ * Animated number for the ROI cards: eases from the previously shown value to
+ * the new target, so the reveal and every input tweak reads as live math.
+ */
+function CountUp({ value, decimals = 0, suffix = '' }: { value: number; decimals?: number; suffix?: string }) {
+  const [shown, setShown] = useState(0);
+  const prev = useRef(0);
+
+  useEffect(() => {
+    const from = prev.current;
+    const to = value;
+    prev.current = to;
+    if (from === to) { setShown(to); return; }
+    if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setShown(to);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const duration = 650;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setShown(from + (to - from) * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+
+  return <>~{shown.toFixed(decimals)}{suffix}</>;
+}
+
 export function LandingPage() {
   const root = useRef<HTMLDivElement>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [theaterTab, setTheaterTab] = useState<TheaterTab>('command');
 
-  // ROI calculator inputs, a real, controlled component ready for future
-  // interactivity. Outputs intentionally stay as honest placeholders: per
-  // the brief, we never show a fabricated result number as if it were real.
+  // ROI calculator inputs. Outputs are computed client-side from the stated
+  // assumptions below and always labeled as illustrative: we show the math,
+  // never a fabricated result presented as a measured outcome.
   const [caregivers, setCaregivers] = useState(10);
   const [visitsPerWeek, setVisitsPerWeek] = useState(150);
   const [cleanupHours, setCleanupHours] = useState(6);
+  const [estimateReady, setEstimateReady] = useState(false);
+
+  // Illustrative assumptions, spelled out in the card captions and the note:
+  // automation clears ~70% of today's denial cleanup, ~3% of visits get
+  // flagged before billing, and coordinators save ~90 seconds per visit.
+  const safeVisits = Math.max(0, visitsPerWeek || 0);
+  const safeCleanup = Math.max(0, cleanupHours || 0);
+  const estCleanupSaved = safeCleanup * 0.7;
+  const estIssuesCaught = safeVisits * 4.33 * 0.03;
+  const estCoordHours = (safeVisits * 1.5) / 60;
 
   useEffect(() => {
     const els = root.current?.querySelectorAll('.rh-rv');
@@ -877,14 +926,37 @@ export function LandingPage() {
               </div>
             </div>
             <div>
-              <div className="rh-roi-outputs">
-                <MetricCard label="EVV cleanup hours saved / month" value=", " tone="neutral" sub="Estimated live during your walkthrough" />
-                <MetricCard label="Denial-risk issues caught pre-billing" value=", " tone="neutral" sub="Illustrative, not a guaranteed outcome" />
-                <MetricCard label="Coordinator time recovered / week" value=", " tone="neutral" sub="Calculated from your real schedule" />
+              <div className={`rh-roi-outputs${estimateReady ? ' ready' : ''}`}>
+                <MetricCard
+                  label="EVV cleanup hours saved / month"
+                  value={estimateReady ? <CountUp value={estCleanupSaved} suffix=" hrs" /> : '…'}
+                  tone={estimateReady ? 'success' : 'neutral'}
+                  sub={estimateReady ? 'Assumes automation clears about 70% of today’s cleanup work' : 'Enter your numbers, then get your estimate'}
+                />
+                <MetricCard
+                  label="Denial-risk issues caught pre-billing / month"
+                  value={estimateReady ? <CountUp value={estIssuesCaught} /> : '…'}
+                  tone={estimateReady ? 'info' : 'neutral'}
+                  sub={estimateReady ? 'Assumes about 3% of visits get flagged before billing' : 'Illustrative, not a guaranteed outcome'}
+                />
+                <MetricCard
+                  label="Coordinator time recovered / week"
+                  value={estimateReady ? <CountUp value={estCoordHours} decimals={1} suffix=" hrs" /> : '…'}
+                  tone={estimateReady ? 'primary' : 'neutral'}
+                  sub={estimateReady ? 'Assumes about 90 seconds saved per scheduled visit' : 'Calculated from your schedule size'}
+                />
               </div>
               <div className="rh-roi-cta">
-                <Link to="/demo" className="rh-btn rh-btn-pri">Get your custom estimate</Link>
-                <p className="rh-roi-note">This calculator previews the inputs we’ll use, {caregivers} caregivers, {visitsPerWeek} visits/week, {cleanupHours} cleanup hours/month today, to build a real, agency-specific estimate. We don’t publish a formula-based number here because we haven’t measured it on your data yet.</p>
+                {estimateReady ? (
+                  <Link to="/demo" className="rh-btn rh-btn-pri">Verify it on your data</Link>
+                ) : (
+                  <button type="button" className="rh-btn rh-btn-pri" onClick={() => setEstimateReady(true)}>Get your custom estimate</button>
+                )}
+                <p className="rh-roi-note">
+                  {estimateReady
+                    ? `Illustrative estimates from your inputs, ${caregivers} caregivers, ${visitsPerWeek} visits/week, ${cleanupHours} cleanup hours/month today, using industry-typical assumptions shown under each number. They update live as you adjust the inputs. In a walkthrough we replace them with numbers measured on your own data.`
+                    : `This calculator previews the inputs we’ll use, ${caregivers} caregivers, ${visitsPerWeek} visits/week, ${cleanupHours} cleanup hours/month today, to build an agency-specific estimate. The numbers are illustrative until we measure them on your data.`}
+                </p>
               </div>
             </div>
           </div>
