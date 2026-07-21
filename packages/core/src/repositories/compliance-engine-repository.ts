@@ -599,20 +599,33 @@ export class ComplianceEngineRepository {
     const idList = baseRows.map((r) => r.id);
     const usedByAuth = new Map<string, number>();
     if (idList.length > 0) {
-      // CASE arms are built from the static paServiceCodeUnitMinutes config
-      // (compile-time HCPCS codes and integers, not user input) so unit math
-      // here stays in lockstep with claim generation. Per-visit rounding
-      // matches unitsForVisit: 15-minute codes round each visit's minutes to
-      // units; per-visit codes (unit minutes 0, T1021) count 1 unit per
-      // completed visit. Codes outside the config fall back to 1 unit = 1
-      // hour rather than dropping the usage entirely.
-      const unitArms = Object.entries(paServiceCodeUnitMinutes)
-        .map(([code, mins]) =>
-          mins === 0
-            ? `WHEN authorizations.service_code = '${code}' THEN 1`
-            : `WHEN authorizations.service_code = '${code}' THEN ROUND(EXTRACT(EPOCH FROM (evv_visits.clock_out_time - evv_visits.clock_in_time)) / 60.0 / ${mins})`,
-        )
-        .join(' ');
+      // One CASE arm per code in the static paServiceCodeUnitMinutes config,
+      // so unit math stays in lockstep with claim generation: 15-minute codes
+      // round each visit's minutes to units; per-visit codes (unit minutes 0,
+      // T1021) count 1 unit per completed visit; codes outside the config
+      // fall back to 1 unit = 1 hour rather than dropping the usage. Every
+      // VALUE is a `?` binding, never interpolated into the SQL text (pgAudit
+      // logs full statement text on the HIPAA database); only the arm count,
+      // fixed by the config's size, shapes the statement.
+      const armSql: string[] = [];
+      const armBindings: Array<string | number> = [];
+      for (const [code, mins] of Object.entries(paServiceCodeUnitMinutes)) {
+        if (mins === 0) {
+          armSql.push('WHEN authorizations.service_code = ? THEN 1');
+          armBindings.push(code);
+        } else {
+          armSql.push(
+            'WHEN authorizations.service_code = ? THEN ROUND(EXTRACT(EPOCH FROM (evv_visits.clock_out_time - evv_visits.clock_in_time)) / 60.0 / ?)',
+          );
+          armBindings.push(code, mins);
+        }
+      }
+      const unitsExpression = [
+        'COALESCE(SUM(CASE',
+        ...armSql,
+        'ELSE ROUND(EXTRACT(EPOCH FROM (evv_visits.clock_out_time - evv_visits.clock_in_time)) / 3600.0)',
+        'END), 0)::float as units',
+      ].join(' ');
       const usageRows = await this.db<{ auth_id: string; units: number | string | null }>(
         'authorizations',
       )
@@ -630,9 +643,7 @@ export class ComplianceEngineRepository {
         .groupBy('authorizations.id')
         .select(
           'authorizations.id as auth_id',
-          this.db.raw(
-            `COALESCE(SUM(CASE ${unitArms} ELSE ROUND(EXTRACT(EPOCH FROM (evv_visits.clock_out_time - evv_visits.clock_in_time)) / 3600.0) END), 0)::float as units`,
-          ),
+          this.db.raw(unitsExpression, armBindings),
         );
       for (const u of usageRows) {
         usedByAuth.set(String(u.auth_id), Number(u.units ?? 0));
