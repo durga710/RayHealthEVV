@@ -77,6 +77,23 @@ jobs:
     name: test-core
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Disposable Postgres for the repository integration tests (they skip
+    # when TEST_DATABASE_URL is unset, so local runs without a database
+    # still pass; CI always exercises the real SQL).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rayhealth_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -89,6 +106,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npx vitest run
         working-directory: packages/core
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/rayhealth_test
 
   test-app:
     name: test-app
