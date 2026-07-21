@@ -194,6 +194,7 @@ const MOBILE_LINKS: readonly { label: string; to: string }[] = [
   { label: 'Electronic visit verification', to: '/solutions/electronic-visit-verification' },
   { label: 'RayVerify', to: '/rayverify' },
   { label: 'Billing & payroll', to: '/solutions/billing-payroll' },
+  { label: 'Denial dashboard', to: '/solutions/denial-dashboard' },
   { label: 'Workforce & training', to: '/solutions/workforce-training' },
   { label: 'AI automation', to: '/platform/ai-automation' },
   { label: 'Compliance', to: '/platform/compliance' },
@@ -217,6 +218,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
             <Link to="/solutions/scheduling">Scheduling</Link>
             <Link to="/solutions/electronic-visit-verification">EVV</Link>
             <Link to="/rayverify">RayVerify</Link>
+            <Link to="/solutions/denial-dashboard">Denials</Link>
             <Link to="/solutions/workforce-training">Workforce</Link>
             <Link to="/platform/ai-automation">AI automation</Link>
             <Link to="/pricing">Pricing</Link>
