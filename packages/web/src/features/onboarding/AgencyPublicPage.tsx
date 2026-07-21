@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { AgencyMark, PublicBrandStyles, ServiceIcon } from './public-brand.js';
 
 interface PublicService {
   name: string;
@@ -41,11 +42,24 @@ const WHY_JOIN = [
   { title: 'Real growth', body: 'Certification tracking and a training academy help you build a career, not just a job.' },
 ];
 
+const checkIcon = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
+const contactIcon = (d: React.ReactNode) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    {d}
+  </svg>
+);
+
 /**
  * Public per-agency homepage at rayhealthevv.com/<slug>: the page an agency
- * shares on job boards and with families. Renders the agency's profile
- * (display name, tagline, services, contact) with graceful fallbacks, and
- * routes caregivers into the application flow. Unknown slugs bounce home.
+ * shares on job boards and with families. Carries the agency's own warm
+ * editorial identity (see public-brand.tsx) rather than RayHealth's admin
+ * chrome, renders the profile with graceful fallbacks, and routes caregivers
+ * into the application flow. Unknown slugs bounce home.
  */
 export function AgencyPublicPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -75,137 +89,241 @@ export function AgencyPublicPage() {
     };
   }, [slug, navigate]);
 
+  // The public page should read as the agency's own site, tab title included.
+  useEffect(() => {
+    if (!info) return;
+    const prev = document.title;
+    document.title = `${info.profile?.displayName?.trim() || info.name} · Home Care`;
+    return () => {
+      document.title = prev;
+    };
+  }, [info]);
+
   if (loading || !info) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#64748B' }}>
-        Loading…
+      <div className="pub-root" style={{ display: 'grid', placeItems: 'center' }}>
+        <PublicBrandStyles />
+        <span style={{ color: 'var(--pub-faint, #8A7B74)' }}>Loading…</span>
       </div>
     );
   }
 
   const p = info.profile ?? {};
   const displayName = p.displayName?.trim() || info.name;
-  const tagline = p.tagline?.trim() || 'Compassionate home care, delivered where it matters most.';
+  const tagline = p.tagline?.trim() || 'Because home is where care feels best.';
   const services = p.services && p.services.length > 0 ? p.services : DEFAULT_SERVICES;
   const hasContact = Boolean(p.phone || p.email || p.addressLine || p.hours);
   const applyPath = `/${slug}/apply`;
+  const telHref = p.phone ? `tel:${p.phone.replace(/[^0-9+]/g, '')}` : null;
+  const about =
+    info.about?.trim() ||
+    `${displayName} provides Medicaid home care services in Pennsylvania, helping clients live safely and independently in the comfort of their own homes.`;
+
+  // Split the tagline so its last word sets italic in the brand red — the
+  // small typographic move that makes the serif headline read designed
+  // rather than typed.
+  const taglineWords = tagline.replace(/\.$/, '').split(' ');
+  const taglineLead = taglineWords.slice(0, -1).join(' ');
+  const taglineLast = taglineWords[taglineWords.length - 1];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FDFBF9', color: '#1C1917' }}>
-      {/* Hero */}
-      <header style={{ background: '#7F1D1D', color: '#fff', padding: '4rem 1.5rem 3.5rem', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.10) 0%, transparent 55%)', pointerEvents: 'none' }} />
-        <p style={{ margin: 0, fontSize: '0.78rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#FCA5A5', fontWeight: 700 }}>
-          Home care agency · {info.state}
-        </p>
-        <h1 style={{ margin: '0.6rem auto 0', fontSize: 'clamp(2rem, 5vw, 2.9rem)', fontWeight: 900, maxWidth: 760, lineHeight: 1.15 }}>
-          {displayName}
-        </h1>
-        <p style={{ margin: '0.9rem auto 0', maxWidth: 560, fontSize: '1.05rem', color: '#FEE2E2', lineHeight: 1.6 }}>
-          {tagline}
-        </p>
-        <div style={{ marginTop: '2rem', display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link
-            to={applyPath}
-            style={{ background: '#fff', color: '#7F1D1D', fontWeight: 800, borderRadius: 10, padding: '0.85rem 1.7rem', textDecoration: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}
-          >
-            Join our care team
-          </Link>
-          {p.phone && (
-            <a
-              href={`tel:${p.phone.replace(/[^0-9+]/g, '')}`}
-              style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 700, borderRadius: 10, padding: '0.85rem 1.5rem', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.35)' }}
-            >
-              Call {p.phone}
+    <div className="pub-root">
+      <PublicBrandStyles />
+
+      {/* Sticky nav */}
+      <nav className="pub-nav" aria-label="Main">
+        <a href="#top" className="pub-nav-name">
+          <AgencyMark size={30} />
+          <span>{displayName}</span>
+        </a>
+        <div className="pub-nav-links">
+          <a href="#services" className="pub-nav-link">Services</a>
+          <a href="#about" className="pub-nav-link">About</a>
+          {hasContact && <a href="#contact" className="pub-nav-link">Contact</a>}
+          {telHref && (
+            <a href={telHref} className="pub-nav-link" style={{ color: 'var(--pub-brand)' }}>
+              {p.phone}
             </a>
+          )}
+          <Link to={applyPath} className="pub-btn pub-btn-primary" style={{ padding: '0.55rem 1.2rem', fontSize: '0.85rem' }}>
+            Join our team
+          </Link>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <header className="pub-hero" id="top">
+        <div>
+          <p className="pub-eyebrow">Home care agency · {info.state}</p>
+          <h1 className="pub-display">
+            {taglineLead} <em>{taglineLast}</em>.
+          </h1>
+          <p className="pub-lede pub-hero-copy">
+            {displayName} brings compassionate, professional caregivers into the homes of the
+            people who need them — with the dignity, patience, and warmth your family deserves.
+          </p>
+          <div className="pub-hero-ctas">
+            <Link to={applyPath} className="pub-btn pub-btn-primary">Join our care team</Link>
+            {telHref && (
+              <a href={telHref} className="pub-btn pub-btn-ghost">Call {p.phone}</a>
+            )}
+          </div>
+          <ul className="pub-trust-row">
+            {['Pennsylvania home care', 'Medicaid participants welcome', 'Care delivered at home'].map((t) => (
+              <li key={t} className="pub-trust-chip">
+                {checkIcon}
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="pub-hero-visual" aria-hidden>
+          <div className="pub-arch" />
+          <div className="pub-arch-mark">
+            <AgencyMark size={72} />
+          </div>
+          {p.hours && (
+            <div className="pub-float" style={{ top: '12%', right: '-4%' }}>
+              <span className="pub-float-icon">
+                {contactIcon(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>)}
+              </span>
+              <div>
+                <b>Office hours</b>
+                <span>{p.hours}</span>
+              </div>
+            </div>
+          )}
+          {p.addressLine && (
+            <div className="pub-float" style={{ bottom: '8%', left: '-6%' }}>
+              <span className="pub-float-icon">
+                {contactIcon(<><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="3" /></>)}
+              </span>
+              <div>
+                <b>{info.state === 'PA' ? 'Pennsylvania' : info.state}</b>
+                <span>{p.addressLine}</span>
+              </div>
+            </div>
           )}
         </div>
       </header>
 
-      <main style={{ maxWidth: 880, margin: '0 auto', padding: '2.75rem 1.5rem 3rem' }}>
-        {/* About */}
-        <section style={{ background: '#fff', border: '1px solid #E7E5E4', borderRadius: 16, padding: '2rem' }}>
-          <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.25rem', fontWeight: 800 }}>About {displayName}</h2>
-          <p style={{ margin: 0, lineHeight: 1.75, color: '#44403C', whiteSpace: 'pre-wrap' }}>
-            {info.about?.trim() ||
-              `${displayName} provides Medicaid home care services in Pennsylvania, helping clients live safely and independently in the comfort of their own homes.`}
-          </p>
-        </section>
-
+      <main>
         {/* Services */}
-        <section style={{ marginTop: '1.5rem' }}>
-          <h2 style={{ margin: '0 0 1rem', fontSize: '1.25rem', fontWeight: 800 }}>Our services</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.9rem' }}>
+        <section className="pub-section" id="services" style={{ paddingTop: '1rem' }}>
+          <div className="pub-section-head">
+            <p className="pub-eyebrow">What we do</p>
+            <h2 className="pub-display">Care shaped around your family</h2>
+          </div>
+          <div className="pub-services">
             {services.map((s) => (
-              <div key={s.name} style={{ background: '#fff', border: '1px solid #E7E5E4', borderRadius: 14, padding: '1.15rem 1.25rem' }}>
-                <div style={{ fontWeight: 800, marginBottom: '0.35rem', color: '#7F1D1D' }}>{s.name}</div>
-                {s.blurb && <div style={{ fontSize: '0.875rem', color: '#57534E', lineHeight: 1.6 }}>{s.blurb}</div>}
+              <div key={s.name} className="pub-service-card">
+                <ServiceIcon name={s.name} />
+                <h3>{s.name}</h3>
+                {s.blurb && <p>{s.blurb}</p>}
               </div>
             ))}
           </div>
         </section>
 
-        {/* Why join */}
-        <section style={{ marginTop: '2rem', background: '#1C1917', borderRadius: 18, padding: '2rem', color: '#fff' }}>
-          <p style={{ margin: 0, fontSize: '0.75rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#FCA5A5', fontWeight: 700 }}>
-            Careers
-          </p>
-          <h2 style={{ margin: '0.4rem 0 1.25rem', fontSize: '1.35rem', fontWeight: 800 }}>
-            Why caregivers choose {displayName}
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
-            {WHY_JOIN.map((w) => (
-              <div key={w.title}>
-                <div style={{ fontWeight: 800, marginBottom: '0.3rem' }}>{w.title}</div>
-                <div style={{ fontSize: '0.85rem', color: '#D6D3D1', lineHeight: 1.6 }}>{w.body}</div>
+        {/* About */}
+        <section className="pub-section" id="about" style={{ paddingTop: '0.5rem' }}>
+          <div className="pub-about">
+            <div>
+              <p className="pub-eyebrow">About us</p>
+              <h2 className="pub-display" style={{ fontSize: 'clamp(1.7rem, 3.2vw, 2.4rem)', marginBottom: '1.2rem' }}>
+                About {displayName}
+              </h2>
+              <p className="pub-about-body">{about}</p>
+            </div>
+            <div className="pub-about-aside">
+              <div className="pub-fact">
+                <b>Care at home</b>
+                <span>One-on-one support delivered where comfort and independence live — at home.</span>
               </div>
-            ))}
+              <div className="pub-fact">
+                <b>Verified visits</b>
+                <span>Every visit is GPS-verified through our electronic visit verification platform.</span>
+              </div>
+              {p.hours && (
+                <div className="pub-fact">
+                  <b>Office hours</b>
+                  <span>{p.hours}</span>
+                </div>
+              )}
+            </div>
           </div>
-          <Link
-            to={applyPath}
-            style={{ display: 'inline-block', marginTop: '1.5rem', background: '#fff', color: '#1C1917', fontWeight: 800, borderRadius: 10, padding: '0.7rem 1.4rem', textDecoration: 'none' }}
-          >
-            Start your application →
-          </Link>
+        </section>
+
+        {/* Careers band */}
+        <section className="pub-section" style={{ paddingTop: '0.5rem' }}>
+          <div className="pub-careers">
+            <p className="pub-eyebrow">Careers</p>
+            <h2 className="pub-display">Why caregivers choose {displayName}</h2>
+            <div className="pub-careers-grid">
+              {WHY_JOIN.map((w, i) => (
+                <div key={w.title} className="pub-careers-item">
+                  <span className="pub-careers-num">{String(i + 1).padStart(2, '0')}</span>
+                  <div>
+                    <b>{w.title}</b>
+                    <p>{w.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Link to={applyPath} className="pub-btn pub-btn-light" style={{ marginTop: '2.2rem', position: 'relative' }}>
+              Start your application →
+            </Link>
+          </div>
         </section>
 
         {/* Contact */}
         {hasContact && (
-          <section style={{ marginTop: '1.5rem', background: '#fff', border: '1px solid #E7E5E4', borderRadius: 16, padding: '2rem' }}>
-            <h2 style={{ margin: '0 0 1rem', fontSize: '1.25rem', fontWeight: 800 }}>Get in touch</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.9rem', fontSize: '0.925rem', color: '#44403C' }}>
+          <section className="pub-section" id="contact" style={{ paddingTop: '0.5rem' }}>
+            <div className="pub-section-head">
+              <p className="pub-eyebrow">Contact</p>
+              <h2 className="pub-display">Get in touch</h2>
+            </div>
+            <div className="pub-contact-grid">
               {p.phone && (
-                <div>
-                  <div style={{ fontWeight: 700, color: '#1C1917' }}>Phone</div>
-                  <a href={`tel:${p.phone.replace(/[^0-9+]/g, '')}`} style={{ color: '#7F1D1D', fontWeight: 700 }}>{p.phone}</a>
+                <div className="pub-contact-card">
+                  <b>{contactIcon(<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.5 2.8.7a2 2 0 0 1 1.7 2Z" />)}Phone</b>
+                  <a href={telHref ?? undefined}>{p.phone}</a>
                 </div>
               )}
               {p.email && (
-                <div>
-                  <div style={{ fontWeight: 700, color: '#1C1917' }}>Email</div>
-                  <a href={`mailto:${p.email}`} style={{ color: '#7F1D1D', fontWeight: 700 }}>{p.email}</a>
+                <div className="pub-contact-card">
+                  <b>{contactIcon(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></>)}Email</b>
+                  <a href={`mailto:${p.email}`}>{p.email}</a>
                 </div>
               )}
               {p.addressLine && (
-                <div>
-                  <div style={{ fontWeight: 700, color: '#1C1917' }}>Office</div>
-                  <div>{p.addressLine}</div>
+                <div className="pub-contact-card">
+                  <b>{contactIcon(<><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="3" /></>)}Office</b>
+                  {p.addressLine}
                 </div>
               )}
               {p.hours && (
-                <div>
-                  <div style={{ fontWeight: 700, color: '#1C1917' }}>Hours</div>
-                  <div>{p.hours}</div>
+                <div className="pub-contact-card">
+                  <b>{contactIcon(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>)}Hours</b>
+                  {p.hours}
                 </div>
               )}
             </div>
           </section>
         )}
-
-        <p style={{ textAlign: 'center', marginTop: '2.25rem', fontSize: '0.75rem', color: '#A8A29E' }}>
-          Hiring powered by RayHealth EVV
-        </p>
       </main>
+
+      <footer className="pub-footer">
+        <div className="pub-footer-name">
+          <AgencyMark size={24} />
+          {displayName}
+        </div>
+        <small>
+          © {new Date().getFullYear()} {displayName} · Hiring powered by{' '}
+          <Link to="/">RayHealthEVV</Link>
+        </small>
+      </footer>
     </div>
   );
 }

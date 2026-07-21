@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { AgencyMark, PublicBrandStyles } from './public-brand.js';
 
 interface ApplyResponse {
   applicantId: string;
@@ -7,12 +8,20 @@ interface ApplyResponse {
   message: string;
 }
 
+const APPLY_STEPS = [
+  { title: 'Tell us about yourself', body: 'Name, contact details, and the role you want — two minutes, no account needed.' },
+  { title: 'A short guided interview', body: 'Starts immediately after you submit. No scheduling, no waiting for a call back.' },
+  { title: 'Upload your documents', body: 'Your personal portal tracks exactly what’s needed, verified, and pending.' },
+];
+
 export function ApplyPage() {
   // Reached either as /apply/:agencyId (direct link) or /<slug>/apply (the
-  // agency's public hiring page). The slug variant resolves to an agencyId.
+  // agency's public hiring page). The slug variant resolves to an agencyId
+  // and also gives us the agency's public name so the page reads as theirs.
   const { agencyId: agencyIdParam, slug } = useParams<{ agencyId?: string; slug?: string }>();
   const navigate = useNavigate();
   const [agencyId, setAgencyId] = useState<string | null>(agencyIdParam ?? null);
+  const [agencyName, setAgencyName] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug || agencyIdParam) return;
@@ -24,8 +33,15 @@ export function ApplyPage() {
           if (!cancelled) void navigate('/', { replace: true });
           return;
         }
-        const data = (await res.json()) as { agencyId: string };
-        if (!cancelled) setAgencyId(data.agencyId);
+        const data = (await res.json()) as {
+          agencyId: string;
+          name: string;
+          profile: { displayName?: string } | null;
+        };
+        if (!cancelled) {
+          setAgencyId(data.agencyId);
+          setAgencyName(data.profile?.displayName?.trim() || data.name);
+        }
       } catch {
         if (!cancelled) void navigate('/', { replace: true });
       }
@@ -96,220 +112,89 @@ export function ApplyPage() {
     }
   };
 
+  const teamName = agencyName ?? 'our care team';
+  const backPath = slug ? `/${slug}` : '/';
+
+  const field = (
+    id: string,
+    label: React.ReactNode,
+    input: React.ReactNode,
+  ) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+      <label htmlFor={id} className="pub-label">
+        {label}
+      </label>
+      {input}
+    </div>
+  );
+
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)',
-        backgroundColor: 'white',
-      }}
-    >
-      {/* Dark brand panel */}
-      <aside
+    <div className="pub-root">
+      <PublicBrandStyles />
+
+      <nav className="pub-nav" aria-label="Main">
+        <Link to={backPath} className="pub-nav-name">
+          <AgencyMark size={30} />
+          <span>{agencyName ?? 'Caregiver application'}</span>
+        </Link>
+        <div className="pub-nav-links">
+          <Link to={backPath} className="pub-nav-link">← Back {agencyName ? `to ${agencyName}` : 'home'}</Link>
+        </div>
+      </nav>
+
+      <div
         style={{
-          backgroundColor: '#0F172A',
-          color: 'white',
-          padding: '3rem 4rem',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          position: 'relative',
-          overflow: 'hidden',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: 'clamp(2rem, 5vw, 4rem)',
+          alignItems: 'start',
+          maxWidth: 1160,
+          margin: '0 auto',
+          padding: 'clamp(2.5rem, 6vw, 4.5rem) clamp(1.25rem, 4vw, 3rem)',
         }}
       >
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            top: '-10%',
-            right: '-20%',
-            width: '60%',
-            height: '60%',
-            background: 'radial-gradient(circle, rgba(16, 116, 128,0.18) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <Link
-          to="/"
-          style={{
-            position: 'relative',
-            textDecoration: 'none',
-            color: 'white',
-            fontWeight: 700,
-            fontSize: '1.25rem',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            letterSpacing: '-0.01em',
-          }}
-        >
-          RayHealth
-          <span
-            style={{
-              background: 'linear-gradient(135deg, #107480 0%, #7fc7cf 100%)',
-              color: 'white',
-              padding: '3px 8px',
-              borderRadius: '5px',
-              fontSize: '0.65rem',
-              letterSpacing: '0.14em',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-            }}
-          >
-            EVV
-          </span>
-        </Link>
-
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.75rem',
-            maxWidth: '480px',
-          }}
-        >
-          <h1
-            style={{
-              fontSize: '2.25rem',
-              lineHeight: 1.1,
-              margin: 0,
-              color: 'white',
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Join our care team.
+        {/* Pitch panel */}
+        <aside>
+          <p className="pub-eyebrow">Careers · {agencyName ?? 'Home care'}</p>
+          <h1 className="pub-display" style={{ fontSize: 'clamp(2rem, 4.2vw, 3rem)' }}>
+            Join <em style={{ fontStyle: 'italic', fontWeight: 500, color: 'var(--pub-brand)' }}>{teamName}</em>.
           </h1>
-          <p style={{ margin: 0, color: '#CBD5E1', fontSize: '1rem', lineHeight: 1.6 }}>
-            Apply to become a Direct Support Associate or Caregiver for a Pennsylvania home care
-            agency. After submitting, you&apos;ll complete a short AI-powered interview right away.
+          <p className="pub-lede" style={{ marginTop: '1.2rem', maxWidth: '30rem' }}>
+            Do work that matters, close to home. Apply in minutes and start your guided
+            interview right away — our team reviews every application personally.
           </p>
 
-          <ul
-            style={{
-              listStyle: 'none',
-              padding: 0,
-              margin: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.85rem',
-            }}
-          >
-            {[
-              'Complete your application in minutes.',
-              'AI interview starts immediately, no scheduling required.',
-              'Our team reviews your responses and reaches out soon.',
-            ].map((point) => (
-              <li
-                key={point}
-                style={{
-                  display: 'flex',
-                  gap: '0.75rem',
-                  alignItems: 'flex-start',
-                  color: '#94A3B8',
-                  fontSize: '0.9rem',
-                  lineHeight: 1.5,
-                }}
-              >
-                <svg
-                  aria-hidden="true"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#107480"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ flexShrink: 0, marginTop: '2px' }}
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                <span>{point}</span>
+          <ol style={{ listStyle: 'none', padding: 0, margin: '2.2rem 0 0', display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
+            {APPLY_STEPS.map((s, i) => (
+              <li key={s.title} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                <span className="pub-careers-num" style={{ color: 'var(--pub-brand)' }}>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div>
+                  <b style={{ display: 'block', marginBottom: '0.25rem' }}>{s.title}</b>
+                  <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.65, color: 'var(--pub-body-c)' }}>{s.body}</p>
+                </div>
               </li>
             ))}
-          </ul>
-        </div>
+          </ol>
 
-        <div
-          style={{
-            position: 'relative',
-            fontSize: '0.75rem',
-            color: '#64748B',
-            letterSpacing: '0.04em',
-          }}
-        >
-          Pennsylvania &middot; Direct care employment &middot; Powered by RayHealthEVV™
-        </div>
-      </aside>
+          <p style={{ marginTop: '2.4rem', fontSize: '0.76rem', color: 'var(--pub-faint)', letterSpacing: '0.04em' }}>
+            Pennsylvania · Direct care employment · Hiring powered by RayHealthEVV™
+          </p>
+        </aside>
 
-      {/* Form panel */}
-      <main
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '3rem 2rem',
-          backgroundColor: 'white',
-          overflowY: 'auto',
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: '420px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '2rem',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <h2
-              style={{
-                margin: 0,
-                fontSize: '1.625rem',
-                fontWeight: 700,
-                color: '#0F172A',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              Apply now
-            </h2>
-            <p style={{ margin: 0, color: '#64748B', fontSize: '0.9375rem' }}>
-              Fill in your details to get started.
-            </p>
-          </div>
+        {/* Form panel */}
+        <main className="pub-panel">
+          <h2 className="pub-display" style={{ fontSize: '1.55rem', marginBottom: '0.4rem' }}>
+            Apply now
+          </h2>
+          <p style={{ margin: '0 0 1.6rem', color: 'var(--pub-body-c)', fontSize: '0.93rem' }}>
+            Fill in your details to get started.
+          </p>
 
           {error && (
-            <div
-              role="alert"
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.5rem',
-                padding: '0.75rem 1rem',
-                backgroundColor: '#FFF1F2',
-                border: '1px solid #FECDD3',
-                borderRadius: '8px',
-                color: '#BE123C',
-                fontSize: '0.875rem',
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-                style={{ flexShrink: 0, marginTop: '1px' }}
-              >
+            <div role="alert" className="pub-alert" style={{ marginBottom: '1.2rem' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0, marginTop: 1 }}>
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -318,100 +203,29 @@ export function ApplyPage() {
             </div>
           )}
 
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-          >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '0.75rem',
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label htmlFor="firstName" className="label">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  type="text"
-                  autoComplete="given-name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                  maxLength={100}
-                  className="input-field"
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label htmlFor="lastName" className="label">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  type="text"
-                  autoComplete="family-name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                  maxLength={100}
-                  className="input-field"
-                />
-              </div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.05rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              {field('firstName', 'First name', (
+                <input id="firstName" type="text" autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={100} className="pub-input" />
+              ))}
+              {field('lastName', 'Last name', (
+                <input id="lastName" type="text" autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required maxLength={100} className="pub-input" />
+              ))}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <label htmlFor="email" className="label">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                maxLength={200}
-                className="input-field"
-              />
-            </div>
+            {field('email', 'Email', (
+              <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={200} className="pub-input" />
+            ))}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <label htmlFor="phone" className="label">
-                Phone{' '}
-                <span style={{ color: '#94A3B8', fontWeight: 400 }}>(optional)</span>
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                autoComplete="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                maxLength={30}
-                className="input-field"
-              />
-            </div>
+            {field('phone', <>Phone <small>(optional)</small></>, (
+              <input id="phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={30} className="pub-input" />
+            ))}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <label htmlFor="position" className="label">
-                Position
-              </label>
-              <input
-                id="position"
-                type="text"
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                maxLength={100}
-                className="input-field"
-              />
-            </div>
+            {field('position', 'Position', (
+              <input id="position" type="text" value={position} onChange={(e) => setPosition(e.target.value)} maxLength={100} className="pub-input" />
+            ))}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <label htmlFor="coverMessage" className="label">
-                Cover Message{' '}
-                <span style={{ color: '#94A3B8', fontWeight: 400 }}>(optional)</span>
-              </label>
+            {field('coverMessage', <>Cover message <small>(optional)</small></>, (
               <textarea
                 id="coverMessage"
                 value={coverMessage}
@@ -419,56 +233,41 @@ export function ApplyPage() {
                 maxLength={5000}
                 rows={4}
                 placeholder="Tell us a bit about yourself and why you're interested..."
-                style={{
-                  resize: 'vertical',
-                  border: '1px solid #CBD5E1',
-                  borderRadius: '8px',
-                  padding: '0.6rem 0.75rem',
-                  fontSize: '0.9375rem',
-                  fontFamily: 'inherit',
-                  color: '#0F172A',
-                  lineHeight: 1.5,
-                }}
+                className="pub-textarea"
+                style={{ resize: 'vertical' }}
               />
-            </div>
+            ))}
 
             <label
               htmlFor="agreeTerms"
-              style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', fontSize: '0.8125rem', color: '#475569', lineHeight: 1.5, cursor: 'pointer' }}
+              style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', fontSize: '0.8rem', color: 'var(--pub-body-c)', lineHeight: 1.55, cursor: 'pointer' }}
             >
               <input
                 id="agreeTerms"
                 type="checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                style={{ marginTop: '2px', width: 16, height: 16, accentColor: '#107480', flexShrink: 0 }}
+                style={{ marginTop: 2, width: 16, height: 16, accentColor: '#96222E', flexShrink: 0 }}
               />
               <span>
                 I confirm my information is accurate and I agree to the{' '}
-                <Link to="/terms" target="_blank" style={{ color: '#107480', fontWeight: 600, textDecoration: 'none' }}>Terms of Service</Link>
+                <Link to="/terms" target="_blank" style={{ color: 'var(--pub-brand)', fontWeight: 700, textDecoration: 'none' }}>Terms of Service</Link>
                 {' '}and{' '}
-                <Link to="/privacy" target="_blank" style={{ color: '#107480', fontWeight: 600, textDecoration: 'none' }}>Privacy Policy</Link>.
+                <Link to="/privacy" target="_blank" style={{ color: 'var(--pub-brand)', fontWeight: 700, textDecoration: 'none' }}>Privacy Policy</Link>.
               </span>
             </label>
 
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                fontWeight: 600,
-                marginTop: '0.25rem',
-                fontSize: '0.9375rem',
-                cursor: loading ? 'wait' : 'pointer',
-              }}
+              className="pub-btn pub-btn-primary"
+              style={{ width: '100%', marginTop: '0.3rem', cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.75 : 1 }}
             >
-              {loading ? 'Submitting…' : 'Submit Application'}
+              {loading ? 'Submitting…' : 'Submit application'}
             </button>
           </form>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
