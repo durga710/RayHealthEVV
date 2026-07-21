@@ -69,6 +69,8 @@ export const auditEventTypes = [
   'data.imported',
   // ERA / 835 remittance posting (payer payment file matched back onto claims).
   'claim.remittance.posted',
+  // Denial-worklist touch on a posted remittance (status/note change, human).
+  'claim.denial.updated',
   // Recurring schedule materialized into concrete assignments for a horizon.
   'schedule.recurring.materialized',
   // Platform super-admin (outside agency tenancy). `platform.login.*` track the

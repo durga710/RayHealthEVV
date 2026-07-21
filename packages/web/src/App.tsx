@@ -84,6 +84,7 @@ const MedicaidWorkflowPage = lazy(() => import('./features/compliance-engine/Med
 const PayrollReconciliationPage = lazy(() => import('./features/compliance-engine/PayrollReconciliationPage.js').then((m) => ({ default: m.PayrollReconciliationPage })));
 const ClaimMatchingPage = lazy(() => import('./features/compliance-engine/ClaimMatchingPage.js').then((m) => ({ default: m.ClaimMatchingPage })));
 const RemittancePage = lazy(() => import('./features/compliance-engine/RemittancePage.js').then((m) => ({ default: m.RemittancePage })));
+const DenialsPage = lazy(() => import('./features/compliance-engine/DenialsPage.js').then((m) => ({ default: m.DenialsPage })));
 const EvvSubmissionPage = lazy(() => import('./features/compliance-engine/EvvSubmissionPage.js').then((m) => ({ default: m.EvvSubmissionPage })));
 const HhaexchangeSubmissionPage = lazy(() => import('./features/compliance-engine/HhaexchangeSubmissionPage.js').then((m) => ({ default: m.HhaexchangeSubmissionPage })));
 const ClearinghouseConfigPage = lazy(() => import('./features/compliance-engine/ClearinghouseConfigPage.js').then((m) => ({ default: m.ClearinghouseConfigPage })));
@@ -349,6 +350,7 @@ const navGroupDefs: NavGroupDef[] = [
       { to: '/admin/compliance-engine/payroll', label: 'Payroll', icon: icons.archive },
       { to: '/admin/compliance-engine/claims', label: 'Claims', icon: icons.templates },
       { to: '/admin/compliance-engine/remittances', label: 'Remittance (ERA)', icon: icons.archive },
+      { to: '/admin/compliance-engine/denials', label: 'Denials', icon: icons.audit },
       { to: '/admin/compliance-engine/evv-submission', label: 'EVV Submission', icon: icons.visit },
       { to: '/admin/compliance-engine/hhaexchange-submission', label: 'EVV. HHAeXchange', icon: icons.visit },
       { to: '/admin/compliance-engine/clearinghouse', label: 'Clearinghouse', icon: icons.templates },
@@ -599,6 +601,7 @@ export function App() {
           <Route path="compliance-engine/payroll" element={<PayrollReconciliationPage />} />
           <Route path="compliance-engine/claims" element={<ClaimMatchingPage />} />
           <Route path="compliance-engine/remittances" element={<RemittancePage />} />
+          <Route path="compliance-engine/denials" element={<DenialsPage />} />
           <Route path="compliance-engine/evv-submission" element={<EvvSubmissionPage />} />
           <Route path="compliance-engine/hhaexchange-submission" element={<HhaexchangeSubmissionPage />} />
           <Route path="compliance-engine/clearinghouse" element={<ClearinghouseConfigPage />} />

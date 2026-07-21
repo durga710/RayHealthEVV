@@ -308,6 +308,9 @@ export class ClaimRepository {
     adjustments: Array<{ group: string; reasonCode: string; amountCents: number }>;
     remarkCodes: string[];
     serviceLines: unknown[];
+    denialStatus: string | null;
+    denialNote: string | null;
+    denialUpdatedAt: string | null;
   }>> {
     const rows = (await this.db('claim_remittances')
       .where('agency_id', agencyId)
@@ -344,7 +347,36 @@ export class ClaimRepository {
       }>,
       remarkCodes: asArray(r.remark_codes) as string[],
       serviceLines: asArray(r.service_lines),
+      denialStatus: (r.denial_status as string | null) ?? null,
+      denialNote: (r.denial_note as string | null) ?? null,
+      denialUpdatedAt:
+        r.denial_updated_at instanceof Date
+          ? r.denial_updated_at.toISOString()
+          : (r.denial_updated_at as string | null) ?? null,
     }));
+  }
+
+  /**
+   * Update the denial-worklist state on one remittance posting. Only the
+   * worklist columns are touched — the posting itself stays immutable.
+   * Returns false when the row does not exist for this agency (tenancy
+   * misses and stale ids look the same to the caller: 404).
+   */
+  async updateDenialWork(
+    agencyId: string,
+    remittanceId: string,
+    patch: { status?: string; note?: string | null; updatedBy: string },
+  ): Promise<boolean> {
+    const update: Record<string, unknown> = {
+      denial_updated_at: this.db.fn.now(),
+      denial_updated_by: patch.updatedBy,
+    };
+    if (patch.status !== undefined) update.denial_status = patch.status;
+    if (patch.note !== undefined) update.denial_note = patch.note;
+    const count = await this.db('claim_remittances')
+      .where({ id: remittanceId, agency_id: agencyId })
+      .update(update);
+    return count > 0;
   }
 
   /**

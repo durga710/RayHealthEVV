@@ -27,13 +27,18 @@ import {
   ClearinghouseRemittanceFileRepository,
   adjustmentGroupLabel,
   buildPayrollExport,
+  atRiskCentsOf,
   canTransitionClaim,
   claimStatuses,
+  classifyRemittance,
+  DENIAL_WORK_STATUSES,
   describeCarc,
   describeRarc,
   generateClaims,
   hasCapability,
+  isDenialWorkStatus,
   parse835,
+  summarizeDenials,
   paServiceCodeDescriptions,
   type AuthorizationContext,
   type BilledLineUnits,
@@ -699,6 +704,115 @@ async function handleRemittanceSweep(req: Request, res: Response): Promise<void>
 }
 router.get('/remittances/sweep', handleRemittanceSweep);
 router.post('/remittances/sweep', handleRemittanceSweep);
+
+// ── Denial dashboard ────────────────────────────────────────────────────────
+//
+// Aggregates over `claim_remittances` (matched or not), so the dashboard is
+// useful the moment an agency posts its first payer 835 — even if nothing
+// else in RayHealth is in use yet. Summary math lives in the pure core
+// service (summarizeDenials); these routes only fetch rows and mutate the
+// worklist columns.
+
+/**
+ * GET /billing/denials — summary KPIs + the denied/partial worklist.
+ * Worklist rows carry a `kind` and a `denialStatus` defaulting to 'new'.
+ */
+router.get('/denials', requireCapability('billing.read'), async (req: Request, res: Response) => {
+  try {
+    const db = req.app.get('db') as Knex;
+    const rows = await new ClaimRepository(db).listRemittances(req.auth.agencyId, 500);
+    const summary = summarizeDenials(rows);
+    const worklist = rows
+      .map((r) => ({ row: r, kind: classifyRemittance(r) }))
+      .filter(({ kind }) => kind === 'denied' || kind === 'partial')
+      .map(({ row, kind }) => ({
+        id: row.id,
+        claimId: row.claimId,
+        controlNumber: row.controlNumber,
+        matched: row.matched,
+        kind,
+        chargeCents: row.chargeCents,
+        paidCents: row.paidCents,
+        atRiskCents: atRiskCentsOf(row, kind),
+        postedAt: row.postedAt,
+        traceNumber: row.traceNumber,
+        adjustments: row.adjustments.map(decorateAdjustment),
+        denialStatus: row.denialStatus ?? 'new',
+        denialNote: row.denialNote,
+        denialUpdatedAt: row.denialUpdatedAt,
+      }));
+    res.json({ summary, worklist });
+  } catch (err) {
+    safeError('denial dashboard failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * PATCH /billing/denials/:id — move a denial through the worklist
+ * (status and/or note). Audited as claim.denial.updated.
+ */
+router.patch('/denials/:id', requireCapability('billing.write'), async (req: Request, res: Response) => {
+  const id = typeof req.params.id === 'string' ? req.params.id : '';
+  if (!/^[0-9a-f-]{36}$/i.test(id)) {
+    res.status(400).json({ message: 'valid remittance id required' });
+    return;
+  }
+  const body = (req.body ?? {}) as { status?: unknown; note?: unknown };
+  const hasStatus = body.status !== undefined;
+  const hasNote = body.note !== undefined;
+  if (!hasStatus && !hasNote) {
+    res.status(400).json({ message: 'status or note is required' });
+    return;
+  }
+  if (hasStatus && !isDenialWorkStatus(body.status)) {
+    res.status(400).json({
+      message: `status must be one of: ${DENIAL_WORK_STATUSES.join(', ')}`,
+    });
+    return;
+  }
+  if (hasNote && body.note !== null && (typeof body.note !== 'string' || body.note.length > 2000)) {
+    res.status(400).json({ message: 'note must be a string of at most 2000 characters, or null' });
+    return;
+  }
+
+  try {
+    const db = req.app.get('db') as Knex;
+    const updated = await new ClaimRepository(db).updateDenialWork(req.auth.agencyId, id, {
+      ...(hasStatus ? { status: body.status as string } : {}),
+      ...(hasNote ? { note: body.note as string | null } : {}),
+      updatedBy: req.auth.userId,
+    });
+    if (!updated) {
+      res.status(404).json({ message: 'remittance not found' });
+      return;
+    }
+
+    try {
+      await new AuditEventRepository(db).create({
+        agencyId: req.auth.agencyId,
+        actorId: req.auth.userId,
+        actorType: 'user',
+        eventType: 'claim.denial.updated',
+        entityType: 'remittance',
+        entityId: id,
+        outcome: 'success',
+        payload: {
+          ...(hasStatus ? { status: body.status } : {}),
+          noteChanged: hasNote,
+        },
+        occurredAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      safeError('Failed to audit claim.denial.updated', err);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    safeError('denial worklist update failed', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
 /** GET /billing/remittances/files, ledger of automatically ingested 835 files. */
 router.get('/remittances/files', requireCapability('billing.read'), async (req: Request, res: Response) => {

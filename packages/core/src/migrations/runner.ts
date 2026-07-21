@@ -31,6 +31,7 @@ import * as addVisitDocumentation from './2026-07-08-add-visit-documentation.js'
 import * as addVisitSignature from './2026-07-09-add-visit-signature.js';
 import * as addVisitTaskCompletions from './2026-07-12-add-visit-task-completions.js';
 import * as addOfflineEvvMetadata from './2026-07-12-add-offline-evv-metadata.js';
+import * as addDenialWorklist from './2026-07-21-add-denial-worklist.js';
 
 async function run(): Promise<void> {
   const db = createDb();
@@ -45,6 +46,7 @@ async function run(): Promise<void> {
     await addVisitSignature.up(db);
     await addVisitTaskCompletions.up(db);
     await addOfflineEvvMetadata.up(db);
+    await addDenialWorklist.up(db);
     process.stderr.write('Migrations complete.\n');
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unknown error';
