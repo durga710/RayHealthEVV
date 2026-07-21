@@ -43,6 +43,77 @@ const LAYERS = [
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
+/**
+ * Section styles, co-located like LandingPage's CSS component. Every color
+ * aliases a token already defined on `.rh` (the section renders inside it),
+ * so the band inherits the same palette as the rest of the landing page.
+ */
+function SectionCSS() {
+  return (
+    <style dangerouslySetInnerHTML={{
+      __html: `
+.rvfy{position:relative; overflow:hidden; background:var(--dark); padding:104px 0;}
+.rvfy-bloom{position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(52% 64% at 16% 6%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 72%),
+    radial-gradient(42% 52% at 90% 96%, color-mix(in srgb, var(--accent2) 12%, transparent), transparent 72%);}
+.rvfy-in{position:relative; max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+
+.rvfy-head{max-width:740px;}
+.rvfy-eyebrow{display:inline-flex; align-items:center; gap:.55rem; font-size:.78rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--accent-light);}
+.rvfy-pip{width:8px; height:8px; border-radius:50%; background:var(--accent-light); animation:rvfy-pip 2.4s ease-out infinite;}
+@keyframes rvfy-pip{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent-light) 55%, transparent);} to{box-shadow:0 0 0 10px transparent;}}
+.rvfy .rvfy-title{color:#fff; font-size:clamp(1.9rem,3.4vw,2.6rem); line-height:1.1; letter-spacing:-.03em; margin-top:14px;}
+.rvfy-em{color:var(--accent-light);}
+.rvfy-deck{color:var(--dark-text-muted); font-size:1.0625rem; line-height:1.65; margin-top:16px; max-width:62ch;}
+
+.rvfy-body{display:grid; grid-template-columns:1.05fr 1fr; gap:48px; margin-top:56px; align-items:start;}
+
+/* pipeline card */
+.rvfy-pipe{position:relative; border:1px solid var(--dark-line); background:rgba(255,255,255,.04); border-radius:20px; padding:28px 28px 28px 30px;}
+.rvfy-pipe-rail{position:absolute; left:49px; top:48px; bottom:48px; width:2px; border-radius:1px; background:var(--dark-line); overflow:hidden;}
+.rvfy-pulse{position:absolute; left:0; width:100%; height:64px; transform:translateY(-50%); background:linear-gradient(to bottom, transparent, var(--accent-light), transparent);}
+.rvfy-stages{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:22px; position:relative;}
+.rvfy-stage{display:flex; gap:16px; align-items:flex-start;}
+.rvfy-node{position:relative; z-index:1; flex:none; width:40px; height:40px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:var(--accent-light); background:color-mix(in srgb, var(--dark) 88%, white 12%); border:1px solid var(--dark-line);}
+.rvfy-node-ok{background:var(--accent); color:#fff; border-color:transparent; box-shadow:0 0 26px -6px color-mix(in srgb, var(--accent) 75%, transparent);}
+.rvfy-stagetext{display:flex; flex-direction:column; gap:4px; padding-top:1px;}
+.rvfy-stagelabel{display:flex; align-items:center; gap:10px; flex-wrap:wrap; color:#fff; font-weight:600; font-size:1rem;}
+.rvfy-flag{font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2.5px 9px; border-radius:999px;}
+.rvfy-flag.live{background:color-mix(in srgb, var(--accent) 32%, transparent); color:var(--accent-light); border:1px solid color-mix(in srgb, var(--accent-light) 38%, transparent);}
+.rvfy-flag.soon{background:transparent; color:var(--dark-text-muted); border:1px solid var(--dark-line);}
+.rvfy-stagedetail{color:var(--dark-text-muted); font-size:.9rem; line-height:1.55;}
+.rvfy-verified{margin-top:4px; padding-top:22px; border-top:1px dashed var(--dark-line);}
+
+/* value layers */
+.rvfy-layers{display:flex; flex-direction:column; gap:24px;}
+.rvfy-layer{padding-bottom:24px; border-bottom:1px solid var(--dark-line);}
+.rvfy-layerk{font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent-light);}
+.rvfy .rvfy-layert{color:#fff; font-size:1.25rem; letter-spacing:-.01em; margin-top:8px;}
+.rvfy-layerb{color:var(--dark-text-muted); font-size:.9688rem; line-height:1.6; margin-top:8px;}
+.rvfy-cta{display:flex; flex-direction:column; gap:14px; align-items:flex-start;}
+.rvfy-btn{display:inline-flex; align-items:center; gap:.5rem; height:46px; padding:0 1.4rem; border-radius:10px; background:#fff; color:var(--ink); font-weight:600; font-size:.9375rem; transition:transform .16s ease, box-shadow .16s ease;}
+.rvfy-btn:hover{transform:translateY(-1px); box-shadow:0 14px 30px -12px rgba(0,0,0,.55);}
+.rvfy-foot{color:var(--dark-text-muted); font-size:.8125rem; line-height:1.6; max-width:54ch;}
+
+@media(max-width:940px){
+  .rvfy-body{grid-template-columns:1fr; gap:36px;}
+}
+@media(max-width:640px){
+  .rvfy{padding:80px 0;}
+  .rvfy-pipe{padding:22px;}
+  .rvfy-pipe-rail{left:41px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .rvfy-pip{animation:none;}
+  .rvfy-pulse{display:none;}
+}
+`,
+    }}
+    />
+  );
+}
+
 export function RayVerifySection() {
   const reduce = useReducedMotion();
   const rise = (delay = 0) =>
@@ -57,13 +128,14 @@ export function RayVerifySection() {
 
   return (
     <section id="rayverify" className="rvfy">
+      <SectionCSS />
       <div className="rvfy-bloom" aria-hidden />
       <div className="rvfy-in">
         <motion.div className="rvfy-head" {...rise()}>
           <span className="rvfy-eyebrow"><span className="rvfy-pip" />Powered by RayVerify</span>
           <h2 className="rvfy-title">Every visit. <span className="rvfy-em">Verified.</span></h2>
           <p className="rvfy-deck">
-            Home care deserves more than a GPS ping. RayVerify is the trust engine inside RayHealthEVV , 
+            Home care deserves more than a GPS ping. RayVerify is the trust engine inside RayHealthEVV,
             layering identity, location, device, and fraud intelligence so you know the right caregiver
             delivered the right care, at the right place.
           </p>
