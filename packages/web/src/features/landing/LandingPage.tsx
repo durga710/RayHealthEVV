@@ -947,11 +947,7 @@ export function LandingPage() {
                 />
               </div>
               <div className="rh-roi-cta">
-                {estimateReady ? (
-                  <Link to="/demo" className="rh-btn rh-btn-pri">Verify it on your data</Link>
-                ) : (
-                  <button type="button" className="rh-btn rh-btn-pri" onClick={() => setEstimateReady(true)}>Get your custom estimate</button>
-                )}
+                <button type="button" className="rh-btn rh-btn-pri" onClick={() => setEstimateReady(true)}>Get your custom estimate</button>
                 <p className="rh-roi-note">
                   {estimateReady
                     ? `Illustrative estimates from your inputs, ${caregivers} caregivers, ${visitsPerWeek} visits/week, ${cleanupHours} cleanup hours/month today, using industry-typical assumptions shown under each number. They update live as you adjust the inputs. In a walkthrough we replace them with numbers measured on your own data.`
