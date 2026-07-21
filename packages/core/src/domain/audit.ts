@@ -61,6 +61,10 @@ export const auditEventTypes = [
   // A device-captured punch reached the API after being retained in the
   // encrypted offline queue. Payload contains timing metadata only, never GPS.
   'evv.offline.synced',
+  // AI polish of a caregiver's rough visit note (suggestion only; the note is
+  // persisted through clock-out after human review). Payload carries the model
+  // id and a hash of the rough note, never the note text.
+  'evv.note.draft',
   // Bulk migration import (clients / caregivers / authorizations CSV load).
   'data.imported',
   // ERA / 835 remittance posting (payer payment file matched back onto claims).

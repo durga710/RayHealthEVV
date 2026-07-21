@@ -28,6 +28,8 @@ export const NAV = {
     { label: 'EVV guide', to: '/resources/evv-guide' },
     { label: 'Task code reference', to: '/resources/task-codes' },
     { label: 'Audit checklist', to: '/resources/audit-checklist' },
+    { label: 'Switching guide', to: '/switch' },
+    { label: 'Compare', to: '/compare' },
     { label: 'What’s new', to: '/launch' },
   ],
   company: [

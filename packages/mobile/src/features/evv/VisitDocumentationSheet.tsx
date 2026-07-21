@@ -66,6 +66,14 @@ export default function VisitDocumentationSheet({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [note, setNote] = useState('');
+  // AI polish: a server-drafted rewrite of the caregiver's rough note. The
+  // draft NEVER auto-applies — it sits in a review card until the caregiver
+  // taps "Use draft" (note stays editable after) or "Keep mine". The note is
+  // only persisted at clock-out, so accepting a draft is always followed by
+  // an explicit human submit.
+  const [aiDraft, setAiDraft] = useState<string | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [strokes, setStrokes] = useState<SignatureStrokes>([]);
   const [padSize, setPadSize] = useState<{ width: number; height: number } | null>(null);
   const [signerRole, setSignerRole] = useState<SignerRole>('client');
@@ -104,6 +112,46 @@ export default function VisitDocumentationSheet({
 
   const count = selected.size;
   const hasSignature = strokes.length > 0 && padSize !== null;
+
+  // Ask the server for an AI rewrite of the rough note. Failure is always
+  // soft: the caregiver's own wording stays in the input and clock-out is
+  // never blocked (matches the sheet's "everything is optional" contract).
+  const polishNote = async () => {
+    const rough = note.trim();
+    if (!rough || aiBusy) return;
+    void Haptics.selectionAsync();
+    setAiBusy(true);
+    setAiError(null);
+    try {
+      const duties = tasks ? tasks.filter((t) => selected.has(t.id)).map((t) => t.duty) : [];
+      const { data } = await apiClient.post<{ draft?: string }>('/api/evv/draft-note', {
+        roughNote: rough,
+        ...(duties.length > 0 ? { taskDuties: duties } : {}),
+        ...(clientName ? { clientName } : {}),
+      });
+      if (data.draft && data.draft.trim()) {
+        setAiDraft(data.draft.trim());
+      } else {
+        setAiError("Couldn't draft a suggestion — your note is fine as written.");
+      }
+    } catch {
+      setAiError("AI polish isn't available right now — your note will be saved as written.");
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const acceptDraft = () => {
+    if (!aiDraft) return;
+    void Haptics.selectionAsync();
+    setNote(aiDraft);
+    setAiDraft(null);
+  };
+
+  const dismissDraft = () => {
+    void Haptics.selectionAsync();
+    setAiDraft(null);
+  };
 
   const submit = () => {
     const signature: VisitSignatureInput | undefined = hasSignature && padSize
@@ -254,13 +302,61 @@ export default function VisitDocumentationSheet({
               <TextInput
                 style={styles.noteInput}
                 value={note}
-                onChangeText={setNote}
+                onChangeText={(next) => {
+                  setNote(next);
+                  if (aiError) setAiError(null);
+                }}
                 placeholder="Add a note for the office (optional)"
                 placeholderTextColor={colors.placeholder}
                 multiline
                 maxLength={2000}
                 accessibilityLabel="Visit note"
               />
+              {aiDraft ? (
+                <View style={styles.aiCard}>
+                  <View style={styles.aiCardHeader}>
+                    <Ionicons name="sparkles" size={14} color={colors.brandBlue} />
+                    <Text style={styles.aiCardLabel}>AI suggestion · review before using</Text>
+                  </View>
+                  <Text style={styles.aiDraftText}>{aiDraft}</Text>
+                  <View style={styles.aiCardActions}>
+                    <Pressable
+                      onPress={acceptDraft}
+                      style={({ pressed }) => [styles.aiUseBtn, pressed && { opacity: 0.85 }]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Use the AI draft as my note"
+                    >
+                      <Text style={styles.aiUseBtnText}>Use draft</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={dismissDraft}
+                      style={({ pressed }) => [styles.aiKeepBtn, pressed && { opacity: 0.85 }]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Keep my own note"
+                    >
+                      <Text style={styles.aiKeepBtnText}>Keep mine</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : note.trim().length >= 12 ? (
+                <Pressable
+                  onPress={() => void polishNote()}
+                  disabled={aiBusy}
+                  style={({ pressed }) => [styles.aiPolishBtn, pressed && !aiBusy && { opacity: 0.8 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Tidy this note with AI"
+                >
+                  {aiBusy ? (
+                    <ActivityIndicator size="small" color={colors.brandBlue} />
+                  ) : (
+                    <Ionicons name="sparkles" size={15} color={colors.brandBlue} />
+                  )}
+                  <Text style={styles.aiPolishText}>
+                    {aiBusy ? 'Tidying your note…' : 'Tidy with AI'}
+                  </Text>
+                </Pressable>
+              ) : null}
+              {aiError ? <Text style={styles.aiErrorText}>{aiError}</Text> : null}
               <Pressable
                 onPress={() => {
                   void Haptics.selectionAsync();
@@ -461,6 +557,33 @@ const styles = StyleSheet.create({
     fontSize: 14, color: colors.inputText, minHeight: 64, maxHeight: 120,
     textAlignVertical: 'top',
   },
+  // AI polish
+  aiPolishBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.cardBg,
+  },
+  aiPolishText: { fontSize: 12.5, fontWeight: '700', color: colors.brandBlue },
+  aiErrorText: { ...typography.caption, color: colors.textMuted },
+  aiCard: {
+    borderWidth: 1, borderColor: colors.brandBlue, borderRadius: radii.md,
+    backgroundColor: '#f0f6fd', padding: 12, gap: 8,
+  },
+  aiCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  aiCardLabel: { fontSize: 11.5, fontWeight: '800', color: colors.brandBlue, letterSpacing: 0.2 },
+  aiDraftText: { fontSize: 13.5, lineHeight: 19, color: colors.textPrimary },
+  aiCardActions: { flexDirection: 'row', gap: 8 },
+  aiUseBtn: {
+    flex: 1, alignItems: 'center', paddingVertical: 9,
+    borderRadius: radii.sm, backgroundColor: colors.brandBlue,
+  },
+  aiUseBtnText: { fontSize: 13, fontWeight: '800', color: colors.onGradient },
+  aiKeepBtn: {
+    flex: 1, alignItems: 'center', paddingVertical: 9,
+    borderRadius: radii.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.cardBg,
+  },
+  aiKeepBtnText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
   submitWrap: { borderRadius: radii.lg },
   submitBtn: {
     borderRadius: radii.lg, height: 56,

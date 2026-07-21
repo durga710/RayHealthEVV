@@ -56,6 +56,8 @@ const EvvGuidePage = lazy(() => import('./features/marketing/site/EvvGuidePage.j
 const TaskCodesPage = lazy(() => import('./features/marketing/site/TaskCodesPage.js').then((m) => ({ default: m.TaskCodesPage })));
 const AuditChecklistPage = lazy(() => import('./features/marketing/site/AuditChecklistPage.js').then((m) => ({ default: m.AuditChecklistPage })));
 const HipaaCompliancePage = lazy(() => import('./features/marketing/site/HipaaCompliancePage.js').then((m) => ({ default: m.HipaaCompliancePage })));
+const SwitchPage = lazy(() => import('./features/marketing/site/SwitchPage.js').then((m) => ({ default: m.SwitchPage })));
+const ComparePage = lazy(() => import('./features/marketing/site/ComparePage.js').then((m) => ({ default: m.ComparePage })));
 const AuditRetentionPage = lazy(() => import('./features/audit/AuditRetentionPage.js').then((m) => ({ default: m.AuditRetentionPage })));
 const DashboardPage = lazy(() => import('./features/admin/DashboardPage.js').then((m) => ({ default: m.DashboardPage })));
 const CommandCenterPage = lazy(() => import('./features/admin/CommandCenterPage.js').then((m) => ({ default: m.CommandCenterPage })));
@@ -535,6 +537,8 @@ export function App() {
       <Route path="/resources/task-codes" element={<TaskCodesPage />} />
       <Route path="/resources/audit-checklist" element={<AuditChecklistPage />} />
       <Route path="/compliance/hipaa" element={<HipaaCompliancePage />} />
+      <Route path="/switch" element={<SwitchPage />} />
+      <Route path="/compare" element={<ComparePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       {/* Hidden platform super-admin console, intentionally not in any nav. */}

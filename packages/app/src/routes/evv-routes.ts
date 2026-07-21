@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
 import { Router } from 'express';
 import { requireCapability } from '../middleware/require-capability.js';
+import { askAI, isAIConfigured, AINotConfiguredError } from '../ai.js';
 import {
   AuditEventRepository,
   ClientRepository,
@@ -571,6 +573,119 @@ router.post('/clock-out/:id', requireCapability('evv.write'), async (req, res) =
     res.json(visit);
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * AI visit-note polish.
+ *
+ * Turns the caregiver's rough clock-out note into a clear, professional
+ * visit note. The draft is a SUGGESTION only: it is returned to the client,
+ * shown for review, and never written to the visit record here — the note
+ * lands on the EVV record exclusively through the existing clock-out path,
+ * after the caregiver has accepted/edited it. That review-then-submit shape
+ * is the human-approval gate for AI-assisted documentation.
+ *
+ * Bedrock (Claude, BAA-covered) is the only provider; when it is not
+ * configured this fails closed with 503 instead of routing PHI elsewhere
+ * (same policy as the copilot, see ../ai.ts).
+ *
+ * Audit: writes evv.note.draft with a hash of the rough note (not the text —
+ * notes contain PHI; the hash is a correlation ID without retention
+ * liability), model id, and sizes.
+ */
+const DRAFT_NOTE_SYSTEM_PROMPT = `You rewrite a home-care caregiver's rough visit note into a clear, professional note for the agency office.
+
+Rules, in priority order:
+1. NEVER add facts. Do not invent observations, measurements, vitals, times, symptoms, moods, or events that are not in the caregiver's note. If the note is thin, the rewrite stays thin.
+2. Never diagnose or use clinical terms the caregiver did not use.
+3. Preserve safety-relevant content plainly: falls, injuries, skin changes, medication refusals, missed meals, and anything the caregiver flagged as a concern must survive the rewrite, stated factually.
+4. Write in first person, past tense, objective tone ("Client expressed frustration about the medication schedule", not "Client was mad about meds").
+5. Keep names, relationships, and task references exactly as given.
+6. Maximum 120 words. Plain text only — no headings, lists, quotes, or commentary about the rewrite.
+Return only the rewritten note.`;
+
+router.post('/draft-note', requireCapability('evv.write'), async (req, res) => {
+  if (!req.auth.caregiverId) {
+    return res.status(403).json({ message: 'User is not authorized as a caregiver' });
+  }
+
+  const body = (req.body ?? {}) as { roughNote?: unknown; taskDuties?: unknown; clientName?: unknown };
+  const roughNote = typeof body.roughNote === 'string' ? body.roughNote.trim() : '';
+  if (!roughNote) {
+    return res.status(400).json({ message: 'roughNote is required' });
+  }
+  if (roughNote.length > 2000) {
+    return res.status(400).json({ message: 'roughNote exceeds 2000 characters' });
+  }
+  const taskDuties = Array.isArray(body.taskDuties)
+    ? body.taskDuties.filter((d): d is string => typeof d === 'string' && d.length <= 200).slice(0, 30)
+    : [];
+  const clientName =
+    typeof body.clientName === 'string' && body.clientName.length <= 120 ? body.clientName.trim() : '';
+
+  if (!isAIConfigured()) {
+    return res.status(503).json({
+      message: 'AI note drafting is unavailable right now. Your note will be saved as written.',
+      code: 'AI_NOT_CONFIGURED' as const
+    });
+  }
+
+  try {
+    const contextLines = [
+      clientName ? `Client first name (use as given): ${clientName}` : null,
+      taskDuties.length > 0 ? `Tasks the caregiver checked off this visit:\n- ${taskDuties.join('\n- ')}` : null,
+      `Caregiver's rough note:\n${roughNote}`
+    ].filter((l): l is string => l !== null);
+
+    const result = await askAI({
+      prompt: contextLines.join('\n\n'),
+      systemInstruction: DRAFT_NOTE_SYSTEM_PROMPT,
+      maxOutputTokens: 300
+    });
+
+    const draft = result.text.trim();
+    if (!draft) {
+      // An empty model response is an upstream failure, not a usable draft.
+      return res.status(502).json({ message: 'AI draft came back empty, keep your note as written.' });
+    }
+
+    const db = req.app.get('db');
+    if (db) {
+      try {
+        await new AuditEventRepository(db).create({
+          agencyId: req.auth.agencyId,
+          actorId: req.auth.userId,
+          actorType: 'user',
+          eventType: 'evv.note.draft',
+          entityType: 'evv.visit-note',
+          entityId: req.auth.caregiverId,
+          outcome: 'success',
+          payload: {
+            model: result.model,
+            usageTokens: result.usageTokens,
+            roughNoteHash: createHash('sha256').update(roughNote).digest('hex').slice(0, 32),
+            roughNoteLength: roughNote.length,
+            draftLength: draft.length,
+            taskCount: taskDuties.length
+          },
+          occurredAt: new Date().toISOString()
+        });
+      } catch (error) {
+        safeError('Failed to audit evv.note.draft', error);
+      }
+    }
+
+    res.json({ draft, model: result.model });
+  } catch (error) {
+    if (error instanceof AINotConfiguredError) {
+      return res.status(503).json({ message: error.message, code: 'AI_NOT_CONFIGURED' as const });
+    }
+    // Upstream (Bedrock) failure: 502 so the client can distinguish "try
+    // again later" from a bug, and always fall back to the caregiver's own
+    // wording.
+    safeError('AI visit-note draft failed', error);
+    res.status(502).json({ message: 'AI draft is unavailable right now, keep your note as written.' });
   }
 });
 
