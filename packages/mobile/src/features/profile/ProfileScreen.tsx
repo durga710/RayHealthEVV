@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../lib/AuthContext';
 import apiClient from '../../lib/api-client';
 import { showAppAlert } from '../common/alerts/appAlert';
+import { confirmEmail, confirmWebLink, openInAppBrowser } from '../common/external-link';
 import { Skeleton } from '../common/Skeleton';
 import { colors, typography, radii, shadow, gradients, alpha } from '../common/tokens';
 
@@ -108,20 +108,35 @@ export default function ProfileScreen() {
   };
 
   const openSupport = () => {
-    Linking.openURL('mailto:support@rayhealthevv.com?subject=RayHealthEVV%20Support').catch(() => {
-      showAppAlert('Support', 'Email us at support@rayhealthevv.com', undefined, { variant: 'info', icon: 'help-buoy-outline' });
+    confirmEmail({
+      title: 'Contact Support',
+      message: 'Our support team is ready to help. Reach us by email and we will get back to you.',
+      email: 'support@rayhealthevv.com',
+      subject: 'RayHealthEVV Support',
+      icon: 'help-buoy-outline',
     });
   };
 
   const openPrivacyPolicy = () => {
-    Linking.openURL('https://rayhealthevv.com/privacy').catch(() => {
-      showAppAlert(
-        'Privacy policy',
-        'Visit https://rayhealthevv.com/privacy in your browser.',
-        undefined,
-        { variant: 'info', icon: 'shield-checkmark-outline' },
-      );
+    confirmWebLink({
+      title: 'Privacy policy',
+      message: 'Our privacy policy is available on the RayHealthEVV website. It explains how we protect and handle your data.',
+      url: 'https://rayhealthevv.com/privacy',
+      icon: 'shield-checkmark-outline',
     });
+  };
+
+  const showAbout = () => {
+    showAppAlert(
+      'RayHealthEVV',
+      `Version ${version}. Electronic Visit Verification for home care, built for Pennsylvania agencies and caregivers. Learn more on our website.`,
+      [{ text: 'Close', style: 'cancel' }],
+      {
+        variant: 'info',
+        icon: 'information-circle-outline',
+        link: { label: 'rayhealthevv.com', onPress: () => void openInAppBrowser('https://rayhealthevv.com') },
+      },
+    );
   };
 
   return (
@@ -224,6 +239,7 @@ export default function ProfileScreen() {
             tint={colors.slate}
             title="About"
             value={`v${version}`}
+            onPress={showAbout}
             isLast
           />
         </View>
