@@ -56,7 +56,7 @@ const HELP_SECTIONS: HelpSection[] = [
     title: 'Agency Selection',
     summary: 'Working with more than one agency',
     image: require('../../../assets/images/help/agency.jpg'),
-    imageAlt: 'A caregiver laughing together with her client',
+    imageAlt: 'A caregiver helping two clients with an activity at a kitchen table',
     blocks: [
       {
         text:
@@ -315,7 +315,7 @@ const HELP_SECTIONS: HelpSection[] = [
     title: 'Your Profile & Linked Agencies',
     summary: 'Profile details, connecting agencies',
     image: require('../../../assets/images/help/profile.jpg'),
-    imageAlt: 'A caregiver sitting beside her client, sharing a phone screen',
+    imageAlt: 'A smiling caregiver in scrubs with her arms crossed',
     blocks: [
       {
         heading: 'User profile',
