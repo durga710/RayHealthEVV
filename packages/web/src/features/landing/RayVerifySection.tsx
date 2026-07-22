@@ -120,10 +120,10 @@ export function RayVerifySection() {
     reduce
       ? { initial: { opacity: 1 }, whileInView: { opacity: 1 } }
       : {
-          initial: { opacity: 0, y: 24 },
+          initial: { opacity: 0, y: 16 },
           whileInView: { opacity: 1, y: 0 },
-          transition: { duration: 0.7, ease, delay },
-          viewport: { once: true, amount: 0.4 },
+          transition: { duration: 0.5, ease, delay },
+          viewport: { once: true, amount: 0.2 },
         };
 
   return (
@@ -160,10 +160,10 @@ export function RayVerifySection() {
                 <motion.li
                   key={s.label}
                   className="rvfy-stage"
-                  initial={reduce ? { opacity: 1 } : { opacity: 0, x: -16 }}
+                  initial={reduce ? { opacity: 1 } : { opacity: 0, x: -12 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, ease, delay: 0.12 * i }}
-                  viewport={{ once: true, amount: 0.6 }}
+                  transition={{ duration: 0.4, ease, delay: 0.07 * i }}
+                  viewport={{ once: true, amount: 0.3 }}
                 >
                   <span className="rvfy-node">{icon(s.glyph)}</span>
                   <span className="rvfy-stagetext">
@@ -177,10 +177,10 @@ export function RayVerifySection() {
               ))}
               <motion.li
                 className="rvfy-stage rvfy-verified"
-                initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.9 }}
+                initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.94 }}
                 whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.55, ease, delay: 0.12 * PIPELINE.length }}
-                viewport={{ once: true, amount: 0.6 }}
+                transition={{ duration: 0.45, ease, delay: 0.07 * PIPELINE.length }}
+                viewport={{ once: true, amount: 0.3 }}
               >
                 <span className="rvfy-node rvfy-node-ok">{icon(<path d="M20 6 9 17l-5-5" />)}</span>
                 <span className="rvfy-stagetext">
@@ -194,13 +194,13 @@ export function RayVerifySection() {
           {/* Value layers */}
           <div className="rvfy-layers">
             {LAYERS.map((l, i) => (
-              <motion.div key={l.t} className="rvfy-layer" {...rise(0.1 + 0.08 * i)}>
+              <motion.div key={l.t} className="rvfy-layer" {...rise(0.06 + 0.06 * i)}>
                 <p className="rvfy-layerk">{l.k}</p>
                 <h3 className="rvfy-layert">{l.t}</h3>
                 <p className="rvfy-layerb">{l.b}</p>
               </motion.div>
             ))}
-            <motion.div className="rvfy-cta" {...rise(0.34)}>
+            <motion.div className="rvfy-cta" {...rise(0.26)}>
               <Link to="/rayverify" className="rvfy-btn">
                 Learn about RayVerify
                 {icon(<path d="M5 12h14M13 6l6 6-6 6" />)}

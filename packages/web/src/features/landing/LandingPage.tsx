@@ -427,11 +427,11 @@ button.rh-btn{border:0; cursor:pointer; font-family:inherit;}
 
 /* staggered scroll-reveal, cards in a row cascade in rather than snapping
    as a block */
-.rh-roles .rh-rv:nth-child(2){transition-delay:.07s;}
-.rh-roles .rh-rv:nth-child(3){transition-delay:.14s;}
-.rh-roles .rh-rv:nth-child(4){transition-delay:.21s;}
-.rh-pricing .rh-rv:nth-child(2){transition-delay:.07s;}
-.rh-pricing .rh-rv:nth-child(3){transition-delay:.14s;}
+.rh-roles .rh-rv:nth-child(2){transition-delay:.05s;}
+.rh-roles .rh-rv:nth-child(3){transition-delay:.1s;}
+.rh-roles .rh-rv:nth-child(4){transition-delay:.15s;}
+.rh-pricing .rh-rv:nth-child(2){transition-delay:.05s;}
+.rh-pricing .rh-rv:nth-child(3){transition-delay:.1s;}
 
 /* hover-lift for the pricing + EVV mockup cards, matching the role cards */
 .rh-price{transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;}
@@ -441,7 +441,7 @@ button.rh-btn{border:0; cursor:pointer; font-family:inherit;}
 .rh-evvi:hover{border-color:var(--accent); background:var(--accent-tint); transform:translateY(-1px);}
 
 /* reveal */
-.rh-rv{opacity:0; transform:translateY(16px); transition:opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1);}
+.rh-rv{opacity:0; transform:translateY(12px); transition:opacity .45s cubic-bezier(.2,.7,.2,1), transform .45s cubic-bezier(.2,.7,.2,1);}
 .rh-rv.in{opacity:1; transform:none;}
 @media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} .rh-rv{opacity:1; transform:none; transition:none;} .rh-btn,.rh-rolecard,.rh-price,.rh-evvi{transition:none;} .rh-eyebrow .pip,.rh-hero-bloom,.rh-herotext > *,.rh-heromedia,.rh-theater-map .pin::after,.rh-theater-inner,.rh-spotvis .status-dot,.rh-theater-inner .status-dot{animation:none;} }
 `,
@@ -635,7 +635,7 @@ export function LandingPage() {
     if (!els || !('IntersectionObserver' in window)) { els?.forEach((e) => e.classList.add('in')); return; }
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }),
-      { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
+      { threshold: 0.06, rootMargin: '0px 0px 0px 0px' },
     );
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
