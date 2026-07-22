@@ -652,6 +652,7 @@ export function LandingPage() {
             <Link to="/solutions/scheduling">Scheduling</Link>
             <Link to="/solutions/electronic-visit-verification">EVV</Link>
             <Link to="/rayverify">RayVerify</Link>
+            <Link to="/solutions/denial-dashboard">Denials</Link>
             <Link to="/platform/compliance">Compliance</Link>
             <Link to="/pricing">Pricing</Link>
           </div>
@@ -677,6 +678,7 @@ export function LandingPage() {
             <Link to="/solutions/scheduling" onClick={() => setMenuOpen(false)}>Scheduling</Link>
             <Link to="/solutions/electronic-visit-verification" onClick={() => setMenuOpen(false)}>Electronic visit verification</Link>
             <Link to="/rayverify" onClick={() => setMenuOpen(false)}>RayVerify</Link>
+            <Link to="/solutions/denial-dashboard" onClick={() => setMenuOpen(false)}>Denial dashboard</Link>
             <Link to="/solutions/workforce-training" onClick={() => setMenuOpen(false)}>Workforce & training</Link>
             <Link to="/platform/compliance" onClick={() => setMenuOpen(false)}>Compliance</Link>
             <Link to="/pricing" onClick={() => setMenuOpen(false)}>Pricing</Link>
@@ -1044,6 +1046,7 @@ export function LandingPage() {
             <Link to="/solutions/scheduling">Scheduling</Link>
             <Link to="/solutions/electronic-visit-verification">Electronic visit verification</Link>
             <Link to="/solutions/billing-payroll">Billing &amp; payroll</Link>
+            <Link to="/solutions/denial-dashboard">Denial dashboard</Link>
             <Link to="/solutions/workforce-training">Workforce &amp; training</Link>
           </div>
           <div className="rh-footcol">
