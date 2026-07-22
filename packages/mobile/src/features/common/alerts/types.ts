@@ -11,11 +11,18 @@ export interface AlertButton {
   onPress?: () => void;
 }
 
+/** Tappable link chip rendered between the dialog message and its buttons. */
+export interface DialogLink {
+  label: string;
+  onPress: () => void;
+}
+
 export interface AlertOptions {
   variant?: DialogVariant;
   /** Backdrop tap / Android back dismiss. Defaults to true, matching Alert.alert. */
   cancelable?: boolean;
   icon?: IoniconName;
+  link?: DialogLink;
   onDismiss?: () => void;
 }
 
@@ -34,6 +41,7 @@ export interface QueuedDialog {
   variant: DialogVariant;
   cancelable: boolean;
   icon?: IoniconName;
+  link?: DialogLink;
   onDismiss?: () => void;
 }
 

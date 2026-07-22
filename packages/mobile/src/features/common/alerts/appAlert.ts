@@ -42,6 +42,7 @@ export function showAppAlert(
     variant: options?.variant ?? 'info',
     cancelable: options?.cancelable ?? true,
     icon: options?.icon,
+    link: options?.link,
     onDismiss: options?.onDismiss,
   });
 }

@@ -146,6 +146,27 @@ export default function AppDialog({
           <Text style={styles.title}>{rendered.title}</Text>
           {rendered.message ? <Text style={styles.message}>{rendered.message}</Text> : null}
 
+          {rendered.link ? (
+            <Pressable
+              onPress={() => {
+                rendered.link?.onPress();
+                close();
+              }}
+              accessibilityRole="link"
+              accessibilityLabel={rendered.link.label}
+              style={({ pressed }) => [
+                styles.linkChip,
+                { backgroundColor: v.badgeBg },
+                pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] },
+              ]}
+            >
+              <Ionicons name="open-outline" size={15} color={v.accent} />
+              <Text style={[styles.linkChipText, { color: v.accent }]} numberOfLines={1}>
+                {rendered.link.label}
+              </Text>
+            </Pressable>
+          ) : null}
+
           <View style={[styles.buttonRow, rendered.buttons.length === 1 && styles.buttonRowSingle]}>
             {rendered.buttons.map((button, i) => {
               const isCancel = button.style === 'cancel';
@@ -211,6 +232,17 @@ const styles = StyleSheet.create({
   sparkle: { position: 'absolute', width: 8, height: 8, borderRadius: 4 },
   title: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', letterSpacing: -0.2 },
   message: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  linkChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingHorizontal: 16,
+    height: 38,
+    maxWidth: '100%',
+    borderRadius: radii.pill,
+  },
+  linkChipText: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
   buttonRow: { flexDirection: 'row', gap: 10, marginTop: 22, width: '100%' },
   buttonRowSingle: { justifyContent: 'center' },
   button: { flex: 1, height: 48, borderRadius: radii.md, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
