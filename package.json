@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "postinstall": "patch-package",
+    "mobile": "npm run start --workspace=@rayhealth/mobile -- --port 8083",
+    "start": "npm run mobile",
     "build": "turbo build",
     "test": "turbo test",
     "lint": "turbo lint",
