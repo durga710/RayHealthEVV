@@ -13,7 +13,6 @@ import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import ScreenHeader from '../common/ScreenHeader';
 import EmptyState from '../common/EmptyState';
 import { showAppAlert } from '../common/alerts/appAlert';
@@ -503,11 +502,7 @@ export default function HelpScreen() {
             {visible.map((section) => {
               const isOpen = effectiveExpanded === section.key;
               return (
-                <Animated.View
-                  key={section.key}
-                  style={styles.sectionCard}
-                  layout={LinearTransition.springify().damping(18)}
-                >
+                <View key={section.key} style={styles.sectionCard}>
                   <Pressable
                     onPress={() => {
                       void Haptics.selectionAsync();
@@ -532,11 +527,7 @@ export default function HelpScreen() {
                     />
                   </Pressable>
                   {isOpen ? (
-                    <Animated.View
-                      entering={FadeIn.duration(220)}
-                      exiting={FadeOut.duration(160)}
-                      style={styles.sectionBody}
-                    >
+                    <View style={styles.sectionBody}>
                       <Image
                         source={section.image}
                         style={styles.sectionImage}
@@ -548,9 +539,9 @@ export default function HelpScreen() {
                       {section.blocks.map((block, i) => (
                         <Block key={i} block={block} tint={section.tint} />
                       ))}
-                    </Animated.View>
+                    </View>
                   ) : null}
-                </Animated.View>
+                </View>
               );
             })}
           </View>
