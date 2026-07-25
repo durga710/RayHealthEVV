@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "^4.0.108",
+    "@ai-sdk/amazon-bedrock": "^5.0.31",
     "@aws-sdk/client-sesv2": "^3.1054.0",
     "@rayhealth/core": "file:../core",
     "@simplewebauthn/server": "^13.3.2",
