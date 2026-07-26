@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from '../src/lib/AuthContext';
 import { useOfflineEvvSync } from '../src/lib/use-offline-sync';
 import AppAlertProvider from '../src/features/common/alerts/AppAlertProvider';
 import { showAppToast } from '../src/features/common/alerts/appAlert';
+import ShiftAlarmHost from '../src/features/evv/ShiftAlarmHost';
+import { isShiftAlarmPayload, presentShiftAlarm } from '../src/lib/shift-alarm';
 
 // Expo Go (SDK 53+) removed remote push support, so expo-notifications' push-
 // token auto-registration logs a warning the moment the module is imported.
@@ -21,36 +23,22 @@ if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
   ]);
 }
 
-// Show shift-alert notifications even when the app is foregrounded so the
-// system banner + sound + vibration still fire. We mirror the haptic
-// independently from the dashboard tick, but letting the banner show is the
-// cue the user expects.
+// This handler only runs while the app is foregrounded. Shift alerts get the
+// full-screen in-app alarm overlay instead of the small system banner (the
+// received-listener below presents it), so suppress the banner for those but
+// keep the sound: the notification is what plays the bundled alarm chime.
+// Anything that isn't a shift alert keeps the stock banner behavior.
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false
-  })
+  handleNotification: async (notification) => {
+    const isShiftAlert = isShiftAlarmPayload(notification.request.content.data);
+    return {
+      shouldShowBanner: !isShiftAlert,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false
+    };
+  }
 });
-
-interface ShiftAlertPayload {
-  assignmentId: string;
-  clientName: string;
-  scheduledTime: string;
-  serviceCode: string;
-}
-
-function isShiftAlertPayload(value: unknown): value is ShiftAlertPayload {
-  if (!value || typeof value !== 'object') return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.assignmentId === 'string' &&
-    typeof v.clientName === 'string' &&
-    typeof v.scheduledTime === 'string' &&
-    typeof v.serviceCode === 'string'
-  );
-}
 
 export default function RootLayout() {
   return (
@@ -98,19 +86,30 @@ function RootContent() {
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
-      if (!isShiftAlertPayload(data)) return;
+      if (!isShiftAlarmPayload(data)) return;
       router.push({
         pathname: '/clockin',
         params: {
           assignmentId: data.assignmentId,
           clientName: data.clientName,
           scheduledTime: data.scheduledTime,
-          serviceCode: data.serviceCode
+          serviceCode: data.serviceCode ?? ''
         }
       });
     });
     return () => sub.remove();
   }, [router]);
+
+  // Shift alert delivered while the app is foregrounded (any screen): present
+  // the full-screen alarm overlay. The handler above already suppressed the
+  // system banner for this case; the notification still plays the chime.
+  useEffect(() => {
+    const sub = Notifications.addNotificationReceivedListener((notification) => {
+      const data = notification.request.content.data;
+      if (isShiftAlarmPayload(data)) presentShiftAlarm(data);
+    });
+    return () => sub.remove();
+  }, []);
 
   return (
     <View style={{ flex: 1 }}>
@@ -127,6 +126,7 @@ function RootContent() {
         <Stack.Screen name="change-password" options={{ headerShown: false }} />
         <Stack.Screen name="help" options={{ headerShown: false }} />
       </Stack>
+      <ShiftAlarmHost />
       <AppAlertProvider />
     </View>
   );

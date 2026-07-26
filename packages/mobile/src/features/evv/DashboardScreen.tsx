@@ -11,7 +11,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '../../lib/AuthContext';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -22,6 +21,7 @@ import { SkeletonList } from '../common/Skeleton';
 import { colors, typography, radii, shadow, gradients } from '../common/tokens';
 import { ensureNotificationPermission } from '../../lib/notification-permissions';
 import { fireDevTestShiftAlert, scheduleShiftAlerts } from '../../lib/shift-alert-scheduler';
+import { presentShiftAlarm } from '../../lib/shift-alarm';
 import { deriveVisitState, resumableVisit, type VisitState } from '../../lib/visit-state';
 import { offlineEvvQueue } from '../../lib/offline-queue';
 import {
@@ -53,14 +53,10 @@ type TodayScheduleRow = CachedVisitScheduleRow;
 
 // The fire window (8s) is wider than the tick (5s) so a tick always lands
 // inside it once as the countdown passes through, the previous 4s window could
-// be straddled and skipped. firedForegroundRef keeps it to a single haptic.
+// be straddled and skipped. presentShiftAlarm dedups per shift occurrence.
 const FOREGROUND_FIRE_WINDOW_MS = 33_000;
 const FOREGROUND_FIRE_MIN_MS = 25_000;
 const FOREGROUND_TICK_MS = 5_000;
-
-function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-}
 
 function formatTime(iso: string | undefined): string {
   if (!iso) return 'Time TBD';
@@ -174,7 +170,6 @@ export default function DashboardScreen() {
   // Drives the live next-visit countdown / in-progress elapsed clock on the
   // hero card. Ticks once a second only while there are visits to count toward.
   const [nowTs, setNowTs] = useState(() => Date.now());
-  const firedForegroundRef = useRef<Set<string>>(new Set());
   // Device-clock skew vs the server (serverTime − deviceNow), captured on each
   // /today fetch. Passed to the clock-in screen so its time-window UX agrees
   // with the server's decision even on a badly set phone clock.
@@ -269,17 +264,22 @@ export default function DashboardScreen() {
     if (assignments.length === 0) return;
     const tick = () => {
       const now = Date.now();
-      const today = dayKey(new Date(now));
       for (const a of assignments) {
         if (!a.time) continue;
         const shiftStart = new Date(a.time).getTime();
         if (!Number.isFinite(shiftStart)) continue;
         const delta = shiftStart - now;
         if (delta < FOREGROUND_FIRE_MIN_MS || delta > FOREGROUND_FIRE_WINDOW_MS) continue;
-        const key = `${a.id}-${today}`;
-        if (firedForegroundRef.current.has(key)) continue;
-        firedForegroundRef.current.add(key);
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        // presentShiftAlarm dedups per shift occurrence, so re-entering the
+        // window on later ticks (or racing the notification-received trigger
+        // in app/_layout.tsx) never re-presents the overlay.
+        presentShiftAlarm({
+          assignmentId: a.id,
+          clientName: a.clientName,
+          scheduledTime: a.time,
+          serviceCode: a.serviceCode,
+          clientAddress: a.clientAddress,
+        });
       }
     };
     tick();
