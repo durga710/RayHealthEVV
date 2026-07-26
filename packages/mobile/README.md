@@ -89,7 +89,15 @@ timestamp are silently skipped.
 
 - **Background / locked / app suspended:** the OS-scheduled local
   notification fires with `vibrate: [0, 500, 200, 500, 200, 500]`, the
-  `shift-alerts` Android channel (MAX importance), and the default sound.
+  `shift-alerts-v2` Android channel (MAX importance), and the bundled
+  `shift_alarm.wav` chime: a soft alarm that rings for ~28 seconds (iOS caps
+  notification sounds at 30s). On Android the channel routes the sound
+  through the ALARM audio stream, so it plays at alarm volume even when
+  notification volume is low. Channels are immutable after creation, which
+  is why the sound change shipped as a `-v2` channel; the old `shift-alerts`
+  channel is deleted on the next `ensureShiftAlertChannel()` run. The custom
+  sound requires a real build (the expo-notifications config plugin bundles
+  it); Expo Go falls back to the default notification sound.
 - **Foreground:** scheduled notifications can be suppressed by the runtime,
   so the dashboard also runs a 5-second interval that fires
   `Haptics.notificationAsync(Warning)` when any assignment lands in the

@@ -102,7 +102,8 @@
         "expo-notifications",
         {
           "color": "#1a5fa8",
-          "defaultChannel": "shift-alerts"
+          "defaultChannel": "shift-alerts-v2",
+          "sounds": ["./assets/sounds/shift_alarm.wav"]
         }
       ],
       [
