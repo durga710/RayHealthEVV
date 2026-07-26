@@ -18,7 +18,21 @@ import { Platform } from 'react-native';
  */
 
 const SCHEDULED_IDS_KEY = 'rayhealth_scheduled_shift_alerts_v1';
-export const SHIFT_ALERT_CHANNEL_ID = 'shift-alerts';
+// v2: Android channels are immutable after creation, so switching the sound
+// from the default ping to the bundled alarm chime (and moving playback onto
+// the ALARM audio stream) requires a new channel ID. The v1 channel is
+// deleted in ensureShiftAlertChannel so users don't see a stale duplicate
+// under the app's notification settings.
+export const SHIFT_ALERT_CHANNEL_ID = 'shift-alerts-v2';
+const LEGACY_CHANNEL_IDS = ['shift-alerts'];
+/**
+ * Bundled via the expo-notifications config plugin ("sounds" in app.json).
+ * A soft 28 second chime: iOS caps notification sounds at 30s, so this rings
+ * for roughly the whole lead-in window instead of a single ping. In Expo Go
+ * (where the config plugin doesn't run) the OS silently falls back to the
+ * default notification sound.
+ */
+export const SHIFT_ALARM_SOUND = 'shift_alarm.wav';
 
 /** Lead time before the shift's start at which the notification fires. */
 const LEAD_TIME_MS = 30 * 1000;
@@ -83,11 +97,29 @@ async function cancelTrackedNotifications(): Promise<void> {
  */
 export async function ensureShiftAlertChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
+  // Remove superseded channels first so the app's notification settings only
+  // list the live one. Deleting a nonexistent channel is a no-op.
+  await Promise.all(
+    LEGACY_CHANNEL_IDS.map(async (id) => {
+      try {
+        await Notifications.deleteNotificationChannelAsync(id);
+      } catch {
+        // Best effort: the alert still works if a stale channel lingers.
+      }
+    })
+  );
   await Notifications.setNotificationChannelAsync(SHIFT_ALERT_CHANNEL_ID, {
     name: 'Shift alerts',
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: VIBRATION_PATTERN,
-    sound: 'default',
+    sound: SHIFT_ALARM_SOUND,
+    // Play on the ALARM stream, not NOTIFICATION: the chime rings at the
+    // user's alarm volume (like their morning alarm) even when notification
+    // volume is turned down. Silent/DND behavior still follows OS rules.
+    audioAttributes: {
+      usage: Notifications.AndroidAudioUsage.ALARM,
+      contentType: Notifications.AndroidAudioContentType.SONIFICATION
+    },
     enableVibrate: true,
     enableLights: true,
     // PRIVATE, not PUBLIC: the notification body is `${clientName} · ${code}`,
@@ -192,7 +224,9 @@ export async function fireDevTestShiftAlert(): Promise<string | null> {
           scheduledTime: new Date(Date.now() + 35_000).toISOString(),
           serviceCode: 'TEST'
         },
-        sound: 'default',
+        // iOS reads the sound from the content; Android 8+ takes it from the
+        // channel, so this only matters on iOS (and pre-8 Android).
+        sound: SHIFT_ALARM_SOUND,
         vibrate: VIBRATION_PATTERN,
         priority: Notifications.AndroidNotificationPriority.MAX
       },
