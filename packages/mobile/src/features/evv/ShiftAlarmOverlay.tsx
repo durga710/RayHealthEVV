@@ -17,14 +17,17 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { colors, gradients, radii, shadow, typography } from '../common/tokens';
+import { colors, gradients, radii, typography } from '../common/tokens';
 import type { ShiftAlarmPayload } from '../../lib/shift-alarm';
 
 /**
  * Full-screen soft alarm shown when a shift is about to start while the app
- * is open. The OS notification (with the bundled chime) covers sound; this
- * overlay covers the visual takeover plus a repeating haptic pulse, and
- * offers one tap into the clock-in screen.
+ * is open. Styled as a blown-up NextVisitHero card (DashboardScreen): the
+ * same diagonal hero gradient, eyebrow + timing corners, client line, icon
+ * meta row, and frosted CTA, so the takeover reads as "the Up next card,
+ * urgently". The OS notification covers sound; this overlay covers the
+ * visual takeover plus a repeating haptic pulse, and offers one tap into
+ * the clock-in screen.
  *
  * Purely presentational: presentation, dedup, and routing live in
  * ShiftAlarmHost / src/lib/shift-alarm.ts.
@@ -42,11 +45,12 @@ function formatStartTime(iso: string): string {
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
-function countdownLabel(msUntilStart: number): string {
-  if (msUntilStart <= 0) return 'Starting now';
+/** Same spirit as the hero's countdown: compact, tabular-friendly. */
+function countdownValue(msUntilStart: number): string {
+  if (msUntilStart <= 0) return 'Now';
   const s = Math.ceil(msUntilStart / 1000);
-  if (s < 90) return `Starts in ${s}s`;
-  return `Starts in ${Math.ceil(s / 60)} min`;
+  if (s < 90) return `${s}s`;
+  return `${Math.ceil(s / 60)} min`;
 }
 
 function PulseRing({ delay }: { delay: number }) {
@@ -62,6 +66,20 @@ function PulseRing({ delay }: { delay: number }) {
     transform: [{ scale: 1 + anim.value * 0.9 }],
   }));
   return <Animated.View pointerEvents="none" style={[styles.ring, style]} />;
+}
+
+/** The hero's live-dot, pulsing: this shift needs attention right now. */
+function AlarmDot() {
+  const anim = useSharedValue(0);
+  useEffect(() => {
+    anim.value = withRepeat(
+      withSequence(withTiming(1, { duration: 600 }), withTiming(0, { duration: 600 })),
+      -1,
+      false
+    );
+  }, [anim]);
+  const style = useAnimatedStyle(() => ({ opacity: 0.35 + anim.value * 0.65 }));
+  return <Animated.View style={[styles.eyebrowDot, style]} />;
 }
 
 export default function ShiftAlarmOverlay({
@@ -129,7 +147,9 @@ export default function ShiftAlarmOverlay({
   }, [onDismiss]);
 
   const shiftStart = new Date(payload.scheduledTime).getTime();
-  const countdown = Number.isFinite(shiftStart) ? countdownLabel(shiftStart - nowTs) : '';
+  const hasTime = Number.isFinite(shiftStart);
+  const timingLabel = hasTime && shiftStart <= nowTs ? 'STARTS' : 'STARTS IN';
+  const timingValue = hasTime ? countdownValue(shiftStart - nowTs) : '';
   const startTime = formatStartTime(payload.scheduledTime);
 
   return (
@@ -140,78 +160,95 @@ export default function ShiftAlarmOverlay({
       accessibilityViewIsModal
       accessibilityRole="alert"
     >
-      <LinearGradient colors={gradients.hero} style={StyleSheet.absoluteFill} />
-      <View style={[styles.content, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 20 }]}>
-        <View style={styles.top}>
+      <LinearGradient
+        colors={gradients.hero}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 20 }]}>
+        <Animated.View entering={FadeInDown.duration(320)} style={styles.topRow}>
+          <View style={styles.eyebrowWrap}>
+            <AlarmDot />
+            <Text style={styles.eyebrow}>SHIFT STARTING SOON</Text>
+          </View>
+          {timingValue ? (
+            <View style={styles.timing}>
+              <Text style={styles.timingLabel}>{timingLabel}</Text>
+              <Text style={styles.timingValue}>{timingValue}</Text>
+            </View>
+          ) : null}
+        </Animated.View>
+
+        <View style={styles.center}>
           <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.bellWrap}>
             <PulseRing delay={0} />
             <PulseRing delay={730} />
             <PulseRing delay={1460} />
             <View style={styles.bellBadge}>
               <Animated.View style={bellStyle}>
-                <Ionicons name="alarm-outline" size={46} color={colors.onGradient} />
+                <Ionicons name="alarm-outline" size={44} color={colors.onGradient} />
               </Animated.View>
             </View>
           </Animated.View>
 
-          <Animated.Text entering={FadeInDown.delay(160).duration(360)} style={styles.kicker}>
-            Shift starting soon
-          </Animated.Text>
           <Animated.Text
-            entering={FadeInDown.delay(220).duration(360)}
+            entering={FadeInDown.delay(180).duration(360)}
             style={styles.clientName}
             numberOfLines={2}
           >
             {payload.clientName}
           </Animated.Text>
 
-          {countdown ? (
-            <Animated.Text entering={FadeInDown.delay(280).duration(360)} style={styles.countdown}>
-              {countdown}
-            </Animated.Text>
-          ) : null}
-
-          <Animated.View entering={FadeInDown.delay(340).duration(360)} style={styles.metaCard}>
+          <Animated.View entering={FadeInDown.delay(240).duration(360)} style={styles.metaRow}>
             {startTime ? (
-              <View style={styles.metaRow}>
-                <Ionicons name="time-outline" size={17} color={colors.onGradientSoft} />
-                <Text style={styles.metaText}>Scheduled for {startTime}</Text>
-              </View>
+              <>
+                <Ionicons name="time-outline" size={13} color={colors.onGradientSoft} />
+                <Text style={styles.meta}>{startTime}</Text>
+              </>
             ) : null}
+            {startTime && payload.clientAddress ? <Text style={styles.metaDivider}>·</Text> : null}
             {payload.clientAddress ? (
-              <View style={styles.metaRow}>
-                <Ionicons name="location-outline" size={17} color={colors.onGradientSoft} />
-                <Text style={styles.metaText} numberOfLines={2}>
+              <>
+                <Ionicons name="location-outline" size={13} color={colors.onGradientSoft} />
+                <Text style={styles.meta} numberOfLines={1}>
                   {payload.clientAddress}
                 </Text>
-              </View>
-            ) : null}
-            {payload.serviceCode ? (
-              <View style={styles.metaRow}>
-                <Ionicons name="medkit-outline" size={17} color={colors.onGradientSoft} />
-                <Text style={styles.metaText}>{payload.serviceCode}</Text>
-              </View>
+              </>
             ) : null}
           </Animated.View>
+
+          {payload.serviceCode ? (
+            <Animated.View entering={FadeInDown.delay(300).duration(360)} style={styles.servicePanel}>
+              <View style={styles.servicePanelIcon}>
+                <Ionicons name="medkit-outline" size={18} color={colors.onGradientSoft} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.servicePanelTitle}>Service</Text>
+                <Text style={styles.servicePanelSub}>{payload.serviceCode}</Text>
+              </View>
+            </Animated.View>
+          ) : null}
         </View>
 
-        <Animated.View entering={FadeInDown.delay(420).duration(360)} style={styles.actions}>
+        <Animated.View entering={FadeInDown.delay(380).duration(360)} style={styles.actions}>
           <Pressable
             onPress={onOpenVisit}
             accessibilityRole="button"
             accessibilityLabel={`Open clock-in for ${payload.clientName}`}
-            style={({ pressed }) => [styles.primaryBtn, shadow.raised, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
           >
-            <Text style={styles.primaryBtnText}>Go to clock-in</Text>
-            <Ionicons name="arrow-forward" size={19} color={colors.brandBlue} />
+            <Ionicons name="location" size={18} color={colors.onGradient} />
+            <Text style={styles.ctaText}>Tap to clock in</Text>
+            <Ionicons name="arrow-forward" size={17} color={colors.onGradient} />
           </Pressable>
           <Pressable
             onPress={onDismiss}
             accessibilityRole="button"
             accessibilityLabel="Dismiss shift alarm"
-            style={({ pressed }) => [styles.ghostBtn, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.dismissBtn, pressed && styles.pressed]}
           >
-            <Text style={styles.ghostBtnText}>Dismiss</Text>
+            <Text style={styles.dismissText}>Dismiss</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -219,87 +256,111 @@ export default function ShiftAlarmOverlay({
   );
 }
 
+// Frosted surfaces, eyebrow, timing block, meta row, and CTA mirror the
+// NextVisitHero styles in DashboardScreen so the two read as one component
+// family. If the hero's look changes, change this to match.
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    paddingHorizontal: 28,
-    justifyContent: 'space-between',
+    paddingHorizontal: 24,
   },
-  top: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  eyebrowWrap: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  eyebrowDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.onGradient },
+  eyebrow: { ...typography.label, fontSize: 11, letterSpacing: 1, color: colors.onGradientSoft },
+  timing: { alignItems: 'flex-end' },
+  timingLabel: { ...typography.caption, fontSize: 9, letterSpacing: 0.8, color: colors.onGradientSoft },
+  timingValue: {
+    color: colors.onGradient,
+    fontSize: 26,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    marginTop: 1,
+  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   bellWrap: {
-    width: 108,
-    height: 108,
+    width: 104,
+    height: 104,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 26,
+    marginBottom: 24,
   },
   ring: {
     position: 'absolute',
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
     borderWidth: 2,
     borderColor: colors.onGradient,
   },
   bellBadge: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: '#ffffff14',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
+    borderColor: '#ffffff20',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  kicker: {
-    ...typography.label,
-    color: colors.onGradientSoft,
-    marginBottom: 10,
-  },
   clientName: {
     ...typography.hero,
-    fontSize: 30,
+    fontSize: 28,
     color: colors.onGradient,
+    letterSpacing: -0.4,
     textAlign: 'center',
   },
-  countdown: {
-    marginTop: 10,
-    fontSize: 17,
-    fontWeight: '800',
-    color: colors.onGradientSoft,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    maxWidth: '92%',
   },
-  metaCard: {
-    marginTop: 26,
+  meta: { ...typography.sub, color: colors.onGradientSoft, flexShrink: 1 },
+  metaDivider: { color: colors.onGradientSoft, marginHorizontal: 2 },
+  servicePanel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#ffffff14',
+    borderRadius: radii.md,
+    padding: 12,
+    marginTop: 18,
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    borderRadius: radii.lg,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    gap: 10,
+    borderColor: '#ffffff20',
   },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  metaText: { ...typography.body, color: colors.onGradient, flexShrink: 1 },
-  actions: { gap: 12 },
-  primaryBtn: {
-    height: 56,
-    borderRadius: radii.lg,
-    backgroundColor: colors.cardBg,
+  servicePanelIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.sm,
+    backgroundColor: '#ffffff1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  servicePanelTitle: { ...typography.caption, fontWeight: '800', color: colors.onGradient },
+  servicePanelSub: { ...typography.caption, color: colors.onGradientSoft, marginTop: 2 },
+  actions: { gap: 10 },
+  cta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-  },
-  primaryBtnText: { fontSize: 17, fontWeight: '900', color: colors.brandBlue },
-  ghostBtn: {
-    height: 52,
-    borderRadius: radii.lg,
+    backgroundColor: '#ffffff26',
+    borderRadius: radii.md,
+    height: 50,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: '#ffffff33',
   },
-  ghostBtnText: { fontSize: 15, fontWeight: '800', color: colors.onGradient },
+  ctaText: { color: colors.onGradient, fontSize: 16, fontWeight: '800', letterSpacing: 0.2 },
+  dismissBtn: { height: 44, alignItems: 'center', justifyContent: 'center' },
+  dismissText: { ...typography.sub, fontWeight: '800', color: colors.onGradientSoft },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });
