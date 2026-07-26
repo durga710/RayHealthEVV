@@ -98,12 +98,20 @@ timestamp are silently skipped.
   channel is deleted on the next `ensureShiftAlertChannel()` run. The custom
   sound requires a real build (the expo-notifications config plugin bundles
   it); Expo Go falls back to the default notification sound.
-- **Foreground:** scheduled notifications can be suppressed by the runtime,
-  so the dashboard also runs a 5-second interval that fires
-  `Haptics.notificationAsync(Warning)` when any assignment lands in the
-  28-32 second window. A `useRef<Set<string>>` keyed on
-  `${assignmentId}-${dayKey}` guarantees we buzz at most once per shift per
-  day even if the user keeps the dashboard open.
+- **Foreground:** the app presents a full-screen in-app alarm overlay
+  (`ShiftAlarmOverlay`, hosted by `ShiftAlarmHost` in `app/_layout.tsx`)
+  instead of the small system banner: pulsing bell, live countdown, client
+  details, a repeating haptic pulse, and two actions, "Go to clock-in" and
+  "Dismiss". Two triggers converge on `presentShiftAlarm()`
+  (`src/lib/shift-alarm.ts`): the `addNotificationReceivedListener` in the
+  root layout (fires on any screen when the scheduled notification is
+  delivered while foregrounded; the notification handler suppresses the
+  banner for shift alerts but keeps the chime playing) and the dashboard's
+  5-second interval tick (covers Expo Go on Android, where local
+  notifications are unavailable). `presentShiftAlarm` dedups per
+  `${assignmentId}@${scheduledTime}`, so the overlay shows at most once per
+  shift occurrence no matter which trigger lands first. The overlay
+  auto-dismisses after 75 seconds if ignored.
 - **Tap on the notification:** `app/_layout.tsx` subscribes to
   `addNotificationResponseReceivedListener` and deep-links to `/clockin`
   with the same params shape the dashboard `Pressable` uses
