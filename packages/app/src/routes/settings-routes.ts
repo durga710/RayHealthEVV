@@ -21,6 +21,7 @@ const notificationPrefsSchema = z
   .object({
     channelEmail: z.boolean(),
     channelSms: z.boolean(),
+    channelPush: z.boolean(),
     channelInApp: z.boolean(),
     visitReminders: z.boolean(),
     scheduleChanges: z.boolean(),
