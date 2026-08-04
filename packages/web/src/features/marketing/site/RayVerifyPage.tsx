@@ -8,9 +8,14 @@ import { SiteLayout, mkic, MK_CHECK } from './SiteLayout.js';
  * location, device and fraud intelligence on top of every visit and produces an
  * explainable trust score plus an audit-ready evidence package.
  *
- * TRUTH GUARDRAIL (see docs/rayverify-integration.md §7): only GPS/geofencing and
- * fraud intelligence run on production data today. Identity, liveness and
- * device-trust are flagged "Rolling out" everywhere they appear, never sold as live.
+ * TRUTH GUARDRAIL (see docs/rayverify-integration.md §7): GPS/geofencing, fraud
+ * intelligence, and consented selfie identity matching run on real visit data.
+ * Liveness and device-trust do not, and are flagged "Rolling out" everywhere
+ * they appear, never sold as live.
+ *
+ * Identity matching answers who is in the photo. It is NOT proof of physical
+ * presence until liveness ships, and the copy here must keep that distinction
+ * visible rather than let "verified identity" imply "verified presence".
  */
 
 type Status = 'live' | 'soon';
@@ -45,7 +50,7 @@ const layers: Layer[] = [
     i: mkic(<><circle cx="12" cy="10" r="3" /><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z" /></>) },
   { t: 'Fraud intelligence', s: 'live', b: 'Impossible travel, duplicate visits, geofence anomalies and abnormal-duration outliers, scored on every visit with a plain-English reason.',
     i: mkic(<><path d="M12 3l8 4v5c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7l8-4Z" /><path d="m9 12 2 2 4-4" /></>) },
-  { t: 'Identity verification', s: 'soon', b: 'A selfie match confirming the person clocking in is the authorized caregiver on the assignment, not a borrowed phone.',
+  { t: 'Identity verification', s: 'live', b: 'A consented selfie match confirming the person clocking in is the authorized caregiver on the assignment, not a borrowed phone.',
     i: mkic(<><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6" /></>) },
   { t: 'Liveness detection', s: 'soon', b: 'Confirms a real, present person, defeating photos, screen replays and deepfakes at the moment of capture.',
     i: mkic(<><path d="M12 3v2M12 19v2M3 12h2M19 12h2" /><circle cx="12" cy="12" r="4" /></>) },
@@ -100,8 +105,8 @@ interface Faq {
 }
 
 const faqs: Faq[] = [
-  { q: 'What is RayVerify?', a: 'RayVerify is the verification engine inside RayHealthEVV. Where EVV proves a phone was near an address at a time, RayVerify adds a trust layer, location, device and fraud intelligence today, with identity and liveness rolling out, and turns each visit into an explainable trust score with an audit-ready evidence package.' },
-  { q: 'What is live today versus rolling out?', a: 'Live today: GPS geofencing and four fraud-intelligence signals scored on every visit — impossible travel, duplicate visits, geofence anomalies and abnormal-duration outliers — plus the evidence package. Rolling out: biometric identity verification, liveness detection, device-trust scoring and shared-device detection. We flag those clearly everywhere so you always know what is running on real visit data.' },
+  { q: 'What is RayVerify?', a: 'RayVerify is the verification engine inside RayHealthEVV. Where EVV proves a phone was near an address at a time, RayVerify adds a trust layer, location, identity and fraud intelligence today, with liveness and device trust rolling out, and turns each visit into an explainable trust score with an audit-ready evidence package.' },
+  { q: 'What is live today versus rolling out?', a: 'Live today: GPS geofencing, four fraud-intelligence signals scored on every visit — impossible travel, duplicate visits, geofence anomalies and abnormal-duration outliers — consented selfie identity matching at clock-in, and the evidence package. Rolling out: liveness detection, device-trust scoring and shared-device detection. Identity matching confirms who is in the photo; until liveness ships it does not by itself prove a person was physically present, and we say so rather than let the distinction blur.' },
   { q: 'How is the trust score explainable?', a: 'Every signal that contributes to a visit’s score comes with a plain-English reason, not a black-box number. Reviewers see exactly why a visit was flagged, which is what makes the score defensible in front of an auditor.' },
   { q: 'Do I need RayVerify to use RayHealthEVV?', a: 'No. GPS-verified EVV works on its own. RayVerify is the trust layer on top, turn it on per agency when you want fraud scoring and verification evidence beyond a basic location ping.' },
 ];
@@ -140,7 +145,7 @@ export function RayVerifyPage() {
           <h1 className="mk-h1">The trust engine for every home-care visit.</h1>
           <p className="mk-lead">
             What Radar is to Stripe, RayVerify is to EVV. It layers location, device and fraud intelligence
-            on top of every visit &mdash; with identity and liveness rolling out &mdash; and turns each one into an
+            on top of every visit &mdash; with liveness and device trust rolling out &mdash; and turns each one into an
             explainable trust score and an audit-ready evidence package.
           </p>
           <div className="mk-herocta">

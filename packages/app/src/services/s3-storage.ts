@@ -11,7 +11,12 @@
  * AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY when set, otherwise the default SDK
  * credential chain (e.g. an attached IAM role).
  */
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export interface UploadDocumentParams {
@@ -81,5 +86,32 @@ export class S3StorageService {
     return getSignedUrl(this.client, command, {
       expiresIn: params.expiresInSeconds ?? 15 * 60,
     });
+  }
+
+  /**
+   * Read an object's bytes server-side.
+   *
+   * Used where the server itself is the consumer (comparing a stored reference
+   * face against a fresh capture) rather than handing a URL to a browser. PHI
+   * that only the server needs should never take a trip through a presigned
+   * URL it does not have to.
+   */
+  async getObject(key: string): Promise<Buffer> {
+    const response = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
+    if (!response.Body) throw new Error(`s3 object has no body: ${key}`);
+    const bytes = await response.Body.transformToByteArray();
+    return Buffer.from(bytes);
+  }
+
+  /**
+   * Delete an object.
+   *
+   * Exists so a caregiver withdrawing biometric consent results in actual
+   * destruction rather than an orphaned image and a flag in a table.
+   */
+  async deleteObject(key: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 }
