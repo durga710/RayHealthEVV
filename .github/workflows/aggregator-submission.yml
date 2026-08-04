@@ -1,0 +1,49 @@
+name: aggregator-submission
+
+# Transmits verified EVV visits to each agency's Sandata / HHAeXchange
+# aggregator without an operator pressing "Submit". Selects by outstanding
+# state (<aggregator>_status IS NULL or 'pending'), so a visit verified late
+# is still picked up on the next run rather than falling outside a date
+# window. Production setup requires the DATABASE_URL repository secret.
+#
+# Runs twice daily: mid-morning and evening ET, so a rejected batch is visible
+# to staff during business hours rather than only overnight.
+on:
+  schedule:
+    - cron: '25 14 * * *'
+    - cron: '25 23 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: aggregator-submission
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    name: transmit pending visits to state aggregators
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build core workspace
+        run: npm run build --workspace=@rayhealth/core
+
+      - name: Run aggregator submission sweep
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Required: aggregator API credentials are stored encrypted at rest
+          # and the sweep decrypts them to authenticate. Without this the run
+          # reports every agency as not_configured.
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: npx tsx packages/app/src/scripts/run-aggregator-submission-sweep.ts

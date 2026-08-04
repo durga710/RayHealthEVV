@@ -172,6 +172,27 @@ export class AgencySandataConfigRepository {
     }
   }
 
+  /**
+   * Agency ids whose Sandata setup is complete enough to transmit: enabled,
+   * with an endpoint, a Provider ID, and stored credentials. Used by the
+   * unattended submission sweep so a half-configured agency is never swept
+   * (the client would only return `not_configured` anyway, and a nightly job
+   * has no operator to read that).
+   *
+   * Deliberately does NOT decrypt credentials, it only checks the column is
+   * populated. The sweep then loads the real config per agency.
+   */
+  async listSubmittableAgencyIds(): Promise<string[]> {
+    const rows = (await this.db('agency_sandata_config')
+      .where({ enabled: true })
+      .whereNotNull('provider_id')
+      .whereNotNull('api_base_url')
+      .whereNotNull('credentials_encrypted')
+      .orderBy('agency_id', 'asc')
+      .select('agency_id')) as Array<{ agency_id: string }>
+    return rows.map((r) => r.agency_id)
+  }
+
   async upsert(input: SandataConfigUpsert): Promise<PartialSandataConfig> {
     const payload: Record<string, unknown> = {
       agency_id: input.agencyId,
