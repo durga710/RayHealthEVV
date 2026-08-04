@@ -100,6 +100,21 @@ export interface NewLearningCourse {
   quiz?: QuizQuestion[] | null;
 }
 
+/**
+ * Where a caregiver left off inside the in-app course player, so a
+ * half-finished training survives a reinstall or a new phone.
+ *
+ * Position only: a step index and the answer index chosen for each quiz
+ * question (null = unanswered). No PHI, no free text. Advisory rather than
+ * authoritative, the player clamps a stale index against the current course
+ * content, so editing a course cannot strand a caregiver on a step that no
+ * longer exists.
+ */
+export interface CourseResumeState {
+  stepIndex: number;
+  answers: (number | null)[];
+}
+
 export interface CourseEnrollment {
   id: string;
   agencyId: string;
@@ -110,6 +125,9 @@ export interface CourseEnrollment {
   lastCompletedAt: string | null;
   expiresAt: string | null;
   status: EnrollmentStatus;
+  /** null when the caregiver has never opened the player for this course. */
+  resumeState: CourseResumeState | null;
+  resumeUpdatedAt: string | null;
 }
 
 export interface NewCourseEnrollment {
