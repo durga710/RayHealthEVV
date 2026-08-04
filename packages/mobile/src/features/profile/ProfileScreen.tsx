@@ -209,6 +209,13 @@ export default function ProfileScreen() {
             onPress={() => router.push('/earnings')}
           />
           <Row
+            icon="car-outline"
+            tint={colors.amber}
+            title="Mileage"
+            subtitle="Log driving between clients"
+            onPress={() => router.push('/mileage')}
+          />
+          <Row
             icon="school-outline"
             tint={colors.success}
             title="My Training"
