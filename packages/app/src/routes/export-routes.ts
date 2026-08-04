@@ -9,17 +9,16 @@ import {
   AgencySandataConfigRepository,
   SandataClient,
   SandataAltEvv,
-  HhaexchangeClient,
   buildHhaexchangeExport,
   toHhaexchangeCsv,
   type HhaexchangeVisitInput,
-  type VisitSubmission,
   type Client,
   type Caregiver,
   type EvvVisit,
 } from '@rayhealth/core';
 import { requireCapability } from '../middleware/require-capability.js';
 import { safeError } from '../security/safe-log.js';
+import { submitAgencyVisits } from '../services/aggregator-submission-service.js';
 
 const router = Router();
 
@@ -302,71 +301,35 @@ router.post('/sandata/submit', requireCapability('billing.write'), async (req, r
     const toIso = to ? new Date(`${to.length === 10 ? `${to}T23:59:59.999Z` : to}`).toISOString() : undefined;
 
     const db = req.app.get('db');
-    const config = await new AgencySandataConfigRepository(db).findSubmissionConfig(req.auth.agencyId);
-    if (!config) {
-      return res
-        .status(409)
-        .json({ status: 'not_configured', reason: 'Sandata integration has not been set up for this agency' });
-    }
+    const loadVerifiedVisits = async () =>
+      (await new EvvRepository(db).getVisitsForExport(req.auth.agencyId, fromIso, toIso)).filter(
+        (r) => r.status === 'verified',
+      );
 
-    const rows = await new EvvRepository(db).getVisitsForExport(req.auth.agencyId, fromIso, toIso);
-    const visits: VisitSubmission[] = rows
-      .filter((r) => r.status === 'verified')
-      .map((r) => {
-        const inLoc = (r.clockInLocation ?? {}) as { lat?: number; lng?: number };
-        const outLoc = (r.clockOutLocation ?? {}) as { lat?: number; lng?: number };
-        return {
-          visitId: r.visitId,
-          clientId: r.clientId ?? '',
-          caregiverId: r.caregiverId,
-          serviceCode: r.serviceCode ?? '',
-          clockInAt: r.clockInTime,
-          clockOutAt: r.clockOutTime,
-          clockInLat: inLoc.lat ?? null,
-          clockInLng: inLoc.lng ?? null,
-          clockOutLat: outLoc.lat ?? null,
-          clockOutLng: outLoc.lng ?? null,
-          verificationMethod: inLoc.lat != null ? 'gps' : 'manual',
-        };
-      });
-
-    const result = await SandataClient.submitVisits(config, visits);
+    // Same submit path the unattended sweep uses, so an operator-triggered
+    // batch and a scheduled batch cannot drift apart. The loader runs only
+    // after the config gate passes.
+    const result = await submitAgencyVisits(db, req.auth.agencyId, 'sandata', loadVerifiedVisits, {
+      actorId: req.auth.userId,
+      actorType: 'user',
+      source: 'manual',
+      from: from ?? null,
+      to: to ?? null,
+    });
     if (result.kind === 'not_configured') {
       return res.status(409).json({ status: 'not_configured', reason: result.reason });
     }
     if (result.kind === 'error') {
-      return res.status(502).json({ status: 'error', message: result.message, retryable: result.retryable });
+      return res.status(502).json({ status: 'error', message: result.reason, retryable: result.retryable });
     }
 
-    // Record each Sandata acknowledgment back onto the originating visit.
-    const repo = new EvvRepository(db);
-    let submitted = 0;
-    let accepted = 0;
-    let rejected = 0;
-    for (const ack of result.acks) {
-      await repo.markSandataSubmission(ack.visitId, req.auth.agencyId, ack.status, ack.confirmationId ?? undefined);
-      if (ack.status === 'accepted') accepted += 1;
-      else if (ack.status === 'rejected') rejected += 1;
-      else submitted += 1;
-    }
-
-    try {
-      await new AuditEventRepository(db).create({
-        agencyId: req.auth.agencyId,
-        actorId: req.auth.userId,
-        actorType: 'user',
-        eventType: 'evv.sandata.submitted',
-        entityType: 'evv_batch',
-        entityId: req.auth.agencyId,
-        outcome: 'success',
-        payload: { batchId: result.batchId, submitted, accepted, rejected, from: from ?? null, to: to ?? null },
-        occurredAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      safeError('Failed to audit evv.sandata.submitted', err);
-    }
-
-    res.json({ status: 'ok', batchId: result.batchId, submitted, accepted, rejected });
+    res.json({
+      status: 'ok',
+      batchId: result.batchId,
+      submitted: result.submitted,
+      accepted: result.accepted,
+      rejected: result.rejected,
+    });
   } catch (err) {
     safeError('sandata submit failed', err);
     res.status(500).json({ message: 'Internal Server Error' });
@@ -555,70 +518,32 @@ router.post('/hhaexchange/submit', requireCapability('billing.write'), async (re
     const toIso = to ? new Date(`${to.length === 10 ? `${to}T23:59:59.999Z` : to}`).toISOString() : undefined;
 
     const db = req.app.get('db');
-    const config = await new AgencyHhaexchangeConfigRepository(db).findSubmissionConfig(req.auth.agencyId);
-    if (!config) {
-      return res
-        .status(409)
-        .json({ status: 'not_configured', reason: 'HHAeXchange integration has not been set up for this agency' });
-    }
+    const loadVerifiedVisits = async () =>
+      (await new EvvRepository(db).getVisitsForExport(req.auth.agencyId, fromIso, toIso)).filter(
+        (r) => r.status === 'verified',
+      );
 
-    const rows = await new EvvRepository(db).getVisitsForExport(req.auth.agencyId, fromIso, toIso);
-    const visits: VisitSubmission[] = rows
-      .filter((r) => r.status === 'verified')
-      .map((r) => {
-        const inLoc = (r.clockInLocation ?? {}) as { lat?: number; lng?: number };
-        const outLoc = (r.clockOutLocation ?? {}) as { lat?: number; lng?: number };
-        return {
-          visitId: r.visitId,
-          clientId: r.clientId ?? '',
-          caregiverId: r.caregiverId,
-          serviceCode: r.serviceCode ?? '',
-          clockInAt: r.clockInTime,
-          clockOutAt: r.clockOutTime,
-          clockInLat: inLoc.lat ?? null,
-          clockInLng: inLoc.lng ?? null,
-          clockOutLat: outLoc.lat ?? null,
-          clockOutLng: outLoc.lng ?? null,
-          verificationMethod: inLoc.lat != null ? 'gps' : 'manual',
-        };
-      });
-
-    const result = await HhaexchangeClient.submitVisits(config, visits);
+    const result = await submitAgencyVisits(db, req.auth.agencyId, 'hhaexchange', loadVerifiedVisits, {
+      actorId: req.auth.userId,
+      actorType: 'user',
+      source: 'manual',
+      from: from ?? null,
+      to: to ?? null,
+    });
     if (result.kind === 'not_configured') {
       return res.status(409).json({ status: 'not_configured', reason: result.reason });
     }
     if (result.kind === 'error') {
-      return res.status(502).json({ status: 'error', message: result.message, retryable: result.retryable });
+      return res.status(502).json({ status: 'error', message: result.reason, retryable: result.retryable });
     }
 
-    const repo = new EvvRepository(db);
-    let submitted = 0;
-    let accepted = 0;
-    let rejected = 0;
-    for (const ack of result.acks) {
-      await repo.markHhaexchangeSubmission(ack.visitId, req.auth.agencyId, ack.status, ack.confirmationId ?? undefined);
-      if (ack.status === 'accepted') accepted += 1;
-      else if (ack.status === 'rejected') rejected += 1;
-      else submitted += 1;
-    }
-
-    try {
-      await new AuditEventRepository(db).create({
-        agencyId: req.auth.agencyId,
-        actorId: req.auth.userId,
-        actorType: 'user',
-        eventType: 'evv.hhaexchange.submitted',
-        entityType: 'evv_batch',
-        entityId: req.auth.agencyId,
-        outcome: 'success',
-        payload: { batchId: result.batchId, submitted, accepted, rejected, from: from ?? null, to: to ?? null },
-        occurredAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      safeError('Failed to audit evv.hhaexchange.submitted', err);
-    }
-
-    res.json({ status: 'ok', batchId: result.batchId, submitted, accepted, rejected });
+    res.json({
+      status: 'ok',
+      batchId: result.batchId,
+      submitted: result.submitted,
+      accepted: result.accepted,
+      rejected: result.rejected,
+    });
   } catch (err) {
     safeError('hhaexchange submit failed', err);
     res.status(500).json({ message: 'Internal Server Error' });

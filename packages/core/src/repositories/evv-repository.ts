@@ -1,6 +1,49 @@
 import type { Knex } from 'knex';
 import type { EvvVisit } from '../domain/evv.js';
 
+/** The two state EVV aggregators RayHealth transmits to. */
+export type AggregatorKind = 'sandata' | 'hhaexchange';
+
+/**
+ * One visit in the aggregator-export projection: the seven 21st Century Cures
+ * Act data points plus the visit's own workflow status.
+ */
+export interface ExportVisitRow {
+  visitId: string;
+  serviceCode: string | null;
+  clientId: string | null;
+  caregiverId: string;
+  clockInTime: string;
+  clockOutTime: string | null;
+  clockInLocation: unknown;
+  clockOutLocation: unknown;
+  status: string;
+}
+
+function mapExportRow(r: Record<string, unknown>): ExportVisitRow {
+  return {
+    visitId: r.visit_id as string,
+    serviceCode: (r.service_code as string | null) ?? null,
+    clientId: (r.client_id as string | null) ?? null,
+    caregiverId: r.caregiver_id as string,
+    clockInTime:
+      r.clock_in_time instanceof Date ? r.clock_in_time.toISOString() : (r.clock_in_time as string),
+    clockOutTime:
+      r.clock_out_time instanceof Date
+        ? r.clock_out_time.toISOString()
+        : (r.clock_out_time as string | null),
+    clockInLocation:
+      typeof r.clock_in_location === 'string'
+        ? JSON.parse(r.clock_in_location)
+        : r.clock_in_location,
+    clockOutLocation:
+      typeof r.clock_out_location === 'string'
+        ? JSON.parse(r.clock_out_location)
+        : r.clock_out_location,
+    status: r.status as string
+  };
+}
+
 /**
  * EvvRepository
  *
@@ -262,18 +305,51 @@ export class EvvRepository {
     agencyId: string,
     fromIso?: string,
     toIso?: string
-  ): Promise<Array<{
-    visitId: string;
-    serviceCode: string | null;
-    clientId: string | null;
-    caregiverId: string;
-    clockInTime: string;
-    clockOutTime: string | null;
-    clockInLocation: unknown;
-    clockOutLocation: unknown;
-    status: string;
-  }>> {
-    let q = this.db('evv_visits as v')
+  ): Promise<ExportVisitRow[]> {
+    let q = this.exportRowQuery(agencyId);
+    if (fromIso) q = q.andWhere('v.clock_in_time', '>=', fromIso);
+    if (toIso) q = q.andWhere('v.clock_in_time', '<=', toIso);
+    const rows = await q;
+    return rows.map((r: Record<string, unknown>) => mapExportRow(r));
+  }
+
+  /**
+   * Verified visits that still owe a transmission to the given aggregator,
+   * i.e. `<aggregator>_status` is NULL or 'pending'. This is the unattended
+   * sweep's work queue: it submits by outstanding state rather than by date
+   * range, so a visit verified late (a corrected punch, a late clock-out) is
+   * still picked up instead of falling outside yesterday's window.
+   *
+   * `sinceIso` bounds how far back the queue reaches so one badly-configured
+   * agency can't drag a years-long backlog into every nightly run.
+   */
+  async getVisitsPendingAggregatorSubmission(
+    agencyId: string,
+    aggregator: AggregatorKind,
+    options: { sinceIso?: string; limit?: number } = {}
+  ): Promise<ExportVisitRow[]> {
+    // Static column identifiers chosen by a closed union, never interpolated
+    // into raw SQL (see scripts/check-no-string-sql.sh).
+    const statusColumn =
+      aggregator === 'sandata' ? 'v.sandata_status' : 'v.hhaexchange_status';
+
+    let q = this.exportRowQuery(agencyId)
+      .andWhere('v.status', 'verified')
+      .andWhere((b: Knex.QueryBuilder) => {
+        void b.whereNull(statusColumn).orWhere(statusColumn, 'pending');
+      });
+    if (options.sinceIso) q = q.andWhere('v.clock_in_time', '>=', options.sinceIso);
+    if (options.limit) q = q.limit(options.limit);
+    const rows = await q;
+    return rows.map((r: Record<string, unknown>) => mapExportRow(r));
+  }
+
+  /**
+   * Shared SELECT for the aggregator-export projection, tenant-scoped through
+   * the caregiver's agency. Callers add their own filters.
+   */
+  private exportRowQuery(agencyId: string): Knex.QueryBuilder {
+    return this.db('evv_visits as v')
       .join('caregivers as cgt', 'cgt.id', 'v.caregiver_id')
       .leftJoin('assignments as a', 'a.id', 'v.assignment_id')
       .leftJoin('visit_templates as t', 't.id', 'a.visit_template_id')
@@ -293,30 +369,6 @@ export class EvvRepository {
         'v.status'
       )
       .orderBy('v.clock_in_time', 'asc');
-    if (fromIso) q = q.andWhere('v.clock_in_time', '>=', fromIso);
-    if (toIso) q = q.andWhere('v.clock_in_time', '<=', toIso);
-    const rows = await q;
-    return rows.map((r: Record<string, unknown>) => ({
-      visitId: r.visit_id as string,
-      serviceCode: (r.service_code as string | null) ?? null,
-      clientId: (r.client_id as string | null) ?? null,
-      caregiverId: r.caregiver_id as string,
-      clockInTime:
-        r.clock_in_time instanceof Date ? r.clock_in_time.toISOString() : (r.clock_in_time as string),
-      clockOutTime:
-        r.clock_out_time instanceof Date
-          ? r.clock_out_time.toISOString()
-          : (r.clock_out_time as string | null),
-      clockInLocation:
-        typeof r.clock_in_location === 'string'
-          ? JSON.parse(r.clock_in_location)
-          : r.clock_in_location,
-      clockOutLocation:
-        typeof r.clock_out_location === 'string'
-          ? JSON.parse(r.clock_out_location)
-          : r.clock_out_location,
-      status: r.status as string
-    }));
   }
 
   /**

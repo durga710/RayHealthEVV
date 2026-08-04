@@ -192,6 +192,22 @@ export class AgencyHhaexchangeConfigRepository {
     }
   }
 
+  /**
+   * Sandata analogue: agency ids whose HHAeXchange setup is complete enough to
+   * transmit (enabled, endpoint, Provider ID, stored credentials). Used by the
+   * unattended submission sweep. Does not decrypt credentials.
+   */
+  async listSubmittableAgencyIds(): Promise<string[]> {
+    const rows = (await this.db('agency_hhaexchange_config')
+      .where({ enabled: true })
+      .whereNotNull('hha_provider_id')
+      .whereNotNull('api_base_url')
+      .whereNotNull('credentials_encrypted')
+      .orderBy('agency_id', 'asc')
+      .select('agency_id')) as Array<{ agency_id: string }>
+    return rows.map((r) => r.agency_id)
+  }
+
   async upsert(input: HhaexchangeConfigUpsert): Promise<PartialHhaexchangeConfig> {
     const payload: Record<string, unknown> = {
       agency_id: input.agencyId,
