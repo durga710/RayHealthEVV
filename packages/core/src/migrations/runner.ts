@@ -36,6 +36,7 @@ import * as addCourseResumeState from './2026-08-04-add-course-resume-state.js';
 import * as addPushTokens from './2026-08-04-add-push-tokens.js';
 import * as addCaregiverPayRate from './2026-08-04-add-caregiver-pay-rate.js';
 import * as addMileageEntries from './2026-08-04-add-mileage-entries.js';
+import * as addAvailabilityAndTimeOff from './2026-08-04-add-availability-and-time-off.js';
 
 async function run(): Promise<void> {
   const db = createDb();
@@ -55,6 +56,7 @@ async function run(): Promise<void> {
     await addPushTokens.up(db);
     await addCaregiverPayRate.up(db);
     await addMileageEntries.up(db);
+    await addAvailabilityAndTimeOff.up(db);
     process.stderr.write('Migrations complete.\n');
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unknown error';

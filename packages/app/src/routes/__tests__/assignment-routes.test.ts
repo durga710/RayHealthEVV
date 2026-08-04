@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import * as core from '@rayhealth/core';
 import { makeToken, setTestJwtSecret } from './test-helpers.js';
@@ -7,6 +7,17 @@ import { makeToken, setTestJwtSecret } from './test-helpers.js';
 beforeAll(() => setTestJwtSecret());
 
 describe('assignment routes', () => {
+  // Default: no approved leave and no declared availability, so these tests
+  // exercise the paths they were written for. The time-off lookup is a
+  // blocking check and deliberately fails closed, so it has to be stubbed
+  // rather than left to hit a database. Individual tests override this.
+  beforeEach(() => {
+    vi.spyOn(core, 'AvailabilityRepository').mockImplementation(() => ({
+      findApprovedTimeOffOn: vi.fn().mockResolvedValue(null),
+      listAvailability: vi.fn().mockResolvedValue([]),
+    } as unknown as core.AvailabilityRepository));
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });

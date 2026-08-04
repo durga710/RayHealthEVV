@@ -209,6 +209,13 @@ export default function ProfileScreen() {
             onPress={() => router.push('/earnings')}
           />
           <Row
+            icon="calendar-outline"
+            tint={colors.cyan}
+            title="Availability & Time Off"
+            subtitle="Your usual week and days off"
+            onPress={() => router.push('/availability')}
+          />
+          <Row
             icon="car-outline"
             tint={colors.amber}
             title="Mileage"
