@@ -18,6 +18,7 @@ const GoLiveReadinessPage = lazy(() => import('./features/agency/GoLiveReadiness
 const StaffPage = lazy(() => import('./features/staff/StaffPage.js').then((m) => ({ default: m.StaffPage })));
 const MileageReviewPage = lazy(() => import('./features/staff/MileageReviewPage.js').then((m) => ({ default: m.MileageReviewPage })));
 const TimeOffReviewPage = lazy(() => import('./features/staff/TimeOffReviewPage.js').then((m) => ({ default: m.TimeOffReviewPage })));
+const MessagesPage = lazy(() => import('./features/staff/MessagesPage.js').then((m) => ({ default: m.MessagesPage })));
 const CaregiverActivityPage = lazy(() => import('./features/staff/CaregiverActivityPage.js').then((m) => ({ default: m.CaregiverActivityPage })));
 const ClientsPage = lazy(() => import('./features/clients/ClientsPage.js').then((m) => ({ default: m.ClientsPage })));
 const AuthorizationsPage = lazy(() => import('./features/authorizations/AuthorizationsPage.js').then((m) => ({ default: m.AuthorizationsPage })));
@@ -305,6 +306,7 @@ const navGroupDefs: NavGroupDef[] = [
       { to: '/admin/staff', label: 'Staff', icon: icons.staff },
       { to: '/admin/mileage', label: 'Mileage', icon: icons.staff },
       { to: '/admin/time-off', label: 'Time Off', icon: icons.staff },
+      { to: '/admin/messages', label: 'Messages', icon: icons.staff },
       { to: '/admin/clients', label: 'Clients', icon: icons.clients },
       { to: '/admin/authorizations', label: 'Authorizations', icon: icons.auth },
       { to: '/admin/import', label: 'Data Import', icon: icons.agency },
@@ -582,6 +584,7 @@ export function App() {
           <Route path="staff/:caregiverId" element={<CaregiverActivityPage />} />
           <Route path="mileage" element={<MileageReviewPage />} />
           <Route path="time-off" element={<TimeOffReviewPage />} />
+          <Route path="messages" element={<MessagesPage />} />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="authorizations" element={<AuthorizationsPage />} />
           <Route path="import" element={<ImportPage />} />

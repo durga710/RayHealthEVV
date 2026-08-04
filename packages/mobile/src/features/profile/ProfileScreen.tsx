@@ -209,6 +209,13 @@ export default function ProfileScreen() {
             onPress={() => router.push('/earnings')}
           />
           <Row
+            icon="chatbubbles-outline"
+            tint={colors.brandBlue}
+            title="Messages"
+            subtitle="Talk to your office"
+            onPress={() => router.push('/messages')}
+          />
+          <Row
             icon="calendar-outline"
             tint={colors.cyan}
             title="Availability & Time Off"
