@@ -83,11 +83,19 @@ async function main() {
         id: TEST_AGENCY_ID,
         name: 'TEST Agency (App Store fixture)',
         state: 'PA',
+        // review_status defaults to 'pending', which the login gate rejects with
+        // AGENCY_PENDING_REVIEW. The fixture exists to be logged into, so it is
+        // approved on both insert and re-seed.
+        review_status: 'approved',
         created_at: db.fn.now(),
         updated_at: db.fn.now()
       })
       .onConflict('id')
-      .merge({ name: 'TEST Agency (App Store fixture)', updated_at: db.fn.now() });
+      .merge({
+        name: 'TEST Agency (App Store fixture)',
+        review_status: 'approved',
+        updated_at: db.fn.now()
+      });
 
     // Client. TEST-Lok TEST-Ghimeray, 225 National Dr, Pittsburgh PA.
     await db('clients')
