@@ -44,6 +44,31 @@ export class CaregiverRepository {
   }
 
   /**
+   * A caregiver's hourly rate in cents, or null when the agency has not set
+   * one. Kept off the mapped `Caregiver` shape deliberately: pay rate is
+   * compensation data that only the earnings path and the staff editor need,
+   * and every other caller that maps a caregiver would otherwise carry it into
+   * responses that have no business exposing it.
+   */
+  async getPayRateCents(id: string, agencyId: string): Promise<number | null> {
+    const row = (await this.db('caregivers')
+      .where({ id, agency_id: agencyId })
+      .first('pay_rate_cents')) as { pay_rate_cents: number | null } | undefined
+    return row?.pay_rate_cents ?? null;
+  }
+
+  /**
+   * Set (or clear, with null) a caregiver's hourly rate. Returns false when
+   * the caregiver is not in the agency.
+   */
+  async updatePayRateCents(id: string, agencyId: string, payRateCents: number | null): Promise<boolean> {
+    const updated = await this.db('caregivers')
+      .where({ id, agency_id: agencyId })
+      .update({ pay_rate_cents: payRateCents });
+    return updated > 0;
+  }
+
+  /**
    * Set a caregiver's NPI (rendering-provider id for the 837 service line).
    * Stored encrypted via the cell cipher. Returns false if the caregiver is
    * not in the agency.

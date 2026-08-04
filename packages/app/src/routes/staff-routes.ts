@@ -17,6 +17,14 @@ const CHANGEABLE_ROLES = ['admin', 'coordinator'] as const;
 const patchSchema = z.object({ role: z.enum(CHANGEABLE_ROLES) });
 const npiSchema = z.object({ npi: z.string().regex(/^\d{10}$/, 'NPI must be exactly 10 digits') });
 
+// Hourly rate in whole cents. The ceiling is a typo guard rather than a
+// policy: $1,000/hr is not a home-care wage, and catching a misplaced decimal
+// here is cheaper than explaining an absurd earnings screen later. Null
+// clears the rate.
+const payRateSchema = z.object({
+  payRateCents: z.number().int().min(0).max(100_000).nullable(),
+});
+
 // Body schema for adding a caregiver credential. caregiverId comes from the
 // URL, not the body, so it is omitted here.
 const credentialBodySchema = z.object({
@@ -46,7 +54,7 @@ router.get('/', requireCapability('staff.read'), async (req, res) => {
     const [caregiverRows, userRows, inviteRows] = await Promise.all([
       db('caregivers')
         .where({ agency_id: agencyId, status: 'active' })
-        .select('id', 'email', 'status', db.raw('(npi IS NOT NULL) as has_npi'))
+        .select('id', 'email', 'status', 'pay_rate_cents', db.raw('(npi IS NOT NULL) as has_npi'))
         .orderBy('first_name'),
 
       db('users')
@@ -61,7 +69,13 @@ router.get('/', requireCapability('staff.read'), async (req, res) => {
         .select('id', 'email', 'role'),
     ]);
 
-    type CaregiverRow = { id: string; email: string; status: string; has_npi: boolean };
+    type CaregiverRow = {
+      id: string;
+      email: string;
+      status: string;
+      has_npi: boolean;
+      pay_rate_cents: number | null;
+    };
     type UserRow = { id: string; email: string; role: string };
     type InviteRow = { id: string; email: string; role: string };
 
@@ -72,6 +86,7 @@ router.get('/', requireCapability('staff.read'), async (req, res) => {
         role: 'caregiver',
         status: r.status,
         hasNpi: Boolean(r.has_npi),
+        payRateCents: r.pay_rate_cents ?? null,
       })),
       ...(userRows as UserRow[]).map((r) => ({
         id: r.id,
@@ -114,6 +129,41 @@ router.patch('/caregivers/:id', requireCapability('staff.write'), async (req, re
     res.json({ id, hasNpi: true });
   } catch (error) {
     safeError('PATCH /staff/caregivers/:id failed', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * PATCH /staff/caregivers/:id/pay-rate  { payRateCents: number | null }
+ *
+ * Sets the hourly rate the caregiver's earnings estimate is computed from.
+ * Null clears it, which puts the caregiver back to seeing hours without a
+ * dollar figure rather than a confident $0.00.
+ *
+ * Requires staff.write: a caregiver must never be able to set their own rate.
+ */
+router.patch('/caregivers/:id/pay-rate', requireCapability('staff.write'), async (req, res) => {
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  const parse = payRateSchema.safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ message: parse.error.issues[0]?.message ?? 'Invalid pay rate' });
+    return;
+  }
+  try {
+    const db = req.app.get('db');
+    const ok = await new CaregiverRepository(db).updatePayRateCents(
+      id,
+      req.auth.agencyId,
+      parse.data.payRateCents,
+    );
+    if (!ok) {
+      res.status(404).json({ message: 'caregiver not found' });
+      return;
+    }
+    res.json({ id, payRateCents: parse.data.payRateCents });
+  } catch (error) {
+    safeError('PATCH /staff/caregivers/:id/pay-rate failed', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
