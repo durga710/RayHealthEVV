@@ -35,6 +35,7 @@ import onboardingRoutes from './routes/onboarding-routes.js';
 import onboardingAdminRoutes from './routes/onboarding-admin-routes.js';
 import profileRoutes from './routes/profile-routes.js';
 import settingsRoutes from './routes/settings-routes.js';
+import pushTokenRoutes from './routes/push-token-routes.js';
 import agencySandataConfigRoutes from './routes/agency-sandata-config-routes.js';
 import agencyHhaexchangeConfigRoutes from './routes/agency-hhaexchange-config-routes.js';
 import agencyClearinghouseConfigRoutes from './routes/agency-clearinghouse-config-routes.js';
@@ -346,6 +347,7 @@ export function createApp(options: { mobileSessionStore?: MobileSessionStore } =
     app.use(`${prefix}/admin/onboarding`, onboardingAdminRoutes);
     app.use(`${prefix}/profile`, profileRoutes);
     app.use(`${prefix}/settings`, settingsRoutes);
+    app.use(`${prefix}/notifications`, pushTokenRoutes);
     app.use(`${prefix}/compliance-engine`, complianceEngineRoutes);
     app.use(`${prefix}/command-center`, copilotLimiter, commandCenterRoutes);
     app.use(`${prefix}/documents`, documentRoutes);

@@ -75,3 +75,4 @@ export * from './integrations/index.js';
 
 export * from './domain/user-agency.js';
 export * from './repositories/user-agency-repository.js';
+export * from './repositories/push-token-repository.js';

@@ -9,6 +9,7 @@ import {
 } from '@rayhealth/core';
 import { evaluateAssignmentChecks } from './assignment-checks.js';
 import { safeError } from '../security/safe-log.js';
+import { notifyCaregivers } from '../services/notification-service.js';
 
 const router = Router();
 
@@ -111,6 +112,18 @@ router.post('/', requireCapability('schedule.write'), async (req, res) => {
     } catch (err) {
       safeError('Failed to audit assignment.created', err);
     }
+
+    // Tell the caregiver a shift landed on their schedule. Deliberately
+    // contentless: no client name, no address, no time, because this renders
+    // on a locked screen. The app opens the schedule once they unlock.
+    void notifyCaregivers(db, {
+      agencyId: req.auth.agencyId,
+      caregiverIds: [parsed.data.caregiverId],
+      category: 'scheduleChanges',
+      title: 'New shift assigned',
+      body: 'A new shift was added to your schedule. Open RayHealth to see the details.',
+      data: { kind: 'assignment.created', assignmentId: assignment.id },
+    });
 
     res.status(201).json({ ...assignment, warnings });
   } catch (error) {
@@ -247,6 +260,19 @@ router.put('/:id', requireCapability('schedule.write'), async (req, res) => {
     if (!updated) {
       return res.status(404).json({ message: 'Assignment not found' });
     }
+
+    // A reassignment moves the shift between two people, so both need telling:
+    // the one who lost it and the one who gained it.
+    const affected = [...new Set([current.caregiverId, updated.caregiverId])];
+    void notifyCaregivers(db, {
+      agencyId: req.auth.agencyId,
+      caregiverIds: affected,
+      category: 'scheduleChanges',
+      title: 'Schedule updated',
+      body: 'One of your shifts changed. Open RayHealth to see your current schedule.',
+      data: { kind: 'assignment.updated', assignmentId },
+    });
+
     res.json({ ...updated, warnings: checks.warnings });
   } catch (error) {
     safeError('Assignment update failed', error);
@@ -258,7 +284,19 @@ router.delete('/:id', requireCapability('schedule.write'), async (req, res) => {
   try {
     const db = req.app.get('db');
     const repo = new ScheduleRepository(db);
-    const result = await repo.deleteAssignment(String(req.params.id), req.auth.agencyId);
+    const assignmentId = String(req.params.id);
+    // Read the owner before deleting; afterwards there is nobody left to tell.
+    // This lookup exists only to address the notification, so it must never
+    // stand between a coordinator and the delete they asked for.
+    let doomedCaregiverId: string | null = null;
+    try {
+      const doomed = await repo.getAssignmentById(assignmentId, req.auth.agencyId);
+      doomedCaregiverId = doomed?.caregiverId ?? null;
+    } catch (err) {
+      safeError('Could not resolve assignment owner for cancellation notice', err);
+    }
+
+    const result = await repo.deleteAssignment(assignmentId, req.auth.agencyId);
     if (result === 'not_found') {
       return res.status(404).json({ message: 'Assignment not found' });
     }
@@ -268,6 +306,18 @@ router.delete('/:id', requireCapability('schedule.write'), async (req, res) => {
         code: 'HAS_DEPENDENCIES',
       });
     }
+
+    if (doomedCaregiverId) {
+      void notifyCaregivers(db, {
+        agencyId: req.auth.agencyId,
+        caregiverIds: [doomedCaregiverId],
+        category: 'scheduleChanges',
+        title: 'Shift cancelled',
+        body: 'A shift was removed from your schedule. Open RayHealth to see your current schedule.',
+        data: { kind: 'assignment.deleted', assignmentId },
+      });
+    }
+
     res.status(204).end();
   } catch (error) {
     safeError('Assignment delete failed', error);
