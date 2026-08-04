@@ -80,3 +80,4 @@ export * from './repositories/user-agency-repository.js';
 export * from './repositories/push-token-repository.js';
 export * from './repositories/mileage-repository.js';
 export * from './repositories/availability-repository.js';
+export * from './repositories/message-repository.js';
