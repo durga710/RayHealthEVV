@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { secureKvStore, secureKvStore as SecureStore } from './secure-store';
 import apiClient, { setMobileAccessToken, setUnauthorizedHandler } from './api-client';
+import { registerPushToken, unregisterPushToken } from './push-registration';
 import { cancelAllShiftAlerts } from './shift-alert-scheduler';
 import { clearCachedVisitSchedule } from './offline-visit-cache';
 
@@ -248,6 +249,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(true);
     // A successful login clears any lingering revoked-session banner.
     dismissSessionRevoked();
+    // Let the server reach this device about schedule changes. Best-effort and
+    // deliberately not awaited: a device that cannot mint a push token must
+    // still land on the dashboard. A multi-agency caregiver registers again
+    // for the agency they pick, in selectAgency.
+    void registerPushToken();
   };
 
   const refreshAgencies = useCallback(async (): Promise<AgencyMembership[]> => {
@@ -297,12 +303,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await SecureStore.setItemAsync(USER_KEY, JSON.stringify(nextUser));
       setUser(nextUser);
       setNeedsAgencySelection(false);
+      // Re-register under the newly scoped session so notifications follow the
+      // caregiver to the agency they are actually working for.
+      void registerPushToken();
     },
     [agencies],
   );
 
   const logout = async () => {
     try {
+      // Drop the device registration while the session is still valid, so a
+      // shared or returned phone stops buzzing with this caregiver's shifts.
+      await unregisterPushToken();
       await apiClient.post('/api/auth/mobile/logout');
     } finally {
       // A network outage must not trap a caregiver in the app. The local
