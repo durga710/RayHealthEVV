@@ -5,6 +5,8 @@ import {
   clampStep,
   firstQuizIndex,
   progressFraction,
+  resumePosition,
+  shouldPersistStep,
   stepMeta,
   type CourseModules,
   type QuizQuestion,
@@ -127,5 +129,64 @@ describe('clampStep', () => {
     expect(clampStep(-3, steps)).toBe(0);
     expect(clampStep(steps.length + 5, steps)).toBe(steps.length - 1);
     expect(clampStep(2, steps)).toBe(2);
+  });
+});
+
+describe('resumePosition', () => {
+  const steps = buildSteps(fullModules);
+
+  it('starts at the beginning with no saved snapshot', () => {
+    expect(resumePosition(null, steps, 2)).toEqual({ stepIndex: 0, answers: [null, null] });
+    expect(resumePosition(undefined, steps, 2).stepIndex).toBe(0);
+  });
+
+  it('restores the saved step and answers', () => {
+    expect(resumePosition({ stepIndex: 3, answers: [1, null] }, steps, 2)).toEqual({
+      stepIndex: 3,
+      answers: [1, null],
+    });
+  });
+
+  it('clamps a step index that outlived the course content', () => {
+    // Course edited down to fewer sections since the snapshot was written.
+    const shorter = buildSteps({ ...fullModules, sections: [fullModules.sections[0]] });
+    const resumed = resumePosition({ stepIndex: 99, answers: [] }, shorter, 2);
+    expect(resumed.stepIndex).toBeLessThan(shorter.length);
+  });
+
+  it('restarts rather than resuming onto the terminal done step', () => {
+    const resumed = resumePosition({ stepIndex: steps.length - 1, answers: [0, 1] }, steps, 2);
+    expect(resumed.stepIndex).toBe(0);
+  });
+
+  it('resizes the answer array to the live quiz length', () => {
+    // Quiz shrank from 3 questions to 2.
+    expect(resumePosition({ stepIndex: 2, answers: [0, 1, 1] }, steps, 2).answers).toEqual([0, 1]);
+    // Quiz grew from 1 question to 2.
+    expect(resumePosition({ stepIndex: 2, answers: [0] }, steps, 2).answers).toEqual([0, null]);
+  });
+
+  it('starts at the beginning when the course has no steps at all', () => {
+    expect(resumePosition({ stepIndex: 4, answers: [] }, [], 0)).toEqual({ stepIndex: 0, answers: [] });
+  });
+});
+
+describe('shouldPersistStep', () => {
+  it('does not persist the overview, which is where an unopened course sits', () => {
+    expect(shouldPersistStep({ kind: 'overview' })).toBe(false);
+  });
+
+  it('does not persist the terminal step', () => {
+    expect(shouldPersistStep({ kind: 'done' })).toBe(false);
+  });
+
+  it('persists real progress', () => {
+    expect(shouldPersistStep({ kind: 'section', sectionIndex: 1 })).toBe(true);
+    expect(shouldPersistStep({ kind: 'video' })).toBe(true);
+    expect(shouldPersistStep({ kind: 'quiz-question', questionIndex: 0 })).toBe(true);
+  });
+
+  it('handles a missing step', () => {
+    expect(shouldPersistStep(undefined)).toBe(false);
   });
 });

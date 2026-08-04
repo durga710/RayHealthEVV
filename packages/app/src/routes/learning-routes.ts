@@ -265,6 +265,48 @@ router.post('/start', requireCapability('evv.write'), async (req: Request, res: 
   }
 });
 
+// ── Resume state ─────────────────────────────────────────────────────────────
+//
+// Position only: which step the caregiver is on and which option they picked
+// per quiz question. No PHI, no free text, so this is safe to write on every
+// step change. The bounds below are generous sanity limits, not content
+// validation; the player clamps the index against the live course anyway.
+const resumeStateSchema = z.object({
+  enrollmentId: z.string().uuid(),
+  stepIndex: z.number().int().min(0).max(1000),
+  answers: z.array(z.number().int().min(0).max(50).nullable()).max(200),
+});
+
+// POST /learning/resume, save where the caregiver is inside the course player
+router.post('/resume', requireCapability('evv.write'), async (req: Request, res: Response) => {
+  const parsed = resumeStateSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: 'enrollmentId, stepIndex and answers are required',
+      issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+    });
+  }
+  try {
+    const db = req.app.get('db') as Knex;
+    const repo = new LearningRepository(db);
+    const caregiverId = req.auth.caregiverId ?? req.auth.userId;
+    const saved = await repo.saveResumeState(parsed.data.enrollmentId, req.auth.agencyId, caregiverId, {
+      stepIndex: parsed.data.stepIndex,
+      answers: parsed.data.answers,
+    });
+    // A completed or foreign enrollment simply has nothing to save. Answering
+    // 404 either way keeps it from being probed for cross-tenant existence.
+    if (!saved) {
+      return res.status(404).json({ success: false, error: 'Enrollment not found' });
+    }
+    res.json({ success: true });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'unexpected error';
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
 // POST /learning/complete, record a course completion
 router.post('/complete', requireCapability('evv.write'), async (req: Request, res: Response) => {
   try {
@@ -291,6 +333,15 @@ router.post('/complete', requireCapability('evv.write'), async (req: Request, re
       },
       req.auth.agencyId,
     );
+    // The resume pointer is meaningless once the course is finished, and a
+    // stale one would send a returning caregiver back into the quiz. The
+    // completion is the record that matters, so failing to clear the pointer
+    // must never turn a saved completion into an error response.
+    try {
+      await repo.clearResumeState(enrollmentId, req.auth.agencyId);
+    } catch {
+      /* best-effort cleanup */
+    }
     res.status(201).json({ success: true, data: completion });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unexpected error';

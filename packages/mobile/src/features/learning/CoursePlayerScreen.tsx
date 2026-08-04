@@ -16,6 +16,8 @@ import {
   clampStep,
   firstQuizIndex,
   progressFraction,
+  resumePosition,
+  shouldPersistStep,
   stepMeta,
   type CourseModules,
   type CourseSection,
@@ -82,6 +84,8 @@ interface Enrollment {
   courseId: string;
   dueAt: string | null;
   status: EnrollmentStatus;
+  /** Where this caregiver left off, null when they have never opened it. */
+  resumeState?: { stepIndex: number; answers: (number | null)[] } | null;
 }
 
 interface EnrollmentRow {
@@ -106,6 +110,11 @@ function formatDue(iso: string | null): string | null {
 // A-size preview font sizes for the three text-size preset buttons.
 const SIZE_BUTTON_FONT: Record<TextSizePreset, number> = { standard: 13, large: 16, xlarge: 19 };
 
+// Long enough that tapping quickly through a few screens sends one save
+// instead of one per tap, short enough that a caregiver who reads a section
+// then closes the app keeps their place.
+const RESUME_SAVE_DEBOUNCE_MS = 1200;
+
 export default function CoursePlayerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -127,6 +136,9 @@ export default function CoursePlayerScreen() {
   // Section illustrations that failed to load are hidden rather than showing
   // a broken frame (e.g. offline, or the asset is not deployed yet).
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  // Set when this session opened onto a restored step, so the player can say
+  // so once instead of silently dropping the caregiver mid-course.
+  const [resumedToStep, setResumedToStep] = useState<number | null>(null);
   const { user } = useAuth();
   const canSkipVideo = isTestingAccount(user);
   const startedRef = useRef(false);
@@ -172,7 +184,23 @@ export default function CoursePlayerScreen() {
         setError('Could not load this course.');
       } else {
         setRow(found);
-        setAnswers(emptyAnswers(found.course.quiz?.length ?? 0));
+        // Restore the saved position before the first paint, so a returning
+        // caregiver never sees the overview flash by on the way to their step.
+        // The saved snapshot is reconciled against the course as it exists
+        // now, which may have been edited since.
+        const resumed = resumePosition(
+          found.enrollment.resumeState ?? null,
+          buildSteps({
+            objectives: found.course.objectives ?? [],
+            sections: found.course.modules ?? [],
+            videoUrl: found.course.videoUrl ?? null,
+            quiz: found.course.quiz ?? null,
+          }),
+          found.course.quiz?.length ?? 0,
+        );
+        setStepIndex(resumed.stepIndex);
+        setAnswers(resumed.answers);
+        setResumedToStep(resumed.stepIndex > 0 ? resumed.stepIndex : null);
         setError(null);
       }
     } catch {
@@ -251,6 +279,21 @@ export default function CoursePlayerScreen() {
     }
   }, [step, isCompleted]);
 
+  // Persist the caregiver's position so closing the app mid-course does not
+  // send them back to the start. Fire-and-forget and debounced: this is a
+  // convenience, never a gate on reading the lesson, so a failed save is
+  // silent and simply retried by the next step change.
+  useEffect(() => {
+    if (!row || loading || isCompleted) return;
+    if (!shouldPersistStep(step)) return;
+    const enrollmentId = row.enrollment.id;
+    const snapshot = { enrollmentId, stepIndex, answers };
+    const timer = setTimeout(() => {
+      apiClient.post('/api/learning/resume', snapshot).catch(() => {});
+    }, RESUME_SAVE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [row, loading, isCompleted, step, stepIndex, answers]);
+
   // Animated header progress bar.
   const progress = useSharedValue(0);
   useEffect(() => {
@@ -262,6 +305,9 @@ export default function CoursePlayerScreen() {
 
   const goTo = (index: number) => {
     void Haptics.selectionAsync();
+    // The "picked up where you left off" note has served its purpose once the
+    // caregiver moves under their own steam.
+    setResumedToStep(null);
     setStepIndex(clampStep(index, steps));
   };
 
@@ -921,6 +967,24 @@ export default function CoursePlayerScreen() {
       </ScreenHeader>
       )}
 
+      {resumedToStep != null && !videoFullscreen ? (
+        <Animated.View entering={FadeInRight.duration(220)} style={styles.resumeNotice}>
+          <Ionicons name="bookmark" size={16} color={colors.brandBlue} />
+          <Text style={styles.resumeNoticeText}>Picked up where you left off.</Text>
+          <Pressable
+            onPress={() => {
+              setResumedToStep(null);
+              goTo(0);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Start this course over from the beginning"
+            hitSlop={8}
+          >
+            <Text style={styles.resumeNoticeAction}>Start over</Text>
+          </Pressable>
+        </Animated.View>
+      ) : null}
+
       {step.kind === 'video' ? (
         // The video step lives outside the ScrollView so the player never
         // remounts (and never loses watch progress) when toggling fullscreen.
@@ -1015,6 +1079,19 @@ const styles = StyleSheet.create({
   // Body
   body: { flex: 1 },
   bodyContent: { padding: space.lg, paddingBottom: space.hero },
+  resumeNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    marginHorizontal: space.lg,
+    marginTop: space.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    borderRadius: radii.md,
+    backgroundColor: `${colors.brandBlue}${alpha.tint}`,
+  },
+  resumeNoticeText: { ...typography.caption, color: colors.textPrimary, flex: 1 },
+  resumeNoticeAction: { ...typography.caption, color: colors.brandBlue, fontWeight: '700' },
   card: {
     backgroundColor: colors.cardBg,
     borderRadius: radii.lg,

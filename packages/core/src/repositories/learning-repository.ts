@@ -8,6 +8,7 @@ import type {
   CourseCompletion,
   CourseContent,
   CourseEnrollment,
+  CourseResumeState,
   EnrollmentStatus,
   InsightCaregiver,
   LearningAgencyRollup,
@@ -33,6 +34,33 @@ const CONTENT_KEYS = [
   'videoSearchQuery',
   'quiz',
 ] as const satisfies ReadonlyArray<keyof NewLearningCourse>;
+
+/**
+ * Reads the stored resume snapshot defensively: the column is jsonb but may
+ * arrive as a string depending on the driver, and a course edited since the
+ * snapshot was written can leave the shape stale. Anything unrecognizable
+ * degrades to null, which the player treats as "start at the beginning"
+ * rather than failing to open the course.
+ */
+function parseResumeState(value: unknown): CourseResumeState | null {
+  if (value == null) return null;
+  let raw: unknown = value;
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw !== 'object' || raw === null) return null;
+  const candidate = raw as { stepIndex?: unknown; answers?: unknown };
+  if (typeof candidate.stepIndex !== 'number' || !Number.isInteger(candidate.stepIndex)) return null;
+  if (candidate.stepIndex < 0) return null;
+  const answers = Array.isArray(candidate.answers)
+    ? candidate.answers.map((a) => (typeof a === 'number' && Number.isInteger(a) && a >= 0 ? a : null))
+    : [];
+  return { stepIndex: candidate.stepIndex, answers };
+}
 
 type InsightContext = 'due' | 'expired' | 'orientation' | 'stalled' | 'cert_expiring';
 
@@ -176,6 +204,40 @@ export class LearningRepository {
    * was updated, false when the enrollment doesn't exist in this agency (or
    * wasn't in a startable state) so the route can 404 rather than silently no-op.
    */
+  /**
+   * Save where the caregiver is inside the player. Scoped by caregiver as well
+   * as agency: resume position is personal, and one caregiver must never be
+   * able to move another's place in a course.
+   *
+   * Completed enrollments are excluded. Once a course is finished the resume
+   * pointer is meaningless, and a late in-flight save arriving after the
+   * completion POST must not resurrect a half-finished position.
+   */
+  async saveResumeState(
+    enrollmentId: string,
+    agencyId: string,
+    caregiverId: string,
+    state: CourseResumeState,
+  ): Promise<boolean> {
+    const updated = await this.db('course_enrollments')
+      .where({ id: enrollmentId, agency_id: agencyId, caregiver_id: caregiverId })
+      .whereNot('status', 'completed')
+      .update({
+        resume_state: JSON.stringify(state),
+        resume_updated_at: this.db.fn.now(),
+        updated_at: this.db.fn.now(),
+      });
+    return updated > 0;
+  }
+
+  /** Drop the resume pointer, e.g. once the course is completed. */
+  async clearResumeState(enrollmentId: string, agencyId: string): Promise<boolean> {
+    const updated = await this.db('course_enrollments')
+      .where({ id: enrollmentId, agency_id: agencyId })
+      .update({ resume_state: null, resume_updated_at: null, updated_at: this.db.fn.now() });
+    return updated > 0;
+  }
+
   async markInProgress(enrollmentId: string, agencyId: string): Promise<boolean> {
     const updated = await this.db('course_enrollments')
       .where({ id: enrollmentId, agency_id: agencyId })
@@ -851,6 +913,8 @@ export class LearningRepository {
       lastCompletedAt: row.last_completed_at ? this.toIsoString(row.last_completed_at) : null,
       expiresAt: row.expires_at ? this.toIsoString(row.expires_at) : null,
       status: (row.status as EnrollmentStatus) ?? 'not_started',
+      resumeState: parseResumeState(row.resume_state),
+      resumeUpdatedAt: row.resume_updated_at ? this.toIsoString(row.resume_updated_at) : null,
     };
   }
 

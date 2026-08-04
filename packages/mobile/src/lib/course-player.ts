@@ -11,6 +11,8 @@
  * @rayhealth/core.
  */
 
+import { emptyAnswers } from './quiz';
+
 export interface CourseSection {
   title: string;
   content: string;
@@ -94,4 +96,48 @@ export function firstQuizIndex(steps: PlayerStep[]): number {
 /** Clamp a step index into the valid range. */
 export function clampStep(index: number, steps: PlayerStep[]): number {
   return Math.max(0, Math.min(steps.length - 1, index));
+}
+
+/** Where a caregiver left off, as stored on the enrollment. */
+export interface ResumeState {
+  stepIndex: number;
+  answers: (number | null)[];
+}
+
+/**
+ * Turn a saved snapshot into a starting position for this course as it exists
+ * now. The snapshot is advisory: a course edited since it was written can have
+ * fewer steps or fewer quiz questions, so the index is clamped and the answer
+ * array is resized to the live quiz length.
+ *
+ * Resuming onto the terminal 'done' step is pointless (the caregiver would
+ * reopen the course only to be told it is over), so a snapshot pointing there
+ * restarts at the beginning.
+ */
+export function resumePosition(
+  saved: ResumeState | null | undefined,
+  steps: PlayerStep[],
+  quizLength: number,
+): ResumeState {
+  const answers = emptyAnswers(quizLength);
+  if (!saved || steps.length === 0) return { stepIndex: 0, answers };
+
+  for (let i = 0; i < Math.min(saved.answers.length, quizLength); i += 1) {
+    const a = saved.answers[i];
+    answers[i] = typeof a === 'number' ? a : null;
+  }
+
+  const stepIndex = clampStep(saved.stepIndex, steps);
+  if (steps[stepIndex]?.kind === 'done') return { stepIndex: 0, answers };
+  return { stepIndex, answers };
+}
+
+/**
+ * Whether a step is worth persisting. The overview is where an unopened
+ * course already sits, so saving it would turn "never opened" into "in
+ * progress" for no gain.
+ */
+export function shouldPersistStep(step: PlayerStep | undefined): boolean {
+  if (!step) return false;
+  return step.kind !== 'overview' && step.kind !== 'done';
 }
