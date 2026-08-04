@@ -202,6 +202,13 @@ export default function ProfileScreen() {
         <Text style={styles.sectionLabel}>Workforce</Text>
         <View style={styles.group}>
           <Row
+            icon="cash-outline"
+            tint={colors.brandBlue}
+            title="My Earnings"
+            subtitle="Estimated pay from verified visits"
+            onPress={() => router.push('/earnings')}
+          />
+          <Row
             icon="school-outline"
             tint={colors.success}
             title="My Training"

@@ -4,11 +4,13 @@ import { requireCapability } from '../middleware/require-capability.js';
 import { askAI, isAIConfigured, AINotConfiguredError } from '../ai.js';
 import {
   AuditEventRepository,
+  CaregiverRepository,
   ClientRepository,
   EvvExceptionRepository,
   EvvRepository,
   ScheduleRepository,
   VisitTaskCompletionRepository,
+  buildEarningsStatement,
   checkClockInWindow,
   checkGeofence,
   detectVisitExceptions,
@@ -22,6 +24,9 @@ import {
 import { safeError } from '../security/safe-log.js';
 
 const router = Router();
+
+/** Calendar-date query parameters, e.g. the earnings range. */
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Build the friendly 422 envelope for a geofence violation. Distance is
@@ -77,6 +82,62 @@ router.get('/visits', requireCapability('evv.read'), async (req, res) => {
         : await repo.getVisitsForAgency(req.auth.agencyId);
     res.json(visits);
   } catch {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+/**
+ * GET /evv/earnings?from=YYYY-MM-DD&to=YYYY-MM-DD
+ *
+ * The authenticated caregiver's earnings estimate for a date range, derived
+ * from their own verified visits. Caregiver-only by design: this is the
+ * caller's own compensation, so there is no id parameter to point at somebody
+ * else, and an admin-facing view would need its own audited route.
+ *
+ * The response is an ESTIMATE, not a paystub. It carries `source: 'derived'`
+ * and no tax, deduction, or reimbursement figures; the agency's payroll
+ * provider remains authoritative. See services/earnings-service.ts.
+ */
+router.get('/earnings', requireCapability('evv.read'), async (req, res) => {
+  if (req.auth.role !== 'caregiver' || !req.auth.caregiverId) {
+    return res.status(403).json({ message: 'Earnings are available to caregivers only' });
+  }
+  const from = typeof req.query.from === 'string' ? req.query.from : '';
+  const to = typeof req.query.to === 'string' ? req.query.to : '';
+  if (!DATE_RE.test(from) || !DATE_RE.test(to) || from > to) {
+    return res.status(400).json({ message: 'from and to must be YYYY-MM-DD, with from on or before to' });
+  }
+
+  try {
+    const db = req.app.get('db');
+    const caregiverId = req.auth.caregiverId;
+    const [visits, payRateCents] = await Promise.all([
+      new EvvRepository(db).getVisitsForCaregiver(caregiverId),
+      new CaregiverRepository(db).getPayRateCents(caregiverId, req.auth.agencyId),
+    ]);
+
+    // Bound to the requested range on the clock-in date. Overtime is still
+    // computed per workweek inside the service, so a partial-week request
+    // cannot manufacture or erase overtime.
+    const fromIso = `${from}T00:00:00.000Z`;
+    const toIso = `${to}T23:59:59.999Z`;
+    const inRange = visits.filter((v) => v.clockInTime >= fromIso && v.clockInTime <= toIso);
+
+    const statement = buildEarningsStatement(
+      inRange.map((v) => ({
+        visitId: v.id ?? '',
+        clockInTime: v.clockInTime,
+        clockOutTime: v.clockOutTime ?? null,
+        status: v.status,
+        serviceCode: v.serviceCode ?? null,
+      })),
+      from,
+      to,
+      { payRateCents },
+    );
+    res.json(statement);
+  } catch (error) {
+    safeError('earnings statement failed', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });

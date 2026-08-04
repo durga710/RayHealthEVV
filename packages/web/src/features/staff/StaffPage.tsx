@@ -9,6 +9,8 @@ interface StaffMember {
   role: string;
   status: string;
   hasNpi?: boolean;
+  /** Hourly rate in cents; null when the agency has not set one. */
+  payRateCents?: number | null;
 }
 
 interface Credential {
@@ -129,6 +131,8 @@ export function StaffPage() {
   const [revokingAll, setRevokingAll] = useState(false);
   const [npiInput, setNpiInput]       = useState<Record<string, string>>({});
   const [savingNpi, setSavingNpi]     = useState<Record<string, boolean>>({});
+  const [payRateInput, setPayRateInput]   = useState<Record<string, string>>({});
+  const [savingPayRate, setSavingPayRate] = useState<Record<string, boolean>>({});
 
   // Credentialing (per caregiver)
   const [creds, setCreds]                 = useState<Record<string, Credential[]>>({});
@@ -315,6 +319,35 @@ export function StaffPage() {
     }
   };
 
+  // ── Set caregiver hourly pay rate (drives the mobile earnings estimate) ──
+  //
+  // Entered in dollars, stored in cents: a float rate multiplied by fractional
+  // hours accumulates error, and payroll is not a place to discover rounding
+  // drift. An empty box clears the rate, which puts the caregiver back to
+  // seeing hours with no dollar figure rather than a confident $0.00.
+  const handleSavePayRate = async (memberId: string) => {
+    const raw = (payRateInput[memberId] ?? '').trim();
+    let payRateCents: number | null = null;
+    if (raw !== '') {
+      const dollars = Number(raw);
+      if (!Number.isFinite(dollars) || dollars < 0 || dollars > 1000) {
+        alert('Enter an hourly rate between 0 and 1000, or leave it blank to clear it.');
+        return;
+      }
+      payRateCents = Math.round(dollars * 100);
+    }
+    setSavingPayRate(prev => ({ ...prev, [memberId]: true }));
+    try {
+      await patchJson(`/api/staff/caregivers/${encodeURIComponent(memberId)}/pay-rate`, { payRateCents });
+      setStaff(prev => prev.map(s => s.id === memberId ? { ...s, payRateCents } : s));
+      setPayRateInput(prev => { const n = { ...prev }; delete n[memberId]; return n; });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to save pay rate');
+    } finally {
+      setSavingPayRate(prev => { const n = { ...prev }; delete n[memberId]; return n; });
+    }
+  };
+
   // ── Remove / deactivate active staff ─────────────────────────────
   const handleRemove = async (member: StaffMember) => {
     const isCaregiver = member.role === 'caregiver';
@@ -486,6 +519,40 @@ export function StaffPage() {
                                      >
                                        {savingNpi[s.id] ? 'Saving…' : 'Save NPI'}
                                      </button>
+                                   </div>
+                                 </div>
+                               )}
+
+                               {!isUser && (
+                                 <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}>
+                                   <div style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--color-text)', marginBottom: '0.4rem' }}>
+                                     Hourly pay rate{' '}
+                                     {typeof s.payRateCents === 'number'
+                                       ? <span style={{ color: 'var(--color-success)', fontWeight: 500 }}>· ${(s.payRateCents / 100).toFixed(2)}/hr</span>
+                                       : <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>· not set</span>}
+                                   </div>
+                                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                     <input
+                                       value={payRateInput[s.id] ?? ''}
+                                       onChange={e => setPayRateInput(prev => ({ ...prev, [s.id]: e.target.value }))}
+                                       placeholder={typeof s.payRateCents === 'number' ? 'Update rate, e.g. 18.50' : 'e.g. 18.50'}
+                                       inputMode="decimal"
+                                       className="input-field"
+                                       style={{ fontSize: '0.8125rem', padding: '0.3rem 0.6rem', maxWidth: 160 }}
+                                       onClick={e => e.stopPropagation()}
+                                     />
+                                     <button
+                                       type="button"
+                                       className="btn-secondary btn-sm"
+                                       disabled={savingPayRate[s.id] ?? false}
+                                       onClick={() => handleSavePayRate(s.id)}
+                                     >
+                                       {savingPayRate[s.id] ? 'Saving…' : 'Save rate'}
+                                     </button>
+                                   </div>
+                                   <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.4rem' }}>
+                                     Drives the estimated earnings this caregiver sees in the mobile app.
+                                     Leave blank and save to clear it. Payroll remains authoritative.
                                    </div>
                                  </div>
                                )}
