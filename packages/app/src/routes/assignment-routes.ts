@@ -315,6 +315,12 @@ router.delete('/:id', requireCapability('schedule.write'), async (req, res) => {
         title: 'Shift cancelled',
         body: 'A shift was removed from your schedule. Open RayHealth to see your current schedule.',
         data: { kind: 'assignment.deleted', assignmentId },
+        // The one case worth a text: a caregiver who does not see this may
+        // drive to a visit that is no longer theirs. Self-contained wording,
+        // since an SMS arrives with no title and no app context.
+        alsoSms: true,
+        smsBody:
+          'RayHealth: a shift was cancelled from your schedule. Open the RayHealth app to see your current schedule.',
       });
     }
 

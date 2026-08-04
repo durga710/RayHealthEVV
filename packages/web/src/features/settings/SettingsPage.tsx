@@ -10,6 +10,7 @@ import { getJson, postJson, patchJson, deleteJson } from '../../lib/api-client.j
 interface NotificationPrefs {
   channelEmail?: boolean;
   channelSms?: boolean;
+  channelPush?: boolean;
   channelInApp?: boolean;
   visitReminders?: boolean;
   scheduleChanges?: boolean;
@@ -57,6 +58,7 @@ const NOTIF_ROWS: Array<{ key: keyof NotificationPrefs; label: string }> = [
 ];
 const CHANNEL_ROWS: Array<{ key: keyof NotificationPrefs; label: string }> = [
   { key: 'channelEmail', label: 'Email' },
+  { key: 'channelPush', label: 'Push (mobile app)' },
   { key: 'channelSms', label: 'SMS' },
   { key: 'channelInApp', label: 'In-app' },
 ];
