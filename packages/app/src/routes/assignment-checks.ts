@@ -9,14 +9,17 @@
  */
 import type { Knex } from 'knex';
 import {
+  AvailabilityRepository,
   CaregiverRepository,
   ClaimRepository,
   ClientRepository,
   CredentialComplianceService,
   ScheduleRepository,
+  checkAvailability,
   checkScheduleConflicts,
   type ConflictAuthorization,
 } from '@rayhealth/core';
+import { safeError } from '../security/safe-log.js';
 
 export interface AssignmentCheckInput {
   caregiverId: string;
@@ -112,11 +115,63 @@ export async function evaluateAssignmentChecks(
     authorizations,
   });
 
+  // Availability and leave. Two different weights on purpose:
+  //
+  //   Approved time off HARD-BLOCKS. Approving somebody's leave and then
+  //   booking the shift anyway is how an agency loses staff, so it belongs
+  //   with the other blocking conflicts. Only 'approved' counts; a request
+  //   nobody has answered yet must not block a schedule the agency has not
+  //   agreed to.
+  //
+  //   Declared availability only WARNS. It is a preference, not a contract,
+  //   and agencies cover shifts outside someone's usual window constantly. A
+  //   hard block would just get worked around by editing the availability,
+  //   which would make the data worse rather than the schedule better.
+  const scheduleWarnings: string[] = [];
+  const scheduleBlocks: string[] = [];
+  if (input.visitDate) {
+    const availabilityRepo = new AvailabilityRepository(db);
+
+    // Time off is a BLOCKING check, so this lookup is deliberately NOT
+    // wrapped. If we cannot read the leave calendar we cannot honestly say
+    // there is no conflict, and failing the request is far better than
+    // booking a caregiver over leave the agency already approved.
+    const approvedLeave = await availabilityRepo.findApprovedTimeOffOn(
+      input.caregiverId,
+      agencyId,
+      input.visitDate,
+    );
+    if (approvedLeave) {
+      // The reason is deliberately not echoed: it may name a medical or
+      // family situation and this string lands in an API response.
+      scheduleBlocks.push(
+        `Caregiver has approved time off covering ${input.visitDate} (${approvedLeave.startDate} to ${approvedLeave.endDate}).`,
+      );
+    }
+
+    // Availability is only ADVISORY, so a failure here degrades to "no
+    // warning" rather than blocking a booking the agency is entitled to make.
+    try {
+      const slots = await availabilityRepo.listAvailability(input.caregiverId, agencyId);
+      const verdict = checkAvailability({
+        visitDate: input.visitDate,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        slots,
+      });
+      if (verdict.kind === 'day_unavailable' || verdict.kind === 'outside_hours') {
+        scheduleWarnings.push(verdict.message);
+      }
+    } catch (err) {
+      safeError('Could not evaluate caregiver availability', err);
+    }
+  }
+
   return {
     caregiver: { id: input.caregiverId },
     templateClient: { clientId: templateClient.clientId },
-    hardConflicts: conflicts.hardConflicts,
+    hardConflicts: [...conflicts.hardConflicts, ...scheduleBlocks],
     credentialBlocks: credentialGate.blocks,
-    warnings: [...conflicts.warnings, ...credentialGate.warnings],
+    warnings: [...conflicts.warnings, ...credentialGate.warnings, ...scheduleWarnings],
   };
 }
