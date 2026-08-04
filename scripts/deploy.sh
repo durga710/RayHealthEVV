@@ -135,7 +135,7 @@ echo "  # expect: strict-transport-security, x-frame-options: DENY, content-secu
 echo ""
 echo "  # Fixture caregiver login (regression)"
 echo "  curl -s -X POST -H 'Content-Type: application/json' \\"
-echo "    -d '{\"email\":\"test-caregiver-fixture@rayhealthevv.local\",\"password\":\"TestCaregiver2026!\"}' \\"
+echo "    -d '{\"email\":\"test-caregiver-fixture@rayhealthevv.local\",\"password\":\"Test123!Demo\"}' \\"
 echo "    https://rayhealthevv.com/api/auth/mobile/login"
 echo ""
 echo "  # New admin surfaces"
