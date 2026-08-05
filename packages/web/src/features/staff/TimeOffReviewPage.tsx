@@ -139,7 +139,7 @@ export function TimeOffReviewPage() {
                 <div>
                   <div style={{ fontWeight: 700 }}>
                     {formatDate(req.startDate)}
-                    {req.endDate !== req.startDate ? ` — ${formatDate(req.endDate)}` : ''}
+                    {req.endDate !== req.startDate ? ` to ${formatDate(req.endDate)}` : ''}
                   </div>
                   <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
                     {dayCount(req.startDate, req.endDate)} day(s)
