@@ -209,6 +209,13 @@ export default function ProfileScreen() {
             onPress={() => router.push('/earnings')}
           />
           <Row
+            icon="shield-checkmark-outline"
+            tint={colors.success}
+            title="Identity check"
+            subtitle="Set up or check your photo"
+            onPress={() => router.push('/identity')}
+          />
+          <Row
             icon="chatbubbles-outline"
             tint={colors.brandBlue}
             title="Messages"

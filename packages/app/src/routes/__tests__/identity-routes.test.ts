@@ -253,6 +253,43 @@ describe('POST /identity/verify', () => {
   });
 });
 
+describe('request body limits', () => {
+  it('accepts a realistically sized selfie', async () => {
+    // Regression: the app-wide JSON cap is 100KB, which no base64 photo can
+    // fit. Identity gets its own larger parser mounted ahead of it. Without
+    // that, every capture 413s before reaching the route and the whole
+    // feature is dead on arrival.
+    mockRepo();
+    mockStorage();
+    mockMatch('matched', 96);
+    const selfie = Buffer.alloc(600 * 1024, 7).toString('base64');
+
+    const res = await request(createApp())
+      .post('/identity/verify')
+      .set('Authorization', auth())
+      .send({ imageBase64: selfie });
+
+    expect(res.status).toBe(200);
+    expect(res.body.outcome).toBe('matched');
+  });
+
+  it('rejects an image past the decoded cap', async () => {
+    mockRepo();
+    const storage = mockStorage();
+    mockMatch('matched', 96);
+    // Over the 2MB decoded ceiling the route enforces.
+    const huge = Buffer.alloc(2.2 * 1024 * 1024, 7).toString('base64');
+
+    const res = await request(createApp())
+      .post('/identity/enroll')
+      .set('Authorization', auth())
+      .send({ imageBase64: huge });
+
+    expect(res.status).toBe(400);
+    expect(storage.uploadDocument).not.toHaveBeenCalled();
+  });
+});
+
 describe('GET /identity/status', () => {
   it('states plainly that liveness is not supported', async () => {
     mockRepo();

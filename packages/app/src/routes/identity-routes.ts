@@ -50,8 +50,13 @@ export const CONSENT_TEXT = [
   'stored photograph will be deleted.',
 ].join(' ');
 
-/** Base64 JPEG, capped so a single request cannot be used to push large blobs. */
-const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+/**
+ * Decoded image cap. A selfie for face matching does not need to be large:
+ * Rekognition wants roughly 80px of face width, and a compressed front-camera
+ * photo lands far under this. Kept in step with the 3MB body limit mounted for
+ * this path in app.ts, which allows for base64's expansion.
+ */
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const imageSchema = z.object({
   imageBase64: z.string().min(100),
 });

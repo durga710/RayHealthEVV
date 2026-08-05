@@ -277,6 +277,18 @@ export function createApp(options: { mobileSessionStore?: MobileSessionStore } =
     app.use(`${prefix}/billing/webhook`, express.raw({ type: 'application/json' }), billingRoutes);
   }
 
+  // Identity verification carries a base64 selfie, which cannot fit the 100KB
+  // cap below. Mounted BEFORE the global parser (express.json is a no-op once
+  // a body is parsed) so the larger limit applies to this path only, rather
+  // than raising the ceiling for every route in the app.
+  //
+  // 3MB accommodates the 2MB decoded image cap the routes enforce plus base64's
+  // ~33% expansion. The route still validates the decoded size, so this is the
+  // outer bound, not the real limit.
+  for (const prefix of ['', '/api']) {
+    app.use(`${prefix}/identity`, express.json({ limit: '3mb' }));
+  }
+
   // ---------- Body parsing with explicit size cap ----------
   // 100KB is generous for our payload shapes (invite acceptance, agency
   // config updates, EVV punches) and prevents JSON-bomb DoS. Copilot is
