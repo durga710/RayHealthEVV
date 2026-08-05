@@ -7,7 +7,12 @@ import * as s3 from '../../services/s3-storage.js';
 import * as faceMatch from '../../identity/face-match-client.js';
 import { makeToken, setTestJwtSecret } from './test-helpers.js';
 
-beforeAll(() => setTestJwtSecret());
+beforeAll(() => {
+  setTestJwtSecret();
+  // The routes gate on this env var before touching storage, so it has to be
+  // present for the normal paths even though S3StorageService is mocked.
+  process.env.DOCUMENTS_S3_BUCKET = 'test-bucket';
+});
 afterEach(() => vi.restoreAllMocks());
 
 const agencyId = '00000000-0000-4000-8000-00000000c001';
@@ -287,6 +292,47 @@ describe('request body limits', () => {
 
     expect(res.status).toBe(400);
     expect(storage.uploadDocument).not.toHaveBeenCalled();
+  });
+});
+
+describe('storage not configured', () => {
+  afterEach(() => { process.env.DOCUMENTS_S3_BUCKET = 'test-bucket'; });
+
+  it('refuses enrolment with a reason instead of a bare 500', async () => {
+    // Constructing the storage client without a bucket throws, which would
+    // otherwise surface as a 500 at the exact moment somebody photographs
+    // their own face.
+    delete process.env.DOCUMENTS_S3_BUCKET;
+    mockRepo();
+
+    const res = await request(createApp())
+      .post('/identity/enroll')
+      .set('Authorization', auth())
+      .send({ imageBase64: IMAGE_B64 });
+
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe('STORAGE_NOT_CONFIGURED');
+  });
+
+  it('refuses verification the same way', async () => {
+    delete process.env.DOCUMENTS_S3_BUCKET;
+    mockRepo();
+
+    const res = await request(createApp())
+      .post('/identity/verify')
+      .set('Authorization', auth())
+      .send({ imageBase64: IMAGE_B64 });
+
+    expect(res.status).toBe(503);
+  });
+
+  it('reports storage separately from the matching provider', async () => {
+    delete process.env.DOCUMENTS_S3_BUCKET;
+    mockRepo();
+
+    const res = await request(createApp()).get('/identity/status').set('Authorization', auth());
+
+    expect(res.body.storageConfigured).toBe(false);
   });
 });
 

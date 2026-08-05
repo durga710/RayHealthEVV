@@ -15,6 +15,12 @@ export type IdentityOutcome =
 export interface IdentityStatus {
   /** Whether a real matching provider is wired up server-side. */
   configured: boolean;
+  /**
+   * Whether photo storage is wired up. Separate from `configured`: without a
+   * bucket there is nowhere to put a photo, so the camera must not be offered
+   * at all, whatever the matching provider is doing.
+   */
+  storageConfigured?: boolean;
   consented: boolean;
   enrolled: boolean;
   enrolledAt: string | null;
@@ -25,10 +31,15 @@ export interface IdentityStatus {
 }
 
 /** Which panel the screen should show, derived from server state alone. */
-export type IdentityStep = 'loading' | 'consent' | 'enroll' | 'ready';
+export type IdentityStep = 'loading' | 'unavailable' | 'consent' | 'enroll' | 'ready';
 
 export function stepFor(status: IdentityStatus | null): IdentityStep {
   if (!status) return 'loading';
+  // No storage means no camera. Inviting somebody to photograph their own face
+  // and then failing to keep it is the worst order to discover this in.
+  // Treated as absent only when the server explicitly says so, so an older API
+  // that omits the field keeps its previous behaviour.
+  if (status.storageConfigured === false && !status.enrolled) return 'unavailable';
   // Consent first, always. Nothing biometric is captured before it, and the
   // server enforces the same order, so a client that skipped ahead would only
   // earn a 403.
