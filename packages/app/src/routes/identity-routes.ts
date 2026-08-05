@@ -75,6 +75,18 @@ function decodeImage(base64: string): Buffer | null {
   }
 }
 
+/**
+ * Whether photo storage is wired up.
+ *
+ * Separate from the matching provider: an agency can have Rekognition selected
+ * and still have no bucket, or the reverse. Both have to be true before a
+ * caregiver should be invited to point a camera at their face, otherwise the
+ * first thing they meet is a 500 at the moment they take the photo.
+ */
+function isPhotoStorageConfigured(): boolean {
+  return Boolean(process.env.DOCUMENTS_S3_BUCKET?.trim());
+}
+
 /** Object keys are namespaced per agency so a retention sweep can scope by prefix. */
 function referenceKey(agencyId: string, caregiverId: string): string {
   return `identity/${agencyId}/${caregiverId}/reference.jpg`;
@@ -96,7 +108,10 @@ router.get('/status', requireCapability('evv.read'), async (req: Request, res: R
       repo.findEnrollment(req.auth.caregiverId, req.auth.agencyId),
     ]);
     res.json({
+      // Matching provider and photo storage are reported separately so the app
+      // can say which half is missing instead of a vague "not available".
       configured: isIdentityVerificationConfigured(),
+      storageConfigured: isPhotoStorageConfigured(),
       consented: consent !== null,
       consentVersion: consent?.consentVersion ?? null,
       enrolled: enrollment !== null,
@@ -188,6 +203,15 @@ router.post('/enroll', requireCapability('evv.write'), async (req: Request, res:
   if (!image) {
     return res.status(400).json({ message: 'That photo could not be read. Please retake it.' });
   }
+  // Fail before the photo goes anywhere, with a reason. Constructing the
+  // storage client without a bucket throws, which would otherwise surface as
+  // a bare 500 at the exact moment somebody photographs their own face.
+  if (!isPhotoStorageConfigured()) {
+    return res.status(503).json({
+      message: 'Identity photo storage is not set up for this agency yet.',
+      code: 'STORAGE_NOT_CONFIGURED',
+    });
+  }
 
   try {
     const db = req.app.get('db') as Knex;
@@ -235,6 +259,12 @@ router.post('/verify', requireCapability('evv.write'), async (req: Request, res:
   const image = decodeImage(parsed.data.imageBase64);
   if (!image) {
     return res.status(400).json({ message: 'That photo could not be read. Please retake it.' });
+  }
+  if (!isPhotoStorageConfigured()) {
+    return res.status(503).json({
+      message: 'Identity photo storage is not set up for this agency yet.',
+      code: 'STORAGE_NOT_CONFIGURED',
+    });
   }
 
   const db = req.app.get('db') as Knex;

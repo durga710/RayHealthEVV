@@ -114,3 +114,29 @@ describe('isUploadableCapture', () => {
     expect(MAX_UPLOAD_BASE64_CHARS).toBeLessThan(3 * 1024 * 1024);
   });
 });
+
+describe('storage gate', () => {
+  it('hides the camera when the server has nowhere to keep the photo', () => {
+    // Inviting somebody to photograph their face and then failing to store it
+    // is the worst order to discover missing configuration in.
+    expect(stepFor(status({ storageConfigured: false }))).toBe('unavailable');
+    expect(stepFor(status({ storageConfigured: false, consented: true }))).toBe('unavailable');
+  });
+
+  it('still shows an already-enrolled caregiver their setup', () => {
+    // Their photo exists; a transient config gap should not imply it is gone.
+    expect(
+      stepFor(status({ storageConfigured: false, consented: true, enrolled: true })),
+    ).toBe('ready');
+  });
+
+  it('proceeds normally once storage is configured', () => {
+    expect(stepFor(status({ storageConfigured: true }))).toBe('consent');
+    expect(stepFor(status({ storageConfigured: true, consented: true }))).toBe('enroll');
+  });
+
+  it('keeps working against an API that predates the field', () => {
+    // Absent is not the same as false; an older server should behave as before.
+    expect(stepFor(status())).toBe('consent');
+  });
+});

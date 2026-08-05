@@ -280,6 +280,17 @@ export default function IdentityScreen() {
               </View>
             ) : null}
 
+            {step === 'unavailable' ? (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Not available yet</Text>
+                <Text style={styles.cardHint}>
+                  Your agency has not finished setting up identity checks, so there is nowhere to
+                  keep your photo yet. Nothing is needed from you. This screen will let you set
+                  yours up once they are done.
+                </Text>
+              </View>
+            ) : null}
+
             {step === 'consent' ? (
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Before we start</Text>
