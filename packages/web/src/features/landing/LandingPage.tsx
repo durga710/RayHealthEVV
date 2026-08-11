@@ -378,16 +378,37 @@ button.rh-btn{border:0; cursor:pointer; font-family:inherit;}
 @media(max-width:880px){.rh-pricing{grid-template-columns:1fr; max-width:460px;}}
 
 /* faq accordion */
-.rh-faqs{max-width:820px; margin:36px auto 0; padding:0 24px;}
-.rh-faq{border-bottom:1px solid var(--line); padding:6px 2px;}
-.rh-faqq{width:100%; text-align:left; background:none; border:none; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:20px 0; font:inherit; color:inherit;}
-.rh-faqq h3{font-size:1.0625rem; letter-spacing:-.01em; font-weight:600; color:var(--ink);}
-.rh-faqtog{flex-shrink:0; width:26px; height:26px; border-radius:7px; border:1px solid var(--line-2); display:grid; place-items:center; color:var(--ink-soft); transition:transform .25s ease, background .2s ease, color .2s ease, border-color .2s ease;}
-.rh-faq.open .rh-faqtog{background:var(--accent); color:white; border-color:var(--accent); transform:rotate(45deg);}
-.rh-faqa{overflow:hidden; max-height:0; transition:max-height .3s ease;}
-.rh-faq.open .rh-faqa{max-height:260px;}
-.rh-faqa p{padding:0 0 20px; font-size:.95rem; line-height:1.6; color:var(--body-c); max-width:72ch;}
-.rh-faqq:focus-visible{outline:none; box-shadow:var(--shadow-focus); border-radius:8px;}
+.rh-faqs{max-width:800px; margin:40px auto 0; padding:0 24px; display:flex; flex-direction:column; gap:10px;}
+.rh-faq{background:var(--paper); border:1px solid var(--line); border-radius:14px; transition:border-color .2s ease, box-shadow .2s ease;}
+.rh-faq:hover{border-color:var(--line-2);}
+.rh-faq.open{border-color:color-mix(in srgb, var(--accent) 30%, var(--line)); box-shadow:0 12px 30px -24px color-mix(in srgb, var(--accent) 70%, transparent);}
+/* the global button rule ships a gradient, shadow and min-height , neutralise
+   all of it so the trigger is a bare row inside the card. */
+.rh-faqq{width:100%; min-height:0; text-align:left; background:none; border:none; box-shadow:none; border-radius:14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:1.25rem; padding:20px 22px; font:inherit; color:inherit; transition:none;}
+.rh-faqq:hover:not(:disabled){background:none; transform:none;}
+.rh-faqq:active:not(:disabled){transform:none;}
+.rh-faqq h3{font-size:1.0625rem; line-height:1.45; letter-spacing:-.01em; font-weight:600; color:var(--ink); transition:color .18s ease;}
+.rh-faqq:hover h3{color:var(--accent-deep);}
+.rh-faq.open .rh-faqq h3{color:var(--ink);}
+.rh-faqtog{flex-shrink:0; width:28px; height:28px; border-radius:50%; border:1px solid var(--line-2); background:var(--surface2); display:grid; place-items:center; color:var(--ink-soft); transition:transform .3s cubic-bezier(.4,0,.2,1), background .2s ease, color .2s ease, border-color .2s ease;}
+.rh-faqq:hover .rh-faqtog{border-color:var(--accent); color:var(--accent-deep);}
+.rh-faq.open .rh-faqtog{background:var(--accent); color:white; border-color:var(--accent); transform:rotate(135deg);}
+/* 0fr , 1fr grid so any answer length animates without a max-height guess */
+.rh-faqa{display:grid; grid-template-rows:0fr; transition:grid-template-rows .34s cubic-bezier(.4,0,.2,1);}
+.rh-faq.open .rh-faqa{grid-template-rows:1fr;}
+.rh-faqa p{overflow:hidden; padding:0 22px; font-size:.9375rem; line-height:1.68; color:var(--body-c); max-width:68ch; opacity:0; transition:opacity .18s ease;}
+.rh-faq.open .rh-faqa p{padding-bottom:22px; opacity:1; transition:opacity .28s ease .1s;}
+.rh-faqq:focus-visible{outline:none; box-shadow:var(--shadow-focus);}
+@media(max-width:520px){
+  .rh-faqs{padding:0 18px; gap:8px;}
+  .rh-faqq{padding:17px 16px; gap:.9rem;}
+  .rh-faqq h3{font-size:1rem;}
+  .rh-faqa p{padding:0 16px;}
+  .rh-faq.open .rh-faqa p{padding-bottom:18px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .rh-faqa,.rh-faqa p,.rh-faqtog{transition:none;}
+}
 
 /* final cta */
 .rh-final{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
