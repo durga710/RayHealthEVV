@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext.js';
 import { getJson } from '../../lib/api-client.js';
+import { tint } from '../../lib/color.js';
 
 interface CountState {
   clients: number | null;
@@ -307,7 +308,7 @@ export function DashboardPage() {
             >
               <div style={{
                 width: '40px', height: '40px', borderRadius: '10px',
-                backgroundColor: `${s.tint}18`,
+                backgroundColor: tint(s.tint, 9),
                 color: s.tint,
                 display: 'grid', placeItems: 'center',
                 marginBottom: '1rem',

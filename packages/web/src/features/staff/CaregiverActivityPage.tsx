@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getJson } from '../../lib/api-client.js';
 import { EmptyState, ErrorRetry, LoadingSkeleton } from '../../components/state/index.js';
 import { Icon } from '../../components/index.js';
+import { tint } from '../../lib/color.js';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 interface Profile {
@@ -84,7 +85,7 @@ function StatusBadge({ status, inProgress }: { status: VisitStatus; inProgress: 
   return (
     <span style={{
       display: 'inline-block', padding: '0.15em 0.6em', borderRadius: 999, fontSize: '0.75rem',
-      fontWeight: 700, background: `${color}18`, color, textTransform: 'capitalize', whiteSpace: 'nowrap',
+      fontWeight: 700, background: tint(color, 9), color, textTransform: 'capitalize', whiteSpace: 'nowrap',
     }}>{label}</span>
   );
 }
@@ -184,7 +185,7 @@ export function CaregiverActivityPage() {
         <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Profile header */}
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 14, padding: '1.1rem 1.25rem', flexWrap: 'wrap' }}>
-            <div style={{ width: 60, height: 60, borderRadius: '50%', background: `${TEAL}14`, color: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.4rem', flexShrink: 0 }}>{initials}</div>
+            <div style={{ width: 60, height: 60, borderRadius: '50%', background: tint(TEAL, 8), color: TEAL, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.4rem', flexShrink: 0 }}>{initials}</div>
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                 <h1 style={{ margin: 0, fontSize: '1.4rem' }}>{name}</h1>

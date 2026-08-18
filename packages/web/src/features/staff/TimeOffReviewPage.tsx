@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { getJson, patchJson } from '../../lib/api-client.js';
 import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
+import { tint } from '../../lib/color.js';
 
 /**
  * Time off review.
@@ -147,7 +148,7 @@ export function TimeOffReviewPage() {
                 </div>
                 <span style={{
                   padding: '0.15em 0.6em', borderRadius: 999, fontSize: '0.75rem', fontWeight: 600,
-                  background: `${STATUS_COLOR[req.status]}18`, color: STATUS_COLOR[req.status],
+                  background: tint(STATUS_COLOR[req.status], 9), color: STATUS_COLOR[req.status],
                 }}>
                   {TABS.find((t) => t.key === req.status)?.label ?? req.status}
                 </span>
