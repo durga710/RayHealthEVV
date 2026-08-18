@@ -46,7 +46,7 @@ const h2: React.CSSProperties = { fontSize: '1rem', fontWeight: 700, color: 'var
 const sub: React.CSSProperties = { fontSize: '0.8125rem', color: 'var(--color-text-muted)', margin: '0 0 1rem' };
 const btnPrimary: React.CSSProperties = { padding: '0.5rem 1.1rem', fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-surface)', background: 'var(--color-primary)', border: 'none', borderRadius: '8px', cursor: 'pointer' };
 const btnGhost: React.CSSProperties = { padding: '0.5rem 1.1rem', fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-secondary)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', cursor: 'pointer' };
-const btnDanger: React.CSSProperties = { padding: '0.5rem 1.1rem', fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-danger)', background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', cursor: 'pointer' };
+const btnDanger: React.CSSProperties = { padding: '0.5rem 1.1rem', fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', cursor: 'pointer' };
 const inputStyle: React.CSSProperties = { padding: '0.5rem 0.7rem', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text)' };
 
 const NOTIF_ROWS: Array<{ key: keyof NotificationPrefs; label: string }> = [
@@ -205,7 +205,7 @@ export function SettingsPage() {
             {showDisable ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '320px' }}>
                 <input type="password" placeholder="Confirm your password" value={disablePassword} onChange={(e) => setDisablePassword(e.target.value)} style={inputStyle} />
-                {twoFaError && <span style={{ color: 'var(--color-danger)', fontSize: '0.8125rem' }}>{twoFaError}</span>}
+                {twoFaError && <span style={{ color: 'var(--color-danger-text)', fontSize: '0.8125rem' }}>{twoFaError}</span>}
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button type="button" style={btnDanger} onClick={() => void disableTwoFa()}>Disable 2FA</button>
                   <button type="button" style={btnGhost} onClick={() => { setShowDisable(false); setTwoFaError(null); }}>Cancel</button>
@@ -220,7 +220,7 @@ export function SettingsPage() {
             <img src={twoFaSetup.qrDataUrl} alt="2FA QR code" width={180} height={180} style={{ border: '1px solid var(--color-border)', borderRadius: '8px' }} />
             <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>Or enter this key manually: <code style={{ fontFamily: 'monospace', color: 'var(--color-text)' }}>{twoFaSetup.secret}</code></div>
             <input type="text" inputMode="numeric" placeholder="6-digit code" value={twoFaCode} onChange={(e) => setTwoFaCode(e.target.value)} style={inputStyle} />
-            {twoFaError && <span style={{ color: 'var(--color-danger)', fontSize: '0.8125rem' }}>{twoFaError}</span>}
+            {twoFaError && <span style={{ color: 'var(--color-danger-text)', fontSize: '0.8125rem' }}>{twoFaError}</span>}
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button type="button" style={btnPrimary} onClick={() => void enableTwoFa()}>Verify & enable</button>
               <button type="button" style={btnGhost} onClick={() => { setTwoFaSetup(null); setTwoFaError(null); }}>Cancel</button>
@@ -228,7 +228,7 @@ export function SettingsPage() {
           </div>
         ) : (
           <>
-            {twoFaError && <div style={{ color: 'var(--color-danger)', fontSize: '0.8125rem', marginBottom: '0.5rem' }}>{twoFaError}</div>}
+            {twoFaError && <div style={{ color: 'var(--color-danger-text)', fontSize: '0.8125rem', marginBottom: '0.5rem' }}>{twoFaError}</div>}
             <button type="button" style={btnPrimary} onClick={() => void startTwoFa()}>Enable two-factor</button>
           </>
         )}

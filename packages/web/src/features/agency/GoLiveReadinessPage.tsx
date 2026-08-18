@@ -115,8 +115,8 @@ export function computeReadinessChecklist(input: ReadinessInputs): ChecklistItem
 }
 
 const card: React.CSSProperties = {
-  background: 'var(--color-surface, var(--color-surface))',
-  border: '1px solid var(--color-border, var(--color-border))',
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
   borderRadius: 12,
   padding: '1rem 1.25rem',
   marginBottom: '0.75rem',
@@ -138,8 +138,8 @@ function StatusDot({ done }: { done: boolean }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: done ? 'var(--color-success-bg, var(--color-success-bg))' : 'var(--color-accent-bg, var(--color-danger-bg))',
-        color: done ? 'var(--color-success, var(--color-success-text))' : 'var(--color-accent, var(--color-danger-text))',
+        background: done ? 'var(--color-success-bg)' : 'var(--color-danger-bg)',
+        color: done ? 'var(--color-success-text)' : 'var(--color-danger-text)',
       }}
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -189,27 +189,27 @@ export function GoLiveReadinessPage() {
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '1.5rem' }}>
-      <p style={{ color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', margin: 0 }}>
+      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', margin: 0 }}>
         Onboarding
       </p>
-      <h1 style={{ margin: '0.25rem 0 0.5rem', fontSize: '1.6rem', color: 'var(--color-text, var(--color-text))' }}>Go-Live Readiness</h1>
-      <p style={{ margin: '0 0 1.25rem', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.95rem' }}>
+      <h1 style={{ margin: '0.25rem 0 0.5rem', fontSize: '1.6rem', color: 'var(--color-text)' }}>Go-Live Readiness</h1>
+      <p style={{ margin: '0 0 1.25rem', color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
         Everything an agency must finish before it can run verified visits and bill them. Each unfinished item links to where you fix it.
       </p>
 
       {error && (
-        <div style={{ background: 'var(--color-accent-bg, var(--color-danger-bg))', color: 'var(--color-accent, var(--color-danger-text))', borderRadius: 8, padding: '0.75rem 1rem' }}>{error}</div>
+        <div style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', borderRadius: 8, padding: '0.75rem 1rem' }}>{error}</div>
       )}
 
-      {items === null && !error && <p style={{ color: 'var(--color-text-muted, var(--color-text-muted))' }}>Checking your setup…</p>}
+      {items === null && !error && <p style={{ color: 'var(--color-text-muted)' }}>Checking your setup…</p>}
 
       {items !== null && (
         <>
           <div
             style={{
-              background: ready ? 'var(--color-success-bg, var(--color-success-bg))' : 'var(--color-primary-bg, var(--color-info-bg))',
-              color: ready ? 'var(--color-success, var(--color-success-text))' : 'var(--color-primary-dark, var(--color-primary-dark))',
-              border: `1px solid ${ready ? 'var(--color-success, var(--color-success-text))' : 'var(--color-border, var(--color-border))'}`,
+              background: ready ? 'var(--color-success-bg)' : 'var(--color-info-bg)',
+              color: ready ? 'var(--color-success-text)' : 'var(--color-primary-dark)',
+              border: `1px solid ${ready ? 'var(--color-success-text)' : 'var(--color-border)'}`,
               borderRadius: 12,
               padding: '1rem 1.25rem',
               marginBottom: '1.25rem',
@@ -226,14 +226,14 @@ export function GoLiveReadinessPage() {
               <StatusDot done={item.done} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'baseline' }}>
-                  <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-text, var(--color-text))' }}>{item.title}</h3>
+                  <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-text)' }}>{item.title}</h3>
                   {!item.done && (
-                    <Link to={item.fixTo} style={{ color: 'var(--color-primary, var(--color-primary))', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                    <Link to={item.fixTo} style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                       {item.fixLabel} →
                     </Link>
                   )}
                 </div>
-                <p style={{ margin: '0.35rem 0 0', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.85rem', lineHeight: 1.5 }}>{item.detail}</p>
+                <p style={{ margin: '0.35rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem', lineHeight: 1.5 }}>{item.detail}</p>
               </div>
             </div>
           ))}

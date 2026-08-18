@@ -103,7 +103,7 @@ export function CourseDetailPage(): ReactElement {
             {envelope?.course.title ?? 'Course detail'}
           </h2>
           {envelope?.course && (
-            <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.9rem' }}>
+            <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
               {envelope.course.code} · {envelope.course.required ? 'Required · ' : ''}{cadenceLabel(envelope.course.cadence)}
             </p>
           )}
@@ -143,7 +143,7 @@ export function CourseDetailPage(): ReactElement {
                   <span style={{ ...statusPillStyle, color: theme.fg, backgroundColor: theme.bg }}>
                     {STATUS_LABEL[status]}
                   </span>
-                  <span style={{ color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.85rem', fontWeight: 400 }}>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', fontWeight: 400 }}>
                     {rows.length} caregiver{rows.length === 1 ? '' : 's'}
                   </span>
                 </h3>
@@ -161,7 +161,7 @@ export function CourseDetailPage(): ReactElement {
                               {row.enrollment.expiresAt && ` · Expires ${formatDate(row.enrollment.expiresAt)}`}
                             </div>
                           </div>
-                          <span style={{ color: 'var(--color-text-muted, var(--color-text-subtle))', fontSize: '0.85rem' }}>→</span>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>→</span>
                         </article>
                       </Link>
                     </li>
@@ -233,7 +233,7 @@ const rowCardStyle: React.CSSProperties = {
 
 const metaLineStyle: React.CSSProperties = {
   fontSize: '0.85rem',
-  color: 'var(--color-text-muted, var(--color-text-muted))',
+  color: 'var(--color-text-muted)',
   marginTop: '0.25rem',
 };
 

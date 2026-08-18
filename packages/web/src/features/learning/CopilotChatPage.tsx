@@ -237,7 +237,7 @@ export function CopilotChatPage(): ReactElement {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1.5rem' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.5rem' }}>AI Workflow Copilot</h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.9rem' }}>
+          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
             Conversational copilot scoped to your role. Every proposed action requires your confirmation.
           </p>
         </div>
@@ -537,7 +537,7 @@ const sendBtnStyle: React.CSSProperties = {
 const attestationStyle: React.CSSProperties = {
   margin: '0.75rem 0 0',
   fontSize: '0.75rem',
-  color: 'var(--color-text-muted, var(--color-text-subtle))',
+  color: 'var(--color-text-muted)',
   textAlign: 'center',
 };
 

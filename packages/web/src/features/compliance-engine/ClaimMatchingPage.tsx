@@ -407,7 +407,7 @@ export function ClaimMatchingPage() {
             backgroundColor: 'var(--color-danger-bg)',
             border: '1px solid var(--color-danger-border)',
             borderRadius: 10,
-            color: 'var(--color-danger)',
+            color: 'var(--color-danger-text)',
             fontSize: '0.9rem',
             fontWeight: 700,
             marginTop: '1rem',
@@ -422,10 +422,10 @@ export function ClaimMatchingPage() {
         <div
           role="status"
           style={{
-            backgroundColor: 'var(--color-success-bg, var(--color-success-bg))',
-            border: '1px solid var(--color-success, var(--color-success-text))',
+            backgroundColor: 'var(--color-success-bg)',
+            border: '1px solid var(--color-success-text)',
             borderRadius: 10,
-            color: 'var(--color-success, var(--color-success-text))',
+            color: 'var(--color-success-text)',
             fontSize: '0.9rem',
             fontWeight: 700,
             marginTop: '1rem',

@@ -103,7 +103,7 @@ export function AgencyPublicPage() {
     return (
       <div className="pub-root" style={{ display: 'grid', placeItems: 'center' }}>
         <PublicBrandStyles />
-        <span style={{ color: 'var(--pub-faint, var(--color-text-muted))' }}>Loading…</span>
+        <span style={{ color: 'var(--pub-faint)' }}>Loading…</span>
       </div>
     );
   }

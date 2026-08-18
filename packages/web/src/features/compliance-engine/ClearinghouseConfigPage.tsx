@@ -12,24 +12,24 @@ interface ClearinghouseConfig {
 }
 
 const card: React.CSSProperties = {
-  background: 'var(--color-surface, var(--color-surface))',
-  border: '1px solid var(--color-border, var(--color-border))',
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
   borderRadius: 12,
   padding: '1.25rem',
   marginTop: '1rem',
 };
-const label: React.CSSProperties = { display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text, var(--color-text))', marginBottom: '0.35rem' };
-const input: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '0.55rem 0.7rem', border: '1px solid var(--color-border, var(--color-border))', borderRadius: 8, fontSize: '0.9rem' };
-const primaryBtn: React.CSSProperties = { background: 'var(--color-primary, var(--color-primary))', border: 'none', borderRadius: 8, color: 'var(--color-surface)', cursor: 'pointer', fontWeight: 700, padding: '0.55rem 1.1rem' };
-const secondaryBtn: React.CSSProperties = { background: 'var(--color-surface, var(--color-surface))', border: '1px solid var(--color-border, var(--color-border))', borderRadius: 8, color: 'var(--color-text, var(--color-text))', cursor: 'pointer', fontWeight: 700, padding: '0.55rem 1.1rem' };
+const label: React.CSSProperties = { display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '0.35rem' };
+const input: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '0.55rem 0.7rem', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: '0.9rem' };
+const primaryBtn: React.CSSProperties = { background: 'var(--color-primary)', border: 'none', borderRadius: 8, color: 'var(--color-surface)', cursor: 'pointer', fontWeight: 700, padding: '0.55rem 1.1rem' };
+const secondaryBtn: React.CSSProperties = { background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, color: 'var(--color-text)', cursor: 'pointer', fontWeight: 700, padding: '0.55rem 1.1rem' };
 const fieldRow: React.CSSProperties = { marginBottom: '1rem' };
-const hint: React.CSSProperties = { fontSize: '0.75rem', color: 'var(--color-text-muted, var(--color-text-muted))', marginTop: '0.3rem' };
+const hint: React.CSSProperties = { fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' };
 
 function banner(tone: 'error' | 'success' | 'warning', text: string) {
   const palette = {
-    error: { bg: 'var(--color-accent-bg, var(--color-danger-bg))', fg: 'var(--color-accent, var(--color-danger-text))' },
-    success: { bg: 'var(--color-success-bg, var(--color-success-bg))', fg: 'var(--color-success, var(--color-success-text))' },
-    warning: { bg: 'var(--color-warning-bg, var(--color-warning-bg))', fg: 'var(--color-warning, var(--color-warning-text))' },
+    error: { bg: 'var(--color-danger-bg)', fg: 'var(--color-danger-text)' },
+    success: { bg: 'var(--color-success-bg)', fg: 'var(--color-success-text)' },
+    warning: { bg: 'var(--color-warning-bg)', fg: 'var(--color-warning)' },
   }[tone];
   return <div style={{ background: palette.bg, color: palette.fg, borderRadius: 8, padding: '0.65rem 0.9rem', fontSize: '0.85rem', marginTop: '0.75rem' }}>{text}</div>;
 }
@@ -159,7 +159,7 @@ export function ClearinghouseConfigPage() {
       {loadError && banner('error', loadError)}
 
       <form style={card} onSubmit={onSave}>
-        <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', color: 'var(--color-text, var(--color-text))' }}>Configuration</h3>
+        <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', color: 'var(--color-text)' }}>Configuration</h3>
         <p style={{ ...hint, marginTop: 0, marginBottom: '1rem' }}>Credentials are encrypted at rest and never displayed. Leave the credential fields blank to keep the stored values.</p>
 
         <div style={fieldRow}>
@@ -215,8 +215,8 @@ export function ClearinghouseConfigPage() {
         </div>
 
         {!isSandbox && (
-          <div style={{ ...fieldRow, borderTop: '1px solid var(--color-border, var(--color-border))', paddingTop: '1rem' }}>
-            <label style={label}>Credentials {config?.hasCredentials && <span style={{ color: 'var(--color-success, var(--color-success-text))', fontWeight: 600 }}>· stored</span>}</label>
+          <div style={{ ...fieldRow, borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
+            <label style={label}>Credentials {config?.hasCredentials && <span style={{ color: 'var(--color-success-text)', fontWeight: 600 }}>· stored</span>}</label>
             <div style={hint}>An API key, or the SFTP username + password.</div>
             <div style={{ marginTop: '0.6rem' }}>
               <input style={input} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="API key (optional)" autoComplete="off" type="password" />
@@ -228,8 +228,8 @@ export function ClearinghouseConfigPage() {
           </div>
         )}
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', color: 'var(--color-text, var(--color-text))', cursor: 'pointer' }}>
-          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--color-primary, var(--color-primary))' }} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', color: 'var(--color-text)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--color-primary)' }} />
           Enable clearinghouse connection for this agency
         </label>
 

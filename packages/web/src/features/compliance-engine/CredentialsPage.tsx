@@ -201,7 +201,7 @@ export function CredentialsPage() {
             backgroundColor: 'var(--color-danger-bg)',
             border: '1px solid var(--color-danger-border)',
             borderRadius: 10,
-            color: 'var(--color-danger)',
+            color: 'var(--color-danger-text)',
             fontSize: '0.9rem',
             fontWeight: 700,
             marginTop: '1rem',

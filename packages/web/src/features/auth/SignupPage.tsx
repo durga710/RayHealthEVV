@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { tint } from '../../lib/color.js';
 
 const steps = ['Agency info', 'Admin account'];
 
@@ -82,7 +83,7 @@ export function SignupPage() {
             right: '-20%',
             width: '60%',
             height: '60%',
-            background: 'radial-gradient(circle, rgba(16, 116, 128,0.18) 0%, transparent 70%)',
+            background: `radial-gradient(circle, ${tint('var(--color-primary)', 18)} 0%, transparent 70%)`,
             pointerEvents: 'none',
           }}
         />

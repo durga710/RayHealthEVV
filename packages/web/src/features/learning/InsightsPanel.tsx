@@ -114,7 +114,7 @@ export function InsightsPanel({ refreshKey = 0 }: InsightsPanelProps): ReactElem
     return (
       <section style={{ marginTop: '2rem' }}>
         <SectionHeader />
-        <p style={{ color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.9rem' }}>Loading insights…</p>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Loading insights…</p>
       </section>
     );
   }
@@ -138,7 +138,7 @@ export function InsightsPanel({ refreshKey = 0 }: InsightsPanelProps): ReactElem
           <p style={{ margin: 0 }}>
             <strong>All clear.</strong> No actionable training items right now.
           </p>
-          <p style={{ margin: '0.5rem 0 0', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+          <p style={{ margin: '0.5rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
             Compliance signals refresh on every page load. Last checked {formatTime(envelope?.generatedAt ?? new Date().toISOString())}.
           </p>
         </div>
@@ -163,11 +163,11 @@ export function InsightsPanel({ refreshKey = 0 }: InsightsPanelProps): ReactElem
 function SectionHeader({ subtitle }: { subtitle?: string }): ReactElement {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.85rem' }}>
-      <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-muted, var(--color-text-secondary))' }}>
+      <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>
         Compliance signals
       </h3>
       {subtitle && (
-        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, var(--color-text-subtle))' }}>
+        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
           {subtitle}
         </span>
       )}

@@ -141,15 +141,15 @@ const usdFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'US
 const usd = (cents: number) => usdFmt.format((Number.isFinite(cents) ? cents : 0) / 100);
 
 const card: React.CSSProperties = {
-  background: 'var(--color-surface, var(--color-surface))',
-  border: '1px solid var(--color-border, var(--color-border))',
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
   borderRadius: 12,
   padding: '1.25rem',
   marginTop: '1rem',
 };
 
 const primaryBtn: React.CSSProperties = {
-  background: 'var(--color-primary, var(--color-primary))',
+  background: 'var(--color-primary)',
   border: 'none',
   borderRadius: 8,
   color: 'var(--color-surface)',
@@ -298,8 +298,8 @@ export function RemittancePage() {
               marginTop: '0.75rem',
               padding: '0.65rem 0.9rem',
               borderRadius: 8,
-              background: sweepMsg.tone === 'error' ? 'var(--color-danger-bg, var(--color-danger-bg))' : 'var(--color-success-bg, var(--color-success-bg))',
-              color: sweepMsg.tone === 'error' ? 'var(--color-danger, var(--color-danger-text))' : 'var(--color-success, var(--color-success-text))',
+              background: sweepMsg.tone === 'error' ? 'var(--color-danger-bg)' : 'var(--color-success-bg)',
+              color: sweepMsg.tone === 'error' ? 'var(--color-danger-text)' : 'var(--color-success-text)',
               fontWeight: 600,
               fontSize: '0.9rem',
             }}
@@ -398,9 +398,9 @@ export function RemittancePage() {
               marginTop: '1rem',
               padding: '0.75rem 1rem',
               borderRadius: 8,
-              background: 'var(--color-success-bg, var(--color-success-bg))',
-              border: '1px solid var(--color-success-border, var(--color-success-border))',
-              color: 'var(--color-success, var(--color-success-text))',
+              background: 'var(--color-success-bg)',
+              border: '1px solid var(--color-success-border)',
+              color: 'var(--color-success-text)',
               fontWeight: 600,
             }}
           >
@@ -416,9 +416,9 @@ export function RemittancePage() {
               marginTop: '1rem',
               padding: '0.75rem 1rem',
               borderRadius: 8,
-              background: 'var(--color-danger-bg, var(--color-danger-bg))',
-              border: '1px solid var(--color-danger-border, var(--color-danger-border))',
-              color: 'var(--color-danger, var(--color-danger-text))',
+              background: 'var(--color-danger-bg)',
+              border: '1px solid var(--color-danger-border)',
+              color: 'var(--color-danger-text)',
               fontWeight: 600,
             }}
           >

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { getJson, postJson, patchJson, deleteJson } from '../../lib/api-client.js';
 import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
+import { tint } from '../../lib/color.js';
 
 interface RecurringSchedule {
   id: string;
@@ -64,7 +65,7 @@ function dowLabel(days: number[]): string {
 }
 
 const STATUS_COLORS: Record<RecurringSchedule['status'], { bg: string; fg: string }> = {
-  active: { bg: 'rgba(16, 116, 128, 0.1)', fg: 'var(--color-primary)' },
+  active: { bg: tint('var(--color-primary)', 10), fg: 'var(--color-primary)' },
   paused: { bg: 'var(--color-warning-bg)', fg: 'var(--color-warning-text)' },
   ended: { bg: 'var(--color-surface-soft)', fg: 'var(--color-text-muted)' },
 };
@@ -335,8 +336,9 @@ export function RecurringSchedulesPage() {
                         padding: '0.4rem 0.7rem',
                         borderRadius: '6px',
                         border: `1px solid ${on ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                        backgroundColor: on ? 'rgba(16, 116, 128, 0.1)' : 'white',
-                        color: on ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        background: on ? tint('var(--color-primary)', 10) : 'var(--color-surface)',
+                        color: on ? 'var(--color-primary-dark)' : 'var(--color-text-muted)',
+                        boxShadow: 'none',
                         fontWeight: 600,
                         fontSize: '0.8125rem',
                         cursor: 'pointer',

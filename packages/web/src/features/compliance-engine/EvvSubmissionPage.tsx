@@ -22,8 +22,8 @@ interface SubmitOk {
 }
 
 const card: React.CSSProperties = {
-  background: 'var(--color-surface, var(--color-surface))',
-  border: '1px solid var(--color-border, var(--color-border))',
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
   borderRadius: 12,
   padding: '1.25rem',
   marginTop: '1rem',
@@ -33,7 +33,7 @@ const label: React.CSSProperties = {
   display: 'block',
   fontSize: '0.8125rem',
   fontWeight: 700,
-  color: 'var(--color-text, var(--color-text))',
+  color: 'var(--color-text)',
   marginBottom: '0.35rem',
 };
 
@@ -41,13 +41,13 @@ const input: React.CSSProperties = {
   width: '100%',
   boxSizing: 'border-box',
   padding: '0.55rem 0.7rem',
-  border: '1px solid var(--color-border, var(--color-border))',
+  border: '1px solid var(--color-border)',
   borderRadius: 8,
   fontSize: '0.9rem',
 };
 
 const primaryBtn: React.CSSProperties = {
-  background: 'var(--color-primary, var(--color-primary))',
+  background: 'var(--color-primary)',
   border: 'none',
   borderRadius: 8,
   color: 'var(--color-surface)',
@@ -57,13 +57,13 @@ const primaryBtn: React.CSSProperties = {
 };
 
 const fieldRow: React.CSSProperties = { marginBottom: '1rem' };
-const hint: React.CSSProperties = { fontSize: '0.75rem', color: 'var(--color-text-muted, var(--color-text-muted))', marginTop: '0.3rem' };
+const hint: React.CSSProperties = { fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.3rem' };
 
 function banner(tone: 'error' | 'success' | 'info', text: string) {
   const palette = {
-    error: { bg: 'var(--color-accent-bg, var(--color-danger-bg))', fg: 'var(--color-accent, var(--color-danger-text))' },
-    success: { bg: 'var(--color-success-bg, var(--color-success-bg))', fg: 'var(--color-success, var(--color-success-text))' },
-    info: { bg: 'var(--color-primary-bg, var(--color-info-bg))', fg: 'var(--color-primary-dark, var(--color-primary-dark))' },
+    error: { bg: 'var(--color-danger-bg)', fg: 'var(--color-danger-text)' },
+    success: { bg: 'var(--color-success-bg)', fg: 'var(--color-success-text)' },
+    info: { bg: 'var(--color-info-bg)', fg: 'var(--color-primary-dark)' },
   }[tone];
   return (
     <div style={{ background: palette.bg, color: palette.fg, borderRadius: 8, padding: '0.65rem 0.9rem', fontSize: '0.85rem', marginTop: '0.75rem' }}>
@@ -196,7 +196,7 @@ export function EvvSubmissionPage() {
 
       {/* ─── Configuration ─────────────────────────────────────────────── */}
       <form style={card} onSubmit={onSave}>
-        <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', color: 'var(--color-text, var(--color-text))' }}>Configuration</h3>
+        <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', color: 'var(--color-text)' }}>Configuration</h3>
         <p style={{ ...hint, marginTop: 0, marginBottom: '1rem' }}>
           Credentials are encrypted at rest and never displayed. Leave the credential fields blank to keep the stored values.
         </p>
@@ -218,8 +218,8 @@ export function EvvSubmissionPage() {
           <input id="timezone" style={input} value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="America/New_York" />
         </div>
 
-        <div style={{ ...fieldRow, borderTop: '1px solid var(--color-border, var(--color-border))', paddingTop: '1rem' }}>
-          <label style={label}>API credentials {config?.hasCredentials && <span style={{ color: 'var(--color-success, var(--color-success-text))', fontWeight: 600 }}>· stored</span>}</label>
+        <div style={{ ...fieldRow, borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
+          <label style={label}>API credentials {config?.hasCredentials && <span style={{ color: 'var(--color-success-text)', fontWeight: 600 }}>· stored</span>}</label>
           <div style={hint}>Provide either an API key, or a username + password, whichever Sandata issued for this agency.</div>
           <div style={{ marginTop: '0.6rem' }}>
             <input style={input} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="API key (optional)" autoComplete="off" type="password" />
@@ -230,8 +230,8 @@ export function EvvSubmissionPage() {
           </div>
         </div>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', color: 'var(--color-text, var(--color-text))', cursor: 'pointer' }}>
-          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--color-primary, var(--color-primary))' }} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', color: 'var(--color-text)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--color-primary)' }} />
           Enable automated Sandata submission for this agency
         </label>
 
@@ -246,7 +246,7 @@ export function EvvSubmissionPage() {
 
       {/* ─── Submit a batch ────────────────────────────────────────────── */}
       <form style={card} onSubmit={onSubmitBatch}>
-        <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', color: 'var(--color-text, var(--color-text))' }}>Submit a batch</h3>
+        <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', color: 'var(--color-text)' }}>Submit a batch</h3>
         <p style={{ ...hint, marginTop: 0, marginBottom: '1rem' }}>
           Transmits every <strong>verified</strong> visit in the date range to Sandata and records each acknowledgment. Leave dates blank to include all verified visits.
         </p>

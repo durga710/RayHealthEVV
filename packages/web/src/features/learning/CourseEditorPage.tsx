@@ -61,7 +61,7 @@ const inputStyle: React.CSSProperties = { width: '100%', padding: '0.55rem 0.7re
 const cardStyle: React.CSSProperties = { background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '1.25rem 1.5rem', marginBottom: '1.25rem' };
 const sectionTitleStyle: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.85rem' };
 const smallBtn: React.CSSProperties = { padding: '0.35rem 0.75rem', fontSize: '0.8125rem', fontWeight: 600, borderRadius: '7px', border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text-secondary)', cursor: 'pointer' };
-const removeBtn: React.CSSProperties = { ...smallBtn, color: 'var(--color-danger)', borderColor: 'var(--color-danger-border)', background: 'var(--color-danger-bg)' };
+const removeBtn: React.CSSProperties = { ...smallBtn, color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-border)', background: 'var(--color-danger-bg)' };
 
 export function CourseEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -200,7 +200,7 @@ export function CourseEditorPage() {
       </p>
 
       {error && (
-        <div role="alert" style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.875rem' }}>
+        <div role="alert" style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger-text)', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.875rem' }}>
           {error}
         </div>
       )}

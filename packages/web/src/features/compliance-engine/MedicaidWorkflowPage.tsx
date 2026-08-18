@@ -268,7 +268,7 @@ export function MedicaidWorkflowPage() {
             backgroundColor: 'var(--color-danger-bg)',
             border: '1px solid var(--color-danger-border)',
             borderRadius: 10,
-            color: 'var(--color-danger)',
+            color: 'var(--color-danger-text)',
             fontSize: '0.9rem',
             fontWeight: 700,
             marginTop: '1rem',
@@ -430,12 +430,12 @@ export function MedicaidWorkflowPage() {
             role={submitMsg.kind === 'err' ? 'alert' : 'status'}
             style={{
               backgroundColor:
-                submitMsg.kind === 'err' ? 'var(--color-danger-bg)' : 'var(--color-success-bg, var(--color-success-bg))',
+                submitMsg.kind === 'err' ? 'var(--color-danger-bg)' : 'var(--color-success-bg)',
               border: `1px solid ${
-                submitMsg.kind === 'err' ? 'var(--color-danger-border)' : 'var(--color-success-border, var(--color-success-border))'
+                submitMsg.kind === 'err' ? 'var(--color-danger-border)' : 'var(--color-success-border)'
               }`,
               borderRadius: 10,
-              color: submitMsg.kind === 'err' ? 'var(--color-danger)' : 'var(--color-success, var(--color-success-text))',
+              color: submitMsg.kind === 'err' ? 'var(--color-danger)' : 'var(--color-success-text)',
               fontSize: '0.9rem',
               fontWeight: 700,
               marginTop: '1rem',
@@ -521,12 +521,12 @@ export function MedicaidWorkflowPage() {
             role={hhaxMsg.kind === 'err' ? 'alert' : 'status'}
             style={{
               backgroundColor:
-                hhaxMsg.kind === 'err' ? 'var(--color-danger-bg)' : 'var(--color-success-bg, var(--color-success-bg))',
+                hhaxMsg.kind === 'err' ? 'var(--color-danger-bg)' : 'var(--color-success-bg)',
               border: `1px solid ${
-                hhaxMsg.kind === 'err' ? 'var(--color-danger-border)' : 'var(--color-success-border, var(--color-success-border))'
+                hhaxMsg.kind === 'err' ? 'var(--color-danger-border)' : 'var(--color-success-border)'
               }`,
               borderRadius: 10,
-              color: hhaxMsg.kind === 'err' ? 'var(--color-danger)' : 'var(--color-success, var(--color-success-text))',
+              color: hhaxMsg.kind === 'err' ? 'var(--color-danger)' : 'var(--color-success-text)',
               fontSize: '0.9rem',
               fontWeight: 700,
               marginTop: '1rem',

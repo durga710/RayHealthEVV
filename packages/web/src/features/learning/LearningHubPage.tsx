@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getJson, postJson, deleteJson } from '../../lib/api-client.js';
+import { tint } from '../../lib/color.js';
 
 interface Course {
   id: string;
@@ -49,7 +50,7 @@ interface StaffMember { id: string; email: string; role: string; }
 const severityColors: Record<string, { bg: string; text: string; border: string }> = {
   critical: { bg: 'var(--color-danger-bg)', text: 'var(--color-danger-text)', border: 'var(--color-danger-border)' },
   warning: { bg: 'var(--color-warning-bg)', text: 'var(--color-warning-text)', border: 'var(--color-warning-border)' },
-  info: { bg: 'rgba(16, 116, 128, 0.08)', text: 'var(--color-primary-dark)', border: 'rgba(16, 116, 128, 0.25)' },
+  info: { bg: tint('var(--color-primary)', 8), text: 'var(--color-primary-dark)', border: tint('var(--color-primary)', 25) },
 };
 
 const cadenceLabel: Record<string, string> = {
@@ -338,7 +339,7 @@ export function LearningHubPage() {
                           type="button"
                           disabled={deletingId === c.id}
                           onClick={() => void handleDeleteCourse(c)}
-                          style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, borderRadius: '6px', border: '1px solid var(--color-danger-border)', background: 'var(--color-danger-bg)', color: 'var(--color-danger)', cursor: deletingId === c.id ? 'wait' : 'pointer' }}
+                          style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, borderRadius: '6px', border: '1px solid var(--color-danger-border)', background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', cursor: deletingId === c.id ? 'wait' : 'pointer' }}
                         >
                           {deletingId === c.id ? '…' : 'Delete'}
                         </button>

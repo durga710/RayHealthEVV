@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { tint } from '../../lib/color.js';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -355,7 +356,7 @@ export function InterviewPage() {
                 width: '56px',
                 height: '56px',
                 borderRadius: '50%',
-                backgroundColor: 'rgba(16, 116, 128,0.1)',
+                backgroundColor: tint('var(--color-primary)', 10),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

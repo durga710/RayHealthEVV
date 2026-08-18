@@ -39,8 +39,8 @@ type TrainingTab = 'all' | 'required' | 'in_progress' | 'completed' | 'overdue';
 const STATUS_CONFIG = {
   completed:   { bg: 'var(--color-success-bg)', color: 'var(--color-success)', border: 'var(--color-success-border)', label: 'Completed' },
   in_progress: { bg: 'var(--color-info-bg)', color: 'var(--color-primary)', border: 'var(--color-info-border)', label: 'In Progress' },
-  overdue:     { bg: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: 'var(--color-danger-border)', label: 'Overdue' },
-  expired:     { bg: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: 'var(--color-danger-border)', label: 'Expired' },
+  overdue:     { bg: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: 'var(--color-danger-border)', label: 'Overdue' },
+  expired:     { bg: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: 'var(--color-danger-border)', label: 'Expired' },
   not_started: { bg: 'var(--color-bg)', color: 'var(--color-text-muted)', border: 'var(--color-border)', label: 'Not Started' },
 };
 
@@ -64,7 +64,7 @@ function ProgressBar({ pct }: { pct: number }) {
       <div style={{
         height: '100%',
         width: `${pct}%`,
-        background: pct === 100 ? 'var(--color-success)' : 'var(--color-primary, var(--color-primary))',
+        background: pct === 100 ? 'var(--color-success)' : 'var(--color-primary)',
         borderRadius: '100px',
         transition: 'width 0.3s',
       }} />
@@ -141,7 +141,7 @@ export function CaregiverTrainingPage() {
     borderRadius: '6px',
     border: 'none',
     cursor: 'pointer',
-    background: active ? 'var(--color-primary, var(--color-primary))' : 'transparent',
+    background: active ? 'var(--color-primary)' : 'transparent',
     color: active ? 'var(--color-surface)' : 'var(--color-text-muted)',
   });
 
@@ -186,7 +186,7 @@ export function CaregiverTrainingPage() {
       )}
 
       {error && (
-        <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--color-danger)' }}>
+        <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--color-danger-text)' }}>
           {error}
         </div>
       )}
@@ -265,7 +265,7 @@ export function CaregiverTrainingPage() {
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       color: isCompleted ? 'var(--color-text-muted)' : 'var(--color-surface)',
-                      background: isCompleted ? 'var(--color-bg)' : 'var(--color-primary, var(--color-primary))',
+                      background: isCompleted ? 'var(--color-bg)' : 'var(--color-primary)',
                       border: isCompleted ? '1px solid var(--color-border)' : 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',

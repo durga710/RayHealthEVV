@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { tint } from '../../lib/color.js';
 
 interface InviteInfo {
   token: string;
@@ -135,7 +136,7 @@ export function AcceptInvitePage() {
           right: '-20%',
           width: '60%',
           height: '60%',
-          background: 'radial-gradient(circle, rgba(16, 116, 128,0.18) 0%, transparent 70%)',
+          background: `radial-gradient(circle, ${tint('var(--color-primary)', 18)} 0%, transparent 70%)`,
           pointerEvents: 'none',
         }}
       />

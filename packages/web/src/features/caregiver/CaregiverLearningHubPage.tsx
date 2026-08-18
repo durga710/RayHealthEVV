@@ -39,8 +39,8 @@ const CADENCE_LABEL: Record<string, string> = {
 const STATUS_MAP = {
   completed:   { bg: 'var(--color-success-bg)', color: 'var(--color-success)', border: 'var(--color-success-border)', label: 'Completed' },
   in_progress: { bg: 'var(--color-info-bg)', color: 'var(--color-primary)', border: 'var(--color-info-border)', label: 'In Progress' },
-  overdue:     { bg: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: 'var(--color-danger-border)', label: 'Overdue' },
-  expired:     { bg: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: 'var(--color-danger-border)', label: 'Expired' },
+  overdue:     { bg: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: 'var(--color-danger-border)', label: 'Overdue' },
+  expired:     { bg: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: 'var(--color-danger-border)', label: 'Expired' },
   not_started: { bg: 'var(--color-bg)', color: 'var(--color-text-muted)', border: 'var(--color-border)', label: 'Not Started' },
 };
 
@@ -123,7 +123,7 @@ export function CaregiverLearningHubPage() {
     borderRadius: '6px',
     border: 'none',
     cursor: 'pointer',
-    background: active ? 'var(--color-primary, var(--color-primary))' : 'transparent',
+    background: active ? 'var(--color-primary)' : 'transparent',
     color: active ? 'var(--color-surface)' : 'var(--color-text-muted)',
   });
 
@@ -140,7 +140,7 @@ export function CaregiverLearningHubPage() {
         </div>
         <Link
           to="/portal/training"
-          style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-primary, var(--color-primary))', textDecoration: 'none' }}
+          style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-primary)', textDecoration: 'none' }}
         >
           My Training →
         </Link>
@@ -266,7 +266,7 @@ export function CaregiverLearningHubPage() {
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       color: 'var(--color-surface)',
-                      background: status === 'completed' ? 'var(--color-text-muted)' : 'var(--color-primary, var(--color-primary))',
+                      background: status === 'completed' ? 'var(--color-text-muted)' : 'var(--color-primary)',
                       borderRadius: '8px',
                       textDecoration: 'none',
                       whiteSpace: 'nowrap',

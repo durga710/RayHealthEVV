@@ -113,7 +113,7 @@ export function ApplicantPortalPage() {
     return (
       <div className="pub-root" style={{ display: 'grid', placeItems: 'center' }}>
         <PublicBrandStyles />
-        <span style={{ color: 'var(--pub-faint, var(--color-text-muted))' }}>Loading your portal…</span>
+        <span style={{ color: 'var(--pub-faint)' }}>Loading your portal…</span>
       </div>
     );
   }
