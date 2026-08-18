@@ -15,6 +15,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "security:scan": "node --import tsx scripts/security-surface-scan.ts",
+    "css:scan": "node --import tsx scripts/css-contract-scan.ts",
     "sql:scan": "bash scripts/check-no-string-sql.sh",
     "check": "bash scripts/check.sh",
     "db:migrate": "npm run db:migrate --workspace=@rayhealth/core",

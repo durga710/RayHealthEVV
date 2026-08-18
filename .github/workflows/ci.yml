@@ -72,6 +72,8 @@ jobs:
       - run: npm run security:scan
       - name: No string-built SQL (parameterized-query guard)
         run: npm run sql:scan
+      - name: CSS contract (contrast and theming guards)
+        run: npm run css:scan
 
   test-core:
     name: test-core
