@@ -1,6 +1,6 @@
 import type { Knex } from 'knex';
 import type { Agency, AgencyTheme, PublicProfile } from '../domain/agency.js';
-import { publicProfileSchema } from '../domain/agency.js';
+import { agencyThemeSchema, publicProfileSchema } from '../domain/agency.js';
 
 /** Stored jsonb → validated profile; malformed/legacy rows read as null. */
 function parseProfile(raw: unknown): PublicProfile | null {
@@ -9,6 +9,39 @@ function parseProfile(raw: unknown): PublicProfile | null {
     const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
     const parsed = publicProfileSchema.safeParse(value);
     return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stored jsonb -> validated theme.
+ *
+ * Salvages field by field rather than rejecting the whole object the way
+ * `parseProfile` does: a typo in one hex should not cost an agency its brand
+ * name and tagline. Anything that fails validation is dropped, and the resolver
+ * falls back to the RayHealth default for that slot. Read-time normalization is
+ * what lets rows written before the schema was tightened keep working.
+ */
+function parseTheme(raw: unknown): AgencyTheme | null {
+  if (!raw) return null;
+  try {
+    const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (typeof value !== 'object' || value === null) return null;
+
+    const record = value as Record<string, unknown>;
+    const salvaged: Record<string, unknown> = {};
+
+    // Walk the schema's own shape, not the stored object's keys: unknown keys
+    // are dropped rather than probed, and every field is checked by the same
+    // rule the write path will use.
+    for (const [key, fieldSchema] of Object.entries(agencyThemeSchema.shape)) {
+      if (record[key] === undefined) continue;
+      const parsed = fieldSchema.safeParse(record[key]);
+      if (parsed.success) salvaged[key] = parsed.data;
+    }
+
+    return Object.keys(salvaged).length > 0 ? (salvaged as AgencyTheme) : null;
   } catch {
     return null;
   }
@@ -76,7 +109,7 @@ export class AgencyRepository {
     const row = await this.db('agencies').select('features').where({ id }).first();
     if (!row) return null;
     const features: Record<string, unknown> = typeof row.features === 'string' ? JSON.parse(row.features) : row.features ?? {};
-    return (features.theme as AgencyTheme) ?? null;
+    return parseTheme(features.theme);
   }
 
   async updateName(id: string, name: string): Promise<Agency | null> {
