@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getJson } from '../../lib/api-client.js';
+import { tint } from '../../lib/color.js';
 
 /**
  * Admin-only audit events timeline.
@@ -325,7 +326,7 @@ export function AuditEventsPage() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.4rem',
-            background: 'rgba(16, 116, 128,0.2)',
+            background: tint('var(--color-primary)', 20),
             color: 'var(--color-primary-light)',
             borderRadius: '6px',
             padding: '0.3rem 0.75rem',

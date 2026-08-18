@@ -94,11 +94,11 @@ export function SupportChat() {
           height: '56px',
           borderRadius: '50%',
           border: 'none',
-          backgroundColor: 'var(--color-primary-light)',
-          color: 'white',
+          background: 'var(--color-primary)',
+          color: 'var(--color-on-brand)',
           fontSize: '1.5rem',
           cursor: 'pointer',
-          boxShadow: '0 8px 24px rgba(26, 95, 168, 0.35)'
+          boxShadow: 'var(--shadow-brand)'
         }}
       >
         {open ? (

@@ -90,7 +90,7 @@ export function AdminAssistant() {
           height: '56px',
           borderRadius: '50%',
           border: 'none',
-          backgroundColor: 'var(--color-accent, var(--color-accent))',
+          backgroundColor: 'var(--color-accent)',
           color: 'white',
           fontSize: '1.5rem',
           cursor: 'pointer',
@@ -131,7 +131,7 @@ export function AdminAssistant() {
           <div
             style={{
               padding: '1rem 1.25rem',
-              backgroundColor: 'var(--color-primary-dark, var(--color-primary-dark))',
+              backgroundColor: 'var(--color-primary-dark)',
               color: 'white',
               display: 'flex',
               alignItems: 'center',
@@ -165,7 +165,7 @@ export function AdminAssistant() {
                   padding: '0.6rem 0.85rem',
                   borderRadius: '12px',
                   backgroundColor:
-                    m.role === 'user' ? 'var(--color-primary-light, var(--color-primary))' : 'white',
+                    m.role === 'user' ? 'var(--color-primary-light)' : 'white',
                   color: m.role === 'user' ? 'white' : 'var(--color-text)',
                   border: m.role === 'assistant' ? '1px solid var(--color-primary-bg)' : 'none',
                   fontSize: '0.92rem',
@@ -265,7 +265,7 @@ export function AdminAssistant() {
                 onClick={() => void send()}
                 disabled={busy || input.trim().length === 0}
                 style={{
-                  backgroundColor: 'var(--color-accent, var(--color-accent))',
+                  backgroundColor: 'var(--color-accent)',
                   color: 'white',
                   border: 'none',
                   padding: '0.5rem 1rem',

@@ -30,7 +30,7 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
     verified:  { bg: 'var(--color-success-bg)', color: 'var(--color-success)', border: 'var(--color-success-border)', label: 'Verified' },
     pending:   { bg: 'var(--color-warning-bg)', color: 'var(--color-warning)', border: 'var(--color-warning-border)', label: 'Pending' },
-    flagged:   { bg: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: 'var(--color-danger-border)', label: 'Flagged' },
+    flagged:   { bg: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: 'var(--color-danger-border)', label: 'Flagged' },
     corrected: { bg: 'var(--color-info-bg)', color: 'var(--color-primary)', border: 'var(--color-info-border)', label: 'Corrected' },
   };
   const s = map[status] ?? { bg: 'var(--color-surface-soft)', color: 'var(--color-text-secondary)', border: 'var(--color-border)', label: status || 'Unknown' };
@@ -72,7 +72,7 @@ export function CaregiverVisitsPage() {
     borderRadius: '6px',
     border: 'none',
     cursor: 'pointer',
-    background: active ? 'var(--color-primary, var(--color-primary))' : 'transparent',
+    background: active ? 'var(--color-primary)' : 'transparent',
     color: active ? 'var(--color-surface)' : 'var(--color-text-muted)',
   });
 
@@ -104,7 +104,7 @@ export function CaregiverVisitsPage() {
       </div>
 
       {loading && <div style={{ color: 'var(--color-text-muted)' }}>Loading…</div>}
-      {error && <div style={{ color: 'var(--color-danger)' }}>{error}</div>}
+      {error && <div style={{ color: 'var(--color-danger-text)' }}>{error}</div>}
 
       {!loading && !error && filtered.length === 0 && (
         <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '2.5rem', textAlign: 'center', color: 'var(--color-text-subtle)' }}>

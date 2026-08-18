@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { postJson, getJson } from '../../lib/api-client.js';
+import { tint } from '../../lib/color.js';
 
 interface CourseSection {
   title: string;
@@ -123,7 +124,7 @@ function VideoPlayer({ videoUrl, onPlay }: { videoUrl: string; onPlay?: () => vo
         }}>
           <div style={{
             width: '64px', height: '64px', borderRadius: '50%',
-            background: 'rgba(16, 116, 128,0.9)',
+            background: tint('var(--color-primary)', 90),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="white" aria-hidden="true">
@@ -229,7 +230,7 @@ function Quiz({ questions, onPass }: QuizProps) {
             {quizState === 'failed' && (
               <div style={{
                 background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px',
-                padding: '0.75rem 1rem', fontSize: '0.875rem', color: 'var(--color-danger)',
+                padding: '0.75rem 1rem', fontSize: '0.875rem', color: 'var(--color-danger-text)',
                 display: 'flex', alignItems: 'center', gap: '0.5rem',
               }}>
                 <span style={{ display: 'inline-flex', flexShrink: 0 }}>
@@ -256,7 +257,7 @@ function Quiz({ questions, onPass }: QuizProps) {
                     <span style={{ color: 'var(--color-text-subtle)', marginRight: '0.4rem' }}>{qi + 1}.</span>
                     {q.question}
                     {isWrong && (
-                      <span style={{ marginLeft: '0.5rem', color: 'var(--color-danger)', fontSize: '0.8rem', fontWeight: 500 }}>
+                      <span style={{ marginLeft: '0.5rem', color: 'var(--color-danger-text)', fontSize: '0.8rem', fontWeight: 500 }}>
                         Correct: {q.options[q.correct]}
                       </span>
                     )}
@@ -402,7 +403,7 @@ export function CourseDetailPage() {
         <button type="button" onClick={() => navigate('/portal/training')} style={backBtnStyle}>
           ← Back to My Training
         </button>
-        <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '10px', padding: '2rem', color: 'var(--color-danger)', textAlign: 'center' }}>
+        <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '10px', padding: '2rem', color: 'var(--color-danger-text)', textAlign: 'center' }}>
           Course not found or you are not enrolled.
         </div>
       </div>
@@ -476,7 +477,7 @@ export function CourseDetailPage() {
       </div>
 
       {error && (
-        <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--color-danger)' }}>
+        <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--color-danger-text)' }}>
           {error}
         </div>
       )}
@@ -543,7 +544,7 @@ export function CourseDetailPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <span style={{
                         width: '26px', height: '26px', borderRadius: '50%',
-                        background: isOpen ? 'var(--color-primary, var(--color-primary))' : 'var(--color-surface-soft)',
+                        background: isOpen ? 'var(--color-primary)' : 'var(--color-surface-soft)',
                         color: isOpen ? 'var(--color-surface)' : 'var(--color-text-muted)',
                         fontSize: '0.75rem', fontWeight: 700,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -660,7 +661,7 @@ export function CourseDetailPage() {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
               padding: '0.6rem 1.4rem', fontWeight: 700, fontSize: '0.9375rem',
-              color: 'var(--color-surface)', background: completing ? 'var(--color-text-subtle)' : 'var(--color-primary, var(--color-primary))',
+              color: 'var(--color-surface)', background: completing ? 'var(--color-text-subtle)' : 'var(--color-primary)',
               border: 'none', borderRadius: '8px', cursor: completing ? 'wait' : 'pointer', whiteSpace: 'nowrap',
             }}
           >

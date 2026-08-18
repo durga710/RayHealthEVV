@@ -245,7 +245,7 @@ export function EnrollCaregiverModal({
               )}
               <div style={caregiverListStyle}>
                 {filteredCaregivers.length === 0 && (
-                  <p style={{ padding: '0.75rem', margin: 0, color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.9rem' }}>
+                  <p style={{ padding: '0.75rem', margin: 0, color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                     No active caregivers match.
                   </p>
                 )}
@@ -265,7 +265,7 @@ export function EnrollCaregiverModal({
                       />
                       <span style={{ flex: 1, marginLeft: '0.6rem' }}>
                         <strong>{c.firstName} {c.lastName}</strong>
-                        <span style={{ color: 'var(--color-text-muted, var(--color-text-muted))', marginLeft: '0.5rem', fontSize: '0.85rem' }}>
+                        <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.5rem', fontSize: '0.85rem' }}>
                           {c.email}
                         </span>
                       </span>
@@ -348,7 +348,7 @@ const footerStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '0.85rem',
-  color: 'var(--color-text-muted, var(--color-text-secondary))',
+  color: 'var(--color-text-muted)',
   marginBottom: '0.4rem',
   fontWeight: 500,
 };
@@ -363,7 +363,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const mutedStyle: React.CSSProperties = {
-  color: 'var(--color-text-muted, var(--color-text-subtle))',
+  color: 'var(--color-text-muted)',
   fontWeight: 400,
   fontSize: '0.8rem',
 };
@@ -388,7 +388,7 @@ const closeBtnStyle: React.CSSProperties = {
   border: 'none',
   fontSize: '1.5rem',
   cursor: 'pointer',
-  color: 'var(--color-text-muted, var(--color-text-muted))',
+  color: 'var(--color-text-muted)',
   padding: 0,
   lineHeight: 1,
   width: '32px',

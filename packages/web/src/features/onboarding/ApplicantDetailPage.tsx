@@ -324,9 +324,11 @@ export function ApplicantDetailPage() {
             disabled={hiring}
             style={{
               padding: '0.5rem 1.25rem',
-              backgroundColor: hiring ? 'var(--color-success-border)' : 'var(--color-success)',
-              color: 'white',
+              background: 'var(--color-success)',
+              color: 'var(--color-on-brand)',
+              opacity: hiring ? 0.55 : 1,
               border: 'none',
+              boxShadow: 'none',
               borderRadius: '8px',
               fontWeight: 600,
               fontSize: '0.875rem',

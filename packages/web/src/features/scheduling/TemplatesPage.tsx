@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { getJson, postJson, putJson, deleteJson, ApiError } from '../../lib/api-client.js';
 import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
+import { tint } from '../../lib/color.js';
 
 interface Template {
   id: string;
@@ -241,7 +242,7 @@ export function TemplatesPage() {
                           cursor: 'pointer',
                           padding: '0.45rem 0.6rem',
                           borderRadius: '6px',
-                          backgroundColor: isSelected ? 'rgba(16, 116, 128, 0.08)' : 'transparent',
+                          backgroundColor: isSelected ? tint('var(--color-primary)', 8) : 'transparent',
                           transition: 'background-color 0.1s ease',
                           fontSize: '0.8125rem',
                           color: 'var(--color-text)',

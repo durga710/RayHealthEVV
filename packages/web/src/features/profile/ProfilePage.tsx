@@ -151,7 +151,7 @@ export function ProfilePage() {
 
   if (error && !profile) {
     return (
-      <div style={{ padding: '2rem', color: 'var(--color-danger)' }}>{error}</div>
+      <div style={{ padding: '2rem', color: 'var(--color-danger-text)' }}>{error}</div>
     );
   }
 
@@ -177,7 +177,7 @@ export function ProfilePage() {
               borderRadius: '50%',
               margin: '0 auto 1rem',
               overflow: 'hidden',
-              background: 'var(--color-primary, var(--color-primary))',
+              background: 'var(--color-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -210,9 +210,9 @@ export function ProfilePage() {
               style={{
                 fontSize: '0.75rem',
                 fontWeight: 500,
-                color: 'var(--color-primary, var(--color-primary))',
+                color: 'var(--color-primary)',
                 background: 'transparent',
-                border: '1px solid var(--color-primary, var(--color-primary))',
+                border: '1px solid var(--color-primary)',
                 borderRadius: '6px',
                 padding: '0.35rem 0.75rem',
                 cursor: 'pointer',
@@ -227,7 +227,7 @@ export function ProfilePage() {
                 style={{
                   fontSize: '0.75rem',
                   fontWeight: 500,
-                  color: 'var(--color-danger)',
+                  color: 'var(--color-danger-text)',
                   background: 'transparent',
                   border: '1px solid var(--color-danger-border)',
                   borderRadius: '6px',
@@ -261,8 +261,8 @@ export function ProfilePage() {
                 display: 'inline-block',
                 fontSize: '0.75rem',
                 fontWeight: 600,
-                background: 'var(--color-primary-bg, var(--color-info-bg))',
-                color: 'var(--color-primary, var(--color-primary))',
+                background: 'var(--color-info-bg)',
+                color: 'var(--color-primary)',
                 borderRadius: '100px',
                 padding: '0.15rem 0.6rem',
                 textTransform: 'capitalize',
@@ -290,7 +290,7 @@ export function ProfilePage() {
             </h2>
 
             {error && (
-              <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--color-danger)' }}>
+              <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--color-danger-text)' }}>
                 {error}
               </div>
             )}
@@ -368,7 +368,7 @@ export function ProfilePage() {
             </p>
 
             {pwError && (
-              <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--color-danger)' }}>
+              <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--color-danger-text)' }}>
                 {pwError}
               </div>
             )}
@@ -410,7 +410,7 @@ export function ProfilePage() {
                 }}
               />
               {confirmPassword && newPassword !== confirmPassword && (
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-danger)' }}>Passwords do not match</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-danger-text)' }}>Passwords do not match</span>
               )}
             </label>
 
@@ -454,7 +454,7 @@ const primaryButtonStyle: React.CSSProperties = {
   fontSize: '0.875rem',
   fontWeight: 600,
   color: 'var(--color-surface)',
-  background: 'var(--color-primary, var(--color-primary))',
+  background: 'var(--color-primary)',
   border: 'none',
   borderRadius: '8px',
   cursor: 'pointer',

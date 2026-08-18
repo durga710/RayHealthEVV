@@ -426,7 +426,7 @@ export function AgencySetupPage() {
         </h2>
         <p style={{ margin: '0 0 1.1rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
           Your billing-provider identity for X12 837P claims. Required fields (marked&nbsp;
-          <span style={{ color: 'var(--color-danger)' }}>*</span>) must be complete before an 837 can be generated
+          <span style={{ color: 'var(--color-danger-text)' }}>*</span>) must be complete before an 837 can be generated
           for a payer or clearinghouse.
         </p>
         <form onSubmit={handleBillingSubmit}>
@@ -434,7 +434,7 @@ export function AgencySetupPage() {
             {BILLING_FIELDS.map(f => (
               <div key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 <label htmlFor={f.key} className="label">
-                  {f.label}{f.required ? <span style={{ color: 'var(--color-danger)' }}> *</span> : null}
+                  {f.label}{f.required ? <span style={{ color: 'var(--color-danger-text)' }}> *</span> : null}
                 </label>
                 <input
                   id={f.key}

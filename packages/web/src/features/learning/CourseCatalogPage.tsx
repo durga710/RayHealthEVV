@@ -61,7 +61,7 @@ export function CourseCatalogPage() {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2rem' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Course catalog</h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.9rem' }}>
+          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
             Training courses available to assign to caregivers.
           </p>
         </div>
@@ -93,10 +93,10 @@ export function CourseCatalogPage() {
                 {course.required && <span style={requiredBadgeStyle}>Required</span>}
                 {course.agencyId === null && <span style={globalBadgeStyle}>Global</span>}
               </div>
-              <p style={{ margin: '0 0 0.75rem', color: 'var(--color-text-muted, var(--color-text-secondary))', fontSize: '0.9rem', lineHeight: 1.5 }}>
+              <p style={{ margin: '0 0 0.75rem', color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1.5 }}>
                 {course.description}
               </p>
-              <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.85rem', color: 'var(--color-text-muted, var(--color-text-muted))', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.85rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
                 <span><strong>Code:</strong> {course.code}</span>
                 <span><strong>Cadence:</strong> {CADENCE_LABEL[course.cadence]}</span>
                 <span><strong>Duration:</strong> {course.durationMinutes} min</span>

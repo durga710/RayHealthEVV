@@ -209,7 +209,7 @@ export function PayrollReconciliationPage() {
             backgroundColor: 'var(--color-danger-bg)',
             border: '1px solid var(--color-danger-border)',
             borderRadius: 10,
-            color: 'var(--color-danger)',
+            color: 'var(--color-danger-text)',
             fontSize: '0.9rem',
             fontWeight: 700,
             marginTop: '1rem',
@@ -248,7 +248,7 @@ export function PayrollReconciliationPage() {
           </button>
         </div>
         {exportError ? (
-          <div role="alert" style={{ color: 'var(--color-danger)', fontSize: '0.85rem', fontWeight: 700, marginTop: '0.75rem' }}>
+          <div role="alert" style={{ color: 'var(--color-danger-text)', fontSize: '0.85rem', fontWeight: 700, marginTop: '0.75rem' }}>
             {exportError}
           </div>
         ) : null}

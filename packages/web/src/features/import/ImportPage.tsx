@@ -51,8 +51,8 @@ const ENTITIES: { value: ImportEntity; label: string; blurb: string }[] = [
 ];
 
 const card: React.CSSProperties = {
-  background: 'var(--color-surface, var(--color-surface))',
-  border: '1px solid var(--color-border, var(--color-border))',
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
   borderRadius: 12,
   padding: '1.25rem',
   marginBottom: '1.25rem',

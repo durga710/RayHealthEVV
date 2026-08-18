@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getJson } from '../../lib/api-client.js';
+import { tint } from '../../lib/color.js';
 
 /**
  * Printable certificate of completion for a caregiver's completed course.
@@ -50,7 +51,7 @@ export function CertificatePage() {
         <button type="button" onClick={() => navigate('/portal/training')} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', padding: '0 0 1rem' }}>
           ← Back to My Training
         </button>
-        <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '10px', padding: '2rem', color: 'var(--color-danger)', textAlign: 'center' }}>
+        <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: '10px', padding: '2rem', color: 'var(--color-danger-text)', textAlign: 'center' }}>
           {error ?? 'Certificate not available.'}
         </div>
       </div>
@@ -90,7 +91,7 @@ export function CertificatePage() {
           overflow: 'hidden',
         }}
       >
-        <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% -10%, rgba(16,116,128,0.08), transparent 60%)', pointerEvents: 'none' }} />
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 50% -10%, ${tint('var(--color-primary)', 8)}, transparent 60%)`, pointerEvents: 'none' }} />
 
         <div style={{ position: 'relative' }}>
           <div style={{ fontSize: '0.8125rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '0.5rem' }}>

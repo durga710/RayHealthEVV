@@ -127,7 +127,7 @@ export function CaregiverLearningPage() {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2rem' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Caregiver learning</h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.9rem' }}>
+          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
             Caregiver <code style={codeStyle}>{caregiverId}</code>
           </p>
         </div>
@@ -150,7 +150,7 @@ export function CaregiverLearningPage() {
             <span style={progress.isCompliant ? compliantBadgeStyle : nonCompliantBadgeStyle}>
               {progress.isCompliant ? 'Compliant' : 'Non-compliant'}
             </span>
-            <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: 'var(--color-text-muted, var(--color-text-muted))' }}>
+            <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
               {progress.enrollments.length} enrollment{progress.enrollments.length === 1 ? '' : 's'}
             </span>
           </div>
@@ -158,7 +158,7 @@ export function CaregiverLearningPage() {
           {progress.enrollments.length === 0 && (
             <div style={emptyStateStyle}>
               <p style={{ margin: 0 }}>No courses assigned yet.</p>
-              <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--color-text-muted, var(--color-text-muted))' }}>
+              <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                 Use the Enroll button on the Learning Hub to assign training.
               </p>
             </div>
@@ -247,7 +247,7 @@ const metaRowStyle: React.CSSProperties = {
   flexWrap: 'wrap',
   gap: '1.25rem',
   fontSize: '0.85rem',
-  color: 'var(--color-text-muted, var(--color-text-muted))',
+  color: 'var(--color-text-muted)',
 };
 
 const codeStyle: React.CSSProperties = {

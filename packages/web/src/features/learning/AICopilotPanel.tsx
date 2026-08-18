@@ -222,7 +222,7 @@ const secondaryLinkStyle: React.CSSProperties = {
 };
 
 const mutedNoteStyle: React.CSSProperties = {
-  color: 'var(--color-text-muted, var(--color-text-muted))',
+  color: 'var(--color-text-muted)',
   fontSize: '0.85rem',
   alignSelf: 'center',
 };

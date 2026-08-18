@@ -52,7 +52,7 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
     verified:  { bg: 'var(--color-success-bg)', color: 'var(--color-success)', border: 'var(--color-success-border)', label: 'Verified' },
     pending:   { bg: 'var(--color-warning-bg)', color: 'var(--color-warning)', border: 'var(--color-warning-border)', label: 'Pending' },
-    flagged:   { bg: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: 'var(--color-danger-border)', label: 'Flagged' },
+    flagged:   { bg: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: 'var(--color-danger-border)', label: 'Flagged' },
     corrected: { bg: 'var(--color-info-bg)', color: 'var(--color-primary)', border: 'var(--color-info-border)', label: 'Corrected' },
   };
   const fallback = { bg: 'var(--color-surface-soft)', color: 'var(--color-text-secondary)', border: 'var(--color-border)', label: status || 'Unknown' };

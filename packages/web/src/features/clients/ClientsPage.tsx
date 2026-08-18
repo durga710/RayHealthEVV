@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { getJson, postJson, putJson, deleteJson, ApiError } from '../../lib/api-client.js';
 import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
+import { tint } from '../../lib/color.js';
 
 interface Client {
   id: string;
@@ -349,8 +350,8 @@ export function ClientsPage() {
                   fontSize: '0.7rem',
                   fontWeight: 700,
                   color: 'var(--color-primary)',
-                  background: 'rgba(16, 116, 128,0.1)',
-                  border: '1px solid rgba(16, 116, 128,0.2)',
+                  background: tint('var(--color-primary)', 10),
+                  border: `1px solid ${tint('var(--color-primary)', 20)}`,
                   borderRadius: '999px',
                   padding: '0.2rem 0.65rem',
                   letterSpacing: '0.04em',

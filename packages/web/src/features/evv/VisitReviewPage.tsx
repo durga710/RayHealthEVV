@@ -189,7 +189,7 @@ export function VisitReviewPage() {
               display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
               background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.18)',
               borderRadius: '999px', padding: '0.3rem 0.85rem',
-              fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-danger)',
+              fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-danger-text)',
             }}
           >
             Flagged: {flaggedCount}

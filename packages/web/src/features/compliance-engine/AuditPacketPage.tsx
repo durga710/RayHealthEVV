@@ -402,7 +402,7 @@ export function AuditPacketPage() {
                 </strong>
                 <svg
                   viewBox={`0 0 ${data.visit.signature.width} ${data.visit.signature.height}`}
-                  style={{ width: '100%', maxWidth: 340, height: 'auto', display: 'block', background: 'var(--color-surface, var(--color-surface))', border: '1px solid var(--color-border, var(--color-border))', borderRadius: 8 }}
+                  style={{ width: '100%', maxWidth: 340, height: 'auto', display: 'block', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
                   role="img"
                   aria-label="Captured signature"
                 >
@@ -411,7 +411,7 @@ export function AuditPacketPage() {
                       key={i}
                       points={stroke.map(([x, y]) => `${x},${y}`).join(' ')}
                       fill="none"
-                      stroke="var(--color-text, var(--color-text))"
+                      stroke="var(--color-text)"
                       strokeWidth={2.5}
                       strokeLinecap="round"
                       strokeLinejoin="round"

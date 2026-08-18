@@ -61,7 +61,7 @@ export function LearningAnalyticsPage(): ReactElement {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2rem' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Course analytics</h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.9rem' }}>
+          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
             Per-course completion rates and bottleneck signal. Sorted by completion rate ascending, worst-performing courses first.
           </p>
         </div>
@@ -79,7 +79,7 @@ export function LearningAnalyticsPage(): ReactElement {
       {!loading && envelope && envelope.rows.length === 0 && (
         <div style={emptyStateStyle}>
           <p style={{ margin: 0 }}>No courses in the catalog yet.</p>
-          <p style={{ margin: '0.5rem 0 0', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+          <p style={{ margin: '0.5rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
             Seed the PA-required baseline, then come back when caregivers have enrollments.
           </p>
         </div>
@@ -179,7 +179,7 @@ function ActionCount({ overdue, expired, pending }: ActionCountProps): ReactElem
   }
   return (
     <div style={{ fontSize: '0.85rem' }}>
-      {expired > 0 && <span style={{ color: 'var(--color-danger)', fontWeight: 500 }}>{expired} expired</span>}
+      {expired > 0 && <span style={{ color: 'var(--color-danger-text)', fontWeight: 500 }}>{expired} expired</span>}
       {expired > 0 && (overdue > 0 || pending > 0) && <span style={{ color: 'var(--color-text-subtle)' }}>, </span>}
       {overdue > 0 && <span style={{ color: 'var(--color-accent-dark)', fontWeight: 500 }}>{overdue} overdue</span>}
       {overdue > 0 && pending > 0 && <span style={{ color: 'var(--color-text-subtle)' }}>, </span>}
@@ -232,7 +232,7 @@ const tdStyle: React.CSSProperties = {
 
 const courseMetaStyle: React.CSSProperties = {
   fontSize: '0.75rem',
-  color: 'var(--color-text-muted, var(--color-text-muted))',
+  color: 'var(--color-text-muted)',
   marginTop: '0.2rem',
 };
 
@@ -281,6 +281,6 @@ const emptyStateStyle: React.CSSProperties = {
 const generatedAtStyle: React.CSSProperties = {
   marginTop: '1rem',
   fontSize: '0.75rem',
-  color: 'var(--color-text-muted, var(--color-text-subtle))',
+  color: 'var(--color-text-muted)',
   textAlign: 'right',
 };

@@ -35,16 +35,16 @@ export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, Route
       <div style={{ maxWidth: 560, margin: '3rem auto', padding: '0 1rem' }}>
         <div
           style={{
-            background: 'var(--color-accent-bg, var(--color-danger-bg))',
-            border: '1px solid var(--color-accent, var(--color-danger-border))',
+            background: 'var(--color-danger-bg)',
+            border: '1px solid var(--color-danger-border)',
             borderRadius: 12,
             padding: '1.25rem 1.4rem',
           }}
         >
-          <h2 style={{ margin: '0 0 0.4rem', fontSize: '1.05rem', color: 'var(--color-accent, var(--color-danger-text))' }}>
+          <h2 style={{ margin: '0 0 0.4rem', fontSize: '1.05rem', color: 'var(--color-danger-text)' }}>
             Something went wrong on this page
           </h2>
-          <p style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--color-text, var(--color-text))', lineHeight: 1.5 }}>
+          <p style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: 1.5 }}>
             This page failed to render. The rest of the app is still available, try reloading, or pick
             another page from the menu.
           </p>
@@ -52,7 +52,7 @@ export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, Route
             type="button"
             onClick={() => window.location.reload()}
             style={{
-              background: 'var(--color-primary, var(--color-primary))',
+              background: 'var(--color-primary)',
               border: 'none',
               borderRadius: 8,
               color: 'var(--color-surface)',

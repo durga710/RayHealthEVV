@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext.js';
+import { tint } from '../../lib/color.js';
 
 const ADMIN_ROLES = new Set(['admin', 'coordinator']);
 
@@ -53,8 +54,8 @@ export function CaregiverPortalPage() {
             width: '52px',
             height: '52px',
             borderRadius: '14px',
-            background: 'rgba(16, 116, 128,0.15)',
-            border: '1px solid rgba(16, 116, 128,0.25)',
+            background: tint('var(--color-primary)', 15),
+            border: `1px solid ${tint('var(--color-primary)', 25)}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -80,8 +81,8 @@ export function CaregiverPortalPage() {
 
         <div
           style={{
-            backgroundColor: 'rgba(16, 116, 128,0.08)',
-            border: '1px solid rgba(16, 116, 128,0.15)',
+            backgroundColor: tint('var(--color-primary)', 8),
+            border: `1px solid ${tint('var(--color-primary)', 15)}`,
             borderRadius: '10px',
             padding: '1rem',
             display: 'flex',

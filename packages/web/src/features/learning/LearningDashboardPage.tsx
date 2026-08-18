@@ -64,7 +64,7 @@ export function LearningDashboardPage() {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2rem' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Learning Hub</h2>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted, var(--color-text-muted))', fontSize: '0.9rem' }}>
+          <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
             Caregiver training compliance, at-a-glance and per-person.
           </p>
         </div>
@@ -150,7 +150,7 @@ interface KpiCardProps {
 function KpiCard({ label, value, accent }: KpiCardProps) {
   return (
     <div style={kpiCardStyle}>
-      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, var(--color-text-muted))', marginBottom: '0.4rem' }}>{label}</div>
+      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.4rem' }}>{label}</div>
       <div style={{ fontSize: '1.75rem', fontWeight: 500, color: accent ?? 'var(--color-primary-dark)' }}>{value}</div>
     </div>
   );
@@ -165,7 +165,7 @@ interface StatusCardProps {
 function StatusCard({ label, value, color }: StatusCardProps) {
   return (
     <div style={{ ...kpiCardStyle, borderLeft: `4px solid ${color}` }}>
-      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, var(--color-text-muted))', marginBottom: '0.4rem' }}>{label}</div>
+      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.4rem' }}>{label}</div>
       <div style={{ fontSize: '1.5rem', fontWeight: 500 }}>{value}</div>
     </div>
   );
@@ -182,7 +182,7 @@ function ComplianceBar({ rollup }: ComplianceBarProps) {
     { label: 'In progress', value: rollup.inProgress, color: 'var(--color-primary)' },
     { label: 'Not started', value: rollup.notStarted, color: 'var(--color-text-subtle)' },
     { label: 'Overdue', value: rollup.overdue, color: 'var(--color-accent-dark)' },
-    { label: 'Expired', value: rollup.expired, color: 'var(--color-danger)' }
+    { label: 'Expired', value: rollup.expired, color: 'var(--color-danger-text)' }
   ];
 
   return (
@@ -237,7 +237,7 @@ const sectionHeadingStyle: React.CSSProperties = {
   margin: '0 0 0.75rem',
   fontSize: '1rem',
   fontWeight: 500,
-  color: 'var(--color-text-muted, var(--color-text-secondary))',
+  color: 'var(--color-text-muted)',
 };
 
 const linkButtonStyle: React.CSSProperties = {
