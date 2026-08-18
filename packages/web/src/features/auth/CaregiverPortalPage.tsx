@@ -98,7 +98,8 @@ export function CaregiverPortalPage() {
           type="button"
           onClick={logout}
           style={{
-            backgroundColor: 'transparent',
+            background: 'transparent',
+            boxShadow: 'none',
             border: '1px solid rgba(255,255,255,0.1)',
             color: 'var(--color-text-subtle)',
             borderRadius: '9px',

@@ -27,19 +27,31 @@
   --color-surface-soft: #F1F5F9;
   --color-sidebar: #0F172A;        /* slate-900, dark sidebar (kept) */
   --color-sidebar-hover: rgba(255, 255, 255, 0.06);
-  --color-sidebar-active: rgba(16, 116, 128, 0.22);  /* purple-tinted active */
-  --color-sidebar-text: #94A3B8;
+  --color-sidebar-active: rgba(16, 116, 128, 0.22);
+  --color-brand-badge-bg: rgba(16, 116, 128, 0.2);
+  --color-brand-badge-text: #7FC7CF;
+  --color-sidebar-text: var(--color-text-muted-on-dark);
   --color-sidebar-text-active: #FFFFFF;
 
   /* Borders */
   --color-border: #E2E8F0;         /* slate-200 */
   --color-border-strong: #CBD5E1;  /* slate-300 */
+  --color-border-hover: #94A3B8;   /* slate-400, border under a hovered control */
 
   /* Text */
   --color-text: #0F172A;           /* slate-900 */
   --color-text-secondary: #475569; /* slate-600 */
   --color-text-muted: #64748B;     /* slate-500, kept richer than design spec for legibility */
-  --color-text-subtle: #94A3B8;
+  /* Was #94A3B8 (slate-400), which is 2.56:1 on white. It is used almost
+     exclusively on 11-13px text, where WCAG AA allows no large-text
+     exception, so it is now the lightest slate that still clears 4.5:1.
+     --color-sidebar-text keeps the original value: on the dark rail the
+     same hex measures 6.96:1 and is perfectly readable. */
+  --color-text-subtle: #637895;
+  /* De-emphasized text on a DARK surface (sidebar, command panel). Kept light
+     on purpose: contrast runs the other way there, and --color-text-subtle
+     would be nearly unreadable. */
+  --color-text-muted-on-dark: #94A3B8;
 
   /* Semantic, kept independent of brand colors. Danger uses red-600 (not the
      accent red-700) so a true error state reads distinct from brand chrome. */
@@ -51,6 +63,7 @@
   --color-danger-bg: #FEF2F2;
   --color-danger-border: #FECACA;
   --color-danger-text: #BE123C;    /* readable rose-700 for text on -bg */
+  --color-danger-hover: #E11D48;   /* rose-600, hover fill for .btn-danger */
   --color-warning: #B45309;        /* amber-700, safe with white labels */
   --color-warning-bg: #FFFBEB;
   --color-warning-border: #FCD34D;
@@ -213,7 +226,7 @@ textarea {
 input:hover:not(:disabled),
 select:hover:not(:disabled),
 textarea:hover:not(:disabled) {
-  border-color: #94A3B8;
+  border-color: var(--color-border-hover);
 }
 
 input:focus,
@@ -324,48 +337,61 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Every variant below MUST use the `background` shorthand, never the
+   `background-color` longhand. The base `button` rule above paints
+   `--gradient-brand` via the shorthand, which sets background-image, and a
+   longhand `background-color` cannot clear a background-image , the gradient
+   would keep painting on top of the fill the variant asked for. That is how
+   .btn-ghost ended up rendering brand-on-brand (invisible) text. The same
+   reasoning applies to box-shadow: the base rule sets the brand glow, so any
+   variant that is not a brand-filled button has to turn it off.
+   scripts/css-contract-scan.ts enforces this. */
+
 .btn-primary {
-  background-color: var(--color-primary);
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-on-brand);
   border-color: var(--color-primary);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
+  background: var(--color-primary-dark);
   border-color: var(--color-primary-dark);
 }
 
 .btn-secondary {
-  background-color: var(--color-surface);
+  background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #F1F5F9;
-  border-color: #94A3B8;
+  background: var(--color-surface-soft);
+  border-color: var(--color-border-hover);
 }
 
 .btn-ghost {
-  background-color: transparent;
+  background: transparent;
   color: var(--color-primary);
   border: 1px solid transparent;
+  box-shadow: none;
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background-color: var(--color-primary-bg);
+  background: var(--color-primary-bg);
   color: var(--color-primary-dark);
 }
 
 .btn-danger {
-  background-color: var(--color-danger);
-  color: white;
+  background: var(--color-danger);
+  color: var(--color-on-brand);
   border-color: var(--color-danger);
+  box-shadow: none;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background-color: #E11D48;
-  border-color: #E11D48;
+  background: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
 }
 
 .btn-sm {
