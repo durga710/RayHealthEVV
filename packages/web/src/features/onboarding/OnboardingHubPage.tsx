@@ -249,7 +249,8 @@ export function OnboardingHubPage() {
                 border: 'none',
                 borderBottom:
                   activeTab === tab.value ? '2px solid var(--color-primary-dark)' : '2px solid transparent',
-                backgroundColor: 'transparent',
+                background: 'transparent',
+                boxShadow: 'none',
                 color: activeTab === tab.value ? 'var(--color-primary-dark)' : 'var(--color-text-muted)',
                 fontWeight: activeTab === tab.value ? 600 : 400,
                 fontSize: '0.875rem',

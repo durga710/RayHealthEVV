@@ -476,7 +476,8 @@ const confirmBtnStyle: React.CSSProperties = {
 };
 
 const declineBtnStyle: React.CSSProperties = {
-  backgroundColor: 'transparent',
+  background: 'transparent',
+  boxShadow: 'none',
   color: 'var(--color-primary-dark)',
   border: '1px solid var(--color-primary-light)',
   padding: '0.45rem 0.9rem',

@@ -407,7 +407,8 @@ const primaryButtonStyle: React.CSSProperties = {
 };
 
 const secondaryButtonStyle: React.CSSProperties = {
-  backgroundColor: 'transparent',
+  background: 'transparent',
+  boxShadow: 'none',
   color: 'var(--color-text-secondary)',
   border: '1px solid var(--color-border-strong)',
   padding: '0.55rem 1.1rem',

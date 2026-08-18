@@ -80,7 +80,8 @@ const primaryButtonStyle: React.CSSProperties = {
 };
 
 const ghostButtonStyle: React.CSSProperties = {
-  backgroundColor: 'transparent',
+  background: 'transparent',
+  boxShadow: 'none',
   border: '1px solid var(--color-border)',
   borderRadius: 8,
   color: 'var(--color-text)',
