@@ -1,11 +1,28 @@
 import { z } from 'zod';
+import { parseCssColor } from './theme-resolver.js';
+
+/**
+ * Agency-supplied colors are stored in a jsonb column and end up in
+ * `document.documentElement.style.setProperty`, so they are validated at the
+ * boundary rather than trusted. `parseCssColor` accepts only hex and rgb(),
+ * which also means nothing string-shaped can ride into the stylesheet.
+ */
+const cssColorSchema = z
+  .string()
+  .trim()
+  .max(32)
+  .refine((value) => parseCssColor(value) !== null, {
+    message: 'must be a hex (#RGB / #RRGGBB) or rgb() color',
+  });
 
 export const agencyThemeSchema = z.object({
-  primaryColor: z.string().optional(),
-  primaryDark: z.string().optional(),
-  accentColor: z.string().optional(),
-  logoText: z.string().optional(),
-  tagline: z.string().optional(),
+  primaryColor: cssColorSchema.optional(),
+  primaryDark: cssColorSchema.optional(),
+  accentColor: cssColorSchema.optional(),
+  // Rendered into the sidebar brand slot, so it is length-capped: the same
+  // unvalidated blob would otherwise be a layout-break vector.
+  logoText: z.string().trim().max(40).optional(),
+  tagline: z.string().trim().max(120).optional(),
 });
 
 export type AgencyTheme = z.infer<typeof agencyThemeSchema>;

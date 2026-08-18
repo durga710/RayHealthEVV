@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getCsrfToken, setCsrfToken } from './session-state.js';
+// Deep import, NOT the package barrel: the barrel re-exports every repository
+// and would pull knex, pg, and ssh2-sftp-client into the browser bundle.
+import { AGENCY_THEME_VARIABLES, resolveAgencyTheme } from '@rayhealth/core/domain/theme-resolver.js';
 
 const API_BASE = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? '/api';
 
@@ -35,25 +38,28 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
 }
 
+/**
+ * Apply an agency's branding by handing its colors to the shared resolver,
+ * which derives every dependent token (foreground ink, gradients, tints, focus
+ * ring, sidebar states) by measured contrast.
+ *
+ * This used to set three variables by hand and leave --color-on-brand pinned to
+ * white, so a pale brand color meant white-on-pale text everywhere. Clearing
+ * and setting are both driven off AGENCY_THEME_VARIABLES so the two lists
+ * cannot drift, and so switching agencies never leaves a stale color behind.
+ */
 function applyAgencyTheme(theme?: AgencyTheme | null) {
   const root = document.documentElement;
-  const primary = theme?.primaryColor?.trim();
-  const primaryDark = theme?.primaryDark?.trim();
 
-  // With no agency override, remove inline values so the shared stylesheet is
-  // the single source of truth for public, admin, and caregiver experiences.
-  if (!primary) {
-    root.style.removeProperty('--color-primary');
-    root.style.removeProperty('--color-primary-bg');
-  } else {
-    root.style.setProperty('--color-primary', primary);
-    root.style.setProperty('--color-primary-bg', `color-mix(in srgb, ${primary} 8%, transparent)`);
-  }
+  // Always clear first. With no agency override the shared stylesheet stays the
+  // single source of truth for public, admin, and caregiver experiences.
+  for (const name of AGENCY_THEME_VARIABLES) root.style.removeProperty(name);
 
-  if (!primaryDark) {
-    root.style.removeProperty('--color-primary-dark');
-  } else {
-    root.style.setProperty('--color-primary-dark', primaryDark);
+  if (!theme?.primaryColor?.trim()) return;
+
+  const { variables } = resolveAgencyTheme(theme);
+  for (const [name, value] of Object.entries(variables)) {
+    root.style.setProperty(name, value);
   }
 }
 
