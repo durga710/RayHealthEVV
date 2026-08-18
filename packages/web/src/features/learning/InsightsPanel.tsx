@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { getJson } from '../../lib/api-client.js';
+import { tint } from '../../lib/color.js';
 
 type InsightSeverity = 'critical' | 'warning' | 'info';
 
@@ -234,7 +235,7 @@ function chipStyle(color: string): React.CSSProperties {
     fontSize: '0.8rem',
     borderRadius: '12px',
     textDecoration: 'none',
-    border: `1px solid ${color}33`,
+    border: `1px solid ${tint(color, 20)}`,
   };
 }
 

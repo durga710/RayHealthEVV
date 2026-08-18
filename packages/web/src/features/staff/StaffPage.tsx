@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getJson, postJson, patchJson, deleteJson } from '../../lib/api-client.js';
 import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
+import { tint } from '../../lib/color.js';
 
 interface StaffMember {
   id: string;
@@ -104,7 +105,7 @@ function RoleBadge({ role }: { role: string }) {
     <span style={{
       display: 'inline-block', padding: '0.15em 0.55em', borderRadius: '999px',
       fontSize: '0.75rem', fontWeight: 600,
-      background: `${color}18`, color, textTransform: 'capitalize',
+      background: tint(color, 9), color, textTransform: 'capitalize',
     }}>{role}</span>
   );
 }

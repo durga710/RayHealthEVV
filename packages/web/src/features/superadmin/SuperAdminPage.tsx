@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { startRegistration, startAuthentication, browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { BrandLogo } from '../../components/brand/BrandLogo.js';
+import { tint } from '../../lib/color.js';
 
 /**
  * Hidden platform super-admin command center for Durga Ghimeray (Founder & CEO).
@@ -441,14 +442,14 @@ export function SuperAdminPage() {
         </header>
 
         {pending.length > 0 && (
-          <div style={{ background: C.amberSoft, border: `1px solid ${C.amber}33`, borderRadius: 10, padding: '0.75rem 1.05rem', marginBottom: '1.4rem', display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '0.88rem' }}>
+          <div style={{ background: C.amberSoft, border: `1px solid ${tint(C.amber, 20)}`, borderRadius: 10, padding: '0.75rem 1.05rem', marginBottom: '1.4rem', display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '0.88rem' }}>
             <span style={{ color: C.amber, display: 'flex' }}><Icon name="alert" size={17} /></span>
             <span style={{ color: C.ink, fontWeight: 600 }}>{pending.length} agenc{pending.length === 1 ? 'y' : 'ies'} awaiting your review</span>
-            <button type="button" onClick={() => setTab('agencies')} style={{ ...btn('ghost'), marginLeft: 'auto', borderColor: `${C.amber}55`, color: C.amber }}>Review</button>
+            <button type="button" onClick={() => setTab('agencies')} style={{ ...btn('ghost'), marginLeft: 'auto', borderColor: tint(C.amber, 33), color: C.amber }}>Review</button>
           </div>
         )}
 
-        {loadErr && <div role="alert" style={{ color: C.red, background: C.redSoft, border: `1px solid ${C.red}22`, borderRadius: 10, padding: '0.7rem 1rem', marginBottom: '1rem' }}>{loadErr}</div>}
+        {loadErr && <div role="alert" style={{ color: C.red, background: C.redSoft, border: `1px solid ${tint(C.red, 13)}`, borderRadius: 10, padding: '0.7rem 1rem', marginBottom: '1rem' }}>{loadErr}</div>}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(208px, 1fr))', gap: '0.85rem', marginBottom: '1.6rem' }}>
           <Kpi label="Agencies" icon="agencies" value={String(stats?.agencies.total ?? '-')} sub={`${stats?.agencies.approved ?? 0} active · ${stats?.agencies.pending ?? 0} pending`} subTone={(stats?.agencies.pending ?? 0) > 0 ? C.amber : undefined} />

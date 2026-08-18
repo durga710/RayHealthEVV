@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getJson, patchJson } from '../../lib/api-client.js';
 import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
+import { tint } from '../../lib/color.js';
 
 /**
  * Mileage review.
@@ -151,7 +152,7 @@ export function MileageReviewPage() {
                   </div>
                   <span style={{
                     padding: '0.15em 0.6em', borderRadius: 999, fontSize: '0.75rem', fontWeight: 600,
-                    background: `${STATUS_COLOR[entry.status]}18`, color: STATUS_COLOR[entry.status],
+                    background: tint(STATUS_COLOR[entry.status], 9), color: STATUS_COLOR[entry.status],
                   }}>
                     {STATUS_TABS.find((t) => t.key === entry.status)?.label ?? entry.status}
                   </span>

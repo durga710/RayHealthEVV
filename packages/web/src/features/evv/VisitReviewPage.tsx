@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getJson, postJson } from '../../lib/api-client.js';
 import { EmptyState, LoadingSkeleton, ErrorRetry } from '../../components/state/index.js';
+import { tint } from '../../lib/color.js';
 
 interface EvvVisit {
   id: string;
@@ -267,8 +268,8 @@ export function VisitReviewPage() {
                       onClick={() => setExpandedFraud(expanded ? null : visit.id)}
                       title={`Fraud score ${fraud.score}/100 — ${fraud.triggeredCount} signal${fraud.triggeredCount === 1 ? '' : 's'}. Click for details.`}
                       style={{
-                        cursor: 'pointer', border: `1px solid ${RISK_COLOR[fraud.riskLevel]}40`,
-                        background: `${RISK_COLOR[fraud.riskLevel]}14`, color: RISK_COLOR[fraud.riskLevel],
+                        cursor: 'pointer', border: `1px solid ${tint(RISK_COLOR[fraud.riskLevel], 25)}`,
+                        background: tint(RISK_COLOR[fraud.riskLevel], 8), color: RISK_COLOR[fraud.riskLevel],
                         borderRadius: '999px', padding: '0.18rem 0.6rem', fontSize: '0.72rem', fontWeight: 800,
                         display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
                       }}
