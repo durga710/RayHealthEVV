@@ -33,16 +33,16 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.2",
     "patch-package": "^8.0.1",
-    "react-native-worklets": "0.5.1",
+    "react-native-worklets": "0.12.1",
     "vite": "^8.0.13"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.62.2",
-    "@rolldown/binding-linux-x64-gnu": "1.2.0",
-    "@esbuild/linux-x64": "0.28.1",
-    "@turbo/linux-64": "2.10.5",
+    "@rollup/rollup-linux-x64-gnu": "4.63.1",
+    "@rolldown/binding-linux-x64-gnu": "1.2.6",
+    "@esbuild/linux-x64": "0.28.2",
+    "@turbo/linux-64": "2.10.12",
     "@unrs/resolver-binding-linux-x64-gnu": "1.12.2",
-    "lightningcss-linux-x64-gnu": "1.32.0"
+    "lightningcss-linux-x64-gnu": "1.33.0"
   },
   "overrides": {
     "@vercel/node": {
